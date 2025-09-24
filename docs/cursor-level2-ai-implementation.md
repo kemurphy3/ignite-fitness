@@ -15,6 +15,7 @@ class ContextAwareAI {
     this.contextCache = new Map(); // Cache contexts for 5 minutes
     this.patternDetector = new PatternDetector();
     this.contextBuilder = new ContextBuilder();
+    this.modelSelector = new ModelSelector();
   }
   
   // Build comprehensive user context for AI
@@ -491,6 +492,159 @@ async function logWorkout(userId, workoutData) {
 }
 ```
 
+### Intelligent Model Selection
+
+```javascript
+// Smart model selector that chooses the right AI for the task
+class ModelSelector {
+  constructor() {
+    this.modelCosts = {
+      'gpt-3.5-turbo': 0.002,       // per 1k tokens (cheap, fast, good for simple)
+      'gpt-4-turbo': 0.03,          // per 1k tokens (expensive, smart)
+      'claude-3-haiku': 0.0008,     // per 1k tokens (cheapest, ultra-fast)
+      'claude-3.5-sonnet': 0.015,   // per 1k tokens (balanced, creative)
+      'claude-3-opus': 0.075        // per 1k tokens (most expensive, best reasoning)
+    };
+  }
+  
+  // Select model based on query complexity and context
+  selectModel(question, context, userPreference = null) {
+    // User can override if they want
+    if (userPreference) return userPreference;
+    
+    // Categorize the query
+    const queryType = this.categorizeQuery(question);
+    const complexity = this.assessComplexity(question, context);
+    
+    // Model selection logic
+    switch(queryType) {
+      case 'simple_question':
+        // "What's my next workout?" "How many sets today?"
+        return 'claude-3-haiku'; // Cheapest, fastest for simple lookups
+        
+      case 'form_check':
+        // "Is my squat form correct?" "How do I deadlift?"
+        return 'gpt-3.5-turbo'; // Good at instructions, cheap
+        
+      case 'workout_generation':
+        // "Create a workout for tomorrow"
+        if (complexity === 'high') {
+          // Complex periodization, multiple constraints
+          return 'claude-3.5-sonnet'; // Great at creative programming
+        }
+        return 'gpt-3.5-turbo'; // Standard workout generation
+        
+      case 'injury_assessment':
+        // "My knee hurts during squats"
+        return 'claude-3.5-sonnet'; // Balanced, careful with health advice
+        
+      case 'nutrition_planning':
+        // "Plan my meals for game week"
+        return 'gpt-3.5-turbo'; // Good enough for basic nutrition
+        
+      case 'complex_analysis':
+        // "Analyze my 6-month progress and suggest adjustments"
+        if (context.recentWorkouts?.length > 50) {
+          return 'claude-3-opus'; // Best for complex reasoning with lots of data
+        }
+        return 'claude-3.5-sonnet'; // Good for moderate analysis
+        
+      case 'conversation':
+        // Multi-turn coaching conversation
+        if (this.isFollowUp(question, context)) {
+          // Use same model as previous turn for consistency
+          return context.lastModel || 'gpt-3.5-turbo';
+        }
+        return 'gpt-3.5-turbo'; // Default conversational
+        
+      default:
+        return 'gpt-3.5-turbo'; // Safe default
+    }
+  }
+  
+  categorizeQuery(question) {
+    const q = question.toLowerCase();
+    
+    // Simple lookups
+    if (q.includes('next') || q.includes('today') || q.includes('how many')) {
+      return 'simple_question';
+    }
+    
+    // Form and technique
+    if (q.includes('form') || q.includes('technique') || q.includes('how to')) {
+      return 'form_check';
+    }
+    
+    // Workout creation
+    if (q.includes('create') || q.includes('design') || q.includes('workout for')) {
+      return 'workout_generation';
+    }
+    
+    // Injury/pain
+    if (q.includes('hurt') || q.includes('pain') || q.includes('injury')) {
+      return 'injury_assessment';
+    }
+    
+    // Nutrition
+    if (q.includes('eat') || q.includes('nutrition') || q.includes('meal') || q.includes('calories')) {
+      return 'nutrition_planning';
+    }
+    
+    // Complex analysis
+    if (q.includes('analyze') || q.includes('progress') || q.includes('trend') || q.includes('pattern')) {
+      return 'complex_analysis';
+    }
+    
+    return 'conversation';
+  }
+  
+  assessComplexity(question, context) {
+    let complexityScore = 0;
+    
+    // Length indicates complexity
+    if (question.length > 100) complexityScore += 2;
+    if (question.length > 200) complexityScore += 3;
+    
+    // Multiple questions
+    if ((question.match(/\?/g) || []).length > 1) complexityScore += 2;
+    
+    // Requires historical analysis
+    if (question.includes('trend') || question.includes('over time')) complexityScore += 3;
+    
+    // Multiple constraints
+    const constraints = ['but', 'except', 'avoid', 'without', 'only', 'must'];
+    constraints.forEach(c => {
+      if (question.includes(c)) complexityScore += 1;
+    });
+    
+    // Context richness
+    if (context.recentWorkouts?.length > 20) complexityScore += 2;
+    if (context.patterns?.length > 5) complexityScore += 2;
+    
+    return complexityScore > 5 ? 'high' : 'low';
+  }
+  
+  isFollowUp(question, context) {
+    // Check if this is part of ongoing conversation
+    return context.conversationHistory?.length > 0 && 
+           question.includes('it') || question.includes('that') || question.includes('this');
+  }
+  
+  // Estimate cost before making call
+  estimateCost(model, estimatedTokens = 1000) {
+    const tokensInK = estimatedTokens / 1000;
+    return this.modelCosts[model] * tokensInK;
+  }
+  
+  // Log model usage for optimization
+  logUsage(model, actualTokens, responseQuality) {
+    // Track which models work best for which queries
+    // This data helps optimize future selections
+    console.log(`Model: ${model}, Tokens: ${actualTokens}, Quality: ${responseQuality}`);
+  }
+}
+```
+
 ### Update AI Chat Interface
 
 ```javascript
@@ -505,9 +659,21 @@ async function sendToAI() {
   showTypingIndicator();
   
   try {
-    // Use context-aware AI instead of basic
+    // Build context first
+    const context = await contextAwareAI.buildUserContext(currentUser.id);
+    
+    // Select optimal model
+    const model = contextAwareAI.modelSelector.selectModel(question, context);
+    console.log(`Using ${model} for this query`);
+    
+    // Show user which model if they care
+    if (window.debugMode) {
+      showModelIndicator(model);
+    }
+    
+    // Use context-aware AI with selected model
     const response = await contextAwareAI.askAI(currentUser.id, question, {
-      model: 'gpt-3.5-turbo', // Start with cheap model
+      model: model,
       includeWorkoutHistory: true,
       includePatterns: true
     });
@@ -516,11 +682,21 @@ async function sendToAI() {
     displayAIResponse(response);
     
     // Learn from interaction
-    await trackInteraction(currentUser.id, question, response);
+    await trackInteraction(currentUser.id, question, response, model);
     
   } catch (error) {
     console.error('AI Error:', error);
-    displayAIResponse("I'm having trouble connecting. Try again in a moment.");
+    
+    // Fallback to cheaper model if expensive one fails
+    if (error.message.includes('rate limit')) {
+      const fallbackResponse = await contextAwareAI.askAI(currentUser.id, question, {
+        model: 'claude-3-haiku', // Cheapest fallback
+        includeWorkoutHistory: false // Reduce context to save tokens
+      });
+      displayAIResponse(fallbackResponse);
+    } else {
+      displayAIResponse("I'm having trouble connecting. Try again in a moment.");
+    }
   }
   
   hideTypingIndicator();
@@ -647,6 +823,7 @@ class RAGSystem {
 
 ### Phase 1: Level 2 Implementation (DO THIS NOW)
 - [ ] Set up ContextAwareAI class
+- [ ] Implement ModelSelector class with intelligent model routing
 - [ ] Implement PatternDetector
 - [ ] Add SuccessTracker
 - [ ] Create AICache for cost optimization
@@ -658,7 +835,11 @@ class RAGSystem {
 ### Phase 2: Optimization (After 50 Users)
 - [ ] Implement smart caching
 - [ ] Add pre-caching for common queries
-- [ ] Use GPT-3.5 for simple, Claude for complex
+- [ ] Route queries to optimal model based on complexity:
+  - Claude Haiku ($0.0008/1k): Simple lookups ("What's next?")  
+  - GPT-3.5 ($0.002/1k): Form checks, basic workouts, nutrition
+  - Claude Sonnet ($0.015/1k): Creative programming, injury assessment
+  - Claude Opus ($0.075/1k): Complex multi-month analysis (rarely used)
 - [ ] Add context level selection (minimal/standard/full)
 - [ ] Monitor API costs per user
 
