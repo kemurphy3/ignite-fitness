@@ -9,7 +9,7 @@
     "deploy": "netlify deploy --prod"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^0.9.0"
+    "@neondatabase/serverless": "^0.9.5"
   },
   "devDependencies": {
     "netlify-cli": "^15.0.0"
