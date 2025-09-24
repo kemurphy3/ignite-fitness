@@ -1,0 +1,30 @@
+{
+  "name": "ignitefitness",
+  "version": "1.0.0",
+  "description": "Multi-user fitness tracking app with centralized data storage",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo 'No build step needed for static site'",
+    "dev": "netlify dev",
+    "deploy": "netlify deploy --prod"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.9.0"
+  },
+  "devDependencies": {
+    "netlify-cli": "^15.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/ignitefitness"
+  },
+  "keywords": [
+    "fitness",
+    "tracking",
+    "soccer",
+    "workout",
+    "multi-user"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}
