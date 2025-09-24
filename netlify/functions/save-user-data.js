@@ -69,11 +69,21 @@ exports.handler = async (event) => {
         // Handle different data types
         if (dataType === 'all' || dataType === 'preferences') {
             if (data.preferences) {
+                // Convert goals object to array format for database
+                let goalsArray = null;
+                if (data.preferences.goals) {
+                    if (typeof data.preferences.goals === 'object') {
+                        goalsArray = [data.preferences.goals.primary, data.preferences.goals.secondary].filter(Boolean);
+                    } else if (Array.isArray(data.preferences.goals)) {
+                        goalsArray = data.preferences.goals;
+                    }
+                }
+
                 const preferences = await sql`
                     INSERT INTO user_preferences (user_id, age, weight, height, sex, goals, baseline_lifts, workout_schedule)
                     VALUES (${user_id}, ${data.preferences.age || null}, ${data.preferences.weight || null}, 
                            ${data.preferences.height || null}, ${data.preferences.sex || null}, 
-                           ${data.preferences.goals || null}, ${data.preferences.baselineLifts ? JSON.stringify(data.preferences.baselineLifts) : null},
+                           ${goalsArray}, ${data.preferences.baselineLifts ? JSON.stringify(data.preferences.baselineLifts) : null},
                            ${data.preferences.workoutSchedule ? JSON.stringify(data.preferences.workoutSchedule) : null})
                     ON CONFLICT (user_id) DO UPDATE SET
                         age = EXCLUDED.age,

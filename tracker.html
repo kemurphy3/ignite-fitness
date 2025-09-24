@@ -1404,6 +1404,16 @@
                 </div>
 
                 <div class="form-group">
+                    <label>Preferred workout time of day</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                        <label><input type="radio" name="workoutTime" value="morning"> 🌅 Morning (6AM-12PM)</label>
+                        <label><input type="radio" name="workoutTime" value="afternoon"> ☀️ Afternoon (12PM-6PM)</label>
+                        <label><input type="radio" name="workoutTime" value="evening"> 🌆 Evening (6PM-10PM)</label>
+                        <label><input type="radio" name="workoutTime" value="flexible"> 🔄 Flexible</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
                     <label>Weightlifting focus preference:</label>
                     <select id="liftingFocus" class="form-select">
                         <option value="balanced">Balanced (upper/lower split)</option>
@@ -1470,7 +1480,20 @@
                     </div>
                 </div>
 
-                <button class="btn" onclick="saveWorkoutSchedule()">Save Schedule Preferences</button>
+                <div class="form-group">
+                    <button class="btn" onclick="saveSchedulePreferences()" style="background: #68d391; margin-right: 10px; margin-bottom: 10px;">
+                        💾 Save Schedule Preferences
+                    </button>
+                </div>
+                
+                <div class="form-group">
+                    <button class="btn" onclick="generateSmartSchedule()" style="background: #4299e1; margin-right: 10px;">
+                        🤖 Generate Smart Schedule
+                    </button>
+                    <button class="btn" onclick="saveWorkoutSchedule()">
+                        💾 Save Schedule
+                    </button>
+                </div>
             </div>
 
             <div class="form-section">
@@ -1478,7 +1501,7 @@
                 <div id="workoutPlanDisplay" style="background: #1a1a1a; padding: 15px; border-radius: 8px; margin-top: 10px;">
                     <p style="color: #a0aec0;">Complete your schedule planning to generate a personalized 4-week workout plan.</p>
                 </div>
-                <button class="btn" onclick="generateWorkoutPlan()" style="margin-top: 15px;">Generate/Update Plan</button>
+                <button class="btn" onclick="generateWorkoutPlan()" style="margin-top: 15px;">🎯 Generate Workout Plan</button>
             </div>
         </div>
 
@@ -1667,7 +1690,13 @@
 
         // User Data Management Functions
         async function loadUserData() {
-            if (!currentUser || !isLoggedIn) return;
+            if (!currentUser || !isLoggedIn) {
+                console.log('Cannot load user data - currentUser:', currentUser, 'isLoggedIn:', isLoggedIn);
+                return;
+            }
+
+            console.log('Loading user data for:', currentUser);
+            console.log('Users object:', users);
 
             try {
                 // Try to load from centralized storage first
@@ -1677,14 +1706,37 @@
                     const result = await response.json();
                     const user = result.data;
                     
-                    // Load user's data into global variables
-                    soccerSessions = user.soccerSessions || [];
-                    recoveryData = user.recoveryData || [];
-                    stravaData = user.stravaData || [];
-                    sleepData = user.sleepData || [];
-                    
-                    // Update local users object
-                    users[currentUser] = user;
+                    if (user) {
+                        // Load user's data into global variables
+                        soccerSessions = user.sessions?.filter(s => s.type === 'soccer') || [];
+                        recoveryData = user.sessions?.filter(s => s.type === 'recovery') || [];
+                        stravaData = user.stravaActivities || [];
+                        sleepData = user.sleepSessions || [];
+                        
+                        // Convert database format to frontend format
+                        const frontendUser = {
+                            personalData: {
+                                age: user.preferences?.age || null,
+                                weight: user.preferences?.weight || null,
+                                height: user.preferences?.height || null,
+                                sex: user.preferences?.sex || null,
+                                baselineStrength: user.preferences?.baseline_lifts || {}
+                            },
+                            goals: user.preferences?.goals ? {
+                                primary: user.preferences.goals[0] || null,
+                                secondary: user.preferences.goals[1] || null
+                            } : {},
+                            workoutSchedule: user.preferences?.workout_schedule || {},
+                            email: user.email || null
+                        };
+                        
+                        // Update local users object
+                        users[currentUser] = frontendUser;
+                    } else {
+                        // User not found in database, fallback to local storage
+                        console.log('User not found in database, loading from local storage');
+                        loadUserDataFromLocal();
+                    }
                 } else {
                     // Fallback to local storage
                     loadUserDataFromLocal();
@@ -1696,8 +1748,23 @@
         }
 
         function loadUserDataFromLocal() {
-            const user = users[currentUser];
-            if (!user) return;
+            // Try both case variations
+            let user = users[currentUser];
+            if (!user) {
+                // Try lowercase version
+                user = users[currentUser.toLowerCase()];
+                if (user) {
+                    console.log('Found user with lowercase key:', currentUser.toLowerCase());
+                }
+            }
+            
+            if (!user) {
+                console.log('No user found for currentUser:', currentUser);
+                console.log('Available users:', Object.keys(users));
+                return;
+            }
+
+            console.log('Loading user data from localStorage for:', currentUser, user);
 
             // Load user's data into global variables
             soccerSessions = user.data?.soccerSessions || [];
@@ -1818,7 +1885,19 @@
                     body: JSON.stringify({
                         userId: currentUser,
                         dataType: 'all',
-                        data: userData
+                        data: {
+                            username: currentUser,
+                            email: user.email || null,
+                            preferences: {
+                                age: user.personalData?.age || null,
+                                weight: user.personalData?.weight || null,
+                                height: user.personalData?.height || null,
+                                sex: user.personalData?.sex || null,
+                                goals: user.goals ? [user.goals.primary, user.goals.secondary].filter(Boolean) : null,
+                                baselineLifts: user.personalData?.baselineStrength || null,
+                                workoutSchedule: user.workoutSchedule || null
+                            }
+                        }
                     })
                 });
 
@@ -1865,7 +1944,7 @@
         }
 
         // Personal Data Functions
-        function savePersonalInfo() {
+        async function savePersonalInfo() {
             if (!currentUser || !isLoggedIn) return;
 
             const user = users[currentUser];
@@ -1877,10 +1956,21 @@
             user.personalData.sex = document.getElementById('userSex').value;
 
             localStorage.setItem('ignitefitness_users', JSON.stringify(users));
-            alert('Personal information saved!');
+            
+            // Also save to database
+            try {
+                await saveUserData();
+                alert('Personal information saved to database!');
+            } catch (error) {
+                console.log('Database save failed, but local save succeeded:', error);
+                alert('Personal information saved locally!');
+            }
+            
+            // Refresh the form fields to show the saved data
+            loadPersonalDataToForm();
         }
 
-        function saveBaselineStrength() {
+        async function saveBaselineStrength() {
             if (!currentUser || !isLoggedIn) return;
 
             const user = users[currentUser];
@@ -1893,10 +1983,21 @@
             user.personalData.baselineStrength.pullups = document.getElementById('baselinePullups').value;
 
             localStorage.setItem('ignitefitness_users', JSON.stringify(users));
-            alert('Baseline strength saved!');
+            
+            // Also save to database
+            try {
+                await saveUserData();
+                alert('Baseline strength saved to database!');
+            } catch (error) {
+                console.log('Database save failed, but local save succeeded:', error);
+                alert('Baseline strength saved locally!');
+            }
+            
+            // Refresh the form fields to show the saved data
+            loadPersonalDataToForm();
         }
 
-        function saveGoals() {
+        async function saveGoals() {
             if (!currentUser || !isLoggedIn) return;
 
             const user = users[currentUser];
@@ -1914,7 +2015,793 @@
             user.goals.secondary = secondaryGoals;
 
             localStorage.setItem('ignitefitness_users', JSON.stringify(users));
-            alert('Goals saved!');
+            
+            // Also save to database
+            try {
+                await saveUserData();
+                alert('Goals saved to database!');
+            } catch (error) {
+                console.log('Database save failed, but local save succeeded:', error);
+                alert('Goals saved locally!');
+            }
+            
+            // Refresh the form fields to show the saved data
+            loadPersonalDataToForm();
+        }
+
+        function loadPersonalDataToForm() {
+            if (!currentUser || !isLoggedIn) return;
+            
+            const user = users[currentUser];
+            if (!user) return;
+
+            // Load personal data into form fields
+            if (user.personalData) {
+                document.getElementById('userAge').value = user.personalData.age || '';
+                document.getElementById('userWeight').value = user.personalData.weight || '';
+                document.getElementById('userHeight').value = user.personalData.height || '';
+                document.getElementById('userSex').value = user.personalData.sex || '';
+            }
+
+            // Load baseline strength
+            if (user.personalData && user.personalData.baselineStrength) {
+                document.getElementById('baselineBench').value = user.personalData.baselineStrength.bench || '';
+                document.getElementById('baselineSquat').value = user.personalData.baselineStrength.squat || '';
+                document.getElementById('baselineDeadlift').value = user.personalData.baselineStrength.deadlift || '';
+                document.getElementById('baselinePullups').value = user.personalData.baselineStrength.pullups || '';
+            }
+
+            // Load goals
+            if (user.goals) {
+                document.getElementById('primaryGoal').value = user.goals.primary || '';
+                
+                // Check secondary goals checkboxes
+                document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.checked = user.goals.secondary && user.goals.secondary.includes(checkbox.value);
+                });
+            }
+        }
+
+        function saveSchedulePreferences() {
+            if (!currentUser || !isLoggedIn) return;
+
+            const user = users[currentUser];
+            if (!user.workoutSchedule) user.workoutSchedule = {};
+
+            // Get indoor game days using data-section attribute
+            const indoorGameDays = [];
+            const indoorGamesSection = document.querySelector('[data-section="indoor-games"]');
+            if (indoorGamesSection) {
+                indoorGamesSection.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+                    indoorGameDays.push(checkbox.value);
+                });
+            }
+
+            // Get outdoor game days using data-section attribute
+            const outdoorGameDays = [];
+            const outdoorGamesSection = document.querySelector('[data-section="outdoor-games"]');
+            if (outdoorGamesSection) {
+                outdoorGamesSection.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+                    outdoorGameDays.push(checkbox.value);
+                });
+            }
+
+            // Get practice days using data-section attribute
+            const practiceDays = [];
+            const practiceSection = document.querySelector('[data-section="practices"]');
+            if (practiceSection) {
+                practiceSection.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+                    practiceDays.push(checkbox.value);
+                });
+            }
+
+            // Get other preferences
+            const liftingFrequency = document.getElementById('liftingFrequency').value;
+            const liftingFocus = document.getElementById('liftingFocus').value;
+            const workoutTime = document.querySelector('input[name="workoutTime"]:checked')?.value || 'flexible';
+
+            // Update user's workout schedule
+            user.workoutSchedule.indoorGameDays = indoorGameDays;
+            user.workoutSchedule.outdoorGameDays = outdoorGameDays;
+            user.workoutSchedule.practiceDays = practiceDays;
+            user.workoutSchedule.liftingFrequency = liftingFrequency;
+            user.workoutSchedule.liftingFocus = liftingFocus;
+            user.workoutSchedule.workoutTime = workoutTime;
+
+            // Save to localStorage
+            localStorage.setItem('ignitefitness_users', JSON.stringify(users));
+
+            // Also save to database
+            try {
+                saveUserData();
+                alert('✅ Schedule preferences saved to database!');
+            } catch (error) {
+                console.log('Database save failed, but local save succeeded:', error);
+                alert('✅ Schedule preferences saved locally!');
+            }
+
+            console.log('Schedule preferences saved:', user.workoutSchedule);
+        }
+
+        function loadGoalsToForm() {
+            if (!currentUser || !isLoggedIn) return;
+            
+            const user = users[currentUser];
+            if (!user) return;
+
+            // Load goals
+            if (user.goals) {
+                document.getElementById('primaryGoal').value = user.goals.primary || '';
+                
+                // Check secondary goals checkboxes
+                document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                    if (checkbox.name && checkbox.name.includes('secondary')) {
+                        checkbox.checked = user.goals.secondary && user.goals.secondary.includes(checkbox.value);
+                    }
+                });
+            }
+        }
+
+        function loadWearableSettingsToForm() {
+            if (!currentUser || !isLoggedIn) return;
+            
+            const user = users[currentUser];
+            if (!user || !user.wearableSettings) return;
+
+            // Load sync frequency
+            if (user.wearableSettings.syncFrequency) {
+                document.getElementById('syncFrequency').value = user.wearableSettings.syncFrequency;
+            }
+
+            // Load Strava settings
+            if (user.wearableSettings.strava) {
+                document.getElementById('enableStrava').checked = true;
+                document.getElementById('stravaClientId').value = user.wearableSettings.strava.clientId || '';
+                document.getElementById('stravaClientSecret').value = user.wearableSettings.strava.clientSecret || '';
+                document.getElementById('stravaAccessToken').value = user.wearableSettings.strava.accessToken || '';
+                document.getElementById('stravaRefreshToken').value = user.wearableSettings.strava.refreshToken || '';
+            }
+
+            // Load other wearable settings
+            if (user.wearableSettings.whoop) {
+                document.getElementById('enableWhoop').checked = true;
+                document.getElementById('whoopToken').value = user.wearableSettings.whoop.token || '';
+            }
+
+            if (user.wearableSettings.appleWatch) {
+                document.getElementById('enableAppleWatch').checked = true;
+                document.getElementById('appleHealthKit').value = user.wearableSettings.appleWatch.healthKitEnabled ? 'enabled' : 'disabled';
+            }
+
+            if (user.wearableSettings.garmin) {
+                document.getElementById('enableGarmin').checked = true;
+                document.getElementById('garminUsername').value = user.wearableSettings.garmin.username || '';
+                document.getElementById('garminPassword').value = user.wearableSettings.garmin.password || '';
+            }
+        }
+
+        function generateSmartSchedule() {
+            console.log('🤖 generateSmartSchedule called');
+            
+            if (!currentUser || !isLoggedIn) {
+                console.log('❌ User not logged in:', { currentUser, isLoggedIn });
+                return;
+            }
+
+            const user = users[currentUser];
+            console.log('👤 User found:', user);
+            
+            if (!user.goals || !user.goals.primary) {
+                console.log('❌ No goals set:', user.goals);
+                alert('Please set your goals first in the Goals & Priorities section');
+                return;
+            }
+            
+            console.log('✅ Goals found, proceeding...');
+
+            // Get data from saved user preferences instead of form
+            const indoorGameDays = user.workoutSchedule?.indoorGameDays || [];
+            const outdoorGameDays = user.workoutSchedule?.outdoorGameDays || [];
+            const practiceDays = user.workoutSchedule?.practiceDays || [];
+            const liftingFrequency = parseInt(user.workoutSchedule?.liftingFrequency) || 3;
+            const liftingFocus = user.workoutSchedule?.liftingFocus || 'balanced';
+            const workoutTime = user.workoutSchedule?.workoutTime || 'flexible';
+            
+            console.log('📊 Form data collected:', {
+                indoorGameDays,
+                outdoorGameDays,
+                practiceDays,
+                liftingFrequency,
+                liftingFocus,
+                workoutTime
+            });
+
+            // Generate smart schedule based on soccer and goals
+            const smartSchedule = createSmartSchedule({
+                indoorGameDays,
+                outdoorGameDays,
+                practiceDays,
+                liftingFrequency,
+                liftingFocus,
+                workoutTime,
+                goals: user.goals
+            });
+
+            // Store the generated schedule globally for later use
+            window.lastGeneratedSchedule = smartSchedule;
+            
+            // Display the generated schedule
+            console.log('🎯 Calling displayGeneratedSchedule with:', smartSchedule);
+            displayGeneratedSchedule(smartSchedule);
+        }
+
+        function createSmartSchedule(preferences) {
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            const schedule = {};
+            
+            // Get all soccer days
+            const soccerDays = [
+                ...preferences.indoorGameDays,
+                ...preferences.outdoorGameDays,
+                ...preferences.practiceDays
+            ];
+
+            console.log('⚽ Soccer days found:', soccerDays);
+            console.log('🏋️ Lifting frequency:', preferences.liftingFrequency);
+
+            // Generate optimal workout days based on soccer schedule
+            const workoutDays = generateOptimalWorkoutDays(days, soccerDays, preferences.liftingFrequency);
+            console.log('📅 Generated workout days:', workoutDays);
+
+            // Create schedule for each day
+            days.forEach(day => {
+                const daySchedule = {
+                    sessionType: 'Rest Day',
+                    timeSlot: 'Not set',
+                    duration: 'Not set',
+                    notes: ''
+                };
+
+                console.log(`📝 Processing ${day}:`, {
+                    isWorkoutDay: workoutDays.includes(day),
+                    isIndoorGame: preferences.indoorGameDays.includes(day),
+                    isOutdoorGame: preferences.outdoorGameDays.includes(day),
+                    isPractice: preferences.practiceDays.includes(day)
+                });
+
+                // Check for soccer activities
+                if (preferences.indoorGameDays.includes(day)) {
+                    daySchedule.sessionType = 'Soccer (Indoor)';
+                    daySchedule.timeSlot = getTimeSlot(preferences.workoutTime, 'evening');
+                    daySchedule.duration = '90 minutes';
+                    daySchedule.notes = 'Indoor soccer game - focus on recovery and hydration';
+                    console.log(`⚽ ${day}: Indoor soccer`);
+                } else if (preferences.outdoorGameDays.includes(day)) {
+                    daySchedule.sessionType = 'Soccer (Outdoor)';
+                    daySchedule.timeSlot = getTimeSlot(preferences.workoutTime, 'afternoon');
+                    daySchedule.duration = '90 minutes';
+                    daySchedule.notes = 'Outdoor soccer game - consider weather conditions';
+                    console.log(`⚽ ${day}: Outdoor soccer`);
+                } else if (preferences.practiceDays.includes(day)) {
+                    daySchedule.sessionType = 'Soccer Practice';
+                    daySchedule.timeSlot = getTimeSlot(preferences.workoutTime, 'evening');
+                    daySchedule.duration = '60 minutes';
+                    daySchedule.notes = 'Soccer practice - lighter gym work if any';
+                    console.log(`⚽ ${day}: Soccer practice`);
+                } else if (workoutDays.includes(day)) {
+                    // Generate gym workout
+                    const workoutType = generateWorkoutType(day, soccerDays, preferences);
+                    daySchedule.sessionType = workoutType;
+                    daySchedule.timeSlot = getTimeSlot(preferences.workoutTime);
+                    daySchedule.duration = getWorkoutDuration(workoutType);
+                    daySchedule.notes = generateWorkoutNotes(workoutType, day, soccerDays);
+                    console.log(`🏋️ ${day}: ${workoutType}`);
+                } else {
+                    console.log(`😴 ${day}: Rest day`);
+                }
+
+                schedule[day] = daySchedule;
+            });
+
+            return {
+                ...preferences,
+                schedule,
+                generatedAt: new Date().toISOString()
+            };
+        }
+
+        function generateOptimalWorkoutDays(days, soccerDays, liftingFrequency) {
+            const workoutDays = [];
+            
+            // Your preferred schedule: Tue (Upper), Wed (Lower Heavy), Fri (Upper), Sat (Lower Light)
+            const preferredDays = ['tuesday', 'wednesday', 'friday', 'saturday'];
+            
+            // Filter out soccer days from preferred days
+            const availableDays = preferredDays.filter(day => !soccerDays.includes(day));
+            
+            // Add available days up to desired frequency
+            for (let i = 0; i < Math.min(liftingFrequency, availableDays.length); i++) {
+                workoutDays.push(availableDays[i]);
+            }
+            
+            // If we need more days, add others
+            if (workoutDays.length < liftingFrequency) {
+                const remainingDays = days.filter(day => 
+                    !soccerDays.includes(day) && 
+                    !workoutDays.includes(day) && 
+                    day !== 'sunday' // Avoid Sunday workouts
+                );
+                
+                for (let i = 0; i < Math.min(liftingFrequency - workoutDays.length, remainingDays.length); i++) {
+                    workoutDays.push(remainingDays[i]);
+                }
+            }
+            
+            return workoutDays;
+        }
+
+        function generateWorkoutType(day, soccerDays, preferences) {
+            // Check if there's a Sunday game
+            const hasSundayGame = soccerDays.includes('sunday');
+            
+            // Your preferred schedule
+            if (day === 'tuesday') {
+                return 'Upper Body';
+            } else if (day === 'wednesday') {
+                return 'Lower Body (Heavy)';
+            } else if (day === 'friday') {
+                return 'Upper Body';
+            } else if (day === 'saturday' && hasSundayGame) {
+                return 'Lower Body (Light)';
+            } else if (day === 'saturday' && !hasSundayGame) {
+                return 'Lower Body';
+            }
+            
+            // Fallback based on lifting focus
+            if (preferences.liftingFocus === 'upper_focused') {
+                return 'Upper Body';
+            } else if (preferences.liftingFocus === 'lower_focused') {
+                return 'Lower Body';
+            } else {
+                return 'Full Body';
+            }
+        }
+
+        function getTimeSlot(preferredTime, override = null) {
+            const time = override || preferredTime;
+            
+            switch (time) {
+                case 'morning':
+                    return '8:00 AM';
+                case 'afternoon':
+                    return '2:00 PM';
+                case 'evening':
+                    return '7:00 PM';
+                case 'flexible':
+                default:
+                    return 'Flexible';
+            }
+        }
+
+        function getWorkoutDuration(workoutType) {
+            if (workoutType.includes('Heavy')) {
+                return '75-90 minutes';
+            } else if (workoutType.includes('Light')) {
+                return '45-60 minutes';
+            } else if (workoutType.includes('Full Body')) {
+                return '60-75 minutes';
+            } else {
+                return '60 minutes';
+            }
+        }
+
+        function generateWorkoutNotes(workoutType, day, soccerDays) {
+            const notes = [];
+            
+            if (workoutType.includes('Heavy')) {
+                notes.push('Focus on progressive overload');
+                notes.push('Rest 2-3 minutes between sets');
+            } else if (workoutType.includes('Light')) {
+                notes.push('Keep intensity moderate');
+                notes.push('Focus on movement quality');
+            }
+            
+            // Check proximity to soccer
+            const dayIndex = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].indexOf(day);
+            const hasSundayGame = soccerDays.includes('sunday');
+            
+            if (hasSundayGame && day === 'saturday') {
+                notes.push('Light session before Sunday game');
+            } else if (hasSundayGame && dayIndex >= 3) {
+                notes.push('Good recovery time before Sunday game');
+            }
+            
+            return notes.join(' | ');
+        }
+
+        function displayGeneratedSchedule(smartSchedule) {
+            console.log('📋 displayGeneratedSchedule called with:', smartSchedule);
+            
+            let scheduleHtml = `
+                <div style="background: #1a1a1a; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                    <h3 style="color: #68d391; margin-top: 0;">🤖 Generated Smart Schedule</h3>
+                    <p style="color: #a0aec0; margin-bottom: 20px;">Based on your soccer schedule and lifting preferences:</p>
+                    
+                    <div style="background: #2d3748; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="color: #fbd38d; margin: 0 0 10px 0;">⚽ Your Soccer Schedule</h4>
+                        <p style="color: #a0aec0; margin: 5px 0;"><strong>Indoor Games:</strong> ${smartSchedule.indoorGameDays.length > 0 ? smartSchedule.indoorGameDays.join(', ') : 'None'}</p>
+                        <p style="color: #a0aec0; margin: 5px 0;"><strong>Outdoor Games:</strong> ${smartSchedule.outdoorGameDays.length > 0 ? smartSchedule.outdoorGameDays.join(', ') : 'None'}</p>
+                        <p style="color: #a0aec0; margin: 5px 0;"><strong>Practices:</strong> ${smartSchedule.practiceDays.length > 0 ? smartSchedule.practiceDays.join(', ') : 'None'}</p>
+                        <p style="color: #a0aec0; margin: 5px 0;"><strong>Lifting Frequency:</strong> ${smartSchedule.liftingFrequency} times per week</p>
+                        <p style="color: #a0aec0; margin: 5px 0;"><strong>Preferred Time:</strong> ${smartSchedule.workoutTime}</p>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+            `;
+            
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            days.forEach(day => {
+                const daySchedule = smartSchedule.schedule[day.toLowerCase()];
+                const sessions = daySchedule?.sessions || [{
+                    sessionType: daySchedule?.sessionType || 'Rest Day',
+                    timeSlot: daySchedule?.timeSlot || 'Not set',
+                    duration: daySchedule?.duration || 'Not set',
+                    notes: daySchedule?.notes || ''
+                }];
+                
+                scheduleHtml += `
+                    <div style="background: #2d3748; padding: 15px; border-radius: 8px; border-left: 4px solid ${getSessionColor(sessions[0].sessionType)};">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <h4 style="color: #68d391; margin: 0;">${day} ${sessions.length > 1 ? `(${sessions.length} sessions)` : ''}</h4>
+                            <div style="display: flex; gap: 5px;">
+                                <button onclick="editScheduleDay('${day.toLowerCase()}')" style="background: #4299e1; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">✏️ Edit</button>
+                            </div>
+                        </div>
+                        ${sessions.map((session, index) => `
+                            <div style="margin-bottom: ${index < sessions.length - 1 ? '10px' : '0'}; padding: ${index < sessions.length - 1 ? '10px' : '0'}; background: ${index < sessions.length - 1 ? '#1a1a1a' : 'transparent'}; border-radius: ${index < sessions.length - 1 ? '5px' : '0'};">
+                                <p style="color: #fbd38d; margin: 4px 0; font-weight: 600;">${sessions.length > 1 ? `Session ${index + 1}: ` : ''}${session.sessionType}</p>
+                                <p style="color: #a0aec0; margin: 2px 0; font-size: 12px;">Time: ${session.timeSlot}</p>
+                                <p style="color: #a0aec0; margin: 2px 0; font-size: 12px;">Duration: ${session.duration}</p>
+                                ${session.notes ? `<p style="color: #a0aec0; margin: 2px 0; font-size: 11px; font-style: italic;">${session.notes}</p>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            });
+            
+            scheduleHtml += `
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button onclick="acceptGeneratedSchedule()" class="btn" style="background: #68d391; color: #1a1a1a; font-weight: 600;">
+                            ✅ Accept This Schedule
+                        </button>
+                        <button onclick="regenerateSchedule()" class="btn" style="background: #4299e1; color: white;">
+                            🔄 Regenerate
+                        </button>
+                        <button onclick="cancelScheduleGeneration()" class="btn" style="background: #718096; color: white;">
+                            ❌ Cancel
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Display in the workout plan section instead
+            const planDiv = document.getElementById('workoutPlanDisplay');
+            console.log('🎨 Looking for workout plan display:', planDiv);
+            
+            if (planDiv) {
+                console.log('✅ Found workout plan display, inserting HTML');
+                planDiv.innerHTML = scheduleHtml;
+            } else {
+                console.log('❌ Workout plan display not found! Trying alternative...');
+                // Fallback: try to find any form section that's not hidden
+                const visibleFormSection = document.querySelector('.form-section:not(.hidden)');
+                if (visibleFormSection) {
+                    console.log('✅ Found visible form section, inserting HTML');
+                    visibleFormSection.insertAdjacentHTML('beforeend', scheduleHtml);
+                } else {
+                    console.log('❌ No suitable section found!');
+                }
+            }
+        }
+
+        function acceptGeneratedSchedule() {
+            if (!currentUser || !isLoggedIn) return;
+            
+            const user = users[currentUser];
+            
+            // Get the generated schedule from the display
+            const generatedSchedule = window.lastGeneratedSchedule;
+            if (generatedSchedule && generatedSchedule.schedule) {
+                // Convert the generated schedule to the format expected by the app
+                user.workoutSchedule = {
+                    indoorGameDays: generatedSchedule.indoorGameDays,
+                    outdoorGameDays: generatedSchedule.outdoorGameDays,
+                    practiceDays: generatedSchedule.practiceDays,
+                    liftingFrequency: generatedSchedule.liftingFrequency,
+                    liftingFocus: generatedSchedule.liftingFocus,
+                    workoutTime: generatedSchedule.workoutTime,
+                    // Add the detailed schedule
+                    detailedSchedule: generatedSchedule.schedule
+                };
+                
+                localStorage.setItem('ignitefitness_users', JSON.stringify(users));
+                alert('✅ Schedule accepted and saved! You can now generate your workout plan.');
+            } else {
+                alert('❌ No generated schedule found. Please generate a schedule first.');
+            }
+        }
+
+        function regenerateSchedule() {
+            generateSmartSchedule();
+        }
+
+        function cancelScheduleGeneration() {
+            // Remove the generated schedule display
+            const generatedSchedule = document.querySelector('[style*="Generated Smart Schedule"]');
+            if (generatedSchedule) {
+                generatedSchedule.remove();
+            }
+        }
+
+        function editScheduleDay(day) {
+            if (!window.lastGeneratedSchedule) {
+                alert('No generated schedule found. Please generate a schedule first.');
+                return;
+            }
+
+            const daySchedule = window.lastGeneratedSchedule.schedule[day];
+            
+            // Create a modal for editing
+            const modalHtml = `
+                <div id="editDayModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; display: flex; justify-content: center; align-items: center;">
+                    <div style="background: #1a1a1a; padding: 30px; border-radius: 10px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                        <h3 style="color: #68d391; margin-top: 0;">Edit ${day.charAt(0).toUpperCase() + day.slice(1)}</h3>
+                        
+                        <div id="sessionsContainer">
+                            ${renderSessionsForDay(day, daySchedule)}
+                        </div>
+                        
+                        <div style="margin-top: 20px;">
+                            <button onclick="addSessionToDay('${day}')" style="background: #4299e1; color: white; border: none; padding: 8px 16px; border-radius: 5px; margin-right: 10px; cursor: pointer;">
+                                ➕ Add Session
+                            </button>
+                            <button onclick="saveDaySchedule('${day}')" style="background: #68d391; color: #1a1a1a; border: none; padding: 8px 16px; border-radius: 5px; margin-right: 10px; cursor: pointer;">
+                                💾 Save
+                            </button>
+                            <button onclick="closeEditModal()" style="background: #718096; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer;">
+                                ❌ Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+        function renderSessionsForDay(day, daySchedule) {
+            const sessions = daySchedule.sessions || [{
+                sessionType: daySchedule.sessionType || 'Rest Day',
+                timeSlot: daySchedule.timeSlot || 'Flexible',
+                duration: daySchedule.duration || '60 minutes',
+                notes: daySchedule.notes || ''
+            }];
+
+            let html = '';
+            sessions.forEach((session, index) => {
+                html += `
+                    <div style="background: #2d3748; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid ${getSessionColor(session.sessionType)};">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <h4 style="color: #68d391; margin: 0;">Session ${index + 1}</h4>
+                            ${sessions.length > 1 ? `<button onclick="removeSessionFromDay('${day}', ${index})" style="background: #e53e3e; color: white; border: none; padding: 4px 8px; border-radius: 3px; font-size: 12px; cursor: pointer;">Remove</button>` : ''}
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                            <div>
+                                <label style="color: #a0aec0; font-size: 12px; display: block; margin-bottom: 5px;">Session Type</label>
+                                <select id="sessionType_${day}_${index}" style="width: 100%; padding: 8px; background: #1a1a1a; color: white; border: 1px solid #4a5568; border-radius: 4px;">
+                                    <option value="Rest Day" ${session.sessionType === 'Rest Day' ? 'selected' : ''}>Rest Day</option>
+                                    <option value="Upper Body" ${session.sessionType === 'Upper Body' ? 'selected' : ''}>Upper Body</option>
+                                    <option value="Upper Body (Light)" ${session.sessionType === 'Upper Body (Light)' ? 'selected' : ''}>Upper Body (Light)</option>
+                                    <option value="Upper Body (Heavy)" ${session.sessionType === 'Upper Body (Heavy)' ? 'selected' : ''}>Upper Body (Heavy)</option>
+                                    <option value="Lower Body" ${session.sessionType === 'Lower Body' ? 'selected' : ''}>Lower Body</option>
+                                    <option value="Lower Body (Light)" ${session.sessionType === 'Lower Body (Light)' ? 'selected' : ''}>Lower Body (Light)</option>
+                                    <option value="Lower Body (Heavy)" ${session.sessionType === 'Lower Body (Heavy)' ? 'selected' : ''}>Lower Body (Heavy)</option>
+                                    <option value="Full Body" ${session.sessionType === 'Full Body' ? 'selected' : ''}>Full Body</option>
+                                    <option value="Soccer (Indoor)" ${session.sessionType === 'Soccer (Indoor)' ? 'selected' : ''}>Soccer (Indoor)</option>
+                                    <option value="Soccer (Outdoor)" ${session.sessionType === 'Soccer (Outdoor)' ? 'selected' : ''}>Soccer (Outdoor)</option>
+                                    <option value="Soccer Practice" ${session.sessionType === 'Soccer Practice' ? 'selected' : ''}>Soccer Practice</option>
+                                    <option value="Recovery & Mobility" ${session.sessionType === 'Recovery & Mobility' ? 'selected' : ''}>Recovery & Mobility</option>
+                                    <option value="Cardio" ${session.sessionType === 'Cardio' ? 'selected' : ''}>Cardio</option>
+                                    <option value="Yoga" ${session.sessionType === 'Yoga' ? 'selected' : ''}>Yoga</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="color: #a0aec0; font-size: 12px; display: block; margin-bottom: 5px;">Time</label>
+                                <select id="timeSlot_${day}_${index}" style="width: 100%; padding: 8px; background: #1a1a1a; color: white; border: 1px solid #4a5568; border-radius: 4px;">
+                                    <option value="Flexible" ${session.timeSlot === 'Flexible' ? 'selected' : ''}>Flexible</option>
+                                    <option value="6:00 AM" ${session.timeSlot === '6:00 AM' ? 'selected' : ''}>6:00 AM</option>
+                                    <option value="7:00 AM" ${session.timeSlot === '7:00 AM' ? 'selected' : ''}>7:00 AM</option>
+                                    <option value="8:00 AM" ${session.timeSlot === '8:00 AM' ? 'selected' : ''}>8:00 AM</option>
+                                    <option value="9:00 AM" ${session.timeSlot === '9:00 AM' ? 'selected' : ''}>9:00 AM</option>
+                                    <option value="10:00 AM" ${session.timeSlot === '10:00 AM' ? 'selected' : ''}>10:00 AM</option>
+                                    <option value="11:00 AM" ${session.timeSlot === '11:00 AM' ? 'selected' : ''}>11:00 AM</option>
+                                    <option value="12:00 PM" ${session.timeSlot === '12:00 PM' ? 'selected' : ''}>12:00 PM</option>
+                                    <option value="1:00 PM" ${session.timeSlot === '1:00 PM' ? 'selected' : ''}>1:00 PM</option>
+                                    <option value="2:00 PM" ${session.timeSlot === '2:00 PM' ? 'selected' : ''}>2:00 PM</option>
+                                    <option value="3:00 PM" ${session.timeSlot === '3:00 PM' ? 'selected' : ''}>3:00 PM</option>
+                                    <option value="4:00 PM" ${session.timeSlot === '4:00 PM' ? 'selected' : ''}>4:00 PM</option>
+                                    <option value="5:00 PM" ${session.timeSlot === '5:00 PM' ? 'selected' : ''}>5:00 PM</option>
+                                    <option value="6:00 PM" ${session.timeSlot === '6:00 PM' ? 'selected' : ''}>6:00 PM</option>
+                                    <option value="7:00 PM" ${session.timeSlot === '7:00 PM' ? 'selected' : ''}>7:00 PM</option>
+                                    <option value="8:00 PM" ${session.timeSlot === '8:00 PM' ? 'selected' : ''}>8:00 PM</option>
+                                    <option value="9:00 PM" ${session.timeSlot === '9:00 PM' ? 'selected' : ''}>9:00 PM</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div>
+                                <label style="color: #a0aec0; font-size: 12px; display: block; margin-bottom: 5px;">Duration</label>
+                                <select id="duration_${day}_${index}" style="width: 100%; padding: 8px; background: #1a1a1a; color: white; border: 1px solid #4a5568; border-radius: 4px;">
+                                    <option value="30 minutes" ${session.duration === '30 minutes' ? 'selected' : ''}>30 minutes</option>
+                                    <option value="45 minutes" ${session.duration === '45 minutes' ? 'selected' : ''}>45 minutes</option>
+                                    <option value="60 minutes" ${session.duration === '60 minutes' ? 'selected' : ''}>60 minutes</option>
+                                    <option value="75 minutes" ${session.duration === '75 minutes' ? 'selected' : ''}>75 minutes</option>
+                                    <option value="90 minutes" ${session.duration === '90 minutes' ? 'selected' : ''}>90 minutes</option>
+                                    <option value="120 minutes" ${session.duration === '120 minutes' ? 'selected' : ''}>120 minutes</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="color: #a0aec0; font-size: 12px; display: block; margin-bottom: 5px;">Notes</label>
+                                <input type="text" id="notes_${day}_${index}" value="${session.notes || ''}" placeholder="Optional notes..." style="width: 100%; padding: 8px; background: #1a1a1a; color: white; border: 1px solid #4a5568; border-radius: 4px;">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            return html;
+        }
+
+        function addSessionToDay(day) {
+            const container = document.getElementById('sessionsContainer');
+            const sessionCount = container.children.length;
+            
+            const newSessionHtml = `
+                <div style="background: #2d3748; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #4299e1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="color: #68d391; margin: 0;">Session ${sessionCount + 1}</h4>
+                        <button onclick="removeSessionFromDay('${day}', ${sessionCount})" style="background: #e53e3e; color: white; border: none; padding: 4px 8px; border-radius: 3px; font-size: 12px; cursor: pointer;">Remove</button>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                        <div>
+                            <label style="color: #a0aec0; font-size: 12px; display: block; margin-bottom: 5px;">Session Type</label>
+                            <select id="sessionType_${day}_${sessionCount}" style="width: 100%; padding: 8px; background: #1a1a1a; color: white; border: 1px solid #4a5568; border-radius: 4px;">
+                                <option value="Rest Day">Rest Day</option>
+                                <option value="Upper Body">Upper Body</option>
+                                <option value="Upper Body (Light)">Upper Body (Light)</option>
+                                <option value="Upper Body (Heavy)">Upper Body (Heavy)</option>
+                                <option value="Lower Body">Lower Body</option>
+                                <option value="Lower Body (Light)">Lower Body (Light)</option>
+                                <option value="Lower Body (Heavy)">Lower Body (Heavy)</option>
+                                <option value="Full Body">Full Body</option>
+                                <option value="Soccer (Indoor)">Soccer (Indoor)</option>
+                                <option value="Soccer (Outdoor)">Soccer (Outdoor)</option>
+                                <option value="Soccer Practice">Soccer Practice</option>
+                                <option value="Recovery & Mobility">Recovery & Mobility</option>
+                                <option value="Cardio">Cardio</option>
+                                <option value="Yoga">Yoga</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="color: #a0aec0; font-size: 12px; display: block; margin-bottom: 5px;">Time</label>
+                            <select id="timeSlot_${day}_${sessionCount}" style="width: 100%; padding: 8px; background: #1a1a1a; color: white; border: 1px solid #4a5568; border-radius: 4px;">
+                                <option value="Flexible">Flexible</option>
+                                <option value="6:00 AM">6:00 AM</option>
+                                <option value="7:00 AM">7:00 AM</option>
+                                <option value="8:00 AM">8:00 AM</option>
+                                <option value="9:00 AM">9:00 AM</option>
+                                <option value="10:00 AM">10:00 AM</option>
+                                <option value="11:00 AM">11:00 AM</option>
+                                <option value="12:00 PM">12:00 PM</option>
+                                <option value="1:00 PM">1:00 PM</option>
+                                <option value="2:00 PM">2:00 PM</option>
+                                <option value="3:00 PM">3:00 PM</option>
+                                <option value="4:00 PM">4:00 PM</option>
+                                <option value="5:00 PM">5:00 PM</option>
+                                <option value="6:00 PM">6:00 PM</option>
+                                <option value="7:00 PM">7:00 PM</option>
+                                <option value="8:00 PM">8:00 PM</option>
+                                <option value="9:00 PM">9:00 PM</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label style="color: #a0aec0; font-size: 12px; display: block; margin-bottom: 5px;">Duration</label>
+                            <select id="duration_${day}_${sessionCount}" style="width: 100%; padding: 8px; background: #1a1a1a; color: white; border: 1px solid #4a5568; border-radius: 4px;">
+                                <option value="30 minutes">30 minutes</option>
+                                <option value="45 minutes">45 minutes</option>
+                                <option value="60 minutes">60 minutes</option>
+                                <option value="75 minutes">75 minutes</option>
+                                <option value="90 minutes">90 minutes</option>
+                                <option value="120 minutes">120 minutes</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="color: #a0aec0; font-size: 12px; display: block; margin-bottom: 5px;">Notes</label>
+                            <input type="text" id="notes_${day}_${sessionCount}" placeholder="Optional notes..." style="width: 100%; padding: 8px; background: #1a1a1a; color: white; border: 1px solid #4a5568; border-radius: 4px;">
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', newSessionHtml);
+        }
+
+        function removeSessionFromDay(day, sessionIndex) {
+            const container = document.getElementById('sessionsContainer');
+            const sessions = container.children;
+            
+            if (sessions.length > 1) {
+                sessions[sessionIndex].remove();
+                // Renumber remaining sessions
+                for (let i = 0; i < sessions.length; i++) {
+                    const sessionTitle = sessions[i].querySelector('h4');
+                    if (sessionTitle) {
+                        sessionTitle.textContent = `Session ${i + 1}`;
+                    }
+                }
+            } else {
+                alert('You must have at least one session per day. Change it to "Rest Day" instead.');
+            }
+        }
+
+        function saveDaySchedule(day) {
+            const container = document.getElementById('sessionsContainer');
+            const sessions = [];
+            
+            for (let i = 0; i < container.children.length; i++) {
+                const sessionDiv = container.children[i];
+                const sessionType = sessionDiv.querySelector(`#sessionType_${day}_${i}`).value;
+                const timeSlot = sessionDiv.querySelector(`#timeSlot_${day}_${i}`).value;
+                const duration = sessionDiv.querySelector(`#duration_${day}_${i}`).value;
+                const notes = sessionDiv.querySelector(`#notes_${day}_${i}`).value;
+                
+                sessions.push({
+                    sessionType,
+                    timeSlot,
+                    duration,
+                    notes
+                });
+            }
+            
+            // Update the schedule
+            window.lastGeneratedSchedule.schedule[day] = {
+                sessions: sessions,
+                sessionType: sessions[0].sessionType, // Keep for backward compatibility
+                timeSlot: sessions[0].timeSlot,
+                duration: sessions[0].duration,
+                notes: sessions[0].notes
+            };
+            
+            // Close modal and refresh display
+            closeEditModal();
+            displayGeneratedSchedule(window.lastGeneratedSchedule);
+            
+            alert(`✅ ${day.charAt(0).toUpperCase() + day.slice(1)} updated with ${sessions.length} session(s)!`);
+        }
+
+        function closeEditModal() {
+            const modal = document.getElementById('editDayModal');
+            if (modal) {
+                modal.remove();
+            }
         }
 
         function saveWorkoutSchedule() {
@@ -1978,7 +2865,8 @@
                 recoveryFrequency: document.getElementById('recoveryFrequency').value,
                 cardioActivities: getSelectedCardioActivities(),
                 cardioFrequency: document.getElementById('cardioFrequency').value,
-                preferredWorkoutDays: getPreferredWorkoutDays()
+                preferredWorkoutDays: getPreferredWorkoutDays(),
+                workoutTime: document.querySelector('input[name="workoutTime"]:checked')?.value || 'flexible'
             };
 
             localStorage.setItem('ignitefitness_users', JSON.stringify(users));
@@ -2091,7 +2979,7 @@ You can now generate a personalized plan.`);
                 document.getElementById('enableGarmin').checked ? 'block' : 'none';
         }
 
-        function saveDeviceSettings() {
+        async function saveDeviceSettings() {
             if (!currentUser || !isLoggedIn) return;
 
             const user = users[currentUser];
@@ -2132,7 +3020,15 @@ You can now generate a personalized plan.`);
             }
 
             localStorage.setItem('ignitefitness_users', JSON.stringify(users));
-            alert('Device settings saved!');
+            
+            // Also save to database
+            try {
+                await saveUserData();
+                alert('✅ Device settings saved to database!');
+            } catch (error) {
+                console.log('Database save failed, but local save succeeded:', error);
+                alert('✅ Device settings saved locally!');
+            }
             
             // Update sync buttons
             updateWearableSyncButtons();
@@ -2252,6 +3148,166 @@ You can now generate a personalized plan.`);
                 return;
             }
 
+            // Check if user has a detailed schedule from smart generation
+            if (user.workoutSchedule.detailedSchedule) {
+                // Use the detailed schedule for plan generation
+                generatePlanFromDetailedSchedule(user);
+            } else {
+                // Show schedule confirmation before generating plan
+                showScheduleConfirmation(user);
+            }
+        }
+
+        function generatePlanFromDetailedSchedule(user) {
+            // Convert detailed schedule to the format expected by generateDetailedWorkoutPlan
+            const detailedSchedule = user.workoutSchedule.detailedSchedule;
+            
+            // Create a mock schedule object that generateDetailedWorkoutPlan expects
+            const mockSchedule = {
+                indoorGameDays: user.workoutSchedule.indoorGameDays || [],
+                outdoorGameDays: user.workoutSchedule.outdoorGameDays || [],
+                practiceDays: user.workoutSchedule.practiceDays || [],
+                liftingFrequency: user.workoutSchedule.liftingFrequency || '3'
+            };
+
+            // Generate the workout plan using the detailed schedule
+            const plan = generateDetailedWorkoutPlanFromSchedule(user, detailedSchedule);
+            user.workoutPlan = plan;
+            
+            localStorage.setItem('ignitefitness_users', JSON.stringify(users));
+            displayDetailedWorkoutPlan(plan);
+            
+            alert('✅ 4-week workout plan generated from your accepted schedule!');
+        }
+
+        function generateDetailedWorkoutPlanFromSchedule(user, detailedSchedule) {
+            const goals = user.goals;
+            const baseline = user.personalData?.baselineStrength || {};
+            
+            // Create 4-week plan based on the detailed schedule
+            const plan = {
+                title: 'Personalized 4-Week Workout Plan',
+                description: 'Generated from your accepted schedule',
+                notes: ['Based on your soccer schedule and lifting preferences'],
+                weeks: []
+            };
+
+            // Generate 4 weeks
+            for (let week = 1; week <= 4; week++) {
+                const weekPlan = {
+                    week: week,
+                    days: []
+                };
+
+                const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+                days.forEach((day, index) => {
+                    const daySchedule = detailedSchedule[day];
+                    const sessions = daySchedule?.sessions || [{
+                        sessionType: daySchedule?.sessionType || 'Rest Day',
+                        timeSlot: daySchedule?.timeSlot || 'Flexible',
+                        duration: daySchedule?.duration || '60 minutes',
+                        notes: daySchedule?.notes || ''
+                    }];
+
+                    const dayPlan = {
+                        day: day,
+                        dayNumber: index + 1,
+                        sessions: sessions.map(session => ({
+                            sessionType: session.sessionType,
+                            timeSlot: session.timeSlot,
+                            duration: session.duration,
+                            exercises: [],
+                            notes: session.notes
+                        })),
+                        session: sessions[0].sessionType, // Keep for backward compatibility
+                        exercises: [],
+                        notes: sessions[0].notes
+                    };
+
+                    // Generate exercises for workout sessions
+                    dayPlan.sessions.forEach(session => {
+                        if (session.sessionType && !session.sessionType.includes('Rest') && !session.sessionType.includes('Soccer')) {
+                            session.exercises = getGoalOrientedExercises(session.sessionType, goals, baseline, week);
+                        }
+                    });
+
+                    // For backward compatibility, use first session's exercises
+                    if (dayPlan.sessions.length > 0 && dayPlan.sessions[0].exercises) {
+                        dayPlan.exercises = dayPlan.sessions[0].exercises;
+                    }
+
+                    weekPlan.days.push(dayPlan);
+                });
+
+                plan.weeks.push(weekPlan);
+            }
+
+            return plan;
+        }
+
+        function showScheduleConfirmation(user) {
+            const schedule = user.workoutSchedule;
+            const goals = user.goals;
+            
+            let scheduleHtml = `
+                <div style="background: #1a1a1a; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                    <h3 style="color: #68d391; margin-top: 0;">📅 Confirm Your Workout Schedule</h3>
+                    <p style="color: #a0aec0; margin-bottom: 20px;">Please review your schedule before generating your 4-week workout plan:</p>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+            `;
+            
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            days.forEach(day => {
+                const daySchedule = schedule[day.toLowerCase()];
+                const sessionType = daySchedule?.sessionType || 'Rest Day';
+                const timeSlot = daySchedule?.timeSlot || 'Not set';
+                const duration = daySchedule?.duration || 'Not set';
+                
+                scheduleHtml += `
+                    <div style="background: #2d3748; padding: 15px; border-radius: 8px; border-left: 4px solid ${getSessionColor(sessionType)};">
+                        <h4 style="color: #68d391; margin: 0 0 8px 0;">${day}</h4>
+                        <p style="color: #fbd38d; margin: 4px 0; font-weight: 600;">${sessionType}</p>
+                        <p style="color: #a0aec0; margin: 2px 0; font-size: 12px;">Time: ${timeSlot}</p>
+                        <p style="color: #a0aec0; margin: 2px 0; font-size: 12px;">Duration: ${duration}</p>
+                    </div>
+                `;
+            });
+            
+            scheduleHtml += `
+                    </div>
+                    
+                    <div style="background: #2d3748; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="color: #fbd38d; margin: 0 0 10px 0;">🎯 Your Goals</h4>
+                        <p style="color: #a0aec0; margin: 5px 0;"><strong>Primary:</strong> ${goals.primary}</p>
+                        <p style="color: #a0aec0; margin: 5px 0;"><strong>Secondary:</strong> ${goals.secondary || 'Not set'}</p>
+                        <p style="color: #a0aec0; margin: 5px 0;"><strong>Timeline:</strong> ${goals.timeline || 'Not set'}</p>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button onclick="confirmScheduleAndGenerate()" class="btn" style="background: #68d391; color: #1a1a1a; font-weight: 600;">
+                            ✅ Confirm & Generate Plan
+                        </button>
+                        <button onclick="editScheduleBeforeGenerate()" class="btn" style="background: #4299e1; color: white;">
+                            ✏️ Edit Schedule
+                        </button>
+                        <button onclick="cancelPlanGeneration()" class="btn" style="background: #718096; color: white;">
+                            ❌ Cancel
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Display the confirmation in the workout plan section
+            const planDiv = document.getElementById('workoutPlanDisplay');
+            planDiv.innerHTML = scheduleHtml;
+        }
+
+        function confirmScheduleAndGenerate() {
+            if (!currentUser || !isLoggedIn) return;
+            
+            const user = users[currentUser];
+            
             // Generate a detailed 4-week workout plan with specific exercises
             const plan = generateDetailedWorkoutPlan(user);
             user.workoutPlan = plan;
@@ -2259,7 +3315,38 @@ You can now generate a personalized plan.`);
             localStorage.setItem('ignitefitness_users', JSON.stringify(users));
             displayDetailedWorkoutPlan(plan);
             
-            alert('Detailed 4-week workout plan generated successfully!');
+            alert('✅ 4-week workout plan generated successfully based on your confirmed schedule!');
+        }
+
+        function editScheduleBeforeGenerate() {
+            // Switch to the schedule tab so user can edit
+            const tabs = document.querySelectorAll('.tab-content');
+            if (tabs.length > 0) {
+                tabs.forEach(tab => tab.classList.add('hidden'));
+            }
+            
+            const scheduleTab = document.getElementById('schedule');
+            if (scheduleTab) {
+                scheduleTab.classList.remove('hidden');
+                // Also update the tab buttons
+                const tabButtons = document.querySelectorAll('.tab-button');
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                const scheduleButton = document.querySelector('.tab-button[onclick*="schedule"]');
+                if (scheduleButton) {
+                    scheduleButton.classList.add('active');
+                }
+                // Scroll to schedule section
+                scheduleTab.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                // Fallback: just show an alert
+                alert('Please go to the Schedule tab to edit your workout schedule');
+            }
+        }
+
+        function cancelPlanGeneration() {
+            // Reset to default message
+            const planDiv = document.getElementById('workoutPlanDisplay');
+            planDiv.innerHTML = '<p style="color: #a0aec0;">Complete your schedule planning to generate a personalized 4-week workout plan.</p>';
         }
 
         function generateDetailedWorkoutPlan(user) {
@@ -2610,7 +3697,7 @@ You can now generate a personalized plan.`);
             // Increase sets and focus on progressive overload
             return exercises.map(exercise => ({
                 ...exercise,
-                sets: exercise.sets.includes('3') ? '4' : exercise.sets,
+                sets: exercise.sets && exercise.sets.toString().includes('3') ? '4' : exercise.sets,
                 notes: (exercise.notes || '') + ' Focus on progressive overload'
             }));
         }
@@ -2620,7 +3707,7 @@ You can now generate a personalized plan.`);
             if (sessionType.includes('Upper Body') && !sessionType.includes('Light')) {
                 return exercises.map(exercise => ({
                     ...exercise,
-                    sets: exercise.sets.includes('3') ? '4' : exercise.sets,
+                    sets: exercise.sets && exercise.sets.toString().includes('3') ? '4' : exercise.sets,
                     notes: (exercise.notes || '') + ' | Medium-Hard intensity - challenge yourself'
                 }));
             }
@@ -2935,7 +4022,7 @@ You can now generate a personalized plan.`);
             // Add customization controls
             html += `<div style="margin: 15px 0; padding: 15px; background: #2d3748; border-radius: 8px; border-left: 4px solid #fbd38d;">`;
             html += `<h5 style="color: #fbd38d; margin-top: 0;">🎛️ Customize Your Plan</h5>`;
-            html += `<p style="color: #a0aec0; margin: 5px 0;">Click on any session type to change it. Each session includes warm-ups, main exercises, and cool-downs tailored to your goals.</p>`;
+            html += `<p style="color: #a0aec0; margin: 5px 0;">Click on any session type to change it, or add additional sessions to any day. Each session includes warm-ups, main exercises, and cool-downs tailored to your goals.</p>`;
             html += `<button class="btn" onclick="regeneratePlanWithCurrentSettings()" style="margin-top: 10px;">🔄 Regenerate Plan</button>`;
             html += `</div>`;
             
@@ -2956,6 +4043,7 @@ You can now generate a personalized plan.`);
                             html += `<select id="${dayId}_session" onchange="updateSessionType('${dayId}', this.value, ${weekIndex}, ${dayIndex})" style="background: ${getSessionColor(day.session)}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; border: none;">`;
                             html += getSessionTypeOptions(day.session);
                             html += `</select>`;
+                            html += `<button onclick="addAdditionalSession('${dayId}', ${weekIndex}, ${dayIndex})" style="background: #4299e1; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">+ Add Session</button>`;
                             html += `</div>`;
                             html += `</div>`;
                             
@@ -3029,6 +4117,85 @@ You can now generate a personalized plan.`);
             displayDetailedWorkoutPlan(user.workoutPlan);
         }
 
+        function addAdditionalSession(dayId, weekIndex, dayIndex) {
+            if (!currentUser || !isLoggedIn) return;
+            
+            const user = users[currentUser];
+            if (!user.workoutPlan || !user.workoutPlan.weeks) return;
+            
+            // Show session type selection dialog
+            const sessionTypes = [
+                'Upper Body (Light)',
+                'Upper Body (Heavy)',
+                'Lower Body (Light)',
+                'Lower Body (Heavy)',
+                'Full Body',
+                'Cardio',
+                'Soccer Training',
+                'Recovery/Stretching'
+            ];
+            
+            const sessionType = prompt(`Add additional session to ${user.workoutPlan.weeks[weekIndex].days[dayIndex].day}:\n\nAvailable types:\n${sessionTypes.join('\n')}\n\nEnter session type:`, 'Upper Body (Heavy)');
+            
+            if (!sessionType || !sessionTypes.includes(sessionType)) {
+                return;
+            }
+            
+            const day = user.workoutPlan.weeks[weekIndex].days[dayIndex];
+            const goals = user.goals;
+            const baseline = user.personalData?.baselineStrength || {};
+            const weekNum = weekIndex + 1;
+            
+            // Initialize additionalSessions array if it doesn't exist
+            if (!day.additionalSessions) {
+                day.additionalSessions = [];
+            }
+            
+            // Add the new session
+            const newSession = {
+                session: sessionType,
+                exercises: getGoalOrientedExercises(sessionType, goals, baseline, weekNum),
+                notes: `Additional ${sessionType} session added to ${day.day}`
+            };
+            
+            day.additionalSessions.push(newSession);
+            
+            // Save the updated plan
+            localStorage.setItem('ignitefitness_users', JSON.stringify(users));
+            
+            // Refresh the display
+            displayDetailedWorkoutPlan(user.workoutPlan);
+            
+            alert(`Added ${sessionType} session to ${day.day}!`);
+        }
+
+        function removeAdditionalSession(dayId, sessionIndex) {
+            if (!currentUser || !isLoggedIn) return;
+            
+            const user = users[currentUser];
+            if (!user.workoutPlan || !user.workoutPlan.weeks) return;
+            
+            // Parse dayId to get week and day indices
+            const parts = dayId.split('_');
+            const weekIndex = parseInt(parts[0].replace('week', ''));
+            const dayIndex = parseInt(parts[1].replace('day', ''));
+            
+            const day = user.workoutPlan.weeks[weekIndex].days[dayIndex];
+            
+            if (day.additionalSessions && day.additionalSessions.length > sessionIndex) {
+                const removedSession = day.additionalSessions[sessionIndex];
+                day.additionalSessions.splice(sessionIndex, 1);
+                
+                // Save the updated plan
+                localStorage.setItem('ignitefitness_users', JSON.stringify(users));
+                
+                // Refresh the display
+                displayDetailedWorkoutPlan(user.workoutPlan);
+                
+                alert(`Removed ${removedSession.session} from ${day.day}`);
+            }
+        }
+
         function displaySessionDetails(day, dayId) {
             let html = '';
             
@@ -3077,6 +4244,45 @@ You can now generate a personalized plan.`);
             if (day.notes) {
                 html += `<div style="margin-top: 10px; padding: 8px; background: #2d3748; border-radius: 4px;">`;
                 html += `<small style="color: #a0aec0;">${day.notes.replace(/\n/g, '<br>')}</small>`;
+                html += `</div>`;
+            }
+
+            // Additional sessions
+            if (day.additionalSessions && day.additionalSessions.length > 0) {
+                html += `<div style="margin-top: 15px; padding: 10px; background: #1a1a1a; border-radius: 5px; border-left: 3px solid #4299e1;">`;
+                html += `<h6 style="color: #4299e1; margin: 0 0 10px 0;">➕ Additional Sessions</h6>`;
+                
+                day.additionalSessions.forEach((additionalSession, index) => {
+                    html += `<div style="margin: 8px 0; padding: 8px; background: #2d3748; border-radius: 4px;">`;
+                    html += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">`;
+                    html += `<h7 style="color: #68d391; margin: 0;">${additionalSession.session}</h7>`;
+                    html += `<button onclick="removeAdditionalSession('${dayId}', ${index})" style="background: #e53e3e; color: white; border: none; padding: 2px 6px; border-radius: 3px; font-size: 10px; cursor: pointer;">Remove</button>`;
+                    html += `</div>`;
+                    
+                    if (additionalSession.exercises && additionalSession.exercises.length > 0) {
+                        additionalSession.exercises.forEach(exercise => {
+                            html += `<div style="display: flex; justify-content: space-between; align-items: center; margin: 3px 0; padding: 6px; background: #1a1a1a; border-radius: 3px;">`;
+                            html += `<div>`;
+                            html += `<strong style="color: #68d391; font-size: 12px;">${exercise.name}</strong><br>`;
+                            html += `<small style="color: #a0aec0; font-size: 10px;">${exercise.sets} sets × ${exercise.reps} reps</small>`;
+                            if (exercise.notes) {
+                                html += `<br><small style="color: #fbd38d; font-style: italic; font-size: 10px;">${exercise.notes}</small>`;
+                            }
+                            html += `</div>`;
+                            html += `<div style="text-align: right;">`;
+                            html += `<strong style="color: #68d391; font-size: 12px;">${exercise.weight}</strong>`;
+                            html += `</div>`;
+                            html += `</div>`;
+                        });
+                    }
+                    
+                    if (additionalSession.notes) {
+                        html += `<small style="color: #a0aec0; font-size: 10px; font-style: italic;">${additionalSession.notes}</small>`;
+                    }
+                    
+                    html += `</div>`;
+                });
+                
                 html += `</div>`;
             }
             
@@ -3777,6 +4983,13 @@ You can now generate a personalized plan.`);
                 hideLoginForm();
                 loadUserData();
                 
+                // Load personal data into form fields after a short delay to ensure DOM is ready
+                setTimeout(() => {
+                    loadPersonalDataToForm();
+                    loadGoalsToForm();
+                    loadWearableSettingsToForm();
+                }, 100);
+                
                 // Initialize displays only if logged in
                 updateCurrentSessionDisplay();
                 updateHistory();
@@ -4269,7 +5482,10 @@ You can now generate a personalized plan.`);
         function getWorkouts() {
             if (!currentUser || !isLoggedIn) return [];
             const user = users[currentUser];
-            return user ? (user.data.workouts || []) : [];
+            if (!user) return [];
+            
+            // Return sessions that are workouts
+            return user.data?.sessions?.filter(s => s.type === 'workout') || [];
         }
 
         function updateHistory() {
@@ -4780,20 +5996,29 @@ You can now generate a personalized plan.`);
         }
 
         async function refreshStravaToken() {
-            if (!STRAVA_TOKENS.refreshToken || STRAVA_TOKENS.refreshToken === 'your_refresh_token_here') {
+            if (!currentUser || !isLoggedIn) {
+                throw new Error('User not logged in');
+            }
+            
+            const user = users[currentUser];
+            if (!user.wearableSettings || !user.wearableSettings.strava) {
+                throw new Error('No Strava settings found for user');
+            }
+            
+            const stravaSettings = user.wearableSettings.strava;
+            if (!stravaSettings.refreshToken || stravaSettings.refreshToken === 'your_refresh_token_here') {
                 throw new Error('No refresh token available');
             }
             
-            // Note: You'll need to add your Strava app's client_id and client_secret to config.js
             const response = await fetch('https://www.strava.com/oauth/token', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
                 body: new URLSearchParams({
-                    'client_id': STRAVA_TOKENS.clientId || 'your_client_id',
-                    'client_secret': STRAVA_TOKENS.clientSecret || 'your_client_secret',
-                    'refresh_token': STRAVA_TOKENS.refreshToken,
+                    'client_id': stravaSettings.clientId || STRAVA_TOKENS.clientId,
+                    'client_secret': stravaSettings.clientSecret || STRAVA_TOKENS.clientSecret,
+                    'refresh_token': stravaSettings.refreshToken,
                     'grant_type': 'refresh_token'
                 })
             });
@@ -4803,24 +6028,44 @@ You can now generate a personalized plan.`);
             }
             
             const tokenData = await response.json();
+            
+            // Update user's tokens in memory and localStorage
+            user.wearableSettings.strava.accessToken = tokenData.access_token;
+            user.wearableSettings.strava.refreshToken = tokenData.refresh_token;
+            
+            // Save updated user data
+            localStorage.setItem('ignitefitness_users', JSON.stringify(users));
+            
+            // Also try to save to centralized storage
+            try {
+                await saveUserData();
+            } catch (error) {
+                console.log('Could not save to centralized storage, using local storage only');
+            }
+            
             return tokenData.access_token;
         }
 
         async function fetchStravaData() {
+            if (!currentUser || !isLoggedIn) {
+                alert('Please log in to sync Strava data');
+                return;
+            }
+            
+            const user = users[currentUser];
+            if (!user.wearableSettings || !user.wearableSettings.strava) {
+                alert('Please configure your Strava settings first');
+                return;
+            }
+            
             const statusDiv = document.getElementById('stravaStatus');
             statusDiv.innerHTML = '🔄 Fetching Strava data...';
             
             try {
-                // Check if config is loaded
-                if (typeof STRAVA_TOKENS === 'undefined') {
-                    statusDiv.innerHTML = '❌ Config file not loaded. Make sure config.js is in the same folder.';
-                    return;
-                }
-
-                // Get access token from config
-                let accessToken = STRAVA_TOKENS.accessToken;
+                // Get access token from user settings
+                let accessToken = user.wearableSettings.strava.accessToken;
                 if (!accessToken || accessToken === 'your_access_token_here') {
-                    statusDiv.innerHTML = '❌ Please update your access token in config.js';
+                    statusDiv.innerHTML = '❌ Please configure your Strava access token in settings';
                     return;
                 }
 

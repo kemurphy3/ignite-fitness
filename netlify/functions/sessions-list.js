@@ -52,13 +52,8 @@ exports.handler = async (event) => {
             return badReq('Missing required parameter: userId');
         }
 
-        let query = sql`
-            SELECT s.*, e.name as exercise_name, e.weight, e.reps, e.sets, e.rpe, e.notes as exercise_notes
-            FROM sessions s
-            LEFT JOIN exercises e ON s.id = e.session_id
-            WHERE s.user_id = (SELECT id FROM users WHERE external_id = ${userId})
-        `;
-
+        let query;
+        
         if (type) {
             query = sql`
                 SELECT s.*, e.name as exercise_name, e.weight, e.reps, e.sets, e.rpe, e.notes as exercise_notes
@@ -66,14 +61,19 @@ exports.handler = async (event) => {
                 LEFT JOIN exercises e ON s.id = e.session_id
                 WHERE s.user_id = (SELECT id FROM users WHERE external_id = ${userId})
                 AND s.type = ${type}
+                ORDER BY s.start_at DESC
+                LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
+            `;
+        } else {
+            query = sql`
+                SELECT s.*, e.name as exercise_name, e.weight, e.reps, e.sets, e.rpe, e.notes as exercise_notes
+                FROM sessions s
+                LEFT JOIN exercises e ON s.id = e.session_id
+                WHERE s.user_id = (SELECT id FROM users WHERE external_id = ${userId})
+                ORDER BY s.start_at DESC
+                LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
             `;
         }
-
-        query = sql`
-            ${query}
-            ORDER BY s.start_at DESC
-            LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
-        `;
 
         const sessions = await query;
 
