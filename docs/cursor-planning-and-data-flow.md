@@ -700,6 +700,405 @@ const syncManager = new SyncManager();
 setInterval(() => syncManager.syncAll(), syncManager.syncInterval);
 ```
 
+## Task 4: Workout Deduplication & Data Enrichment
+
+Prevent duplicate workouts when syncing external services. Instead, enrich existing workouts with additional data:
+
+```javascript
+// Add Workout Reconciliation System
+class WorkoutReconciliation {
+  
+  // When Strava/Garmin/Apple syncs, check for matches
+  async reconcileExternalWorkout(externalWorkout) {
+    const matchCriteria = {
+      date: externalWorkout.date,
+      timeWindow: 2 * 60 * 60 * 1000, // 2 hour window
+      type: this.normalizeWorkoutType(externalWorkout.type)
+    };
+    
+    const existingWorkout = this.findPotentialMatch(matchCriteria);
+    
+    if (existingWorkout) {
+      // ENRICH existing workout, don't duplicate
+      return this.enrichWorkoutData(existingWorkout, externalWorkout);
+    } else {
+      // No match found - offer to import
+      return this.offerWorkoutImport(externalWorkout);
+    }
+  }
+  
+  findPotentialMatch(criteria) {
+    const workouts = getUserWorkouts(criteria.date);
+    
+    return workouts.find(workout => {
+      const timeDiff = Math.abs(workout.timestamp - criteria.timestamp);
+      const isWithinWindow = timeDiff < criteria.timeWindow;
+      const isSameType = this.matchesType(workout.type, criteria.type);
+      
+      return isWithinWindow && isSameType;
+    });
+  }
+  
+  enrichWorkoutData(existingWorkout, externalData) {
+    // Add external data WITHOUT overwriting manual entries
+    const enriched = {
+      ...existingWorkout,
+      dataSources: {
+        manual: existingWorkout.dataSources?.manual || {},
+        [externalData.source]: externalData
+      },
+      enrichment: {
+        source: externalData.source,
+        syncedAt: Date.now(),
+        addedData: {}
+      }
+    };
+    
+    // Priority: Manual data always wins
+    // Only add data that wasn't manually entered
+    if (!existingWorkout.heartRate && externalData.heartRate) {
+      enriched.enrichment.addedData.heartRate = {
+        avg: externalData.avgHeartRate,
+        max: externalData.maxHeartRate,
+        source: externalData.source
+      };
+      enriched.heartRate = externalData.heartRate;
+    }
+    
+    if (!existingWorkout.calories && externalData.calories) {
+      enriched.enrichment.addedData.calories = {
+        value: externalData.calories,
+        source: externalData.source
+      };
+      enriched.calories = externalData.calories;
+    }
+    
+    // Validate RPE if we have heart rate data
+    if (externalData.avgHeartRate && existingWorkout.rpe) {
+      enriched.enrichment.rpeValidation = this.validateRPE(
+        existingWorkout.rpe, 
+        externalData.avgHeartRate,
+        UserDataStore.coreStats.age
+      );
+    }
+    
+    // Show enrichment notification
+    this.notifyEnrichment(enriched);
+    
+    // Save enriched workout
+    this.saveEnrichedWorkout(enriched);
+    
+    return enriched;
+  }
+  
+  validateRPE(userRPE, avgHeartRate, userAge) {
+    // Check if RPE aligns with heart rate data
+    const maxHR = 220 - userAge;
+    const hrPercentage = (avgHeartRate / maxHR) * 100;
+    
+    // HR zones to RPE mapping
+    const hrToRPE = {
+      50: 5,  // 50% max HR ≈ RPE 5
+      60: 6,  // 60% max HR ≈ RPE 6  
+      70: 7,  // 70% max HR ≈ RPE 7
+      80: 8,  // 80% max HR ≈ RPE 8
+      90: 9,  // 90% max HR ≈ RPE 9
+      95: 10  // 95% max HR ≈ RPE 10
+    };
+    
+    const calculatedRPE = Math.round(hrPercentage / 10);
+    const difference = Math.abs(userRPE - calculatedRPE);
+    
+    if (difference > 2) {
+      return {
+        userRPE,
+        hrBasedRPE: calculatedRPE,
+        match: false,
+        message: 'RPE significantly differs from HR - consider fatigue, stress, or dehydration'
+      };
+    }
+    
+    return {
+      validated: true,
+      userRPE,
+      hrBasedRPE: calculatedRPE,
+      match: true,
+      message: 'RPE aligns with heart rate data'
+    };
+  }
+  
+  offerWorkoutImport(externalWorkout) {
+    // Found workout in Strava/Garmin but not in our app
+    const importModal = document.createElement('div');
+    importModal.className = 'import-modal';
+    importModal.innerHTML = `
+      <div class="modal-overlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 999;">
+        <div class="modal-content" style="position: relative; background: #2d3748; padding: 25px; border-radius: 12px; max-width: 500px; margin: 100px auto;">
+          <h3 style="color: #68d391; margin-bottom: 15px;">
+            Import ${externalWorkout.source} Workout?
+          </h3>
+          
+          <div style="background: #1a1a1a; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <p style="color: #e2e8f0; margin-bottom: 10px;">
+              <strong>${externalWorkout.type}</strong> on ${formatDate(externalWorkout.date)}
+            </p>
+            <div style="color: #a0aec0; font-size: 14px;">
+              <p>⏱️ Time: ${formatTime(externalWorkout.startTime)}</p>
+              <p>⏳ Duration: ${externalWorkout.duration} min</p>
+              ${externalWorkout.calories ? `<p>🔥 Calories: ${externalWorkout.calories}</p>` : ''}
+              ${externalWorkout.distance ? `<p>📏 Distance: ${externalWorkout.distance}</p>` : ''}
+              ${externalWorkout.avgHeartRate ? `<p>❤️ Avg HR: ${externalWorkout.avgHeartRate} bpm</p>` : ''}
+            </div>
+          </div>
+          
+          <div style="display: flex; gap: 10px;">
+            <button onclick="importAsWorkout('${externalWorkout.id}')" class="btn" style="flex: 1;">
+              📥 Import as Workout
+            </button>
+            <button onclick="importAsRecovery('${externalWorkout.id}')" class="btn btn-secondary" style="flex: 1;">
+              🧘 Import as Recovery
+            </button>
+            <button onclick="ignoreImport('${externalWorkout.id}')" class="btn btn-secondary" style="flex: 1;">
+              ❌ Ignore
+            </button>
+          </div>
+          
+          <div style="margin-top: 10px;">
+            <label style="color: #a0aec0; font-size: 12px;">
+              <input type="checkbox" id="rememberChoice"> Remember this choice for similar workouts
+            </label>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(importModal);
+  }
+  
+  notifyEnrichment(enrichedWorkout) {
+    const notification = document.createElement('div');
+    notification.className = 'enrichment-notification';
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      z-index: 1000;
+      animation: slideInRight 0.3s ease;
+      max-width: 350px;
+    `;
+    
+    const addedFields = Object.keys(enrichedWorkout.enrichment.addedData);
+    notification.innerHTML = `
+      <div style="display: flex; align-items: start; gap: 10px;">
+        <span style="font-size: 20px;">✨</span>
+        <div style="flex: 1;">
+          <strong>Workout Enhanced!</strong><br>
+          <small style="opacity: 0.9;">
+            Added ${addedFields.join(', ')} from ${enrichedWorkout.enrichment.source}
+          </small>
+          ${enrichedWorkout.enrichment.rpeValidation ? `
+            <div style="margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px;">
+              <small>
+                ${enrichedWorkout.enrichment.rpeValidation.match ? '✅' : '⚠️'}
+                RPE ${enrichedWorkout.enrichment.rpeValidation.userRPE} 
+                ${enrichedWorkout.enrichment.rpeValidation.match ? 'confirmed' : 'differs'} 
+                from HR data (RPE ${enrichedWorkout.enrichment.rpeValidation.hrBasedRPE})
+              </small>
+            </div>
+          ` : ''}
+        </div>
+        <button onclick="this.parentElement.parentElement.remove()" style="background: transparent; border: none; color: white; cursor: pointer; font-size: 20px;">
+          ×
+        </button>
+      </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => notification.remove(), 5000);
+  }
+}
+
+// Workout Type Matching Logic
+const workoutTypeMap = {
+  // External service type -> Our workout types
+  'Weight Training': ['Upper Body', 'Lower Body', 'Full Body', 'Upper A', 'Upper B', 'Lower A', 'Lower B'],
+  'Strength Training': ['Upper Body', 'Lower Body', 'Full Body', 'Upper A', 'Upper B', 'Lower A', 'Lower B'],
+  'Strength': ['Upper Body', 'Lower Body', 'Full Body'],
+  'Run': ['Conditioning', 'Recovery Run', 'Sprint Work'],
+  'Running': ['Conditioning', 'Recovery Run', 'Sprint Work'],
+  'Soccer': ['Soccer (Outdoor)', 'Soccer (Indoor)'],
+  'Football': ['Soccer (Outdoor)', 'Soccer (Indoor)'],
+  'Yoga': ['Recovery', 'Mobility', 'Recovery Day'],
+  'Walk': ['Active Recovery', 'Recovery'],
+  'Walking': ['Active Recovery', 'Recovery'],
+  'Cycling': ['Conditioning', 'Active Recovery'],
+  'Bike': ['Conditioning', 'Active Recovery']
+};
+
+function matchesWorkoutType(appType, externalType) {
+  // Normalize strings for comparison
+  const normalizedApp = appType.toLowerCase().trim();
+  const normalizedExternal = externalType.toLowerCase().trim();
+  
+  // Check exact match first
+  if (normalizedApp === normalizedExternal) {
+    return true;
+  }
+  
+  // Check if external type maps to app type
+  for (const [external, appTypes] of Object.entries(workoutTypeMap)) {
+    if (normalizedExternal.includes(external.toLowerCase())) {
+      return appTypes.some(type => 
+        normalizedApp.includes(type.toLowerCase())
+      );
+    }
+  }
+  
+  // Check partial matches for flexibility
+  const keywords = ['upper', 'lower', 'soccer', 'recovery', 'conditioning'];
+  for (const keyword of keywords) {
+    if (normalizedApp.includes(keyword) && normalizedExternal.includes(keyword)) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+// Visual Indication of Data Sources in Workout Display
+function displayEnrichedWorkout(workout) {
+  const dataSources = Object.keys(workout.dataSources || { manual: true });
+  
+  return `
+    <div class="workout-card" style="background: #2d3748; padding: 20px; border-radius: 10px; margin-bottom: 15px;">
+      <div class="workout-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h3 style="color: #e2e8f0; margin: 0;">${workout.type}</h3>
+        <div class="data-sources" style="display: flex; gap: 8px;">
+          ${dataSources.map(source => `
+            <span class="source-badge ${source}" style="
+              background: ${getSourceColor(source)};
+              color: white;
+              padding: 3px 8px;
+              border-radius: 12px;
+              font-size: 11px;
+              font-weight: 600;
+            ">
+              ${getSourceIcon(source)} ${source}
+            </span>
+          `).join('')}
+        </div>
+      </div>
+      
+      <div class="workout-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px;">
+        ${workout.duration ? `
+          <div class="stat">
+            <label style="color: #a0aec0; font-size: 12px;">Duration</label>
+            <div style="color: #e2e8f0; font-size: 18px; font-weight: 600;">
+              ${workout.duration} min
+              ${getDataSourceIndicator(workout, 'duration')}
+            </div>
+          </div>
+        ` : ''}
+        
+        ${workout.calories ? `
+          <div class="stat">
+            <label style="color: #a0aec0; font-size: 12px;">Calories</label>
+            <div style="color: #e2e8f0; font-size: 18px; font-weight: 600;">
+              ${workout.calories}
+              ${getDataSourceIndicator(workout, 'calories')}
+            </div>
+          </div>
+        ` : ''}
+        
+        ${workout.heartRate?.avg ? `
+          <div class="stat">
+            <label style="color: #a0aec0; font-size: 12px;">Avg HR</label>
+            <div style="color: #e2e8f0; font-size: 18px; font-weight: 600;">
+              ${workout.heartRate.avg} bpm
+              ${getDataSourceIndicator(workout, 'heartRate')}
+            </div>
+          </div>
+        ` : ''}
+        
+        ${workout.rpe ? `
+          <div class="stat">
+            <label style="color: #a0aec0; font-size: 12px;">RPE</label>
+            <div style="color: #e2e8f0; font-size: 18px; font-weight: 600;">
+              ${workout.rpe}/10
+              ${getDataSourceIndicator(workout, 'rpe')}
+              ${workout.enrichment?.rpeValidation ? `
+                <span style="
+                  color: ${workout.enrichment.rpeValidation.match ? '#68d391' : '#fbbf24'};
+                  font-size: 12px;
+                  margin-left: 5px;
+                ">
+                  ${workout.enrichment.rpeValidation.match ? '✓' : '⚠'} HR verified
+                </span>
+              ` : ''}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function getSourceColor(source) {
+  const colors = {
+    manual: '#10b981',    // Green
+    strava: '#fc4c02',    // Strava orange
+    garmin: '#007cc3',    // Garmin blue
+    apple: '#000000',     // Apple black
+    whoop: '#01b3e3',     // Whoop cyan
+    calculated: '#8b5cf6' // Purple
+  };
+  return colors[source.toLowerCase()] || '#6b7280';
+}
+
+function getSourceIcon(source) {
+  const icons = {
+    manual: '📝',
+    strava: '🚴',
+    garmin: '⌚',
+    apple: '🍎',
+    whoop: '💤',
+    calculated: '🧮'
+  };
+  return icons[source.toLowerCase()] || '📊';
+}
+
+function getDataSourceIndicator(workout, field) {
+  // Find which source provided this data
+  if (workout.enrichment?.addedData[field]) {
+    const source = workout.enrichment.addedData[field].source;
+    return `<span style="margin-left: 5px; opacity: 0.7;">${getSourceIcon(source)}</span>`;
+  }
+  return '<span style="margin-left: 5px; opacity: 0.7;">📝</span>'; // Default to manual
+}
+
+// Initialize reconciliation on sync
+const workoutReconciliation = new WorkoutReconciliation();
+
+// Add to sync manager
+syncManager.onSyncComplete = async (service, data) => {
+  if (data.workouts && data.workouts.length > 0) {
+    for (const workout of data.workouts) {
+      await workoutReconciliation.reconcileExternalWorkout({
+        ...workout,
+        source: service
+      });
+    }
+  }
+};
+```
+
 ## Implementation Summary
 
 This update will:
@@ -709,7 +1108,11 @@ This update will:
 3. **Smart Defaults**: Carries forward last session's energy, previous weights, etc.
 4. **Data Hierarchy**: Manual > Garmin/Whoop > Strava > Calculated > Default
 5. **Conflict Resolution**: Shows data source badges, allows user to override
-6. **Auto-fill Suggestions**: "Use data from last Upper Body session?"
+6. **Auto-fill Suggestions**: "Use data from last Upper Body session?" - appears every time with smart recommendations
+7. **Workout Deduplication**: Never creates duplicate workouts when syncing external services
+8. **Data Enrichment**: Adds HR, calories, etc. to existing workouts without overwriting manual data
+9. **RPE Validation**: Compares user's RPE against heart rate data to validate perceived effort
+10. **Import Options**: For unmatched external workouts, offers to import as workout or recovery
 
 ## Testing Checklist
 - [ ] Weight entered in Personal Data appears in all relevant tabs
@@ -719,3 +1122,8 @@ This update will:
 - [ ] Manual entries override synced data
 - [ ] Auto-fill suggestions appear for repeated session types
 - [ ] Macros recalculate when weight/height changes
+- [ ] Syncing Strava doesn't duplicate existing workouts
+- [ ] External data enriches but doesn't overwrite manual entries
+- [ ] RPE validation shows when HR data is available
+- [ ] Import modal appears for unmatched external workouts
+- [ ] Data source indicators show on each stat (📝 for manual, 🚴 for Strava, etc.)
