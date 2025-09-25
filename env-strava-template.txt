@@ -1,0 +1,38 @@
+# Strava Token Management Environment Variables
+# Copy this to .env.local and fill in your values
+
+# AWS KMS Configuration (for production encryption)
+AWS_REGION=us-east-1
+KMS_KEY_ID=arn:aws:kms:us-east-1:123456789:key/abc-def-ghi
+KMS_KEY_V1=<base64-encoded-encrypted-key-version-1>
+KMS_KEY_V2=<base64-encoded-encrypted-key-version-2>
+
+# Fallback encryption key for development (generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
+FALLBACK_ENCRYPTION_KEY=<64-character-hex-string>
+
+# Strava OAuth Configuration
+STRAVA_CLIENT_ID=<your-strava-client-id>
+STRAVA_CLIENT_SECRET=<your-strava-client-secret>
+
+# Database Configuration
+DATABASE_URL=postgresql://user:password@host:port/database?sslmode=require
+
+# Security Configuration
+ALLOWED_ORIGINS=https://yourapp.com,https://www.yourapp.com
+ADMIN_KEY=<secure-admin-key-for-api-management>
+
+# Application Configuration
+URL=https://yourapp.netlify.app
+
+# Optional: Monitoring and Alerting
+# DATADOG_API_KEY=<your-datadog-api-key>
+# SLACK_WEBHOOK_URL=<your-slack-webhook-url>
+# PAGERDUTY_INTEGRATION_KEY=<your-pagerduty-key>
+
+# Optional: Redis Configuration (for production caching)
+# REDIS_URL=redis://user:password@host:port/database
+# REDIS_PASSWORD=<redis-password>
+
+# Optional: Additional Security
+# JWT_SECRET=<jwt-secret-for-additional-auth>
+# ENCRYPTION_SALT=<additional-salt-for-encryption>
