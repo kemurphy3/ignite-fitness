@@ -404,6 +404,102 @@ class SeasonalTrainingSystem {
         this.loadScheduleFromStorage();
         console.log(`Seasonal Training System initialized - Current Phase: ${this.currentPhase}`);
     }
+
+    // Adjust workout for current phase
+    adjustWorkoutForPhase(workout) {
+        const phaseDetails = this.phases[this.currentPhase];
+        const adjustments = phaseDetails.adjustments;
+        
+        if (!workout || !workout.exercises) {
+            return workout;
+        }
+
+        const adjustedWorkout = {
+            ...workout,
+            phase: this.currentPhase,
+            phaseAdjustments: adjustments
+        };
+
+        // Adjust exercise parameters based on phase
+        adjustedWorkout.exercises = workout.exercises.map(exercise => {
+            const adjusted = { ...exercise };
+            
+            // Adjust sets based on phase
+            adjusted.sets = Math.round(adjusted.sets * adjustments.volumeMultiplier);
+            
+            // Adjust weight based on phase
+            if (adjusted.weight) {
+                adjusted.weight = Math.round(adjusted.weight * adjustments.intensityMultiplier);
+            }
+            
+            // Adjust reps based on phase
+            if (phaseDetails.name === 'Off-Season') {
+                adjusted.reps = Math.ceil(adjusted.reps * 1.1);
+            } else if (phaseDetails.name === 'Pre-Season') {
+                adjusted.reps = Math.ceil(adjusted.reps * 0.9);
+            } else if (phaseDetails.name === 'In-Season') {
+                adjusted.reps = Math.ceil(adjusted.reps * 0.8);
+            } else if (phaseDetails.name === 'Playoffs') {
+                adjusted.reps = Math.ceil(adjusted.reps * 0.7);
+            }
+            
+            return adjusted;
+        });
+
+        // Adjust session duration
+        if (adjustedWorkout.duration) {
+            adjustedWorkout.duration = Math.min(
+                Math.round(adjustedWorkout.duration * adjustments.volumeMultiplier),
+                adjustments.maxSessionDuration
+            );
+        }
+
+        return adjustedWorkout;
+    }
+
+    // Calculate phase progress as a percentage
+    calculatePhaseProgress() {
+        const now = new Date();
+        const month = now.getMonth();
+        const day = now.getDate();
+        
+        switch (this.currentPhase) {
+            case 'off-season':
+                // January 1st to March 31st
+                const offSeasonStart = new Date(now.getFullYear(), 0, 1);
+                const offSeasonEnd = new Date(now.getFullYear(), 2, 31);
+                const offSeasonTotal = offSeasonEnd - offSeasonStart;
+                const offSeasonElapsed = now - offSeasonStart;
+                return Math.max(0, Math.min(offSeasonElapsed / offSeasonTotal, 1));
+                
+            case 'pre-season':
+                // April 1st to May 31st
+                const preSeasonStart = new Date(now.getFullYear(), 3, 1);
+                const preSeasonEnd = new Date(now.getFullYear(), 4, 31);
+                const preSeasonTotal = preSeasonEnd - preSeasonStart;
+                const preSeasonElapsed = now - preSeasonStart;
+                return Math.max(0, Math.min(preSeasonElapsed / preSeasonTotal, 1));
+                
+            case 'in-season':
+                // June 1st to November 30th
+                const inSeasonStart = new Date(now.getFullYear(), 5, 1);
+                const inSeasonEnd = new Date(now.getFullYear(), 10, 30);
+                const inSeasonTotal = inSeasonEnd - inSeasonStart;
+                const inSeasonElapsed = now - inSeasonStart;
+                return Math.max(0, Math.min(inSeasonElapsed / inSeasonTotal, 1));
+                
+            case 'playoffs':
+                // December 1st to December 31st
+                const playoffsStart = new Date(now.getFullYear(), 11, 1);
+                const playoffsEnd = new Date(now.getFullYear(), 11, 31);
+                const playoffsTotal = playoffsEnd - playoffsStart;
+                const playoffsElapsed = now - playoffsStart;
+                return Math.max(0, Math.min(playoffsElapsed / playoffsTotal, 1));
+                
+            default:
+                return 0;
+        }
+    }
 }
 
 // Export for use in other modules

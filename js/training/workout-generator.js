@@ -505,6 +505,366 @@ class WorkoutGenerator {
         
         return notes.join('. ');
     }
+
+    // Generate workout based on user profile and session type
+    generateWorkout(userProfile, sessionType, duration) {
+        try {
+            const workout = {
+                id: this.generateWorkoutId(),
+                type: sessionType,
+                duration: duration,
+                exercises: [],
+                warmup: this.generateWarmup(sessionType),
+                cooldown: this.generateCooldown(sessionType),
+                notes: '',
+                createdAt: new Date().toISOString()
+            };
+
+            // Select exercises based on session type and user profile
+            const selectedExercises = this.selectExercises(userProfile, sessionType, duration);
+            
+            // Assign sets, reps, and weights
+            workout.exercises = this.assignExerciseParameters(selectedExercises, userProfile);
+            
+            // Calculate total volume
+            workout.totalVolume = this.calculateWorkoutVolume(workout.exercises);
+            
+            // Adjust for seasonal phase
+            workout.adjustedForPhase = this.adjustForSeasonalPhase(workout, userProfile.currentPhase);
+            
+            // Add progressive overload if previous workout exists
+            workout.progressiveOverload = this.addProgressiveOverload(userProfile.lastWorkout, workout);
+            
+            // Calculate rest periods
+            workout.restPeriods = this.calculateRestPeriods(workout.exercises);
+            
+            return workout;
+        } catch (error) {
+            console.error('Error generating workout:', error);
+            return this.generateFallbackWorkout(sessionType, duration);
+        }
+    }
+
+    // Calculate total workout volume
+    calculateWorkoutVolume(exercises) {
+        return exercises.reduce((total, exercise) => {
+            const volume = (exercise.weight || 0) * (exercise.reps || 0) * (exercise.sets || 0);
+            return total + volume;
+        }, 0);
+    }
+
+    // Adjust workout for seasonal phase
+    adjustForSeasonalPhase(workout, phase) {
+        const phaseAdjustments = {
+            'off-season': { volumeMultiplier: 1.2, intensityMultiplier: 0.8, focus: 'strength' },
+            'pre-season': { volumeMultiplier: 1.0, intensityMultiplier: 1.0, focus: 'power' },
+            'in-season': { volumeMultiplier: 0.7, intensityMultiplier: 1.1, focus: 'maintenance' },
+            'playoffs': { volumeMultiplier: 0.5, intensityMultiplier: 1.2, focus: 'peak' }
+        };
+
+        const adjustment = phaseAdjustments[phase] || phaseAdjustments['off-season'];
+        
+        // Adjust exercise parameters
+        workout.exercises.forEach(exercise => {
+            exercise.sets = Math.round(exercise.sets * adjustment.volumeMultiplier);
+            exercise.weight = Math.round(exercise.weight * adjustment.intensityMultiplier);
+        });
+
+        workout.phaseAdjustment = adjustment;
+        return workout;
+    }
+
+    // Generate warmup routine
+    generateWarmup(sessionType) {
+        const warmupTemplates = {
+            'Upper Body': [
+                { name: 'Arm Circles', duration: '30 seconds', description: 'Forward and backward' },
+                { name: 'Shoulder Rolls', duration: '30 seconds', description: 'Forward and backward' },
+                { name: 'Light Push-ups', duration: '1 minute', description: '10-15 reps' },
+                { name: 'Band Pull-aparts', duration: '1 minute', description: '15-20 reps' }
+            ],
+            'Lower Body': [
+                { name: 'Leg Swings', duration: '30 seconds each leg', description: 'Forward and side' },
+                { name: 'Walking Lunges', duration: '1 minute', description: '10-15 reps' },
+                { name: 'Bodyweight Squats', duration: '1 minute', description: '15-20 reps' },
+                { name: 'Hip Circles', duration: '30 seconds each direction', description: 'Standing hip mobility' }
+            ],
+            'Full Body': [
+                { name: 'Jumping Jacks', duration: '1 minute', description: 'Moderate pace' },
+                { name: 'Arm Circles', duration: '30 seconds', description: 'Forward and backward' },
+                { name: 'Bodyweight Squats', duration: '1 minute', description: '15-20 reps' },
+                { name: 'Push-ups', duration: '1 minute', description: '10-15 reps' }
+            ],
+            'Cardio': [
+                { name: 'Light Jogging', duration: '3 minutes', description: 'Easy pace' },
+                { name: 'Dynamic Stretching', duration: '2 minutes', description: 'Leg swings, arm circles' },
+                { name: 'Gradual Intensity', duration: '2 minutes', description: 'Build up to target pace' }
+            ],
+            'Soccer Training': [
+                { name: 'Light Jogging', duration: '2 minutes', description: 'Easy pace' },
+                { name: 'High Knees', duration: '30 seconds', description: 'Moderate intensity' },
+                { name: 'Butt Kicks', duration: '30 seconds', description: 'Moderate intensity' },
+                { name: 'Lateral Shuffles', duration: '30 seconds each direction', description: 'Side-to-side movement' },
+                { name: 'Carioca', duration: '30 seconds each direction', description: 'Cross-step movement' }
+            ]
+        };
+
+        return warmupTemplates[sessionType] || warmupTemplates['Full Body'];
+    }
+
+    // Generate cooldown routine
+    generateCooldown(sessionType) {
+        const cooldownTemplates = {
+            'Upper Body': [
+                { name: 'Shoulder Stretch', duration: '30 seconds each', description: 'Cross-body and overhead' },
+                { name: 'Chest Stretch', duration: '30 seconds', description: 'Doorway stretch' },
+                { name: 'Tricep Stretch', duration: '30 seconds each', description: 'Overhead stretch' },
+                { name: 'Deep Breathing', duration: '2 minutes', description: 'Focus on recovery' }
+            ],
+            'Lower Body': [
+                { name: 'Quad Stretch', duration: '30 seconds each', description: 'Standing quad stretch' },
+                { name: 'Hamstring Stretch', duration: '30 seconds each', description: 'Seated or standing' },
+                { name: 'Hip Flexor Stretch', duration: '30 seconds each', description: 'Lunge position' },
+                { name: 'Calf Stretch', duration: '30 seconds each', description: 'Wall or step stretch' }
+            ],
+            'Full Body': [
+                { name: 'Full Body Stretch', duration: '5 minutes', description: 'Comprehensive stretching' },
+                { name: 'Deep Breathing', duration: '2 minutes', description: 'Focus on recovery' },
+                { name: 'Light Walking', duration: '3 minutes', description: 'Cool down walk' }
+            ],
+            'Cardio': [
+                { name: 'Light Walking', duration: '5 minutes', description: 'Gradual cool down' },
+                { name: 'Stretching', duration: '5 minutes', description: 'Focus on worked muscles' },
+                { name: 'Deep Breathing', duration: '2 minutes', description: 'Recovery breathing' }
+            ],
+            'Soccer Training': [
+                { name: 'Light Jogging', duration: '3 minutes', description: 'Easy pace' },
+                { name: 'Dynamic Stretching', duration: '3 minutes', description: 'Leg swings, arm circles' },
+                { name: 'Static Stretching', duration: '4 minutes', description: 'Hold stretches 30 seconds' }
+            ]
+        };
+
+        return cooldownTemplates[sessionType] || cooldownTemplates['Full Body'];
+    }
+
+    // Select exercises based on user profile and session type
+    selectExercises(userProfile, sessionType, availableTime) {
+        const exercises = [];
+        const timePerExercise = Math.floor(availableTime / 6); // Roughly 6 exercises for 60 minutes
+        
+        // Get exercise categories based on session type
+        let exerciseCategories = [];
+        switch (sessionType) {
+            case 'Upper Body':
+                exerciseCategories = ['chest', 'back', 'shoulders', 'arms'];
+                break;
+            case 'Lower Body':
+                exerciseCategories = ['quadriceps', 'hamstrings', 'glutes', 'calves'];
+                break;
+            case 'Full Body':
+                exerciseCategories = ['chest', 'back', 'quadriceps', 'hamstrings'];
+                break;
+            case 'Cardio':
+                exerciseCategories = ['cardio'];
+                break;
+            case 'Soccer Training':
+                exerciseCategories = ['soccer'];
+                break;
+            case 'Core':
+                exerciseCategories = ['core'];
+                break;
+            default:
+                exerciseCategories = ['chest', 'back', 'quadriceps'];
+        }
+
+        // Select exercises from each category
+        exerciseCategories.forEach(category => {
+            const categoryExercises = this.getExercisesByCategory(category);
+            if (categoryExercises.length > 0) {
+                const selectedExercise = this.selectExerciseForUser(categoryExercises, userProfile);
+                if (selectedExercise) {
+                    exercises.push(selectedExercise);
+                }
+            }
+        });
+
+        // Always add core work (except for Core-only sessions)
+        if (sessionType !== 'Core') {
+            const coreExercises = this.getExercisesByCategory('core');
+            if (coreExercises.length > 0) {
+                const selectedCore = this.selectExerciseForUser(coreExercises, userProfile);
+                if (selectedCore) {
+                    exercises.push(selectedCore);
+                }
+            }
+        }
+
+        return exercises;
+    }
+
+    // Calculate rest periods based on exercise intensity
+    calculateRestPeriods(exercises) {
+        return exercises.map(exercise => {
+            const baseRest = 60; // 1 minute base rest
+            const intensityMultiplier = exercise.difficulty === 'advanced' ? 1.5 : 
+                                      exercise.difficulty === 'intermediate' ? 1.2 : 1.0;
+            const weightMultiplier = (exercise.weight || 0) > 100 ? 1.3 : 1.0;
+            
+            return Math.round(baseRest * intensityMultiplier * weightMultiplier);
+        });
+    }
+
+    // Add progressive overload to workout
+    addProgressiveOverload(previousWorkout, currentWorkout) {
+        if (!previousWorkout || !previousWorkout.exercises) {
+            return currentWorkout;
+        }
+
+        const progression = {
+            weightIncrease: 0.05, // 5% weight increase
+            repIncrease: 1, // 1 rep increase
+            setIncrease: 0.1 // 10% set increase
+        };
+
+        currentWorkout.exercises.forEach((exercise, index) => {
+            const previousExercise = previousWorkout.exercises[index];
+            if (previousExercise && previousExercise.name === exercise.name) {
+                // Progressive overload logic
+                if (previousExercise.weight) {
+                    exercise.weight = Math.round(previousExercise.weight * (1 + progression.weightIncrease));
+                }
+                if (previousExercise.reps) {
+                    exercise.reps = previousExercise.reps + progression.repIncrease;
+                }
+                if (previousExercise.sets) {
+                    exercise.sets = Math.round(previousExercise.sets * (1 + progression.setIncrease));
+                }
+            }
+        });
+
+        return currentWorkout;
+    }
+
+    // Helper methods
+    generateWorkoutId() {
+        return 'workout_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    getExercisesByCategory(category) {
+        const allExercises = [];
+        Object.values(this.exerciseDatabase).forEach(categoryGroup => {
+            if (Array.isArray(categoryGroup)) {
+                allExercises.push(...categoryGroup);
+            } else if (typeof categoryGroup === 'object') {
+                Object.values(categoryGroup).forEach(exerciseList => {
+                    if (Array.isArray(exerciseList)) {
+                        allExercises.push(...exerciseList);
+                    }
+                });
+            }
+        });
+        
+        return allExercises.filter(exercise => 
+            exercise.muscleGroups && exercise.muscleGroups.includes(category)
+        );
+    }
+
+    selectExerciseForUser(exercises, userProfile) {
+        if (exercises.length === 0) return null;
+        
+        // Filter by user experience level
+        const suitableExercises = exercises.filter(exercise => {
+            const experienceLevel = userProfile.experience || 'beginner';
+            return exercise.difficulty === experienceLevel || 
+                   (experienceLevel === 'advanced' && exercise.difficulty !== 'beginner') ||
+                   (experienceLevel === 'intermediate' && exercise.difficulty !== 'advanced');
+        });
+
+        if (suitableExercises.length === 0) {
+            return exercises[0]; // Fallback to first exercise
+        }
+
+        // Random selection from suitable exercises
+        const randomIndex = Math.floor(Math.random() * suitableExercises.length);
+        return suitableExercises[randomIndex];
+    }
+
+    assignExerciseParameters(exercises, userProfile) {
+        return exercises.map(exercise => {
+            const experience = userProfile.experience || 'beginner';
+            const baseWeight = userProfile.personalData?.weight || 70;
+            
+            let sets, reps, weight, rpe;
+            
+            switch (experience) {
+                case 'beginner':
+                    sets = 3;
+                    reps = 10;
+                    rpe = 6;
+                    weight = Math.round(baseWeight * 0.3);
+                    break;
+                case 'intermediate':
+                    sets = 3;
+                    reps = 8;
+                    rpe = 7;
+                    weight = Math.round(baseWeight * 0.5);
+                    break;
+                case 'advanced':
+                    sets = 4;
+                    reps = 5;
+                    rpe = 8;
+                    weight = Math.round(baseWeight * 0.7);
+                    break;
+                default:
+                    sets = 3;
+                    reps = 8;
+                    rpe = 7;
+                    weight = Math.round(baseWeight * 0.4);
+            }
+
+            // Adjust for equipment type
+            if (exercise.equipment === 'bodyweight') {
+                weight = 0;
+            } else if (exercise.equipment === 'dumbbell') {
+                weight = Math.round(weight / 2); // Split between two dumbbells
+            }
+
+            return {
+                ...exercise,
+                sets,
+                reps,
+                weight,
+                rpe,
+                rest: this.calculateRestPeriods([exercise])[0]
+            };
+        });
+    }
+
+    generateFallbackWorkout(sessionType, duration) {
+        return {
+            id: this.generateWorkoutId(),
+            type: sessionType,
+            duration: duration,
+            exercises: [
+                {
+                    name: 'Bodyweight Squats',
+                    equipment: 'bodyweight',
+                    difficulty: 'beginner',
+                    muscleGroups: ['quadriceps', 'glutes'],
+                    sets: 3,
+                    reps: 10,
+                    weight: 0,
+                    rpe: 6,
+                    rest: 60
+                }
+            ],
+            warmup: this.generateWarmup(sessionType),
+            cooldown: this.generateCooldown(sessionType),
+            notes: 'Fallback workout generated due to error',
+            totalVolume: 0,
+            createdAt: new Date().toISOString()
+        };
+    }
 }
 
 // Export for use in other modules

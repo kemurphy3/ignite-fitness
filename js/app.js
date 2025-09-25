@@ -11,9 +11,165 @@ let dataStore = null;
 let workoutGenerator = null;
 let patternDetector = null;
 
+// Data migration system
+function migrateUserData() {
+    const currentVersion = '2.0';
+    const storedVersion = localStorage.getItem('ignitefitness_data_version');
+    
+    if (storedVersion === currentVersion) {
+        return; // No migration needed
+    }
+    
+    console.log('Migrating user data from version', storedVersion || '1.0', 'to', currentVersion);
+    
+    // Migrate from version 1.0 to 2.0
+    if (!storedVersion || storedVersion === '1.0') {
+        migrateFromV1ToV2();
+    }
+    
+    // Set new version
+    localStorage.setItem('ignitefitness_data_version', currentVersion);
+    console.log('Data migration completed');
+}
+
+function migrateFromV1ToV2() {
+    try {
+        // Migrate users data structure
+        const oldUsers = localStorage.getItem('ignitefitness_users');
+        if (oldUsers) {
+            const usersData = JSON.parse(oldUsers);
+            const migratedUsers = {};
+            
+            Object.keys(usersData).forEach(username => {
+                const user = usersData[username];
+                migratedUsers[username] = {
+                    version: '2.0',
+                    username: username,
+                    password: user.password,
+                    athleteName: user.athleteName,
+                    personalData: user.personalData || {},
+                    goals: user.goals || {},
+                    workoutSchedule: user.workoutSchedule || {},
+                    sessions: user.sessions || [],
+                    preferences: user.preferences || {},
+                    lastSync: user.lastSync || Date.now(),
+                    createdAt: user.createdAt || new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+            });
+            
+            localStorage.setItem('ignitefitness_users', JSON.stringify(migratedUsers));
+        }
+        
+        // Migrate other data structures
+        migrateStravaData();
+        migrateWorkoutData();
+        
+    } catch (error) {
+        console.error('Error during data migration:', error);
+        // Continue with app initialization even if migration fails
+    }
+}
+
+function migrateStravaData() {
+    // Migrate Strava tokens to new format
+    const accessToken = localStorage.getItem('strava_access_token');
+    const refreshToken = localStorage.getItem('strava_refresh_token');
+    const expiresAt = localStorage.getItem('strava_token_expires');
+    const athleteId = localStorage.getItem('strava_athlete_id');
+    
+    if (accessToken && refreshToken) {
+        const stravaData = {
+            access_token: accessToken,
+            refresh_token: refreshToken,
+            expires_at: parseInt(expiresAt) || 0,
+            athlete_id: athleteId,
+            last_updated: Date.now()
+        };
+        
+        localStorage.setItem('ignitefitness_strava_data', JSON.stringify(stravaData));
+        
+        // Clean up old keys
+        localStorage.removeItem('strava_access_token');
+        localStorage.removeItem('strava_refresh_token');
+        localStorage.removeItem('strava_token_expires');
+        localStorage.removeItem('strava_athlete_id');
+    }
+}
+
+function migrateWorkoutData() {
+    // Migrate any old workout data to new format
+    const oldWorkouts = localStorage.getItem('ignitefitness_workouts');
+    if (oldWorkouts) {
+        try {
+            const workouts = JSON.parse(oldWorkouts);
+            // Convert to new format if needed
+            localStorage.setItem('ignitefitness_workout_data', JSON.stringify({
+                workouts: workouts,
+                version: '2.0',
+                last_updated: Date.now()
+            }));
+            localStorage.removeItem('ignitefitness_workouts');
+        } catch (error) {
+            console.error('Error migrating workout data:', error);
+        }
+    }
+}
+
+// Standardized data storage functions
+function saveUserDataToStorage(userId, data) {
+    if (!users[userId]) {
+        users[userId] = {
+            version: '2.0',
+            username: userId,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+    }
+    
+    // Merge new data with existing user data
+    users[userId] = {
+        ...users[userId],
+        ...data,
+        updatedAt: new Date().toISOString()
+    };
+    
+    localStorage.setItem('ignitefitness_users', JSON.stringify(users));
+}
+
+function getUserDataFromStorage(userId) {
+    return users[userId] || null;
+}
+
+function saveAppData(key, data) {
+    const appData = {
+        version: '2.0',
+        data: data,
+        last_updated: Date.now()
+    };
+    localStorage.setItem(`ignitefitness_${key}`, JSON.stringify(appData));
+}
+
+function getAppData(key) {
+    const stored = localStorage.getItem(`ignitefitness_${key}`);
+    if (stored) {
+        try {
+            const parsed = JSON.parse(stored);
+            return parsed.data;
+        } catch (error) {
+            console.error(`Error parsing app data for ${key}:`, error);
+            return null;
+        }
+    }
+    return null;
+}
+
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Ignite Fitness App Starting...');
+    
+    // Run data migration first
+    migrateUserData();
     
     // Check if user is already logged in
     const savedUser = localStorage.getItem('ignitefitness_current_user');
@@ -308,54 +464,113 @@ function loadUserData() {
 
 function saveUserData() {
     if (!currentUser) return;
-    localStorage.setItem('ignitefitness_users', JSON.stringify(users));
+    saveUserDataToStorage(currentUser, users[currentUser] || {});
 }
 
 async function savePersonalInfo() {
-    if (!currentUser) return;
+    const saveButton = document.querySelector('button[onclick="savePersonalInfo()"]');
     
-    const personalData = {
-        age: document.getElementById('age').value,
-        weight: document.getElementById('weight').value,
-        height: document.getElementById('height').value,
-        experience: document.getElementById('experience').value
-    };
-    
-    if (!users[currentUser]) {
-        users[currentUser] = {};
+    try {
+        if (!currentUser) {
+            showError(null, 'Please log in first');
+            return;
+        }
+        
+        const age = document.getElementById('age').value;
+        const weight = document.getElementById('weight').value;
+        const height = document.getElementById('height').value;
+        const experience = document.getElementById('experience').value;
+        
+        // Validate input values
+        if (!age || !weight || !height || !experience) {
+            showError(null, 'Please fill in all fields');
+            return;
+        }
+        
+        if (isNaN(age) || age < 13 || age > 100) {
+            showError(null, 'Please enter a valid age (13-100)');
+            return;
+        }
+        
+        if (isNaN(weight) || weight < 30 || weight > 300) {
+            showError(null, 'Please enter a valid weight (30-300 kg)');
+            return;
+        }
+        
+        if (isNaN(height) || height < 100 || height > 250) {
+            showError(null, 'Please enter a valid height (100-250 cm)');
+            return;
+        }
+        
+        // Show loading state
+        setButtonLoading(saveButton, true, 'Saving...');
+        
+        const personalData = {
+            age: parseInt(age),
+            weight: parseFloat(weight),
+            height: parseInt(height),
+            experience: experience
+        };
+        
+        if (!users[currentUser]) {
+            users[currentUser] = {};
+        }
+        
+        users[currentUser].personalData = personalData;
+        saveUserData();
+        
+        // Sync to database
+        await saveUserDataToDatabase();
+        
+        showSuccess('Personal information saved!');
+    } catch (error) {
+        handleError(error, 'savePersonalInfo');
+    } finally {
+        setButtonLoading(saveButton, false);
     }
-    
-    users[currentUser].personalData = personalData;
-    saveUserData();
-    
-    // Sync to database
-    await saveUserDataToDatabase();
-    
-    showSuccess('Personal information saved!');
 }
 
 async function saveGoals() {
-    if (!currentUser) return;
+    const saveButton = document.querySelector('button[onclick="saveGoals()"]');
     
-    const primaryGoal = document.querySelector('input[name="primaryGoal"]:checked')?.value;
-    const secondaryGoal = document.querySelector('input[name="secondaryGoal"]:checked')?.value;
-    
-    const goals = {
-        primary: primaryGoal,
-        secondary: secondaryGoal
-    };
-    
-    if (!users[currentUser]) {
-        users[currentUser] = {};
+    try {
+        if (!currentUser) {
+            showError(null, 'Please log in first');
+            return;
+        }
+        
+        const primaryGoal = document.querySelector('input[name="primaryGoal"]:checked')?.value;
+        const secondaryGoal = document.querySelector('input[name="secondaryGoal"]:checked')?.value;
+        
+        if (!primaryGoal) {
+            showError(null, 'Please select a primary goal');
+            return;
+        }
+        
+        // Show loading state
+        setButtonLoading(saveButton, true, 'Saving...');
+        
+        const goals = {
+            primary: primaryGoal,
+            secondary: secondaryGoal
+        };
+        
+        if (!users[currentUser]) {
+            users[currentUser] = {};
+        }
+        
+        users[currentUser].goals = goals;
+        saveUserData();
+        
+        // Sync to database
+        await saveUserDataToDatabase();
+        
+        showSuccess('Goals saved!');
+    } catch (error) {
+        handleError(error, 'saveGoals');
+    } finally {
+        setButtonLoading(saveButton, false);
     }
-    
-    users[currentUser].goals = goals;
-    saveUserData();
-    
-    // Sync to database
-    await saveUserDataToDatabase();
-    
-    showSuccess('Goals saved!');
 }
 
 // Workout Generator Functions
@@ -810,6 +1025,177 @@ function showError(element, message) {
     if (element) {
         element.textContent = message;
         element.style.display = 'block';
+    }
+}
+
+// Enhanced error handling with user-friendly messages
+function handleError(error, context = '') {
+    console.error(`Error in ${context}:`, error);
+    
+    let userMessage = 'An unexpected error occurred. Please try again.';
+    
+    // Provide more specific error messages based on error type
+    if (error.name === 'TypeError') {
+        userMessage = 'A data error occurred. Please refresh the page and try again.';
+    } else if (error.name === 'ReferenceError') {
+        userMessage = 'A system error occurred. Please refresh the page.';
+    } else if (error.message.includes('fetch')) {
+        userMessage = 'Network error. Please check your connection and try again.';
+    } else if (error.message.includes('JSON')) {
+        userMessage = 'Data format error. Please refresh the page.';
+    } else if (error.message.includes('localStorage')) {
+        userMessage = 'Storage error. Please clear your browser data and try again.';
+    } else if (error.message.includes('permission')) {
+        userMessage = 'Permission denied. Please check your browser settings.';
+    } else if (error.message.includes('timeout')) {
+        userMessage = 'Request timed out. Please try again.';
+    } else if (error.message.includes('unauthorized')) {
+        userMessage = 'Authentication required. Please log in again.';
+    } else if (error.message.includes('not found')) {
+        userMessage = 'Resource not found. Please refresh the page.';
+    } else if (error.message.includes('server')) {
+        userMessage = 'Server error. Please try again later.';
+    }
+    
+    // Show error notification
+    showErrorNotification(userMessage, 'error');
+    
+    return userMessage;
+}
+
+// Show error notification
+function showErrorNotification(message, type = 'error') {
+    // Remove existing notifications
+    const existing = document.getElementById('error-notification');
+    if (existing) existing.remove();
+    
+    const notification = document.createElement('div');
+    notification.id = 'error-notification';
+    notification.className = `notification ${type}`;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'error' ? '#e53e3e' : '#68d391'};
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 10000;
+        max-width: 400px;
+        font-weight: 500;
+        animation: slideIn 0.3s ease;
+    `;
+    
+    notification.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 20px;">${type === 'error' ? '❌' : '✅'}</span>
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" style="
+                background: none;
+                border: none;
+                color: white;
+                font-size: 18px;
+                cursor: pointer;
+                margin-left: auto;
+            ">×</button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+// Add CSS animation for notifications
+if (!document.getElementById('notification-styles')) {
+    const style = document.createElement('style');
+    style.id = 'notification-styles';
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .notification {
+            animation: slideIn 0.3s ease;
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+        .loading-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// Loading state management
+function showLoading(message = 'Loading...') {
+    // Remove existing loading overlay
+    hideLoading();
+    
+    const overlay = document.createElement('div');
+    overlay.id = 'loading-overlay';
+    overlay.className = 'loading-overlay';
+    overlay.innerHTML = `
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p style="margin: 15px 0 0 0; color: #2d3748; font-weight: 500;">${message}</p>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+}
+
+function hideLoading() {
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) {
+        overlay.remove();
+    }
+}
+
+// Enhanced button loading state
+function setButtonLoading(button, loading = true, text = 'Loading...') {
+    if (!button) return;
+    
+    if (loading) {
+        button.disabled = true;
+        button.dataset.originalText = button.textContent;
+        button.innerHTML = `<div class="loading-spinner" style="margin-right: 8px;"></div>${text}`;
+    } else {
+        button.disabled = false;
+        button.textContent = button.dataset.originalText || 'Submit';
+        delete button.dataset.originalText;
     }
 }
 
