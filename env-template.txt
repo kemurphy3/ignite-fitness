@@ -1,0 +1,19 @@
+# Ignite Fitness Environment Variables Template
+# Copy this file to .env.local and fill in your actual values
+
+# Strava API Configuration
+STRAVA_CLIENT_ID=168662
+STRAVA_CLIENT_SECRET=your_strava_client_secret_here
+
+# OpenAI API Configuration
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Database Configuration
+DATABASE_URL=your_neon_database_connection_string_here
+
+# Admin Configuration
+ADMIN_KEY=your_admin_key_here
+
+# Optional: Development Settings
+NODE_ENV=development
+DEBUG=true

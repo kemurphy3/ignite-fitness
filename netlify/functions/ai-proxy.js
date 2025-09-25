@@ -44,13 +44,22 @@ exports.handler = async (event, context) => {
                 };
             }
             
+            // Ensure proper OpenAI API format
+            const openaiData = {
+                model: data.model || 'gpt-3.5-turbo',
+                messages: data.messages || [{ role: 'user', content: data.content || data.prompt || 'Hello' }],
+                max_tokens: data.max_tokens || 500,
+                temperature: data.temperature || 0.7,
+                ...data
+            };
+            
             response = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${apiKey}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(data)
+                body: JSON.stringify(openaiData)
             });
         } else if (endpoint.includes('strava')) {
             // Handle Strava API calls

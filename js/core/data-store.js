@@ -218,7 +218,11 @@ class DataStore {
     async syncToAPI(key, data) {
         const endpoints = {
             'user_data': '/.netlify/functions/save-user-data',
-            'sessions': '/.netlify/functions/sessions-create'
+            'sessions': '/.netlify/functions/sessions-create',
+            'preferences': '/.netlify/functions/save-user-data',
+            'goals': '/.netlify/functions/save-user-data',
+            'workout_schedule': '/.netlify/functions/save-user-data',
+            'strava_activities': '/.netlify/functions/save-user-data'
         };
         
         const endpoint = endpoints[key];
@@ -226,7 +230,7 @@ class DataStore {
             throw new Error(`No sync endpoint for key: ${key}`);
         }
         
-        // Prepare data for database sync
+        // Prepare data for database sync based on data type
         let requestBody;
         if (key === 'user_data') {
             requestBody = {
@@ -234,31 +238,58 @@ class DataStore {
                 dataType: 'all',
                 data: data
             };
+        } else if (['preferences', 'goals', 'workout_schedule', 'strava_activities'].includes(key)) {
+            requestBody = {
+                userId: this.currentUser,
+                dataType: key,
+                data: data
+            };
         } else {
             requestBody = data;
         }
         
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestBody)
-        });
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Sync failed: ${response.status} - ${errorText}`);
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                let errorMessage = `Sync failed: ${response.status}`;
+                
+                try {
+                    const errorData = JSON.parse(errorText);
+                    errorMessage += ` - ${errorData.error || errorText}`;
+                } catch {
+                    errorMessage += ` - ${errorText}`;
+                }
+                
+                throw new Error(errorMessage);
+            }
+            
+            const result = await response.json();
+            console.log(`Successfully synced ${key} to database:`, result);
+            
+            // Update last sync time
+            this.lastSyncTime = Date.now();
+            localStorage.setItem('ignitefitness_last_sync', this.lastSyncTime.toString());
+            
+            return result;
+        } catch (error) {
+            console.error(`Sync error for ${key}:`, error);
+            
+            // If it's a network error, queue for retry
+            if (error.name === 'TypeError' || error.message.includes('fetch')) {
+                throw new Error(`Network error: ${error.message}`);
+            }
+            
+            // For other errors, re-throw
+            throw error;
         }
-        
-        const result = await response.json();
-        console.log(`Successfully synced ${key} to database:`, result);
-        
-        // Update last sync time
-        this.lastSyncTime = Date.now();
-        localStorage.setItem('ignitefitness_last_sync', this.lastSyncTime.toString());
-        
-        return result;
     }
     
     // Handle online event
