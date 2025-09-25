@@ -461,6 +461,580 @@ class ContextAwareAI {
             userSatisfaction: 0.78
         };
     }
+
+    // Build comprehensive user context for AI
+    buildUserContext() {
+        const user = this.getCurrentUser();
+        if (!user) return {};
+
+        const context = {
+            // Basic profile
+            profile: {
+                age: user.personalData?.age,
+                weight: user.personalData?.weight,
+                height: user.personalData?.height,
+                experience: user.personalData?.experience,
+                goals: user.goals
+            },
+            
+            // Recent activity
+            recentWorkouts: this.getRecentWorkouts(7), // Last 7 days
+            recentSessions: this.getRecentSessions(14), // Last 14 days
+            
+            // Patterns and insights
+            patterns: this.patternDetector?.getUserPatterns() || {},
+            preferences: this.detectUserPreferences(),
+            
+            // Current state
+            currentPhase: this.getCurrentTrainingPhase(),
+            lastWorkout: this.getLastWorkout(),
+            nextScheduled: this.getNextScheduledWorkout(),
+            
+            // Performance metrics
+            performance: {
+                averageRPE: this.calculateAverageRPE(),
+                volumeTrend: this.calculateVolumeTrend(),
+                consistency: this.calculateConsistency(),
+                progression: this.calculateProgression()
+            },
+            
+            // Contextual factors
+            timeOfDay: new Date().getHours(),
+            dayOfWeek: new Date().getDay(),
+            season: this.getCurrentSeason(),
+            weather: this.getWeatherContext(),
+            
+            // AI interaction history
+            recentQueries: this.getRecentQueries(10),
+            successfulRecommendations: this.getSuccessfulRecommendations(),
+            
+            // System state
+            lastSync: this.getLastSyncTime(),
+            offlineMode: !navigator.onLine,
+            dataQuality: this.assessDataQuality()
+        };
+
+        return context;
+    }
+
+    // Detect user preferences from behavior
+    detectUserPreferences() {
+        const workouts = this.getRecentWorkouts(30);
+        const preferences = {
+            preferredTimes: this.analyzePreferredWorkoutTimes(workouts),
+            favoriteExercises: this.analyzeFavoriteExercises(workouts),
+            intensityPreference: this.analyzeIntensityPreference(workouts),
+            sessionLength: this.analyzePreferredSessionLength(workouts),
+            restDayPattern: this.analyzeRestDayPattern(workouts)
+        };
+        
+        return preferences;
+    }
+
+    // Get current training phase
+    getCurrentTrainingPhase() {
+        const user = this.getCurrentUser();
+        if (!user) return 'off-season';
+        
+        // This would integrate with seasonal training system
+        return user.trainingPhase || 'off-season';
+    }
+
+    // Get last workout details
+    getLastWorkout() {
+        const workouts = this.getRecentWorkouts(1);
+        return workouts[0] || null;
+    }
+
+    // Get next scheduled workout
+    getNextScheduledWorkout() {
+        const user = this.getCurrentUser();
+        if (!user?.workoutPlan) return null;
+        
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        // Find next scheduled workout
+        for (let i = 0; i < 7; i++) {
+            const checkDate = new Date(today);
+            checkDate.setDate(checkDate.getDate() + i);
+            const dayPlan = user.workoutPlan[checkDate.getDay()];
+            if (dayPlan && dayPlan.sessions && dayPlan.sessions.length > 0) {
+                return {
+                    date: checkDate,
+                    sessions: dayPlan.sessions
+                };
+            }
+        }
+        
+        return null;
+    }
+
+    // Calculate average RPE from recent workouts
+    calculateAverageRPE() {
+        const workouts = this.getRecentWorkouts(14);
+        if (workouts.length === 0) return 0;
+        
+        const totalRPE = workouts.reduce((sum, workout) => {
+            return sum + (workout.averageRPE || 0);
+        }, 0);
+        
+        return totalRPE / workouts.length;
+    }
+
+    // Calculate volume trend
+    calculateVolumeTrend() {
+        const workouts = this.getRecentWorkouts(14);
+        if (workouts.length < 2) return 'stable';
+        
+        const recent = workouts.slice(0, 7);
+        const older = workouts.slice(7, 14);
+        
+        const recentVolume = this.calculateTotalVolume(recent);
+        const olderVolume = this.calculateTotalVolume(older);
+        
+        const change = (recentVolume - olderVolume) / olderVolume;
+        
+        if (change > 0.1) return 'increasing';
+        if (change < -0.1) return 'decreasing';
+        return 'stable';
+    }
+
+    // Calculate workout consistency
+    calculateConsistency() {
+        const workouts = this.getRecentWorkouts(30);
+        const expectedWorkouts = 30; // Assuming daily workouts
+        const actualWorkouts = workouts.length;
+        
+        return actualWorkouts / expectedWorkouts;
+    }
+
+    // Calculate progression rate
+    calculateProgression() {
+        const workouts = this.getRecentWorkouts(30);
+        if (workouts.length < 2) return 0;
+        
+        // Simple progression calculation based on weight increases
+        let progressionCount = 0;
+        for (let i = 1; i < workouts.length; i++) {
+            const current = workouts[i];
+            const previous = workouts[i - 1];
+            
+            if (current.averageWeight > previous.averageWeight) {
+                progressionCount++;
+            }
+        }
+        
+        return progressionCount / (workouts.length - 1);
+    }
+
+    // Get recent workouts
+    getRecentWorkouts(days) {
+        const user = this.getCurrentUser();
+        if (!user?.data?.sessions) return [];
+        
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - days);
+        
+        return user.data.sessions
+            .filter(session => {
+                const sessionDate = new Date(session.start_at);
+                return sessionDate >= cutoffDate && session.type === 'workout';
+            })
+            .sort((a, b) => new Date(b.start_at) - new Date(a.start_at));
+    }
+
+    // Get recent sessions (all types)
+    getRecentSessions(days) {
+        const user = this.getCurrentUser();
+        if (!user?.data?.sessions) return [];
+        
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - days);
+        
+        return user.data.sessions
+            .filter(session => {
+                const sessionDate = new Date(session.start_at);
+                return sessionDate >= cutoffDate;
+            })
+            .sort((a, b) => new Date(b.start_at) - new Date(a.start_at));
+    }
+
+    // Analyze preferred workout times
+    analyzePreferredWorkoutTimes(workouts) {
+        const timeCounts = {};
+        workouts.forEach(workout => {
+            const hour = new Date(workout.start_at).getHours();
+            const timeSlot = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+            timeCounts[timeSlot] = (timeCounts[timeSlot] || 0) + 1;
+        });
+        
+        return Object.entries(timeCounts)
+            .sort(([,a], [,b]) => b - a)
+            .map(([time, count]) => ({ time, count }));
+    }
+
+    // Analyze favorite exercises
+    analyzeFavoriteExercises(workouts) {
+        const exerciseCounts = {};
+        workouts.forEach(workout => {
+            if (workout.exercises) {
+                workout.exercises.forEach(exercise => {
+                    exerciseCounts[exercise.name] = (exerciseCounts[exercise.name] || 0) + 1;
+                });
+            }
+        });
+        
+        return Object.entries(exerciseCounts)
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 10)
+            .map(([exercise, count]) => ({ exercise, count }));
+    }
+
+    // Analyze intensity preference
+    analyzeIntensityPreference(workouts) {
+        const rpeValues = workouts.map(w => w.averageRPE).filter(rpe => rpe > 0);
+        if (rpeValues.length === 0) return 'moderate';
+        
+        const averageRPE = rpeValues.reduce((sum, rpe) => sum + rpe, 0) / rpeValues.length;
+        
+        if (averageRPE >= 8) return 'high';
+        if (averageRPE <= 5) return 'low';
+        return 'moderate';
+    }
+
+    // Analyze preferred session length
+    analyzePreferredSessionLength(workouts) {
+        const durations = workouts.map(w => w.duration).filter(d => d > 0);
+        if (durations.length === 0) return 60; // Default 60 minutes
+        
+        const averageDuration = durations.reduce((sum, d) => sum + d, 0) / durations.length;
+        
+        if (averageDuration <= 30) return 'short';
+        if (averageDuration <= 60) return 'medium';
+        return 'long';
+    }
+
+    // Analyze rest day pattern
+    analyzeRestDayPattern(workouts) {
+        const workoutDays = workouts.map(w => new Date(w.start_at).getDay());
+        const dayCounts = {};
+        
+        for (let i = 0; i < 7; i++) {
+            dayCounts[i] = workoutDays.filter(day => day === i).length;
+        }
+        
+        return dayCounts;
+    }
+
+    // Calculate total volume for workouts
+    calculateTotalVolume(workouts) {
+        return workouts.reduce((total, workout) => {
+            if (workout.exercises) {
+                return total + workout.exercises.reduce((exerciseTotal, exercise) => {
+                    return exerciseTotal + (exercise.weight * exercise.reps * exercise.sets);
+                }, 0);
+            }
+            return total;
+        }, 0);
+    }
+
+    // Get current season
+    getCurrentSeason() {
+        const month = new Date().getMonth();
+        if (month >= 2 && month <= 4) return 'spring';
+        if (month >= 5 && month <= 7) return 'summer';
+        if (month >= 8 && month <= 10) return 'fall';
+        return 'winter';
+    }
+
+    // Get weather context (placeholder)
+    getWeatherContext() {
+        // This would integrate with a weather API
+        return {
+            temperature: 'moderate',
+            conditions: 'clear',
+            humidity: 'normal'
+        };
+    }
+
+    // Get recent AI queries
+    getRecentQueries(count) {
+        return this.interactionHistory
+            .slice(-count)
+            .map(interaction => interaction.query)
+            .reverse();
+    }
+
+    // Get successful recommendations
+    getSuccessfulRecommendations() {
+        return this.interactionHistory
+            .filter(interaction => interaction.rating >= 4)
+            .map(interaction => interaction.response)
+            .slice(-5);
+    }
+
+    // Get last sync time
+    getLastSyncTime() {
+        return localStorage.getItem('ignitefitness_last_sync') || null;
+    }
+
+    // Assess data quality
+    assessDataQuality() {
+        const user = this.getCurrentUser();
+        if (!user) return 'poor';
+        
+        let score = 0;
+        
+        // Check profile completeness
+        if (user.personalData?.age) score += 1;
+        if (user.personalData?.weight) score += 1;
+        if (user.personalData?.height) score += 1;
+        if (user.goals?.primary) score += 1;
+        
+        // Check workout data
+        const workoutCount = user.data?.sessions?.filter(s => s.type === 'workout').length || 0;
+        if (workoutCount >= 10) score += 2;
+        else if (workoutCount >= 5) score += 1;
+        
+        if (score >= 6) return 'excellent';
+        if (score >= 4) return 'good';
+        if (score >= 2) return 'fair';
+        return 'poor';
+    }
+
+    // Get current user from global state
+    getCurrentUser() {
+        // This would integrate with the main app's user management
+        const currentUser = localStorage.getItem('ignitefitness_current_user');
+        if (!currentUser) return null;
+        
+        const users = JSON.parse(localStorage.getItem('ignitefitness_users') || '{}');
+        return users[currentUser] || null;
+    }
+
+    // Select optimal model based on query complexity and context
+    selectOptimalModel(query, context) {
+        const complexity = this.analyzeQueryComplexity(query, context);
+        
+        const models = {
+            'claude-haiku': {
+                name: 'Claude Haiku',
+                costPer1kTokens: 0.0008,
+                maxTokens: 4000,
+                capabilities: ['simple', 'quick', 'basic'],
+                description: 'Fast and cost-effective for simple queries'
+            },
+            'gpt-3.5-turbo': {
+                name: 'GPT-3.5 Turbo',
+                costPer1kTokens: 0.002,
+                maxTokens: 4000,
+                capabilities: ['standard', 'workout', 'general'],
+                description: 'Balanced performance for standard queries'
+            },
+            'claude-sonnet': {
+                name: 'Claude Sonnet',
+                costPer1kTokens: 0.015,
+                maxTokens: 8000,
+                capabilities: ['complex', 'injury', 'health', 'detailed'],
+                description: 'High-quality responses for complex queries'
+            },
+            'claude-opus': {
+                name: 'Claude Opus',
+                costPer1kTokens: 0.075,
+                maxTokens: 8000,
+                capabilities: ['expert', 'analysis', 'research', 'comprehensive'],
+                description: 'Most capable model for expert-level analysis'
+            }
+        };
+        
+        // Model selection logic based on complexity and context
+        if (complexity.level === 'simple' && !context.requiresExpertise) {
+            return { ...models['claude-haiku'], complexity: 'simple' };
+        } else if (complexity.level === 'standard' || context.queryType === 'workout') {
+            return { ...models['gpt-3.5-turbo'], complexity: 'standard' };
+        } else if (complexity.level === 'complex' || context.requiresExpertise || context.queryType === 'injury') {
+            return { ...models['claude-sonnet'], complexity: 'complex' };
+        } else if (complexity.level === 'expert' || context.requiresAnalysis || context.queryType === 'research') {
+            return { ...models['claude-opus'], complexity: 'expert' };
+        }
+        
+        // Default to GPT-3.5 for balanced performance
+        return { ...models['gpt-3.5-turbo'], complexity: 'standard' };
+    }
+
+    // Analyze query complexity
+    analyzeQueryComplexity(query, context) {
+        const queryLength = query.length;
+        const wordCount = query.split(' ').length;
+        const hasQuestions = query.includes('?');
+        const hasTechnicalTerms = this.hasTechnicalTerms(query);
+        const requiresAnalysis = this.requiresAnalysis(query);
+        const requiresExpertise = this.requiresExpertise(query);
+        
+        let complexityScore = 0;
+        
+        // Length factors
+        if (queryLength > 500) complexityScore += 2;
+        else if (queryLength > 200) complexityScore += 1;
+        
+        // Word count factors
+        if (wordCount > 50) complexityScore += 2;
+        else if (wordCount > 20) complexityScore += 1;
+        
+        // Content factors
+        if (hasTechnicalTerms) complexityScore += 2;
+        if (requiresAnalysis) complexityScore += 3;
+        if (requiresExpertise) complexityScore += 3;
+        if (hasQuestions) complexityScore += 1;
+        
+        // Context factors
+        if (context.requiresExpertise) complexityScore += 2;
+        if (context.requiresAnalysis) complexityScore += 2;
+        if (context.queryType === 'injury') complexityScore += 3;
+        if (context.queryType === 'research') complexityScore += 4;
+        
+        // Determine complexity level
+        if (complexityScore >= 8) return { level: 'expert', score: complexityScore };
+        if (complexityScore >= 5) return { level: 'complex', score: complexityScore };
+        if (complexityScore >= 2) return { level: 'standard', score: complexityScore };
+        return { level: 'simple', score: complexityScore };
+    }
+
+    // Check if query contains technical terms
+    hasTechnicalTerms(query) {
+        const technicalTerms = [
+            'rpe', 'rm', '1rm', 'volume', 'intensity', 'periodization',
+            'hypertrophy', 'strength', 'endurance', 'power', 'speed',
+            'agility', 'flexibility', 'mobility', 'stability', 'balance',
+            'proprioception', 'kinesthetic', 'biomechanics', 'physiology',
+            'metabolism', 'hormones', 'recovery', 'adaptation', 'overload',
+            'progression', 'regression', 'deload', 'taper', 'peaking'
+        ];
+        
+        const lowerQuery = query.toLowerCase();
+        return technicalTerms.some(term => lowerQuery.includes(term));
+    }
+
+    // Check if query requires analysis
+    requiresAnalysis(query) {
+        const analysisKeywords = [
+            'analyze', 'analysis', 'compare', 'evaluate', 'assess',
+            'review', 'examine', 'study', 'research', 'investigate',
+            'why', 'how', 'what if', 'explain', 'describe in detail'
+        ];
+        
+        const lowerQuery = query.toLowerCase();
+        return analysisKeywords.some(keyword => lowerQuery.includes(keyword));
+    }
+
+    // Check if query requires expertise
+    requiresExpertise(query) {
+        const expertiseKeywords = [
+            'injury', 'pain', 'rehabilitation', 'therapy', 'medical',
+            'doctor', 'physician', 'therapist', 'specialist', 'expert',
+            'diagnosis', 'treatment', 'condition', 'symptom', 'recovery',
+            'prevention', 'risk', 'safety', 'warning', 'caution'
+        ];
+        
+        const lowerQuery = query.toLowerCase();
+        return expertiseKeywords.some(keyword => lowerQuery.includes(keyword));
+    }
+
+    // Get AI response using selected model
+    async getAIResponse(prompt, userInput, selectedModel) {
+        try {
+            // This would integrate with the actual AI API
+            // For now, return a mock response based on the selected model
+            
+            const response = await this.callAIAPI(prompt, selectedModel);
+            
+            // Track model usage
+            this.trackModelUsage(selectedModel, prompt.length, response.length);
+            
+            return response;
+        } catch (error) {
+            console.error('AI API call failed:', error);
+            
+            // Fallback to a simple response
+            return this.generateFallbackResponse(userInput, selectedModel);
+        }
+    }
+
+    // Call AI API (mock implementation)
+    async callAIAPI(prompt, selectedModel) {
+        // This would make actual API calls to the selected model
+        // For now, return a mock response
+        
+        const mockResponses = {
+            'claude-haiku': `Quick response for: "${prompt.substring(0, 50)}..."`,
+            'gpt-3.5-turbo': `Standard response for: "${prompt.substring(0, 50)}..."`,
+            'claude-sonnet': `Detailed response for: "${prompt.substring(0, 50)}..."`,
+            'claude-opus': `Expert analysis for: "${prompt.substring(0, 50)}..."`
+        };
+        
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        return mockResponses[selectedModel.name.toLowerCase().replace(' ', '-')] || 'AI response';
+    }
+
+    // Generate fallback response
+    generateFallbackResponse(userInput, selectedModel) {
+        const fallbackResponses = {
+            'claude-haiku': 'I understand your question. Let me provide a quick answer.',
+            'gpt-3.5-turbo': 'I can help you with that. Here\'s what I recommend.',
+            'claude-sonnet': 'That\'s an interesting question. Let me give you a detailed response.',
+            'claude-opus': 'This requires expert analysis. Let me provide comprehensive guidance.'
+        };
+        
+        return fallbackResponses[selectedModel.name.toLowerCase().replace(' ', '-')] || 'I\'m here to help!';
+    }
+
+    // Track model usage for cost optimization
+    trackModelUsage(model, inputTokens, outputTokens) {
+        if (!this.modelUsage) {
+            this.modelUsage = {};
+        }
+        
+        const modelKey = model.name.toLowerCase().replace(' ', '-');
+        if (!this.modelUsage[modelKey]) {
+            this.modelUsage[modelKey] = {
+                calls: 0,
+                inputTokens: 0,
+                outputTokens: 0,
+                totalCost: 0
+            };
+        }
+        
+        const usage = this.modelUsage[modelKey];
+        usage.calls++;
+        usage.inputTokens += inputTokens;
+        usage.outputTokens += outputTokens;
+        usage.totalCost += this.calculateCost(inputTokens, outputTokens, model.costPer1kTokens);
+        
+        // Save to localStorage
+        localStorage.setItem('ignitefitness_model_usage', JSON.stringify(this.modelUsage));
+    }
+
+    // Calculate cost for model usage
+    calculateCost(inputTokens, outputTokens, costPer1kTokens) {
+        const totalTokens = inputTokens + outputTokens;
+        return (totalTokens / 1000) * costPer1kTokens;
+    }
+
+    // Get model usage statistics
+    getModelUsageStats() {
+        return this.modelUsage || {};
+    }
+
+    // Estimate cost for a query
+    estimateCost(query, response, selectedModel) {
+        const inputTokens = Math.ceil(query.length / 4); // Rough estimation
+        const outputTokens = Math.ceil(response.length / 4);
+        return this.calculateCost(inputTokens, outputTokens, selectedModel.costPer1kTokens);
+    }
 }
 
 // Export for use in other modules

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strava Authorization - Ignite Fitness</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .callback-container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .logo {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #2d3748;
+            margin-bottom: 20px;
+        }
+        
+        .status {
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .status.success {
+            background: #f0fff4;
+            border: 1px solid #68d391;
+            color: #22543d;
+        }
+        
+        .status.error {
+            background: #fed7d7;
+            border: 1px solid #fc8181;
+            color: #742a2a;
+        }
+        
+        .status.loading {
+            background: #ebf8ff;
+            border: 1px solid #4299e1;
+            color: #2a4365;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4299e1;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .btn {
+            background: #4299e1;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn:hover {
+            background: #3182ce;
+        }
+        
+        .btn.secondary {
+            background: #718096;
+        }
+        
+        .btn.secondary:hover {
+            background: #4a5568;
+        }
+    </style>
+</head>
+<body>
+    <div class="callback-container">
+        <div class="logo">🏃‍♂️</div>
+        <h1>Strava Authorization</h1>
+        <div id="status" class="status loading">
+            <div class="spinner"></div>
+            <p>Processing Strava authorization...</p>
+        </div>
+        <div id="actions" style="display: none;">
+            <a href="index.html" class="btn">Return to App</a>
+            <button onclick="retryAuthorization()" class="btn secondary">Retry</button>
+        </div>
+    </div>
+
+    <script>
+        // Handle Strava OAuth callback
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const error = urlParams.get('error');
+            const state = urlParams.get('state');
+            
+            const statusDiv = document.getElementById('status');
+            const actionsDiv = document.getElementById('actions');
+            
+            if (error) {
+                // Authorization was denied or failed
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = `
+                    <h3>Authorization Failed</h3>
+                    <p>Strava authorization was denied or failed.</p>
+                    <p><strong>Error:</strong> ${error}</p>
+                `;
+                actionsDiv.style.display = 'block';
+                return;
+            }
+            
+            if (!code) {
+                // No authorization code received
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = `
+                    <h3>No Authorization Code</h3>
+                    <p>No authorization code was received from Strava.</p>
+                `;
+                actionsDiv.style.display = 'block';
+                return;
+            }
+            
+            // Process the authorization code
+            processStravaAuthorization(code, state);
+        });
+        
+        async function processStravaAuthorization(code, state) {
+            const statusDiv = document.getElementById('status');
+            const actionsDiv = document.getElementById('actions');
+            
+            try {
+                // Exchange code for access token
+                const response = await fetch('/.netlify/functions/strava-oauth', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        code: code,
+                        state: state
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Success - store tokens and redirect
+                    localStorage.setItem('strava_access_token', data.access_token);
+                    localStorage.setItem('strava_refresh_token', data.refresh_token);
+                    localStorage.setItem('strava_token_expires', data.expires_at);
+                    localStorage.setItem('strava_athlete_id', data.athlete.id);
+                    
+                    statusDiv.className = 'status success';
+                    statusDiv.innerHTML = `
+                        <h3>✅ Authorization Successful!</h3>
+                        <p>Your Strava account has been connected successfully.</p>
+                        <p>You can now sync your activities automatically.</p>
+                    `;
+                    
+                    // Auto-redirect after 3 seconds
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 3000);
+                } else {
+                    throw new Error(data.error || 'Unknown error occurred');
+                }
+                
+            } catch (error) {
+                console.error('Strava authorization error:', error);
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = `
+                    <h3>❌ Authorization Failed</h3>
+                    <p>Failed to complete Strava authorization.</p>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                `;
+                actionsDiv.style.display = 'block';
+            }
+        }
+        
+        function retryAuthorization() {
+            // Redirect back to Strava authorization
+            const clientId = '168662'; // This should come from environment variables
+            const redirectUri = encodeURIComponent(window.location.origin + '/callback.html');
+            const scope = 'read,activity:read_all,profile:read_all';
+            const state = 'ignite_fitness_' + Date.now();
+            
+            const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=${state}`;
+            
+            window.location.href = stravaAuthUrl;
+        }
+    </script>
+</body>
+</html>

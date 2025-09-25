@@ -226,17 +226,39 @@ class DataStore {
             throw new Error(`No sync endpoint for key: ${key}`);
         }
         
+        // Prepare data for database sync
+        let requestBody;
+        if (key === 'user_data') {
+            requestBody = {
+                userId: this.currentUser,
+                dataType: 'all',
+                data: data
+            };
+        } else {
+            requestBody = data;
+        }
+        
         const response = await fetch(endpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify(requestBody)
         });
         
         if (!response.ok) {
-            throw new Error(`Sync failed: ${response.status}`);
+            const errorText = await response.text();
+            throw new Error(`Sync failed: ${response.status} - ${errorText}`);
         }
+        
+        const result = await response.json();
+        console.log(`Successfully synced ${key} to database:`, result);
+        
+        // Update last sync time
+        this.lastSyncTime = Date.now();
+        localStorage.setItem('ignitefitness_last_sync', this.lastSyncTime.toString());
+        
+        return result;
     }
     
     // Handle online event

@@ -103,6 +103,27 @@
                     <button class="tab-btn" onclick="showTab('devices', this)">Devices</button>
                 </div>
 
+                <!-- Status Indicators -->
+                <div class="status-indicators">
+                    <!-- Seasonal Phase Indicator -->
+                    <div id="seasonalPhaseIndicator" class="seasonal-phase-indicator">
+                        <div class="phase-info">
+                            <span id="currentPhaseName">Off-Season</span>
+                            <span id="phaseProgress">0%</span>
+                        </div>
+                        <button onclick="showPhaseModal()" class="phase-details-btn">View Details</button>
+                    </div>
+                    
+                    <!-- Sync Status Indicator -->
+                    <div id="syncStatusIndicator" class="sync-status-indicator">
+                        <div class="sync-info">
+                            <span id="syncStatus">🔄 Syncing...</span>
+                            <span id="lastSync">Last sync: Never</span>
+                        </div>
+                        <button onclick="manualSync()" class="sync-btn">Sync Now</button>
+                    </div>
+                </div>
+
                 <!-- Tab Content -->
                 <div class="tab-content" id="personalData">
                     <h3>Personal Information</h3>
@@ -155,12 +176,84 @@
                 <div class="tab-content hidden" id="workoutPlan">
                     <h3>Workout Planning</h3>
                     <p>AI-powered workout planning will be available here.</p>
-                    <button class="btn" onclick="generateWorkoutPlan()">Generate Workout Plan</button>
+                    
+                    <!-- Workout Plan Controls -->
+                    <div class="workout-controls">
+                        <div class="form-group">
+                            <label for="sessionType">Session Type</label>
+                            <select id="sessionType" class="form-input">
+                                <option value="Upper Body">Upper Body</option>
+                                <option value="Lower Body">Lower Body</option>
+                                <option value="Full Body">Full Body</option>
+                                <option value="Cardio">Cardio</option>
+                                <option value="Soccer Training">Soccer Training</option>
+                                <option value="Core">Core</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="workoutDuration">Duration (minutes)</label>
+                            <input type="number" id="workoutDuration" class="form-input" value="60" min="15" max="180">
+                        </div>
+                        
+                        <button class="btn" onclick="generateWorkoutPlan()">Generate Workout Plan</button>
+                        <button class="btn secondary" onclick="analyzeUserPatterns()">Analyze Patterns</button>
+                    </div>
+                    
+                    <div id="workoutPlanDisplay"></div>
+                    
+                    <!-- Pattern Insights Section -->
+                    <div id="patternInsights" class="pattern-insights-section" style="display: none;">
+                        <h3>📊 Training Insights</h3>
+                        <div id="insightsContent"></div>
+                    </div>
                 </div>
 
                 <div class="tab-content hidden" id="logWorkout">
                     <h3>Log Workout</h3>
-                    <p>Workout logging functionality will be available here.</p>
+                    <p>Track your workouts and monitor progress.</p>
+                    
+                    <!-- Quick Actions -->
+                    <div class="quick-actions">
+                        <button class="btn" onclick="startWorkout()">Start Workout</button>
+                        <button class="btn secondary" onclick="logQuickWorkout()">Quick Log</button>
+                        <button class="btn secondary" onclick="viewProgress()">View Progress</button>
+                    </div>
+                    
+                    <!-- Progress Charts Section -->
+                    <div class="progress-section">
+                        <h4>📈 Progress Overview</h4>
+                        <div class="charts-container">
+                            <div class="chart-card">
+                                <h5>Strength Progress</h5>
+                                <div id="strengthChart" class="chart-placeholder">
+                                    <p>Chart will appear here</p>
+                                </div>
+                            </div>
+                            
+                            <div class="chart-card">
+                                <h5>Volume Trend</h5>
+                                <div id="volumeChart" class="chart-placeholder">
+                                    <p>Chart will appear here</p>
+                                </div>
+                            </div>
+                            
+                            <div class="chart-card">
+                                <h5>Consistency</h5>
+                                <div id="consistencyChart" class="chart-placeholder">
+                                    <p>Chart will appear here</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Workouts -->
+                    <div class="recent-workouts">
+                        <h4>Recent Workouts</h4>
+                        <div id="recentWorkoutsList" class="workouts-list">
+                            <p>No recent workouts found. Start your first workout!</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="tab-content hidden" id="soccer">
@@ -170,13 +263,84 @@
 
                 <div class="tab-content hidden" id="devices">
                     <h3>Device Integration</h3>
-                    <p>Wearable device integration will be available here.</p>
+                    <p>Connect your wearable devices and data sources.</p>
+                    
+                    <!-- Strava Integration -->
+                    <div class="device-section">
+                        <h4>🏃‍♂️ Strava Integration</h4>
+                        <div id="stravaStatus" class="device-status">
+                            <p>Checking Strava connection...</p>
+                        </div>
+                        <div class="device-actions">
+                            <button id="stravaConnectBtn" onclick="connectToStrava()" class="btn" style="display: none;">
+                                Connect to Strava
+                            </button>
+                            <button id="stravaDisconnectBtn" onclick="disconnectFromStrava()" class="btn secondary" style="display: none;">
+                                Disconnect from Strava
+                            </button>
+                            <button id="stravaSyncBtn" onclick="syncStravaData()" class="btn" style="display: none;">
+                                Sync Activities
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Other Devices -->
+                    <div class="device-section">
+                        <h4>📱 Other Devices</h4>
+                        <p>Additional device integrations coming soon...</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- AI Coach Chat Interface -->
+    <div id="aiChatContainer" class="ai-chat-container hidden">
+        <div class="ai-chat-header">
+            <h3>🤖 AI Coach</h3>
+            <button onclick="toggleAIChat()" class="ai-chat-close">×</button>
+        </div>
+        <div id="aiChatMessages" class="ai-chat-messages"></div>
+        <div class="ai-chat-input-container">
+            <input type="text" id="aiChatInput" placeholder="Ask your AI coach anything..." class="ai-chat-input">
+            <button onclick="sendToAI()" class="ai-chat-send">Send</button>
+        </div>
+        <div class="ai-chat-quick-actions">
+            <button onclick="quickAction('injury')" class="ai-quick-btn">Injury Help</button>
+            <button onclick="quickAction('fatigue')" class="ai-quick-btn">Fatigue</button>
+            <button onclick="quickAction('goals')" class="ai-quick-btn">Goal Change</button>
+            <button onclick="quickAction('schedule')" class="ai-quick-btn">Schedule</button>
+        </div>
+    </div>
+
+    <!-- Seasonal Phase Modal -->
+    <div id="phaseModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="phaseModalTitle">Training Phase Details</h3>
+                <button onclick="closePhaseModal()" class="modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="phaseDetails"></div>
+                <div class="phase-actions">
+                    <button onclick="changePhase()" class="btn">Change Phase</button>
+                    <button onclick="addGame()" class="btn">Add Game</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Chat Toggle Button -->
+    <button id="aiChatToggle" class="ai-chat-toggle" onclick="toggleAIChat()">
+        🤖 AI Coach
+    </button>
+
     <!-- Load simplified JavaScript -->
+    <script src="js/core/data-store.js"></script>
+    <script src="js/training/workout-generator.js"></script>
+    <script src="js/ai/pattern-detector.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/ai/context-aware-ai.js"></script>
+    <script src="js/training/seasonal-training.js"></script>
 </body>
 </html>
