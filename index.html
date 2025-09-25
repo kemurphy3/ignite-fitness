@@ -3,13 +3,180 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IgniteFitness Multi-User Tracker</title>
-    <script>
-        window.location.replace('./tracker.html');
-    </script>
+    <title>Ignite Fitness - AI-Powered Training Platform</title>
+    <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
-    <p>Redirecting to IgniteFitness Multi-User Tracker...</p>
-    <p>If you're not redirected automatically, <a href="./tracker.html">click here</a>.</p>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>🔥 Ignite Fitness</h1>
+            <p>AI-Powered Training Platform for Athletes</p>
+            <div id="sync-status" style="position: absolute; top: 20px; right: 20px; padding: 5px 10px; background: #2d3748; border-radius: 5px; font-size: 12px;">
+                🟢 Online
+            </div>
+        </header>
+
+        <!-- Login Form -->
+        <div id="loginForm" class="form-section">
+            <h2>Welcome Back</h2>
+            <div class="form-group">
+                <label for="loginUsername">Username</label>
+                <input type="text" id="loginUsername" class="form-input" placeholder="Enter username">
+            </div>
+            <div class="form-group">
+                <label for="loginPassword">Password</label>
+                <input type="password" id="loginPassword" class="form-input" placeholder="Enter password">
+            </div>
+            <button class="btn" onclick="login()">Login</button>
+            <button class="btn" onclick="showRegisterForm()" style="background: #718096; margin-left: 10px;">Register New Athlete</button>
+            <div style="text-align: center; margin-top: 15px;">
+                <a href="#" onclick="showPasswordReset()" style="color: #68d391; text-decoration: none;">Forgot Password?</a>
+            </div>
+            <div id="loginError" style="color: #fc8181; margin-top: 10px; display: none;"></div>
+        </div>
+
+        <!-- Register Form -->
+        <div id="registerForm" class="form-section hidden">
+            <h2>Register New Athlete</h2>
+            <div class="form-group">
+                <label for="regUsername">Username</label>
+                <input type="text" id="regUsername" class="form-input" placeholder="Choose username">
+            </div>
+            <div class="form-group">
+                <label for="regPassword">Password</label>
+                <input type="password" id="regPassword" class="form-input" placeholder="Choose password">
+            </div>
+            <div class="form-group">
+                <label for="regConfirmPassword">Confirm Password</label>
+                <input type="password" id="regConfirmPassword" class="form-input" placeholder="Confirm password">
+            </div>
+            <div class="form-group">
+                <label for="regAthleteName">Athlete Name</label>
+                <input type="text" id="regAthleteName" class="form-input" placeholder="Full name">
+            </div>
+            <button class="btn" onclick="register()">Register Athlete</button>
+            <button class="btn" onclick="hideRegisterForm()" style="background: #718096; margin-left: 10px;">Cancel</button>
+            <div id="registerError" style="color: #fc8181; margin-top: 10px; display: none;"></div>
+        </div>
+
+        <!-- Password Reset Form -->
+        <div id="passwordResetForm" class="form-section hidden">
+            <h2>Reset Password</h2>
+            <div class="form-group">
+                <label for="resetUsername">Username</label>
+                <input type="text" id="resetUsername" class="form-input" placeholder="Enter your username">
+            </div>
+            <div class="form-group">
+                <label for="resetAthleteName">Athlete Name</label>
+                <input type="text" id="resetAthleteName" class="form-input" placeholder="Enter your athlete name">
+            </div>
+            <div class="form-group">
+                <label for="newPassword">New Password</label>
+                <input type="password" id="newPassword" class="form-input" placeholder="Enter new password">
+            </div>
+            <div class="form-group">
+                <label for="confirmNewPassword">Confirm New Password</label>
+                <input type="password" id="confirmNewPassword" class="form-input" placeholder="Confirm new password">
+            </div>
+            <button class="btn" onclick="resetPassword()">Reset Password</button>
+            <button class="btn" onclick="hidePasswordReset()" style="background: #718096; margin-left: 10px;">Cancel</button>
+            <div id="resetError" style="color: #fc8181; margin-top: 10px; display: none;"></div>
+        </div>
+
+        <!-- User Dashboard -->
+        <div id="userDashboard" class="hidden">
+            <div class="form-section">
+                <h3>Welcome, <span id="currentAthleteName"></span></h3>
+                <p>Your AI-powered training platform is ready!</p>
+                <button class="btn" onclick="logout()">Logout</button>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="tab-container">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" onclick="showTab('personalData', this)">Personal Data</button>
+                    <button class="tab-btn" onclick="showTab('goals', this)">Goals</button>
+                    <button class="tab-btn" onclick="showTab('workoutPlan', this)">Workout Plan</button>
+                    <button class="tab-btn" onclick="showTab('logWorkout', this)">Log Workout</button>
+                    <button class="tab-btn" onclick="showTab('soccer', this)">Soccer</button>
+                    <button class="tab-btn" onclick="showTab('devices', this)">Devices</button>
+                </div>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="personalData">
+                    <h3>Personal Information</h3>
+                    <div class="form-group">
+                        <label for="age">Age</label>
+                        <input type="number" id="age" class="form-input" placeholder="Enter your age">
+                    </div>
+                    <div class="form-group">
+                        <label for="weight">Weight (kg)</label>
+                        <input type="number" id="weight" class="form-input" placeholder="Enter your weight">
+                    </div>
+                    <div class="form-group">
+                        <label for="height">Height (cm)</label>
+                        <input type="number" id="height" class="form-input" placeholder="Enter your height">
+                    </div>
+                    <div class="form-group">
+                        <label for="experience">Training Experience</label>
+                        <select id="experience" class="form-input">
+                            <option value="">Select experience level</option>
+                            <option value="beginner">Beginner (0-1 years)</option>
+                            <option value="intermediate">Intermediate (1-3 years)</option>
+                            <option value="advanced">Advanced (3+ years)</option>
+                        </select>
+                    </div>
+                    <button class="btn" onclick="savePersonalInfo()">Save Personal Info</button>
+                </div>
+
+                <div class="tab-content hidden" id="goals">
+                    <h3>Training Goals</h3>
+                    <div class="form-group">
+                        <label>Primary Goal</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="primaryGoal" value="strength"> Strength</label>
+                            <label><input type="radio" name="primaryGoal" value="endurance"> Endurance</label>
+                            <label><input type="radio" name="primaryGoal" value="speed"> Speed</label>
+                            <label><input type="radio" name="primaryGoal" value="injury_prevention"> Injury Prevention</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Secondary Goal</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="secondaryGoal" value="muscle_gain"> Muscle Gain</label>
+                            <label><input type="radio" name="secondaryGoal" value="fat_loss"> Fat Loss</label>
+                            <label><input type="radio" name="secondaryGoal" value="athletic_performance"> Athletic Performance</label>
+                        </div>
+                    </div>
+                    <button class="btn" onclick="saveGoals()">Save Goals</button>
+                </div>
+
+                <div class="tab-content hidden" id="workoutPlan">
+                    <h3>Workout Planning</h3>
+                    <p>AI-powered workout planning will be available here.</p>
+                    <button class="btn" onclick="generateWorkoutPlan()">Generate Workout Plan</button>
+                </div>
+
+                <div class="tab-content hidden" id="logWorkout">
+                    <h3>Log Workout</h3>
+                    <p>Workout logging functionality will be available here.</p>
+                </div>
+
+                <div class="tab-content hidden" id="soccer">
+                    <h3>Soccer Training</h3>
+                    <p>Soccer-specific training features will be available here.</p>
+                </div>
+
+                <div class="tab-content hidden" id="devices">
+                    <h3>Device Integration</h3>
+                    <p>Wearable device integration will be available here.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load simplified JavaScript -->
+    <script src="js/app.js"></script>
 </body>
 </html>

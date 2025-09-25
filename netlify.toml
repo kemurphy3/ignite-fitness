@@ -14,3 +14,7 @@
 
 # Environment variables (set these in Netlify dashboard)
 # DATABASE_URL = "your-neon-connection-string"
+# STRAVA_CLIENT_ID = "your-strava-client-id"
+# STRAVA_CLIENT_SECRET = "your-strava-client-secret"
+# OPENAI_API_KEY = "your-openai-api-key"
+# ADMIN_KEY = "your-admin-key"

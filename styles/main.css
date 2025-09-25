@@ -1,0 +1,260 @@
+/* Main CSS for Ignite Fitness */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d3748 100%);
+    color: #e2e8f0;
+    min-height: 100vh;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 40px;
+    position: relative;
+}
+
+.header h1 {
+    font-size: 3rem;
+    color: #68d391;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.header p {
+    font-size: 1.2rem;
+    color: #a0aec0;
+}
+
+.form-section {
+    background: #2d3748;
+    border-radius: 15px;
+    padding: 30px;
+    margin-bottom: 30px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.form-section h2 {
+    color: #68d391;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.form-section h3 {
+    color: #e2e8f0;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #a0aec0;
+    font-weight: 500;
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px 16px;
+    background: #4a5568;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    color: #e2e8f0;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #68d391;
+    background: #2d3748;
+}
+
+.btn {
+    background: #68d391;
+    color: #1a1a1a;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
+
+.btn:hover {
+    background: #48bb78;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(104, 211, 145, 0.3);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.radio-group label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 8px;
+    transition: background 0.3s ease;
+}
+
+.radio-group label:hover {
+    background: #4a5568;
+}
+
+.radio-group input[type="radio"] {
+    margin-right: 10px;
+    accent-color: #68d391;
+}
+
+.tab-container {
+    background: #2d3748;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.tab-buttons {
+    display: flex;
+    background: #1a1a1a;
+    overflow-x: auto;
+}
+
+.tab-btn {
+    background: transparent;
+    color: #a0aec0;
+    border: none;
+    padding: 15px 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    border-bottom: 3px solid transparent;
+}
+
+.tab-btn:hover {
+    background: #2d3748;
+    color: #e2e8f0;
+}
+
+.tab-btn.active {
+    color: #68d391;
+    border-bottom-color: #68d391;
+    background: #2d3748;
+}
+
+.tab-content {
+    padding: 30px;
+    min-height: 400px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .header h1 {
+        font-size: 2rem;
+    }
+    
+    .form-section {
+        padding: 20px;
+    }
+    
+    .tab-buttons {
+        flex-direction: column;
+    }
+    
+    .tab-btn {
+        text-align: left;
+        border-bottom: none;
+        border-right: 3px solid transparent;
+    }
+    
+    .tab-btn.active {
+        border-right-color: #68d391;
+        border-bottom-color: transparent;
+    }
+}
+
+/* Success/Error Messages */
+#success-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #68d391;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    z-index: 1000;
+    box-shadow: 0 5px 15px rgba(104, 211, 145, 0.3);
+}
+
+/* Sync Status */
+#sync-status {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    padding: 8px 12px;
+    background: #2d3748;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid #4a5568;
+}
+
+/* Loading States */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #68d391;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
