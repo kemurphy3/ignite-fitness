@@ -1,4 +1,8 @@
 const fetch = require('node-fetch');
+const { createLogger } = require('./utils/safe-logging');
+
+// Create safe logger for this context
+const logger = createLogger('strava-oauth');
 
 const okJson = (data) => ({
     statusCode: 200,
@@ -80,7 +84,10 @@ exports.handler = async (event) => {
 
         if (!tokenResponse.ok) {
             const errorData = await tokenResponse.json();
-            console.error('Strava token exchange failed:', errorData);
+            logger.error('Strava token exchange failed', { 
+                status: tokenResponse.status,
+                error_data: errorData
+            });
             return {
                 statusCode: 400,
                 headers: {
@@ -119,7 +126,10 @@ exports.handler = async (event) => {
         });
 
     } catch (error) {
-        console.error('Strava OAuth error:', error);
+        logger.error('Strava OAuth failed', {
+            error_type: error.name,
+            error_message: error.message
+        });
         return {
             statusCode: 500,
             headers: {

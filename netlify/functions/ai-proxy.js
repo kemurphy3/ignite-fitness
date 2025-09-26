@@ -1,4 +1,14 @@
-const { STRAVA_TOKENS, API_CONFIG } = require('../../config.js');
+// API configuration - using environment variables directly
+const STRAVA_TOKENS = {
+    clientId: process.env.STRAVA_CLIENT_ID,
+    clientSecret: process.env.STRAVA_CLIENT_SECRET
+};
+
+const API_CONFIG = {
+    openai: {
+        apiKey: process.env.OPENAI_API_KEY
+    }
+};
 const jwt = require('jsonwebtoken');
 
 // Security headers for all responses

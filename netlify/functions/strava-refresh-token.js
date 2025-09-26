@@ -5,6 +5,10 @@ const { stravaCircuit } = require('./utils/circuit-breaker');
 const { acquireRefreshLock, releaseLock } = require('./utils/distributed-lock');
 const { auditLog } = require('./utils/audit');
 const { checkEndpointRateLimit, getRateLimitHeaders } = require('./utils/rate-limiter');
+const { createLogger } = require('./utils/safe-logging');
+
+// Create safe logger for this context
+const logger = createLogger('strava-refresh-token');
 
 // Simple in-memory cache for development (use Redis in production)
 const tokenCache = new Map();
@@ -196,6 +200,13 @@ exports.handler = async (event) => {
       }
     });
     
+    // Log successful token refresh with safe metadata
+    logger.tokenRefresh({
+      userId: token.user_id,
+      expiresAt: newExpiresAt,
+      scope: token.scope
+    });
+    
     return {
       statusCode: 200,
       headers: { 
@@ -211,7 +222,12 @@ exports.handler = async (event) => {
     };
     
   } catch (error) {
-    console.error('Token refresh error:', error);
+    // Log error with sanitized data
+    logger.error('Token refresh failed', {
+      error_type: error.constructor.name,
+      error_message: error.message,
+      circuit_breaker_state: stravaCircuit.getStatus().state
+    });
     
     // Log the error
     try {
@@ -227,7 +243,7 @@ exports.handler = async (event) => {
         }
       });
     } catch (auditError) {
-      console.error('Failed to log audit:', auditError);
+      logger.error('Failed to log audit', { error: auditError.message });
     }
     
     return {
@@ -254,7 +270,7 @@ async function validateStravaToken(accessToken) {
     });
     return response.ok;
   } catch (error) {
-    console.error('Token validation failed:', error);
+    logger.error('Token validation failed', { error: error.message });
     return false;
   }
 }

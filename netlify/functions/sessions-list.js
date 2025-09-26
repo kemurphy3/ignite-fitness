@@ -56,26 +56,34 @@ exports.handler = async (event) => {
     }
 
     const sql = getDB();
-    const queryParams = event.queryStringParameters || {};
+    const requestParams = event.queryStringParameters || {};
 
     // Validate pagination parameters
-    const paginationErrors = validatePaginationInput(queryParams);
+    const paginationErrors = validatePaginationInput(requestParams);
     if (paginationErrors.length > 0) {
       return errorResponse(400, 'VALIDATION_ERROR', paginationErrors.join(', '));
     }
 
     // Parse and validate query parameters
-    const type = queryParams.type;
-    const startDate = queryParams.start_date;
-    const endDate = queryParams.end_date;
-    const pagination = validatePaginationParams(queryParams);
+    const type = requestParams.type;
+    const startDate = requestParams.start_date;
+    const endDate = requestParams.end_date;
+    const pagination = validatePaginationParams(requestParams);
 
     // Validate type if provided
     if (type) {
       try {
         validateSessionType(type);
       } catch (error) {
-        return errorResponse(400, 'VALIDATION_ERROR', error.message);
+        const { handleError } = require('./utils/error-handler');
+        return handleError(error, {
+          statusCode: 400,
+          customMessage: 'Invalid session type',
+          context: {
+            functionName: 'sessions-list',
+            validationField: 'type'
+          }
+        });
       }
     }
 
@@ -175,16 +183,28 @@ exports.handler = async (event) => {
     });
 
   } catch (error) {
-    console.error('Sessions List API Error:', error);
+    const { handleError } = require('./utils/error-handler');
     
-    // Handle database connection errors
+    // Handle database connection errors with specific status codes
     if (error.message.includes('DATABASE_URL not configured') || 
         error.message.includes('connection') ||
         error.message.includes('timeout')) {
-      return errorResponse(503, 'SERVICE_UNAVAILABLE', 'Database service unavailable');
+      return handleError(error, {
+        statusCode: 503,
+        customMessage: 'Database service unavailable',
+        context: {
+          functionName: 'sessions-list',
+          errorType: 'database_connection'
+        }
+      });
     }
 
-    // Generic error
-    return errorResponse(500, 'INTERNAL_ERROR', 'Internal server error');
+    return handleError(error, {
+      statusCode: 500,
+      customMessage: 'Internal server error',
+      context: {
+        functionName: 'sessions-list'
+      }
+    });
   }
 };

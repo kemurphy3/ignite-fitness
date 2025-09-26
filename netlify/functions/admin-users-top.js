@@ -11,6 +11,11 @@ const {
   successResponse 
 } = require('./utils/admin-auth');
 
+const { 
+  safeQuery, 
+  validateMetric 
+} = require('./utils/safe-query');
+
 const { getNeonClient } = require('./utils/connection-pool');
 const sql = getNeonClient();
 
@@ -30,10 +35,9 @@ exports.handler = async (event) => {
     
     const { metric = 'sessions', limit = 50, cursor } = event.queryStringParameters || {};
     
-    // Validate inputs
-    if (!['sessions', 'duration'].includes(metric)) {
-      return errorResponse(400, 'INVALID_METRIC', 'Metric must be sessions or duration', requestId);
-    }
+    // Validate inputs using safe validation
+    const allowedMetrics = ['sessions', 'duration'];
+    const validatedMetric = validateMetric(metric, allowedMetrics);
     
     const parsedLimit = Math.min(Math.max(parseInt(limit) || 50, 1), 100);
     
@@ -50,53 +54,52 @@ exports.handler = async (event) => {
       }
     }
     
-    // Keyset pagination query with privacy
-    let users;
-    if (metric === 'sessions') {
-      users = await withTimeout(async () => {
-        return await sql`
-          WITH ranked_users AS (
-            SELECT 
-              user_id,
-              SUBSTRING(MD5(user_id::text || ${process.env.HASH_SALT || 'default'}), 1, 8) as user_alias,
-              COUNT(*) as metric_value,
-              MAX(created_at) as last_active
-            FROM sessions
-            WHERE deleted_at IS NULL
-              ${lastValue !== null ? sql`
-                AND (COUNT(*), user_id) < (${lastValue}, ${lastId})
-              ` : sql``}
-            GROUP BY user_id
-            HAVING COUNT(DISTINCT user_id) >= 5 OR user_id = ${adminId}
-            ORDER BY COUNT(*) DESC, user_id DESC
-            LIMIT ${parsedLimit + 1}
-          )
-          SELECT * FROM ranked_users
-        `;
+    // Keyset pagination query with privacy using safe queries
+    const users = await withTimeout(async () => {
+      return await safeQuery(async () => {
+        if (validatedMetric === 'sessions') {
+          return await sql`
+            WITH ranked_users AS (
+              SELECT 
+                user_id,
+                SUBSTRING(MD5(user_id::text || ${process.env.HASH_SALT || 'default'}), 1, 8) as user_alias,
+                COUNT(*) as metric_value,
+                MAX(created_at) as last_active
+              FROM sessions
+              WHERE deleted_at IS NULL
+                ${lastValue !== null ? sql`
+                  AND (COUNT(*), user_id) < (${lastValue}, ${lastId})
+                ` : sql``}
+              GROUP BY user_id
+              HAVING COUNT(DISTINCT user_id) >= 5 OR user_id = ${adminId}
+              ORDER BY COUNT(*) DESC, user_id DESC
+              LIMIT ${parsedLimit + 1}
+            )
+            SELECT * FROM ranked_users
+          `;
+        } else {
+          return await sql`
+            WITH ranked_users AS (
+              SELECT 
+                user_id,
+                SUBSTRING(MD5(user_id::text || ${process.env.HASH_SALT || 'default'}), 1, 8) as user_alias,
+                SUM(duration_minutes) as metric_value,
+                MAX(created_at) as last_active
+              FROM sessions
+              WHERE deleted_at IS NULL
+                ${lastValue !== null ? sql`
+                  AND (SUM(duration_minutes), user_id) < (${lastValue}, ${lastId})
+                ` : sql``}
+              GROUP BY user_id
+              HAVING COUNT(DISTINCT user_id) >= 5 OR user_id = ${adminId}
+              ORDER BY SUM(duration_minutes) DESC, user_id DESC
+              LIMIT ${parsedLimit + 1}
+            )
+            SELECT * FROM ranked_users
+          `;
+        }
       });
-    } else {
-      users = await withTimeout(async () => {
-        return await sql`
-          WITH ranked_users AS (
-            SELECT 
-              user_id,
-              SUBSTRING(MD5(user_id::text || ${process.env.HASH_SALT || 'default'}), 1, 8) as user_alias,
-              SUM(duration_minutes) as metric_value,
-              MAX(created_at) as last_active
-            FROM sessions
-            WHERE deleted_at IS NULL
-              ${lastValue !== null ? sql`
-                AND (SUM(duration_minutes), user_id) < (${lastValue}, ${lastId})
-              ` : sql``}
-            GROUP BY user_id
-            HAVING COUNT(DISTINCT user_id) >= 5 OR user_id = ${adminId}
-            ORDER BY SUM(duration_minutes) DESC, user_id DESC
-            LIMIT ${parsedLimit + 1}
-          )
-          SELECT * FROM ranked_users
-        `;
-      });
-    }
+    });
     
     // Check for next page
     let nextCursor = null;
@@ -134,26 +137,19 @@ exports.handler = async (event) => {
     );
     
   } catch (error) {
-    const statusCode = error.message.includes('Authentication') ? 401 :
-                      error.message.includes('Admin') ? 403 :
-                      error.message.includes('Invalid') ? 400 :
-                      error.message.includes('Query timeout') ? 500 : 500;
+    const { handleError } = require('./utils/error-handler');
     
+    // Log audit with error
     await auditLog(null, '/admin/users/top', 'GET', 
-      event.queryStringParameters, statusCode, Date.now() - startTime, requestId);
+      event.queryStringParameters, 500, Date.now() - startTime, requestId);
     
-    if (error.message.includes('Authentication failed')) {
-      return errorResponse(401, 'UNAUTHORIZED', 'Invalid or expired token', requestId);
-    }
-    if (error.message.includes('Admin access')) {
-      return errorResponse(403, 'FORBIDDEN', 'Admin access required', requestId);
-    }
-    if (error.message.includes('Invalid')) {
-      return errorResponse(400, 'INVALID_PARAM', error.message, requestId);
-    }
-    if (error.message.includes('Query timeout')) {
-      return errorResponse(500, 'QUERY_TIMEOUT', 'Query exceeded timeout limit', requestId);
-    }
-    return errorResponse(500, 'INTERNAL_ERROR', 'Failed to retrieve top users', requestId);
+    return handleError(error, {
+      statusCode: 500,
+      context: {
+        requestId,
+        functionName: 'admin-users-top',
+        endpoint: '/admin/users/top'
+      }
+    });
   }
 };

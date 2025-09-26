@@ -17,6 +17,12 @@ const {
     processActivitiesBatch
 } = require('./utils/strava-import');
 
+// Import safe logging
+const { createLogger } = require('./utils/safe-logging');
+
+// Create safe logger for this context
+const logger = createLogger('strava-import');
+
 // Import Feature 2's encryption
 const { TokenEncryption } = require('./utils/encryption');
 
@@ -258,7 +264,11 @@ const sql = getNeonClient();
                     break;
                     
                 } catch (error) {
-                    console.error('Strava API error:', error);
+                    logger.error('Strava API error', { 
+                        error: error.message,
+                        retries_remaining: retries - 1,
+                        backoff_ms: backoffMs
+                    });
                     retries--;
                     if (retries === 0) throw error;
                     await new Promise(resolve => setTimeout(resolve, backoffMs));
@@ -348,15 +358,13 @@ const sql = getNeonClient();
             WHERE user_id = ${userId}
         `;
         
-        console.log('Strava import complete:', sanitizeForLog({
-            user_id: userId,
+        // Log import completion with safe metadata
+        logger.importProcess({
+            userId: userId,
             imported: results.imported,
-            updated: results.updated,
-            duplicates: results.duplicates,
-            deleted: results.deleted,
             failed: results.failed,
-            duration_ms: Date.now() - importStartTime
-        }));
+            status: 'completed'
+        });
         
         return {
             statusCode: 200,
@@ -376,7 +384,10 @@ const sql = getNeonClient();
         };
         
     } catch (error) {
-        console.error('Import error:', sanitizeForLog({ error: error.message }));
+        logger.error('Import failed', { 
+            error: error.message,
+            user_id: userId
+        });
         
         // Mark as failed
         await sql`
@@ -389,7 +400,7 @@ const sql = getNeonClient();
                 import_in_progress = false,
                 updated_at = NOW()
             WHERE user_id = ${userId}
-        `.catch(console.error);
+        `.catch(err => logger.error('Failed to update import status', { error: err.message }));
         
         if (error instanceof ImportError) {
             return error.toResponse(headers);

@@ -725,6 +725,101 @@ headers: {
 - **AI Proxy**: 10 requests per minute
 - **Admin**: 50 requests per minute
 
+## 🔒 Security & Authentication
+
+### Admin Endpoints Authentication
+
+All admin endpoints require proper authentication and authorization:
+
+#### **Authentication Requirements:**
+- **JWT Token**: Valid JWT token in `Authorization: Bearer <token>` header
+- **Admin Role**: User must have `role: 'admin'` in database
+- **Token Validation**: JWT must be signed with correct `JWT_SECRET`
+- **Expiration**: Tokens expire after 24 hours with 30-second clock tolerance
+
+#### **Admin Endpoints:**
+1. **`/api/admin/get-all-users`** - Get all users with pagination
+2. **`/api/admin/health`** - System health and database status
+3. **`/api/admin/overview`** - Platform metrics and statistics
+4. **`/api/admin/sessions/by-type`** - Session type distribution
+5. **`/api/admin/sessions/series`** - Time series data
+6. **`/api/admin/users/top`** - Top users by activity
+7. **`/api/test-db-connection`** - Database connection test
+
+#### **Response Codes:**
+- **401 Unauthorized**: Missing or invalid JWT token
+- **403 Forbidden**: Valid token but user lacks admin role
+- **200 Success**: Valid admin token with proper permissions
+
+#### **Testing Admin Authentication:**
+
+**1. Test Without Token:**
+```bash
+curl -X GET http://localhost:8888/.netlify/functions/admin-get-all-users
+# Returns: 401 Unauthorized
+```
+
+**2. Test With Invalid Token:**
+```bash
+curl -X GET http://localhost:8888/.netlify/functions/admin-get-all-users \
+  -H "Authorization: Bearer invalid-token"
+# Returns: 401 Unauthorized
+```
+
+**3. Test With Non-Admin Token:**
+```bash
+curl -X GET http://localhost:8888/.netlify/functions/admin-get-all-users \
+  -H "Authorization: Bearer <user-token>"
+# Returns: 403 Forbidden
+```
+
+**4. Test With Admin Token:**
+```bash
+curl -X GET http://localhost:8888/.netlify/functions/admin-get-all-users \
+  -H "Authorization: Bearer <admin-token>"
+# Returns: 200 Success with admin data
+```
+
+#### **Admin Role Assignment:**
+To assign admin role to a user, update the database:
+```sql
+UPDATE users SET role = 'admin' WHERE id = <user_id>;
+```
+
+### SQL Injection Protection
+
+The application includes comprehensive SQL injection protection:
+
+#### **Security Features:**
+- **Parameterized Queries**: All database queries use parameterized statements
+- **Input Sanitization**: User input is sanitized using regex patterns
+- **Safe Query Utilities**: Centralized safe query execution functions
+- **Input Validation**: Strict validation of all parameters and data types
+
+#### **Protected Endpoints:**
+All admin endpoints are protected against SQL injection attacks:
+- `admin-sessions-by-type.js` - Session type distribution queries
+- `admin-sessions-series.js` - Time series data queries  
+- `admin-users-top.js` - Top users analytics queries
+
+#### **Security Testing:**
+```bash
+# Test SQL injection protection
+curl "http://localhost:8888/.netlify/functions/admin-sessions-by-type?from=2024-01-01&to=2024-12-31'; DROP TABLE sessions; --"
+# Returns: 401 Unauthorized (safely handled, no server error)
+
+curl "http://localhost:8888/.netlify/functions/admin-sessions-series?bucket=invalid'; DROP TABLE sessions; --"
+# Returns: 401 Unauthorized (safely handled, no server error)
+```
+
+#### **Safe Query Utilities:**
+Located in `netlify/functions/utils/safe-query.js`:
+- `sanitizeInput()` - Sanitizes user input
+- `safeQuery()` - Executes queries with timeout protection
+- `validateMetric()` - Validates metric parameters
+- `validateBucket()` - Validates time bucket parameters
+- `validateSessionType()` - Validates session type parameters
+
 ## 🔒 Security Audit Progress
 
 ### ✅ COMPLETED TICKETS
@@ -739,6 +834,92 @@ headers: {
   - Added fallback to development-only test key
   - Created environment variable template for testing
 - **Security Impact**: Eliminated hardcoded secrets in test files
+- **Completion Date**: 2024-12-19
+
+#### H2: SQL Injection Vulnerabilities ✅ **COMPLETED**
+- **Status**: Fixed
+- **Files Updated**: 
+  - `netlify/functions/admin-sessions-by-type.js`
+  - `netlify/functions/admin-sessions-series.js`
+  - `netlify/functions/admin-users-top.js`
+  - `netlify/functions/utils/safe-query.js` (new)
+- **Features Added**: 
+  - Parameterized queries using Neon template literals
+  - Input sanitization with regex patterns
+  - Safe query execution utilities
+  - Comprehensive input validation
+- **Security Improvements**:
+  - Fixed regex pattern in `sanitizeInput()` function
+  - All admin endpoints now use safe query execution
+  - SQL injection attempts return 401 Unauthorized (not 500 errors)
+- **Completion Date**: 2024-12-19
+
+#### H3: Client-Side Environment Variable Access ✅ **COMPLETED**
+- **Status**: Fixed
+- **Files Updated**: 
+  - `config.js` - Removed server-side environment variables
+  - `netlify/functions/strava-proxy.js` - Use env vars directly
+  - `netlify/functions/ai-proxy.js` - Use env vars directly
+  - `tracker.html` - Updated to use new config system
+  - `ignitefitness_tracker.html` - Updated to use new config system
+  - `netlify/functions/public-config.js` (new) - Safe public config endpoint
+- **Features Added**: 
+  - Public configuration endpoint for safe client-side config
+  - Configuration loader class for dynamic config loading
+  - Server-side environment variable handling
+  - Client-side configuration validation
+- **Security Improvements**:
+  - No more server-side secrets exposed to client
+  - Environment variables only accessible server-side
+  - Public config endpoint returns only safe data
+  - Clear separation between client and server configuration
+- **Completion Date**: 2024-12-19
+
+#### H4: JWT Secret & Error Logging Sanitization ✅ **COMPLETED**
+- **Status**: Fixed
+- **Files Updated**: 
+  - `netlify/functions/utils/error-handler.js` (new) - Comprehensive error handling utility
+  - `netlify/functions/utils/auth.js` - Sanitized JWT error logging
+  - `netlify/functions/admin-users-top.js` - Updated error handling
+  - `netlify/functions/sessions-list.js` - Updated error handling
+- **Features Added**: 
+  - Error sanitization utility with sensitive pattern detection
+  - Unique error ID generation for debugging
+  - Safe error responses for clients
+  - Detailed server-side error logging
+  - Error response validation
+- **Security Improvements**:
+  - No JWT secrets or sensitive data in error messages
+  - Sanitized error responses to clients
+  - Detailed error logging server-side only
+  - Unique error IDs for tracking without data exposure
+  - Pattern-based sensitive data detection and removal
+- **Completion Date**: 2024-12-19
+
+#### H5: Strava Token Logging Removal ✅ **COMPLETED**
+- **Status**: Fixed
+- **Files Updated**: 
+  - `netlify/functions/utils/safe-logging.js` (new) - Comprehensive safe logging utility
+  - `netlify/functions/strava-refresh-token.js` - Removed token logging, added safe logging
+  - `netlify/functions/strava-oauth-exchange.js` - Removed token logging, added safe logging
+  - `netlify/functions/integrations-strava-import.js` - Removed token logging, added safe logging
+  - `netlify/functions/strava-proxy.js` - Updated error logging with safe patterns
+  - `netlify/functions/strava-oauth.js` - Updated error logging with safe patterns
+  - `netlify/functions/strava-auto-refresh.js` - Updated all logging with safe patterns
+- **Features Added**: 
+  - Safe logging utility with token masking
+  - Context-aware loggers for each Strava function
+  - Token masking showing only last 4 characters
+  - Sensitive field detection and sanitization
+  - Debug mode with encrypted token logging
+  - Rate limit and token expiry logging
+- **Security Improvements**:
+  - No access tokens or refresh tokens in logs
+  - No bearer tokens or authorization headers logged
+  - Masked token values for debugging (****abc1)
+  - Sensitive field pattern detection
+  - Safe metadata logging for operations
+  - Debug mode for development environments only
 - **Completion Date**: 2024-12-19
 
 #### Ticket 9: Add Unit & Integration Test Harness ✅ **COMPLETED**
@@ -820,17 +1001,21 @@ headers: {
   - Test structure and organization guide
 - **Completion Date**: 2024-12-25
 
-### 🔴 CRITICAL TICKETS (In Progress)
+#### H2: Unauthenticated Admin Endpoints ✅ **COMPLETED**
+- **Status**: Fixed
+- **Files Updated**: 
+  - `netlify/functions/admin-get-all-users.js` - Added JWT + admin role verification
+  - `netlify/functions/test-db-connection.js` - Added JWT + admin role verification
+  - `netlify/functions/admin-health.js` - Added JWT + admin role verification
+  - `netlify/functions/admin-overview.js` - Added JWT + admin role verification
+  - `netlify/functions/admin-sessions-by-type.js` - Added JWT + admin role verification
+  - `netlify/functions/admin-sessions-series.js` - Added JWT + admin role verification
+  - `netlify/functions/admin-users-top.js` - Added JWT + admin role verification
+  - `netlify/functions/utils/admin-auth.js` - Fixed import path
+- **Security Impact**: All admin endpoints now require valid JWT token with admin role
+- **Completion Date**: 2024-12-25
 
-#### H2: Unauthenticated Admin Endpoints
-- **Status**: Pending
-- **Files Affected**: 
-  - `netlify/functions/admin-get-all-users.js`
-  - `netlify/functions/test-db-connection.js`
-  - `netlify/functions/ai-proxy.js`
-  - `netlify/functions/strava-proxy.js`
-- **Priority**: CRITICAL
-- **Next Action**: Add authentication middleware
+### 🔴 CRITICAL TICKETS (In Progress)
 
 #### H3: Client-Side Environment Variable Access
 - **Status**: Pending

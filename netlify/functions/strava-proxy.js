@@ -1,5 +1,13 @@
-const { STRAVA_TOKENS } = require('../../config.js');
+// Strava API configuration - using environment variables directly
+const STRAVA_TOKENS = {
+    clientId: process.env.STRAVA_CLIENT_ID,
+    clientSecret: process.env.STRAVA_CLIENT_SECRET
+};
 const jwt = require('jsonwebtoken');
+const { createLogger } = require('./utils/safe-logging');
+
+// Create safe logger for this context
+const logger = createLogger('strava-proxy');
 
 // Security headers for all responses
 const securityHeaders = {
@@ -48,10 +56,9 @@ function verifyJWT(headers) {
         } else if (error.name === 'JsonWebTokenError') {
             return { error: 'INVALID_TOKEN', statusCode: 401 };
         } else {
-            console.error('JWT verification error:', {
-                type: error.name,
-                message: error.message,
-                timestamp: new Date().toISOString()
+            logger.error('JWT verification failed', {
+                error_type: error.name,
+                error_message: error.message
             });
             return { error: 'TOKEN_VERIFICATION_FAILED', statusCode: 401 };
         }
@@ -238,10 +245,9 @@ exports.handler = async (event, context) => {
         };
 
     } catch (error) {
-        console.error('Strava Proxy Error:', {
-            type: error.name,
-            message: error.message,
-            timestamp: new Date().toISOString()
+        logger.error('Strava proxy failed', {
+            error_type: error.name,
+            error_message: error.message
         });
         return {
             statusCode: 500,

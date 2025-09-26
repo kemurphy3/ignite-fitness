@@ -1,5 +1,6 @@
 // JWT Authentication Utilities for User Profiles
 const jwt = require('jsonwebtoken');
+const { handleError, generateErrorId } = require('./error-handler');
 
 async function verifyJWT(headers) {
     const authHeader = headers['authorization'];
@@ -13,7 +14,14 @@ async function verifyJWT(headers) {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         return decoded.sub; // user_id
     } catch (error) {
-        console.error('JWT verification failed:', error.message);
+        // Log error with sanitized information
+        const errorId = generateErrorId();
+        console.error('JWT verification failed:', {
+            errorId,
+            type: error.name,
+            message: error.message.replace(/JWT_SECRET|secret|key/gi, '[REDACTED]'),
+            timestamp: new Date().toISOString()
+        });
         return null;
     }
 }

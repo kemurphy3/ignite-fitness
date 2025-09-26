@@ -9,6 +9,11 @@ const {
   successResponse 
 } = require('./utils/admin-auth');
 
+const { 
+  safeQuery, 
+  validateBucket 
+} = require('./utils/safe-query');
+
 const { getNeonClient } = require('./utils/connection-pool');
 const sql = getNeonClient();
 
@@ -28,56 +33,141 @@ exports.handler = async (event) => {
     
     const { from, to } = event.queryStringParameters || {};
     
-    // Build date filter
-    let whereConditions = ['deleted_at IS NULL'];
-    const params = [];
+    // Validate and parse date parameters safely
+    let fromDate = null;
+    let toDate = null;
     
     if (from) {
-      const fromDate = new Date(from);
-      if (!isNaN(fromDate)) {
-        whereConditions.push(`created_at >= $${params.length + 1}`);
-        params.push(fromDate);
+      fromDate = new Date(from);
+      if (isNaN(fromDate)) {
+        return errorResponse(400, 'INVALID_DATE', 'Invalid from date format', requestId);
       }
     }
     
     if (to) {
-      const toDate = new Date(to);
-      if (!isNaN(toDate)) {
-        whereConditions.push(`created_at <= $${params.length + 1}`);
-        params.push(toDate);
+      toDate = new Date(to);
+      if (isNaN(toDate)) {
+        return errorResponse(400, 'INVALID_DATE', 'Invalid to date format', requestId);
       }
     }
     
-    // Get distribution with privacy thresholds
+    // Get distribution with privacy thresholds using safe parameterized queries
     const distribution = await withTimeout(async () => {
-      return await sql`
-        WITH type_counts AS (
-          SELECT 
-            COALESCE(session_type, 'unspecified') as session_type,
-            COUNT(*) as count,
-            COUNT(DISTINCT user_id) as unique_users
-          FROM sessions
-          WHERE deleted_at IS NULL
-            ${from ? sql`AND created_at >= ${new Date(from)}` : sql``}
-            ${to ? sql`AND created_at <= ${new Date(to)}` : sql``}
-          GROUP BY session_type
-        ),
-        totals AS (
-          SELECT SUM(count) as total FROM type_counts
-        )
-        SELECT 
-          tc.session_type,
-          tc.count,
-          ROUND(tc.count::numeric / NULLIF(t.total, 0) * 100, 1) as percentage,
-          CASE 
-            WHEN tc.unique_users < 5 THEN NULL
-            ELSE tc.unique_users
-          END as unique_users,
-          tc.unique_users >= 5 as meets_privacy_threshold
-        FROM type_counts tc
-        CROSS JOIN totals t
-        ORDER BY tc.count DESC
-      `;
+      return await safeQuery(async () => {
+        if (fromDate && toDate) {
+          return await sql`
+            WITH type_counts AS (
+              SELECT 
+                COALESCE(session_type, 'unspecified') as session_type,
+                COUNT(*) as count,
+                COUNT(DISTINCT user_id) as unique_users
+              FROM sessions
+              WHERE deleted_at IS NULL
+                AND created_at >= ${fromDate}
+                AND created_at <= ${toDate}
+              GROUP BY session_type
+            ),
+            totals AS (
+              SELECT SUM(count) as total FROM type_counts
+            )
+            SELECT 
+              tc.session_type,
+              tc.count,
+              ROUND(tc.count::numeric / NULLIF(t.total, 0) * 100, 1) as percentage,
+              CASE 
+                WHEN tc.unique_users < 5 THEN NULL
+                ELSE tc.unique_users
+              END as unique_users,
+              tc.unique_users >= 5 as meets_privacy_threshold
+            FROM type_counts tc
+            CROSS JOIN totals t
+            ORDER BY tc.count DESC
+          `;
+        } else if (fromDate) {
+          return await sql`
+            WITH type_counts AS (
+              SELECT 
+                COALESCE(session_type, 'unspecified') as session_type,
+                COUNT(*) as count,
+                COUNT(DISTINCT user_id) as unique_users
+              FROM sessions
+              WHERE deleted_at IS NULL
+                AND created_at >= ${fromDate}
+              GROUP BY session_type
+            ),
+            totals AS (
+              SELECT SUM(count) as total FROM type_counts
+            )
+            SELECT 
+              tc.session_type,
+              tc.count,
+              ROUND(tc.count::numeric / NULLIF(t.total, 0) * 100, 1) as percentage,
+              CASE 
+                WHEN tc.unique_users < 5 THEN NULL
+                ELSE tc.unique_users
+              END as unique_users,
+              tc.unique_users >= 5 as meets_privacy_threshold
+            FROM type_counts tc
+            CROSS JOIN totals t
+            ORDER BY tc.count DESC
+          `;
+        } else if (toDate) {
+          return await sql`
+            WITH type_counts AS (
+              SELECT 
+                COALESCE(session_type, 'unspecified') as session_type,
+                COUNT(*) as count,
+                COUNT(DISTINCT user_id) as unique_users
+              FROM sessions
+              WHERE deleted_at IS NULL
+                AND created_at <= ${toDate}
+              GROUP BY session_type
+            ),
+            totals AS (
+              SELECT SUM(count) as total FROM type_counts
+            )
+            SELECT 
+              tc.session_type,
+              tc.count,
+              ROUND(tc.count::numeric / NULLIF(t.total, 0) * 100, 1) as percentage,
+              CASE 
+                WHEN tc.unique_users < 5 THEN NULL
+                ELSE tc.unique_users
+              END as unique_users,
+              tc.unique_users >= 5 as meets_privacy_threshold
+            FROM type_counts tc
+            CROSS JOIN totals t
+            ORDER BY tc.count DESC
+          `;
+        } else {
+          return await sql`
+            WITH type_counts AS (
+              SELECT 
+                COALESCE(session_type, 'unspecified') as session_type,
+                COUNT(*) as count,
+                COUNT(DISTINCT user_id) as unique_users
+              FROM sessions
+              WHERE deleted_at IS NULL
+              GROUP BY session_type
+            ),
+            totals AS (
+              SELECT SUM(count) as total FROM type_counts
+            )
+            SELECT 
+              tc.session_type,
+              tc.count,
+              ROUND(tc.count::numeric / NULLIF(t.total, 0) * 100, 1) as percentage,
+              CASE 
+                WHEN tc.unique_users < 5 THEN NULL
+                ELSE tc.unique_users
+              END as unique_users,
+              tc.unique_users >= 5 as meets_privacy_threshold
+            FROM type_counts tc
+            CROSS JOIN totals t
+            ORDER BY tc.count DESC
+          `;
+        }
+      });
     });
     
     const total = distribution.reduce((sum, row) => sum + row.count, 0);

@@ -8,7 +8,7 @@
 const { neon } = require('@neondatabase/serverless');
 
 // Initialize database connection
-const { getNeonClient } = require('./utils/connection-pool');
+const { getNeonClient } = require('./connection-pool');
 const sql = getNeonClient();
 
 /**
@@ -19,7 +19,7 @@ const sql = getNeonClient();
 function sanitizeInput(input) {
     if (typeof input === 'string') {
         // Remove potential SQL injection characters
-        return input.replace(/['"\\;--]/g, '');
+        return input.replace(/['"\\;\-]/g, '');
     }
     if (typeof input === 'number') {
         // Ensure numbers are within safe ranges
@@ -50,47 +50,19 @@ function sanitizeInput(input) {
 }
 
 /**
- * Execute a safe parameterized query
- * @param {string} query - SQL query template
- * @param {Array} params - Query parameters
+ * Execute a safe parameterized query using Neon template literals
+ * @param {Function} queryFn - Function that returns a Neon template literal
  * @param {Object} options - Query options
  * @returns {Promise<Array>} - Query results
  */
-async function safeQuery(query, params = [], options = {}) {
+async function safeQuery(queryFn, options = {}) {
     try {
-        // Validate query string
-        if (typeof query !== 'string') {
-            throw new Error('Query must be a string');
-        }
-        
-        // Check for dangerous SQL patterns
-        const dangerousPatterns = [
-            /DROP\s+TABLE/i,
-            /DELETE\s+FROM/i,
-            /UPDATE\s+.*SET/i,
-            /INSERT\s+INTO/i,
-            /ALTER\s+TABLE/i,
-            /CREATE\s+TABLE/i,
-            /EXEC\s*\(/i,
-            /xp_cmdshell/i,
-            /sp_executesql/i
-        ];
-        
-        for (const pattern of dangerousPatterns) {
-            if (pattern.test(query)) {
-                throw new Error('Dangerous SQL pattern detected');
-            }
-        }
-        
-        // Sanitize parameters
-        const sanitizedParams = params.map(sanitizeInput);
-        
         // Execute query with timeout
         const timeout = options.timeout || 30000; // 30 seconds default
         const startTime = Date.now();
         
         const result = await Promise.race([
-            sql`${query}`.apply(null, sanitizedParams),
+            queryFn(),
             new Promise((_, reject) => 
                 setTimeout(() => reject(new Error('Query timeout')), timeout)
             )
@@ -100,8 +72,6 @@ async function safeQuery(query, params = [], options = {}) {
         
         // Log query execution (without sensitive data)
         console.log('Safe query executed:', {
-            queryLength: query.length,
-            paramCount: sanitizedParams.length,
             executionTime,
             resultCount: Array.isArray(result) ? result.length : 0,
             timestamp: new Date().toISOString()
@@ -112,8 +82,6 @@ async function safeQuery(query, params = [], options = {}) {
     } catch (error) {
         console.error('Safe query error:', {
             error: error.message,
-            queryLength: query.length,
-            paramCount: params.length,
             timestamp: new Date().toISOString()
         });
         throw error;
@@ -244,6 +212,80 @@ async function safeDelete(table, conditions, options = {}) {
 }
 
 /**
+ * Validate column name against whitelist
+ * @param {string} column - Column name to validate
+ * @param {Array} allowedColumns - Array of allowed column names
+ * @returns {boolean} - Whether column is valid
+ */
+function validateColumnName(column, allowedColumns) {
+    if (!column || typeof column !== 'string') {
+        return false;
+    }
+    return allowedColumns.includes(column);
+}
+
+/**
+ * Validate sort direction
+ * @param {string} direction - Sort direction to validate
+ * @returns {string} - Validated sort direction
+ */
+function validateSortDirection(direction) {
+    const validDirections = ['ASC', 'DESC', 'asc', 'desc'];
+    if (validDirections.includes(direction)) {
+        return direction.toUpperCase();
+    }
+    throw new Error('Invalid sort direction. Must be ASC or DESC');
+}
+
+/**
+ * Validate metric parameter
+ * @param {string} metric - Metric to validate
+ * @param {Array} allowedMetrics - Array of allowed metrics
+ * @returns {string} - Validated metric
+ */
+function validateMetric(metric, allowedMetrics) {
+    if (!metric || typeof metric !== 'string') {
+        throw new Error('Metric parameter is required');
+    }
+    if (!allowedMetrics.includes(metric)) {
+        throw new Error(`Invalid metric. Must be one of: ${allowedMetrics.join(', ')}`);
+    }
+    return metric;
+}
+
+/**
+ * Validate bucket parameter for time series
+ * @param {string} bucket - Bucket to validate
+ * @returns {string} - Validated bucket
+ */
+function validateBucket(bucket) {
+    const allowedBuckets = ['day', 'week', 'month'];
+    if (!bucket || typeof bucket !== 'string') {
+        return 'day'; // default
+    }
+    if (!allowedBuckets.includes(bucket)) {
+        throw new Error(`Invalid bucket. Must be one of: ${allowedBuckets.join(', ')}`);
+    }
+    return bucket;
+}
+
+/**
+ * Validate session type parameter
+ * @param {string} sessionType - Session type to validate
+ * @param {Array} allowedTypes - Array of allowed session types
+ * @returns {string} - Validated session type
+ */
+function validateSessionType(sessionType, allowedTypes) {
+    if (!sessionType || typeof sessionType !== 'string') {
+        return 'unspecified'; // default
+    }
+    if (!allowedTypes.includes(sessionType)) {
+        throw new Error(`Invalid session type. Must be one of: ${allowedTypes.join(', ')}`);
+    }
+    return sessionType;
+}
+
+/**
  * Validate user ownership of resource
  * @param {string} table - Table name
  * @param {string} resourceId - Resource ID
@@ -268,5 +310,10 @@ module.exports = {
     safeInsert,
     safeUpdate,
     safeDelete,
+    validateColumnName,
+    validateSortDirection,
+    validateMetric,
+    validateBucket,
+    validateSessionType,
     validateOwnership
 };

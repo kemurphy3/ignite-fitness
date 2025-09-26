@@ -4,6 +4,10 @@ const { TokenEncryption } = require('./utils/encryption');
 const { stravaOAuthCircuit } = require('./utils/circuit-breaker');
 const { auditLog } = require('./utils/audit');
 const { checkEndpointRateLimit, getRateLimitHeaders } = require('./utils/rate-limiter');
+const { createLogger } = require('./utils/safe-logging');
+
+// Create safe logger for this context
+const logger = createLogger('strava-oauth-exchange');
 
 exports.handler = async (event) => {
   // Handle preflight requests
@@ -131,6 +135,13 @@ exports.handler = async (event) => {
       });
     });
     
+    // Log successful OAuth exchange with safe metadata
+    logger.oauthExchange({
+      userId: userId,
+      athleteId: tokens.athlete?.id,
+      scope: tokens.scope
+    });
+    
     return {
       statusCode: 200,
       headers: {
@@ -147,7 +158,12 @@ exports.handler = async (event) => {
     };
     
   } catch (error) {
-    console.error('OAuth exchange error:', error);
+    // Log error with sanitized data
+    logger.error('OAuth exchange failed', {
+      error_type: error.constructor.name,
+      error_message: error.message,
+      circuit_breaker_state: stravaOAuthCircuit.getStatus().state
+    });
     
     // Log the error
     try {
@@ -165,7 +181,7 @@ exports.handler = async (event) => {
         }
       });
     } catch (auditError) {
-      console.error('Failed to log audit:', auditError);
+      logger.error('Failed to log audit', { error: auditError.message });
     }
     
     return {
@@ -187,7 +203,7 @@ async function validateStravaToken(accessToken) {
     });
     return response.ok;
   } catch (error) {
-    console.error('Token validation failed:', error);
+    logger.error('Token validation failed', { error: error.message });
     return false;
   }
 }

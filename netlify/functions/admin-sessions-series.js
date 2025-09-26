@@ -11,6 +11,11 @@ const {
   successResponse 
 } = require('./utils/admin-auth');
 
+const { 
+  safeQuery, 
+  validateBucket 
+} = require('./utils/safe-query');
+
 const { getNeonClient } = require('./utils/connection-pool');
 const sql = getNeonClient();
 
@@ -35,55 +40,76 @@ exports.handler = async (event) => {
       return errorResponse(400, 'MISSING_PARAMS', 'Parameters from and to are required', requestId);
     }
     
-    // Validate date range and timezone
+    // Validate date range, timezone, and bucket
     const { fromDate, toDate } = validateDateRange(from, to);
     const validatedTimezone = validateTimezone(timezone);
+    const validatedBucket = validateBucket(bucket);
     
-    // Proper timezone conversion with DST handling
-    let series;
-    if (bucket === 'day') {
-      series = await withTimeout(async () => {
-        return await sql`
-          SELECT 
-            (created_at AT TIME ZONE 'UTC' AT TIME ZONE ${validatedTimezone})::date as date,
-            COUNT(*) as session_count,
-            COUNT(DISTINCT user_id) as unique_users_raw,
-            CASE 
-              WHEN COUNT(DISTINCT user_id) < 5 THEN NULL
-              ELSE COUNT(DISTINCT user_id)
-            END as unique_users,
-            COUNT(CASE WHEN completed THEN 1 END) as completed_count,
-            COUNT(DISTINCT user_id) >= 5 as meets_privacy_threshold
-          FROM sessions
-          WHERE created_at >= ${fromDate}
-            AND created_at < ${toDate}::date + INTERVAL '1 day'
-            AND deleted_at IS NULL
-          GROUP BY (created_at AT TIME ZONE 'UTC' AT TIME ZONE ${validatedTimezone})::date
-          ORDER BY date ASC
-        `;
+    // Proper timezone conversion with DST handling using safe queries
+    const series = await withTimeout(async () => {
+      return await safeQuery(async () => {
+        if (validatedBucket === 'day') {
+          return await sql`
+            SELECT 
+              (created_at AT TIME ZONE 'UTC' AT TIME ZONE ${validatedTimezone})::date as date,
+              COUNT(*) as session_count,
+              COUNT(DISTINCT user_id) as unique_users_raw,
+              CASE 
+                WHEN COUNT(DISTINCT user_id) < 5 THEN NULL
+                ELSE COUNT(DISTINCT user_id)
+              END as unique_users,
+              COUNT(CASE WHEN completed THEN 1 END) as completed_count,
+              COUNT(DISTINCT user_id) >= 5 as meets_privacy_threshold
+            FROM sessions
+            WHERE created_at >= ${fromDate}
+              AND created_at < ${toDate}::date + INTERVAL '1 day'
+              AND deleted_at IS NULL
+            GROUP BY (created_at AT TIME ZONE 'UTC' AT TIME ZONE ${validatedTimezone})::date
+            ORDER BY date ASC
+          `;
+        } else if (validatedBucket === 'week') {
+          return await sql`
+            SELECT 
+              DATE_TRUNC('week', created_at AT TIME ZONE 'UTC' AT TIME ZONE ${validatedTimezone})::date as date,
+              COUNT(*) as session_count,
+              COUNT(DISTINCT user_id) as unique_users_raw,
+              CASE 
+                WHEN COUNT(DISTINCT user_id) < 5 THEN NULL
+                ELSE COUNT(DISTINCT user_id)
+              END as unique_users,
+              COUNT(CASE WHEN completed THEN 1 END) as completed_count,
+              COUNT(DISTINCT user_id) >= 5 as meets_privacy_threshold
+            FROM sessions
+            WHERE created_at >= ${fromDate}
+              AND created_at < ${toDate}::date + INTERVAL '1 day'
+              AND deleted_at IS NULL
+            GROUP BY DATE_TRUNC('week', created_at AT TIME ZONE 'UTC' AT TIME ZONE ${validatedTimezone})
+            ORDER BY date ASC
+          `;
+        } else if (validatedBucket === 'month') {
+          return await sql`
+            SELECT 
+              DATE_TRUNC('month', created_at AT TIME ZONE 'UTC' AT TIME ZONE ${validatedTimezone})::date as date,
+              COUNT(*) as session_count,
+              COUNT(DISTINCT user_id) as unique_users_raw,
+              CASE 
+                WHEN COUNT(DISTINCT user_id) < 5 THEN NULL
+                ELSE COUNT(DISTINCT user_id)
+              END as unique_users,
+              COUNT(CASE WHEN completed THEN 1 END) as completed_count,
+              COUNT(DISTINCT user_id) >= 5 as meets_privacy_threshold
+            FROM sessions
+            WHERE created_at >= ${fromDate}
+              AND created_at < ${toDate}::date + INTERVAL '1 day'
+              AND deleted_at IS NULL
+            GROUP BY DATE_TRUNC('month', created_at AT TIME ZONE 'UTC' AT TIME ZONE ${validatedTimezone})
+            ORDER BY date ASC
+          `;
+        } else {
+          throw new Error('Invalid bucket parameter');
+        }
       });
-    } else {
-      series = await withTimeout(async () => {
-        return await sql`
-          SELECT 
-            DATE_TRUNC('week', created_at AT TIME ZONE 'UTC' AT TIME ZONE ${validatedTimezone})::date as date,
-            COUNT(*) as session_count,
-            COUNT(DISTINCT user_id) as unique_users_raw,
-            CASE 
-              WHEN COUNT(DISTINCT user_id) < 5 THEN NULL
-              ELSE COUNT(DISTINCT user_id)
-            END as unique_users,
-            COUNT(CASE WHEN completed THEN 1 END) as completed_count,
-            COUNT(DISTINCT user_id) >= 5 as meets_privacy_threshold
-          FROM sessions
-          WHERE created_at >= ${fromDate}
-            AND created_at < ${toDate}::date + INTERVAL '1 day'
-            AND deleted_at IS NULL
-          GROUP BY DATE_TRUNC('week', created_at AT TIME ZONE 'UTC' AT TIME ZONE ${validatedTimezone})
-          ORDER BY date ASC
-        `;
-      });
-    }
+    });
     
     // Calculate summary with privacy
     const summary = series.reduce((acc, row) => ({

@@ -1,6 +1,10 @@
 // Automatic Strava Token Refresh Scheduler
 const { getDB } = require('./utils/database');
 const { auditLog } = require('./utils/audit');
+const { createLogger } = require('./utils/safe-logging');
+
+// Create safe logger for this context
+const logger = createLogger('strava-auto-refresh');
 
 exports.handler = async (event) => {
   // This function is triggered by Netlify Scheduled Functions
@@ -9,7 +13,7 @@ exports.handler = async (event) => {
   const sql = getDB();
   
   try {
-    console.log('Starting automatic token refresh...');
+    logger.info('Starting automatic token refresh');
     
     // Find tokens expiring soon (within 10 minutes)
     const expiringTokens = await sql`
@@ -22,7 +26,7 @@ exports.handler = async (event) => {
       LIMIT 50
     `;
     
-    console.log(`Found ${expiringTokens.length} tokens expiring soon`);
+    logger.info('Found expiring tokens', { count: expiringTokens.length });
     
     const results = [];
     
@@ -64,7 +68,10 @@ exports.handler = async (event) => {
         });
         
       } catch (error) {
-        console.error(`Auto-refresh failed for user ${token.user_id}:`, error);
+        logger.error('Auto-refresh failed for user', { 
+          user_id: token.user_id,
+          error: error.message 
+        });
         
         results.push({
           user_id: token.user_id,
@@ -104,7 +111,7 @@ exports.handler = async (event) => {
       timestamp: new Date().toISOString()
     };
     
-    console.log('Auto-refresh completed:', summary);
+    logger.info('Auto-refresh completed', summary);
     
     return {
       statusCode: 200,
@@ -113,7 +120,7 @@ exports.handler = async (event) => {
     };
     
   } catch (error) {
-    console.error('Auto-refresh error:', error);
+    logger.error('Auto-refresh failed', { error: error.message });
     
     return {
       statusCode: 500,
@@ -135,7 +142,7 @@ async function cleanupRateLimits(sql) {
     `;
     return { deleted: result.length, success: true };
   } catch (error) {
-    console.error('Rate limit cleanup failed:', error);
+    logger.error('Rate limit cleanup failed', { error: error.message });
     return { deleted: 0, success: false, error: error.message };
   }
 }
@@ -149,7 +156,7 @@ async function cleanupExpiredLocks(sql) {
     `;
     return { updated: result.length, success: true };
   } catch (error) {
-    console.error('Lock cleanup failed:', error);
+    logger.error('Lock cleanup failed', { error: error.message });
     return { updated: 0, success: false, error: error.message };
   }
 }
