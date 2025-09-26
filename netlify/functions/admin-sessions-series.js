@@ -11,7 +11,8 @@ const {
   successResponse 
 } = require('./utils/admin-auth');
 
-const sql = neon(process.env.DATABASE_URL);
+const { getNeonClient } = require('./utils/connection-pool');
+const sql = getNeonClient();
 
 exports.handler = async (event) => {
   const startTime = Date.now();

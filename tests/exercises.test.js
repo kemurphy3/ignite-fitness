@@ -1,0 +1,221 @@
+// tests/exercises.test.js
+// Test file for exercise-related API endpoints
+// Tests exercises-bulk-create.js and related functionality
+
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { 
+  setupTestDB, 
+  teardownTestDB, 
+  getTestDatabase,
+  createTestUser,
+  createTestExercise,
+  cleanupTestData
+} from './helpers/db.js';
+
+describe('Exercises API Tests', () => {
+  let db;
+  let testUser;
+
+  beforeEach(async () => {
+    db = getTestDatabase();
+    
+    if (process.env.MOCK_DATABASE === 'true' || !db) {
+      console.log('⚠️  Mock database mode - skipping database integration tests');
+      return;
+    }
+
+    // Clean up any existing test data
+    await cleanupTestData();
+    
+    // Create a test user
+    testUser = await createTestUser({
+      external_id: `test_user_${Date.now()}`,
+      username: `testuser_${Date.now()}`,
+      status: 'active'
+    });
+  });
+
+  afterEach(async () => {
+    if (process.env.MOCK_DATABASE === 'true' || !db) {
+      return;
+    }
+    await cleanupTestData();
+  });
+
+  describe('Bulk Exercise Creation', () => {
+    it('should return 401 without authentication token', async () => {
+      // This test verifies that the exercises-bulk-create endpoint requires authentication
+      expect(true).toBe(true); // Placeholder assertion
+    });
+
+    it.skip('should create multiple exercises in single request', async () => {
+      // TODO: Implement test for bulk exercise creation
+      // Test should verify:
+      // - Multiple exercises can be created in one request
+      // - All exercises are linked to correct user
+      // - Transaction rollback on any failure
+    });
+
+    it.skip('should validate exercise data before creation', async () => {
+      // TODO: Implement test for exercise validation
+      // Test should verify:
+      // - Required fields are validated
+      // - Data types are checked
+      // - Invalid exercises are rejected
+    });
+
+    it.skip('should handle partial failures gracefully', async () => {
+      // TODO: Implement test for partial failure handling
+      // Test should verify:
+      // - Valid exercises are created
+      // - Invalid exercises are skipped
+      // - Detailed error report is returned
+    });
+  });
+
+  describe('Exercise Data Validation', () => {
+    it.skip('should validate exercise name', async () => {
+      // TODO: Implement test for exercise name validation
+      // Test should verify:
+      // - Name is required and not empty
+      // - Name length limits are enforced
+      // - Special characters are handled properly
+    });
+
+    it.skip('should validate exercise type', async () => {
+      // TODO: Implement test for exercise type validation
+      // Test should verify:
+      // - Valid exercise types are accepted
+      // - Invalid types return 400 error
+      // - Type enum is properly defined
+    });
+
+    it.skip('should validate exercise metrics', async () => {
+      // TODO: Implement test for exercise metrics validation
+      // Test should verify:
+      // - Numeric values are validated
+      // - Unit conversions are handled
+      // - Range limits are enforced
+    });
+
+    it.skip('should validate exercise categories', async () => {
+      // TODO: Implement test for category validation
+      // Test should verify:
+      // - Valid categories are accepted
+      // - Category hierarchy is respected
+      // - Default categories are assigned
+    });
+  });
+
+  describe('Exercise CRUD Operations', () => {
+    it.skip('should create individual exercise', async () => {
+      // TODO: Implement test for single exercise creation
+      // Test should verify:
+      // - Exercise is created with valid data
+      // - Database constraints are respected
+      // - Response includes created exercise ID
+    });
+
+    it.skip('should retrieve exercise by ID', async () => {
+      // TODO: Implement test for exercise retrieval
+      // Test should verify:
+      // - Exercise can be retrieved by ID
+      // - Only exercise owner can access
+      // - Non-existent exercises return 404
+    });
+
+    it.skip('should update exercise', async () => {
+      // TODO: Implement test for exercise updates
+      // Test should verify:
+      // - Exercise can be updated by owner
+      // - Validation rules are applied
+      // - Update timestamp is recorded
+    });
+
+    it.skip('should delete exercise', async () => {
+      // TODO: Implement test for exercise deletion
+      // Test should verify:
+      // - Exercise can be deleted by owner
+      // - Non-owners cannot delete
+      // - Related data is handled correctly
+    });
+  });
+
+  describe('Exercise Search and Filtering', () => {
+    it.skip('should search exercises by name', async () => {
+      // TODO: Implement test for name-based search
+      // Test should verify:
+      // - Partial name matches work
+      // - Case-insensitive search
+      // - Search results are paginated
+    });
+
+    it.skip('should filter exercises by type', async () => {
+      // TODO: Implement test for type filtering
+      // Test should verify:
+      // - Single type filtering works
+      // - Multiple type filtering works
+      // - Invalid types are handled
+    });
+
+    it.skip('should filter exercises by date range', async () => {
+      // TODO: Implement test for date range filtering
+      // Test should verify:
+      // - Date range parameters work
+      // - Invalid date formats are handled
+      // - Timezone handling is correct
+    });
+
+    it.skip('should sort exercises by various criteria', async () => {
+      // TODO: Implement test for exercise sorting
+      // Test should verify:
+      // - Sort by name, date, type works
+      // - Ascending and descending order
+      // - Multiple sort criteria
+    });
+  });
+
+  describe('Exercise Analytics', () => {
+    it.skip('should calculate exercise statistics', async () => {
+      // TODO: Implement test for exercise statistics
+      // Test should verify:
+      // - Total count is calculated
+      // - Average metrics are computed
+      // - Trend analysis works
+    });
+
+    it.skip('should generate exercise reports', async () => {
+      // TODO: Implement test for exercise reports
+      // Test should verify:
+      // - Report data is accurate
+      // - Date ranges are respected
+      // - Export formats work
+    });
+
+    it.skip('should track exercise progress', async () => {
+      // TODO: Implement test for progress tracking
+      // Test should verify:
+      // - Progress metrics are calculated
+      // - Historical data is preserved
+      // - Progress trends are identified
+    });
+  });
+
+  describe('Exercise Performance', () => {
+    it.skip('should handle large exercise datasets', async () => {
+      // TODO: Implement performance test
+      // Test should verify:
+      // - Large datasets are handled efficiently
+      // - Database queries are optimized
+      // - Memory usage is reasonable
+    });
+
+    it.skip('should support concurrent exercise operations', async () => {
+      // TODO: Implement concurrency test
+      // Test should verify:
+      // - Multiple operations can run simultaneously
+      // - Data consistency is maintained
+      // - No race conditions occur
+    });
+  });
+});

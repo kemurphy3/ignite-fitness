@@ -96,17 +96,45 @@ CREATE TABLE IF NOT EXISTS user_preferences (
 );
 
 -- Create indexes for better performance
+-- Critical indexes identified in performance audits
+
+-- Users table indexes
 CREATE INDEX IF NOT EXISTS idx_users_external_id ON users(external_id);
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);
+
+-- Sessions table indexes (most critical for performance)
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_type ON sessions(type);
 CREATE INDEX IF NOT EXISTS idx_sessions_start_at ON sessions(start_at);
+CREATE INDEX IF NOT EXISTS idx_sessions_user_start_desc ON sessions(user_id, start_at DESC);
+CREATE INDEX IF NOT EXISTS idx_sessions_user_type ON sessions(user_id, type);
+CREATE INDEX IF NOT EXISTS idx_sessions_user_source ON sessions(user_id, source, source_id) WHERE source_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_sessions_start_at_type ON sessions(start_at, type);
+CREATE INDEX IF NOT EXISTS idx_sessions_created_at ON sessions(created_at);
+
+-- Exercises table indexes
 CREATE INDEX IF NOT EXISTS idx_exercises_user_id ON exercises(user_id);
 CREATE INDEX IF NOT EXISTS idx_exercises_session_id ON exercises(session_id);
+CREATE INDEX IF NOT EXISTS idx_exercises_user_session ON exercises(user_id, session_id);
+CREATE INDEX IF NOT EXISTS idx_exercises_name ON exercises(name);
+CREATE INDEX IF NOT EXISTS idx_exercises_created_at ON exercises(created_at);
+
+-- Sleep sessions table indexes
 CREATE INDEX IF NOT EXISTS idx_sleep_sessions_user_id ON sleep_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sleep_sessions_start_at ON sleep_sessions(start_at);
+CREATE INDEX IF NOT EXISTS idx_sleep_sessions_user_start_desc ON sleep_sessions(user_id, start_at DESC);
+
+-- Strava activities table indexes
 CREATE INDEX IF NOT EXISTS idx_strava_activities_user_id ON strava_activities(user_id);
 CREATE INDEX IF NOT EXISTS idx_strava_activities_strava_id ON strava_activities(strava_id);
 CREATE INDEX IF NOT EXISTS idx_strava_activities_start_date ON strava_activities(start_date);
+CREATE INDEX IF NOT EXISTS idx_strava_activities_user_start_desc ON strava_activities(user_id, start_date DESC);
+CREATE INDEX IF NOT EXISTS idx_strava_activities_type ON strava_activities(type);
+
+-- User preferences table indexes
+CREATE INDEX IF NOT EXISTS idx_user_preferences_user_id ON user_preferences(user_id);
 
 -- Create unique constraints
 CREATE UNIQUE INDEX IF NOT EXISTS idx_sessions_unique_source ON sessions(user_id, source, source_id) WHERE source_id IS NOT NULL;

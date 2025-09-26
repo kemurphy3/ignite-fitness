@@ -1,0 +1,25 @@
+# Test Environment Variables Template
+# Copy this file to .env.test and fill in your test values
+# DO NOT commit actual secrets to version control
+
+# JWT Secret for test token generation
+JWT_SECRET=test-secret-key-for-development-only
+
+# Test API Key for API endpoint testing
+TEST_API_KEY=test-api-key-for-development-only
+
+# Test Base URL for API testing
+TEST_BASE_URL=http://localhost:8888/.netlify/functions
+
+# Test Database URL (use a separate test database)
+TEST_DATABASE_URL=postgresql://test_user:test_pass@localhost:5432/ignite_fitness_test
+
+# Test Strava credentials (use test app credentials)
+TEST_STRAVA_CLIENT_ID=your_test_strava_client_id
+TEST_STRAVA_CLIENT_SECRET=your_test_strava_client_secret
+
+# Test OpenAI API Key (use test key or mock)
+TEST_OPENAI_API_KEY=your_test_openai_api_key
+
+# Test Admin Key
+TEST_ADMIN_KEY=test-admin-key-for-development-only

@@ -6,10 +6,58 @@
     box-sizing: border-box;
 }
 
+/* Accessibility improvements */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Focus styles for better accessibility */
+*:focus {
+    outline: 2px solid #4f46e5;
+    outline-offset: 2px;
+}
+
+*:focus:not(:focus-visible) {
+    outline: none;
+}
+
+*:focus-visible {
+    outline: 2px solid #4f46e5;
+    outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .btn {
+        border: 2px solid currentColor;
+    }
+    
+    .form-input {
+        border: 2px solid currentColor;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #1a1a1a 0%, #2d3748 100%);
-    color: #e2e8f0;
+    color: #f7fafc; /* Improved contrast ratio */
     min-height: 100vh;
     line-height: 1.6;
 }
@@ -28,14 +76,14 @@ body {
 
 .header h1 {
     font-size: 3rem;
-    color: #68d391;
+    color: #48bb78; /* Improved contrast ratio for better accessibility */
     margin-bottom: 10px;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
 }
 
 .header p {
     font-size: 1.2rem;
-    color: #a0aec0;
+    color: #cbd5e0; /* Improved contrast ratio */
 }
 
 .form-section {
@@ -47,7 +95,7 @@ body {
 }
 
 .form-section h2 {
-    color: #68d391;
+    color: #48bb78; /* Improved contrast ratio */
     margin-bottom: 20px;
     text-align: center;
 }
@@ -72,23 +120,46 @@ body {
     width: 100%;
     padding: 12px 16px;
     background: #4a5568;
-    border: 2px solid transparent;
+    border: 2px solid #718096;
     border-radius: 8px;
-    color: #e2e8f0;
+    color: #f7fafc; /* Improved contrast */
     font-size: 16px;
     transition: all 0.3s ease;
+    min-height: 44px; /* Minimum touch target size */
 }
 
 .form-input:focus {
-    outline: none;
-    border-color: #68d391;
+    outline: 2px solid #4f46e5;
+    outline-offset: 2px;
+    border-color: #4f46e5;
     background: #2d3748;
 }
 
+.form-input:invalid {
+    border-color: #fc8181;
+}
+
+.form-input:valid {
+    border-color: #48bb78;
+}
+
+/* Form actions styling */
+.form-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.form-footer {
+    margin-top: 15px;
+    text-align: center;
+}
+
 .btn {
-    background: #68d391;
-    color: #1a1a1a;
-    border: none;
+    background: #4f46e5;
+    color: white;
+    border: 2px solid transparent;
     padding: 12px 24px;
     border-radius: 8px;
     font-size: 16px;
@@ -97,16 +168,39 @@ body {
     transition: all 0.3s ease;
     margin-right: 10px;
     margin-bottom: 10px;
+    min-height: 44px; /* Minimum touch target size */
+    min-width: 44px;
 }
 
 .btn:hover {
-    background: #48bb78;
+    background: #4338ca;
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(104, 211, 145, 0.3);
+    box-shadow: 0 5px 15px rgba(79, 70, 229, 0.4);
+}
+
+.btn:focus {
+    outline: 2px solid #4f46e5;
+    outline-offset: 2px;
+    background: #4338ca;
 }
 
 .btn:active {
     transform: translateY(0);
+}
+
+.btn-secondary {
+    background: #4a5568; /* Improved contrast */
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #2d3748; /* Darker for better contrast */
+}
+
+.btn-secondary:focus {
+    outline: 2px solid #4a5568;
+    outline-offset: 2px;
+    background: #2d3748;
 }
 
 .radio-group {
@@ -264,7 +358,7 @@ body {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    background: #4299e1;
+    background: #2b6cb0; /* Improved contrast */
     color: white;
     border: none;
     border-radius: 50px;
@@ -272,15 +366,23 @@ body {
     font-size: 16px;
     font-weight: bold;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+    box-shadow: 0 4px 12px rgba(43, 108, 176, 0.3);
     z-index: 1000;
     transition: all 0.3s ease;
+    min-height: 44px; /* Minimum touch target size */
+    min-width: 44px;
 }
 
 .ai-chat-toggle:hover {
-    background: #3182ce;
+    background: #2c5282; /* Darker for better contrast */
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(66, 153, 225, 0.4);
+    box-shadow: 0 6px 16px rgba(44, 82, 130, 0.4);
+}
+
+.ai-chat-toggle:focus {
+    outline: 2px solid #2b6cb0;
+    outline-offset: 2px;
+    background: #2c5282;
 }
 
 .ai-chat-container {

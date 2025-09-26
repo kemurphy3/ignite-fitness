@@ -1,45 +1,15 @@
 // Database Connection Management for Strava Token System
-const { neon } = require('@neondatabase/serverless');
+// Updated to use centralized connection pooling
+const { getNeonClient, executeQuery } = require('./connection-pool-simple');
 
-let sql;
-let connectionPool;
-
+// Legacy compatibility functions
 function getServerlessDB() {
-  if (!sql) {
-    if (!process.env.DATABASE_URL) {
-      throw new Error('DATABASE_URL not configured');
-    }
-    
-    sql = neon(process.env.DATABASE_URL, {
-      poolQueryViaFetch: true,
-      fetchOptions: {
-        priority: 'high',
-      }
-    });
-  }
-  return sql;
+  return getNeonClient();
 }
 
-// For traditional PostgreSQL connections (if needed)
 function getConnectionPool() {
-  if (!connectionPool) {
-    const { Pool } = require('pg');
-    
-    connectionPool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      max: 20,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000,
-      statement_timeout: 10000,
-      query_timeout: 10000,
-      ssl: { rejectUnauthorized: false }
-    });
-
-    connectionPool.on('error', (err) => {
-      console.error('Unexpected pool error', err);
-    });
-  }
-  return connectionPool;
+  // For compatibility, return the Neon client
+  return getNeonClient();
 }
 
 // Health check for database connection

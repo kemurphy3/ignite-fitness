@@ -6,13 +6,25 @@
   "scripts": {
     "build": "echo 'No build step needed for static site'",
     "dev": "netlify dev",
-    "deploy": "netlify deploy --prod"
+    "deploy": "netlify deploy --prod",
+    "test": "vitest --run",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^0.9.5"
+    "@neondatabase/serverless": "^0.9.5",
+    "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
-    "netlify-cli": "^15.0.0"
+    "@axe-core/cli": "^4.10.2",
+    "@vitest/coverage-v8": "^1.0.0",
+    "@vitest/ui": "^1.0.0",
+    "dotenv": "^16.3.1",
+    "netlify-cli": "^15.0.0",
+    "pg": "^8.11.3",
+    "supertest": "^6.3.3",
+    "vitest": "^1.0.0"
   },
   "repository": {
     "type": "git",

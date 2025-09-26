@@ -48,7 +48,8 @@ function sanitizeForLog(data) {
 }
 
 exports.handler = async (event) => {
-    const sql = neon(process.env.DATABASE_URL);
+    const { getNeonClient } = require('./utils/connection-pool');
+const sql = getNeonClient();
     
     // CORS headers
     const headers = {

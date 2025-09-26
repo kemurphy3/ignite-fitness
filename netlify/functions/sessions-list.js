@@ -7,6 +7,30 @@ const {
   preflightResponse,
   validateSessionType
 } = require('./_base');
+const { 
+  validatePaginationParams, 
+  createPaginatedResponse, 
+  getCursorDataForItem,
+  buildCursorCondition,
+  buildTimestampCondition,
+  validatePaginationInput
+} = require('./utils/pagination');
+
+// Helper function to get total count
+async function getTotalCount(sql, whereClause, params) {
+  try {
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM sessions 
+      WHERE ${whereClause}
+    `;
+    const countResult = await sql.unsafe(countQuery, params);
+    return parseInt(countResult[0].total);
+  } catch (error) {
+    console.error('Error getting total count:', error);
+    return null;
+  }
+}
 
 exports.handler = async (event) => {
   // Handle preflight requests
@@ -34,12 +58,17 @@ exports.handler = async (event) => {
     const sql = getDB();
     const queryParams = event.queryStringParameters || {};
 
+    // Validate pagination parameters
+    const paginationErrors = validatePaginationInput(queryParams);
+    if (paginationErrors.length > 0) {
+      return errorResponse(400, 'VALIDATION_ERROR', paginationErrors.join(', '));
+    }
+
     // Parse and validate query parameters
     const type = queryParams.type;
     const startDate = queryParams.start_date;
     const endDate = queryParams.end_date;
-    const limit = Math.min(parseInt(queryParams.limit) || 20, 100);
-    const before = queryParams.before;
+    const pagination = validatePaginationParams(queryParams);
 
     // Validate type if provided
     if (type) {
@@ -68,15 +97,6 @@ exports.handler = async (event) => {
       }
     }
 
-    // Validate before timestamp if provided
-    let beforeDate = null;
-    if (before) {
-      beforeDate = new Date(before);
-      if (isNaN(beforeDate.getTime())) {
-        return errorResponse(400, 'VALIDATION_ERROR', 'Invalid before timestamp format');
-      }
-    }
-
     // Build query conditions
     let whereConditions = [`user_id = ${userId}`];
     let queryParams = [userId];
@@ -96,9 +116,18 @@ exports.handler = async (event) => {
       queryParams.push(endDateObj);
     }
 
-    if (beforeDate) {
-      whereConditions.push(`start_at < $${queryParams.length + 1}`);
-      queryParams.push(beforeDate);
+    // Add cursor-based pagination condition
+    const cursorCondition = buildCursorCondition(pagination.cursor, 'start_at DESC, id ASC');
+    if (cursorCondition.condition) {
+      whereConditions.push(cursorCondition.condition.replace('AND ', ''));
+      queryParams.push(...cursorCondition.values);
+    }
+
+    // Add timestamp-based pagination condition
+    const timestampCondition = buildTimestampCondition(pagination.before, pagination.after, 'start_at');
+    if (timestampCondition.condition) {
+      whereConditions.push(timestampCondition.condition.replace('AND ', ''));
+      queryParams.push(...timestampCondition.values);
     }
 
     const whereClause = whereConditions.join(' AND ');
@@ -109,38 +138,27 @@ exports.handler = async (event) => {
              payload, session_hash, created_at, updated_at
       FROM sessions 
       WHERE ${whereClause}
-      ORDER BY start_at DESC
+      ORDER BY start_at DESC, id ASC
       LIMIT $${queryParams.length + 1}
     `;
     
-    queryParams.push(limit + 1); // Get one extra to check if there are more
+    queryParams.push(pagination.limit + 1); // Get one extra to check if there are more
 
     const sessions = await sql.unsafe(sessionsQuery, queryParams);
 
-    // Check if there are more results
-    const hasMore = sessions.length > limit;
-    const sessionsToReturn = hasMore ? sessions.slice(0, limit) : sessions;
-    
-    // Get next_before timestamp
-    let nextBefore = null;
-    if (hasMore && sessionsToReturn.length > 0) {
-      nextBefore = sessionsToReturn[sessionsToReturn.length - 1].start_at;
-    }
-
-    // Get total count (only if less than 1000 for performance)
-    let total = null;
-    if (sessionsToReturn.length < 1000) {
-      const countQuery = `
-        SELECT COUNT(*) as total
-        FROM sessions 
-        WHERE ${whereClause}
-      `;
-      const countResult = await sql.unsafe(countQuery, queryParams.slice(0, -1));
-      total = parseInt(countResult[0].total);
-    }
+    // Create paginated response
+    const paginatedResponse = createPaginatedResponse(
+      sessions,
+      pagination.limit,
+      (item) => getCursorDataForItem(item, 'sessions'),
+      {
+        includeTotal: sessions.length < 1000,
+        total: sessions.length < 1000 ? await getTotalCount(sql, whereClause, queryParams.slice(0, -1)) : undefined
+      }
+    );
 
     return successResponse({
-      sessions: sessionsToReturn.map(session => ({
+      sessions: paginatedResponse.data.map(session => ({
         id: session.id,
         type: session.type,
         source: session.source,
@@ -153,12 +171,7 @@ exports.handler = async (event) => {
         created_at: session.created_at,
         updated_at: session.updated_at
       })),
-      pagination: {
-        has_more: hasMore,
-        next_before: nextBefore,
-        count: sessionsToReturn.length,
-        total: total
-      }
+      pagination: paginatedResponse.pagination
     });
 
   } catch (error) {

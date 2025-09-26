@@ -1,6 +1,7 @@
 const { neon } = require('@neondatabase/serverless');
 
-const sql = neon(process.env.DATABASE_URL);
+const { getNeonClient } = require('./utils/connection-pool');
+const sql = getNeonClient();
 
 const okJson = (data) => ({
     statusCode: 200,

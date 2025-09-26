@@ -10,6 +10,7 @@ const {
   validateFutureDate,
   validatePayloadSize
 } = require('./_base');
+// Note: getDB() now uses centralized connection pooling automatically
 
 exports.handler = async (event) => {
   // Handle preflight requests

@@ -1,6 +1,13 @@
 // GET /sessions/:sessionId/exercises - List with Stable Pagination
 const { neon } = require('@neondatabase/serverless');
 const jwt = require('jsonwebtoken');
+const { 
+  validatePaginationParams, 
+  createPaginatedResponse, 
+  getCursorDataForItem,
+  buildCursorCondition,
+  validatePaginationInput
+} = require('./utils/pagination');
 
 // Helper to sanitize for logging
 function sanitizeForLog(data) {
@@ -16,7 +23,8 @@ function sanitizeForLog(data) {
 }
 
 exports.handler = async (event) => {
-    const sql = neon(process.env.DATABASE_URL);
+    const { getNeonClient } = require('./utils/connection-pool');
+const sql = getNeonClient();
     
     const headers = {
         'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGINS || '*',
@@ -111,78 +119,61 @@ exports.handler = async (event) => {
             };
         }
         
-        // Parse query parameters
+        // Parse and validate query parameters
         const params = event.queryStringParameters || {};
-        const limit = Math.min(Math.max(parseInt(params.limit) || 20, 1), 100);
-        const cursor = params.cursor;
         
-        let cursorCondition = '';
-        let cursorValues = {};
-        
-        if (cursor) {
-            try {
-                // Decode JSON cursor
-                const decoded = JSON.parse(Buffer.from(cursor, 'base64').toString());
-                
-                if (decoded.v !== 1) {
-                    throw new Error('Unsupported cursor version');
-                }
-                
-                cursorCondition = ` AND (order_index, created_at, id) > (${decoded.o}, '${decoded.c}', '${decoded.i}')`;
-                cursorValues = { 
-                    cursor_order: decoded.o,
-                    cursor_created: decoded.c,
-                    cursor_id: decoded.i
-                };
-            } catch (err) {
-                return {
-                    statusCode: 400,
-                    headers,
-                    body: JSON.stringify({ 
-                        error: { 
-                            message: 'Invalid cursor', 
-                            code: 'VAL_005' 
-                        }
-                    })
-                };
-            }
+        // Validate pagination parameters
+        const paginationErrors = validatePaginationInput(params);
+        if (paginationErrors.length > 0) {
+            return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({ 
+                    error: { 
+                        message: paginationErrors.join(', '), 
+                        code: 'VAL_005' 
+                    }
+                })
+            };
         }
         
-        // Fetch exercises with stable ordering
-        const exercises = await sql`
+        const pagination = validatePaginationParams(params);
+        
+        // Build cursor condition for exercises
+        const cursorCondition = buildCursorCondition(pagination.cursor, 'order_index ASC, created_at ASC, id ASC', 'se');
+        
+        // Fetch exercises with stable ordering and pagination
+        const exercisesQuery = `
             SELECT 
                 id, name, sets, reps, weight_kg, rpe,
                 tempo, rest_seconds, notes, superset_group,
                 order_index, equipment_type, muscle_groups,
                 exercise_type, created_at, updated_at
-            FROM session_exercises
-            WHERE session_id = ${sessionId}
-            ${cursor ? sql`AND (order_index, created_at, id) > (${cursorValues.cursor_order}, ${cursorValues.cursor_created}, ${cursorValues.cursor_id})` : sql``}
+            FROM session_exercises se
+            WHERE session_id = $1 ${cursorCondition.condition}
             ORDER BY order_index ASC, created_at ASC, id ASC
-            LIMIT ${limit + 1}
+            LIMIT $${cursorCondition.values.length + 2}
         `;
         
-        const hasMore = exercises.length > limit;
-        const returnExercises = hasMore ? exercises.slice(0, -1) : exercises;
+        const queryParams = [sessionId, ...cursorCondition.values, pagination.limit + 1];
+        const exercises = await sql.unsafe(exercisesQuery, queryParams);
         
-        let nextCursor = null;
-        if (hasMore && returnExercises.length > 0) {
-            const last = returnExercises[returnExercises.length - 1];
-            const cursorData = {
-                o: last.order_index,
-                c: last.created_at.toISOString(),
-                i: last.id,
-                v: 1
-            };
-            nextCursor = Buffer.from(JSON.stringify(cursorData)).toString('base64');
-        }
+        // Create paginated response
+        const paginatedResponse = createPaginatedResponse(
+            exercises,
+            pagination.limit,
+            (item) => getCursorDataForItem(item, 'exercises'),
+            {
+                includeTotal: exercises.length < 1000
+            }
+        );
         
         // Log sanitized action
         console.log('Exercises listed:', sanitizeForLog({
             session_id: sessionId,
             user_id: userId,
-            count: returnExercises.length,
-            has_more: hasMore
+            count: paginatedResponse.data.length,
+            has_more: paginatedResponse.pagination.has_more
         }));
         
         return {
@@ -192,16 +183,12 @@ exports.handler = async (event) => {
                 'Cache-Control': 'private, max-age=10'
             },
             body: JSON.stringify({
-                exercises: returnExercises.map(ex => ({
+                exercises: paginatedResponse.data.map(ex => ({
                     ...ex,
                     created_at: ex.created_at.toISOString(),
                     updated_at: ex.updated_at.toISOString()
                 })),
-                pagination: {
-                    limit,
-                    has_more: hasMore,
-                    next_cursor: nextCursor
-                }
+                pagination: paginatedResponse.pagination
             })
         };
         

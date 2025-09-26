@@ -3,7 +3,8 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { neon } = require('@neondatabase/serverless');
 
-const sql = neon(process.env.DATABASE_URL);
+const { getNeonClient } = require('./utils/connection-pool');
+const sql = getNeonClient();
 
 // Verify admin authentication with proper JWT validation
 const verifyAdmin = async (token, requestId) => {

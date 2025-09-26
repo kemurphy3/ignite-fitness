@@ -3,8 +3,8 @@
 
 const fetch = require('node-fetch');
 
-const BASE_URL = 'http://localhost:8888/.netlify/functions';
-const API_KEY = 'test-api-key-123'; // Replace with actual API key
+const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:8888/.netlify/functions';
+const API_KEY = process.env.TEST_API_KEY || 'test-api-key-for-development-only';
 
 // Test configuration
 const TEST_USER_ID = 1;

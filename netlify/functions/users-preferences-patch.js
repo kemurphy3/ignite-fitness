@@ -11,7 +11,8 @@ const {
   sanitizeForLog 
 } = require('./utils/user-preferences');
 
-const sql = neon(process.env.DATABASE_URL);
+const { getNeonClient } = require('./utils/connection-pool');
+const sql = getNeonClient();
 
 exports.handler = async (event) => {
   try {

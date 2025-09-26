@@ -1,31 +1,122 @@
 const { STRAVA_TOKENS } = require('../../config.js');
+const jwt = require('jsonwebtoken');
 
-exports.handler = async (event, context) => {
-    // Set CORS headers
-    const headers = {
+// Security headers for all responses
+const securityHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Content-Type': 'application/json',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'X-XSS-Protection': '1; mode=block'
+};
+
+// JWT verification function
+function verifyJWT(headers) {
+    const authHeader = headers['authorization'];
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return { error: 'MISSING_TOKEN', statusCode: 401 };
+    }
+    
+    const token = authHeader.substring(7);
+    
+    try {
+        const jwtSecret = process.env.JWT_SECRET || 'your-super-secure-jwt-secret-at-least-32-characters';
+        const decoded = jwt.verify(token, jwtSecret, {
+            algorithms: ['HS256'],
+            maxAge: '24h',
+            clockTolerance: 30
+        });
+        
+        if (!decoded.sub || typeof decoded.sub !== 'string') {
+            return { error: 'INVALID_SUBJECT', statusCode: 401 };
+        }
+        
+        if (!decoded.exp || typeof decoded.exp !== 'number') {
+            return { error: 'INVALID_EXPIRATION', statusCode: 401 };
+        }
+        
+        return { 
+            success: true, 
+            userId: decoded.sub 
+        };
+        
+    } catch (error) {
+        if (error.name === 'TokenExpiredError') {
+            return { error: 'TOKEN_EXPIRED', statusCode: 401 };
+        } else if (error.name === 'JsonWebTokenError') {
+            return { error: 'INVALID_TOKEN', statusCode: 401 };
+        } else {
+            console.error('JWT verification error:', {
+                type: error.name,
+                message: error.message,
+                timestamp: new Date().toISOString()
+            });
+            return { error: 'TOKEN_VERIFICATION_FAILED', statusCode: 401 };
+        }
+    }
+}
+
+// Response helpers
+const unauthorized = (message = 'Unauthorized - Valid JWT token required') => ({
+    statusCode: 401,
+    headers: securityHeaders,
+    body: JSON.stringify({ 
+        error: 'UNAUTHORIZED',
+        message,
+        code: 'AUTH_REQUIRED'
+    })
+});
+
+const methodNotAllowed = () => ({
+    statusCode: 405,
+    headers: securityHeaders,
+    body: JSON.stringify({ 
+        error: 'METHOD_NOT_ALLOWED',
+        message: 'Only POST requests are allowed',
+        code: 'INVALID_METHOD'
+    })
+});
+
+const okPreflight = () => ({
+    statusCode: 200,
+    headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Content-Type': 'application/json'
-    };
+        'Access-Control-Allow-Methods': 'POST, OPTIONS'
+    },
+    body: ''
+});
 
+exports.handler = async (event, context) => {
     // Handle preflight requests
     if (event.httpMethod === 'OPTIONS') {
-        return {
-            statusCode: 200,
-            headers,
-            body: ''
-        };
+        return okPreflight();
+    }
+    
+    // Only allow POST requests
+    if (event.httpMethod !== 'POST') {
+        return methodNotAllowed();
     }
 
     try {
+        // Verify JWT authentication
+        const authResult = verifyJWT(event.headers);
+        if (!authResult.success) {
+            return unauthorized(authResult.error);
+        }
         const { action, accessToken, refreshToken, data } = JSON.parse(event.body || '{}');
         
         if (!action) {
             return {
                 statusCode: 400,
-                headers,
-                body: JSON.stringify({ error: 'Action is required' })
+                headers: securityHeaders,
+                body: JSON.stringify({ 
+                    error: 'BAD_REQUEST',
+                    message: 'Action is required',
+                    code: 'MISSING_ACTION'
+                })
             };
         }
 
@@ -37,8 +128,12 @@ exports.handler = async (event, context) => {
                 if (!refreshToken) {
                     return {
                         statusCode: 400,
-                        headers,
-                        body: JSON.stringify({ error: 'Refresh token required' })
+                        headers: securityHeaders,
+                        body: JSON.stringify({ 
+                            error: 'BAD_REQUEST',
+                            message: 'Refresh token required',
+                            code: 'MISSING_REFRESH_TOKEN'
+                        })
                     };
                 }
                 
@@ -60,8 +155,12 @@ exports.handler = async (event, context) => {
                 if (!accessToken) {
                     return {
                         statusCode: 400,
-                        headers,
-                        body: JSON.stringify({ error: 'Access token required' })
+                        headers: securityHeaders,
+                        body: JSON.stringify({ 
+                            error: 'BAD_REQUEST',
+                            message: 'Access token required',
+                            code: 'MISSING_ACCESS_TOKEN'
+                        })
                     };
                 }
                 
@@ -80,8 +179,12 @@ exports.handler = async (event, context) => {
                 if (!accessToken || !data?.activityId) {
                     return {
                         statusCode: 400,
-                        headers,
-                        body: JSON.stringify({ error: 'Access token and activity ID required' })
+                        headers: securityHeaders,
+                        body: JSON.stringify({ 
+                            error: 'BAD_REQUEST',
+                            message: 'Access token and activity ID required',
+                            code: 'MISSING_ACCESS_TOKEN_OR_ACTIVITY_ID'
+                        })
                     };
                 }
                 
@@ -97,8 +200,12 @@ exports.handler = async (event, context) => {
                 if (!accessToken) {
                     return {
                         statusCode: 400,
-                        headers,
-                        body: JSON.stringify({ error: 'Access token required' })
+                        headers: securityHeaders,
+                        body: JSON.stringify({ 
+                            error: 'BAD_REQUEST',
+                            message: 'Access token required',
+                            code: 'MISSING_ACCESS_TOKEN'
+                        })
                     };
                 }
                 
@@ -113,8 +220,12 @@ exports.handler = async (event, context) => {
             default:
                 return {
                     statusCode: 400,
-                    headers,
-                    body: JSON.stringify({ error: 'Invalid action' })
+                    headers: securityHeaders,
+                    body: JSON.stringify({ 
+                        error: 'BAD_REQUEST',
+                        message: 'Invalid action',
+                        code: 'INVALID_ACTION'
+                    })
                 };
         }
 
@@ -122,16 +233,24 @@ exports.handler = async (event, context) => {
         
         return {
             statusCode: response.status,
-            headers,
+            headers: securityHeaders,
             body: JSON.stringify(responseData)
         };
 
     } catch (error) {
-        console.error('Strava Proxy Error:', error);
+        console.error('Strava Proxy Error:', {
+            type: error.name,
+            message: error.message,
+            timestamp: new Date().toISOString()
+        });
         return {
             statusCode: 500,
-            headers,
-            body: JSON.stringify({ error: 'Internal server error' })
+            headers: securityHeaders,
+            body: JSON.stringify({ 
+                error: 'INTERNAL_SERVER_ERROR',
+                message: 'An unexpected error occurred',
+                code: 'SERVER_ERROR'
+            })
         };
     }
 };

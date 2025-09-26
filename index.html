@@ -4,61 +4,203 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ignite Fitness - AI-Powered Training Platform</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="AI-powered fitness tracking with offline support and personalized coaching">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="IgniteFitness">
+    <meta name="msapplication-TileColor" content="#1a1a1a">
+    <meta name="msapplication-config" content="/browserconfig.xml">
+    
+    <!-- Accessibility Meta Tags -->
+    <meta name="color-scheme" content="dark light">
+    <meta name="prefers-color-scheme" content="dark">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    
+    <!-- Stylesheets -->
     <link rel="stylesheet" href="styles/main.css">
+    
+    <!-- Skip to main content link for screen readers -->
+    <style>
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 6px;
+            background: #4f46e5;
+            color: white;
+            padding: 8px;
+            text-decoration: none;
+            border-radius: 4px;
+            z-index: 1000;
+            font-weight: bold;
+        }
+        .skip-link:focus {
+            top: 6px;
+        }
+    </style>
 </head>
 <body>
+    <!-- Skip to main content link for screen readers -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
     <div class="container">
         <!-- Header -->
-        <header class="header">
+        <header class="header" role="banner">
             <h1>🔥 Ignite Fitness</h1>
             <p>AI-Powered Training Platform for Athletes</p>
-            <div id="sync-status" style="position: absolute; top: 20px; right: 20px; padding: 5px 10px; background: #2d3748; border-radius: 5px; font-size: 12px;">
-                🟢 Online
+            <div id="sync-status" 
+                 role="status" 
+                 aria-live="polite" 
+                 aria-label="Connection status"
+                 style="position: absolute; top: 20px; right: 20px; padding: 5px 10px; background: #2d3748; border-radius: 5px; font-size: 12px;">
+                <span aria-hidden="true">🟢</span> Online
             </div>
         </header>
 
-        <!-- Login Form -->
-        <div id="loginForm" class="form-section">
-            <h2>Welcome Back</h2>
-            <div class="form-group">
-                <label for="loginUsername">Username</label>
-                <input type="text" id="loginUsername" class="form-input" placeholder="Enter username">
-            </div>
-            <div class="form-group">
-                <label for="loginPassword">Password</label>
-                <input type="password" id="loginPassword" class="form-input" placeholder="Enter password">
-            </div>
-            <button class="btn" onclick="login()">Login</button>
-            <button class="btn" onclick="showRegisterForm()" style="background: #718096; margin-left: 10px;">Register New Athlete</button>
-            <div style="text-align: center; margin-top: 15px;">
-                <a href="#" onclick="showPasswordReset()" style="color: #68d391; text-decoration: none;">Forgot Password?</a>
-            </div>
-            <div id="loginError" style="color: #fc8181; margin-top: 10px; display: none;"></div>
-        </div>
+        <!-- Main Content -->
+        <main id="main-content" role="main">
+            <!-- Login Form -->
+            <section id="loginForm" class="form-section" aria-labelledby="login-heading">
+                <h2 id="login-heading">Welcome Back</h2>
+                <form role="form" aria-label="User login form" onsubmit="login(); return false;">
+                    <div class="form-group">
+                        <label for="loginUsername">Username</label>
+                        <input type="text" 
+                               id="loginUsername" 
+                               name="username"
+                               class="form-input" 
+                               placeholder="Enter username"
+                               aria-required="true"
+                               autocomplete="username"
+                               aria-describedby="username-help">
+                        <div id="username-help" class="sr-only">Enter your username to access your account</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" 
+                               id="loginPassword" 
+                               name="password"
+                               class="form-input" 
+                               placeholder="Enter password"
+                               aria-required="true"
+                               autocomplete="current-password"
+                               aria-describedby="password-help">
+                        <div id="password-help" class="sr-only">Enter your password to access your account</div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" 
+                                class="btn" 
+                                aria-describedby="login-help">
+                            Login
+                        </button>
+                        <button type="button" 
+                                class="btn btn-secondary" 
+                                onclick="showRegisterForm()"
+                                aria-describedby="register-help">
+                            Register New Athlete
+                        </button>
+                    </div>
+                    <div id="login-help" class="sr-only">Click to log into your IgniteFitness account</div>
+                    <div id="register-help" class="sr-only">Click to create a new athlete account</div>
+                </form>
+                <div class="form-footer" style="text-align: center; margin-top: 15px;">
+                    <a href="#" 
+                       onclick="showPasswordReset(); return false;" 
+                       style="color: #68d391; text-decoration: none;"
+                       aria-label="Reset your password">
+                        Forgot Password?
+                    </a>
+                </div>
+                <div id="loginError" 
+                     role="alert" 
+                     aria-live="polite"
+                     style="color: #fc8181; margin-top: 10px; display: none;">
+                </div>
+            </section>
 
-        <!-- Register Form -->
-        <div id="registerForm" class="form-section hidden">
-            <h2>Register New Athlete</h2>
-            <div class="form-group">
-                <label for="regUsername">Username</label>
-                <input type="text" id="regUsername" class="form-input" placeholder="Choose username">
-            </div>
-            <div class="form-group">
-                <label for="regPassword">Password</label>
-                <input type="password" id="regPassword" class="form-input" placeholder="Choose password">
-            </div>
-            <div class="form-group">
-                <label for="regConfirmPassword">Confirm Password</label>
-                <input type="password" id="regConfirmPassword" class="form-input" placeholder="Confirm password">
-            </div>
-            <div class="form-group">
-                <label for="regAthleteName">Athlete Name</label>
-                <input type="text" id="regAthleteName" class="form-input" placeholder="Full name">
-            </div>
-            <button class="btn" onclick="register()">Register Athlete</button>
-            <button class="btn" onclick="hideRegisterForm()" style="background: #718096; margin-left: 10px;">Cancel</button>
-            <div id="registerError" style="color: #fc8181; margin-top: 10px; display: none;"></div>
-        </div>
+            <!-- Register Form -->
+            <section id="registerForm" class="form-section hidden" aria-labelledby="register-heading">
+                <h2 id="register-heading">Register New Athlete</h2>
+                <form role="form" aria-label="Athlete registration form" onsubmit="register(); return false;">
+                    <div class="form-group">
+                        <label for="regUsername">Username</label>
+                        <input type="text" 
+                               id="regUsername" 
+                               name="username"
+                               class="form-input" 
+                               placeholder="Choose username"
+                               aria-required="true"
+                               autocomplete="username"
+                               aria-describedby="reg-username-help">
+                        <div id="reg-username-help" class="sr-only">Choose a unique username for your account</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="regPassword">Password</label>
+                        <input type="password" 
+                               id="regPassword" 
+                               name="password"
+                               class="form-input" 
+                               placeholder="Choose password"
+                               aria-required="true"
+                               autocomplete="new-password"
+                               aria-describedby="reg-password-help">
+                        <div id="reg-password-help" class="sr-only">Choose a secure password for your account</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="regConfirmPassword">Confirm Password</label>
+                        <input type="password" 
+                               id="regConfirmPassword" 
+                               name="confirmPassword"
+                               class="form-input" 
+                               placeholder="Confirm password"
+                               aria-required="true"
+                               autocomplete="new-password"
+                               aria-describedby="reg-confirm-help">
+                        <div id="reg-confirm-help" class="sr-only">Re-enter your password to confirm</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="regAthleteName">Athlete Name</label>
+                        <input type="text" 
+                               id="regAthleteName" 
+                               name="athleteName"
+                               class="form-input" 
+                               placeholder="Full name"
+                               aria-required="true"
+                               autocomplete="name"
+                               aria-describedby="reg-name-help">
+                        <div id="reg-name-help" class="sr-only">Enter your full name as an athlete</div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" 
+                                class="btn" 
+                                aria-describedby="register-help">
+                            Register Athlete
+                        </button>
+                        <button type="button" 
+                                class="btn btn-secondary" 
+                                onclick="hideRegisterForm()"
+                                aria-describedby="cancel-help">
+                            Cancel
+                        </button>
+                    </div>
+                    <div id="register-help" class="sr-only">Click to create your new athlete account</div>
+                    <div id="cancel-help" class="sr-only">Click to cancel registration and return to login</div>
+                </form>
+                <div id="registerError" 
+                     role="alert" 
+                     aria-live="polite"
+                     style="color: #fc8181; margin-top: 10px; display: none;">
+                </div>
+            </section>
 
         <!-- Password Reset Form -->
         <div id="passwordResetForm" class="form-section hidden">
@@ -292,6 +434,7 @@
                 </div>
             </div>
         </div>
+        </main>
     </div>
 
     <!-- AI Coach Chat Interface -->
@@ -342,5 +485,53 @@
     <script src="js/app.js"></script>
     <script src="js/ai/context-aware-ai.js"></script>
     <script src="js/training/seasonal-training.js"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        // Register service worker for PWA functionality
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                        console.log('SW registered: ', registration);
+                        
+                        // Check for updates
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // New content is available, show update notification
+                                    if (confirm('New version available! Reload to update?')) {
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        });
+                    })
+                    .catch((registrationError) => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+        
+        // Update connection status
+        function updateConnectionStatus() {
+            const statusElement = document.getElementById('sync-status');
+            if (navigator.onLine) {
+                statusElement.innerHTML = '🟢 Online';
+                statusElement.style.background = '#2d3748';
+            } else {
+                statusElement.innerHTML = '🔴 Offline';
+                statusElement.style.background = '#e53e3e';
+            }
+        }
+        
+        // Listen for connection changes
+        window.addEventListener('online', updateConnectionStatus);
+        window.addEventListener('offline', updateConnectionStatus);
+        
+        // Initial status check
+        updateConnectionStatus();
+    </script>
 </body>
 </html>

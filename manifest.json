@@ -1,34 +1,136 @@
 {
-  "name": "IgniteFitness Multi-User Tracker",
+  "name": "IgniteFitness - AI-Powered Training Platform",
   "short_name": "IgniteFitness",
-  "description": "Multi-user fitness tracking with personalized AI coaching",
-  "start_url": "./",
+  "description": "Multi-user fitness tracking with personalized AI coaching, offline support, and comprehensive analytics",
+  "start_url": "/",
+  "id": "/",
   "display": "standalone",
   "background_color": "#1a1a1a",
-  "theme_color": "#1a1a1a",
+  "theme_color": "#4f46e5",
   "orientation": "portrait-primary",
-  "scope": "./",
+  "scope": "/",
+  "lang": "en",
+  "dir": "ltr",
   "icons": [
     {
       "src": "icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
-  "categories": ["fitness", "health", "lifestyle"],
+  "categories": ["fitness", "health", "lifestyle", "sports"],
   "screenshots": [
     {
       "src": "screenshot-mobile.png",
       "sizes": "390x844",
       "type": "image/png",
-      "form_factor": "narrow"
+      "form_factor": "narrow",
+      "label": "Mobile app interface showing workout tracking"
+    },
+    {
+      "src": "screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Desktop interface with analytics dashboard"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "Start Workout",
+      "short_name": "Workout",
+      "description": "Start a new workout session",
+      "url": "/?action=workout",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "View Progress",
+      "short_name": "Progress",
+      "description": "View your training progress",
+      "url": "/?action=progress",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "AI Coach",
+      "short_name": "AI Coach",
+      "description": "Get AI-powered training advice",
+      "url": "/?action=ai-coach",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "web+ignitefitness",
+      "url": "/?action=%s"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "/?action=import",
+      "accept": {
+        "application/json": [".json"],
+        "text/csv": [".csv"]
+      }
+    }
+  ],
+  "share_target": {
+    "action": "/?action=share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "file",
+          "accept": ["image/*", "application/json", "text/csv"]
+        }
+      ]
+    }
+  },
+  "display_override": ["window-controls-overlay", "standalone"],
+  "handle_links": "preferred"
 }

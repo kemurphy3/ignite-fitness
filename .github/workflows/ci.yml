@@ -1,0 +1,217 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_DB: test
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_HOST: localhost
+  POSTGRES_PORT: 5432
+
+jobs:
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Wait for PostgreSQL
+        run: |
+          until pg_isready -h localhost -p 5432 -U postgres; do
+            echo "Waiting for PostgreSQL to be ready..."
+            sleep 2
+          done
+          echo "PostgreSQL is ready!"
+
+      - name: Setup test database
+        run: |
+          # Create test database schema
+          PGPASSWORD=${{ env.POSTGRES_PASSWORD }} psql -h localhost -U ${{ env.POSTGRES_USER }} -d ${{ env.POSTGRES_DB }} -c "
+            CREATE TABLE IF NOT EXISTS test_users (
+              id SERIAL PRIMARY KEY,
+              external_id VARCHAR(255) UNIQUE,
+              username VARCHAR(255) UNIQUE,
+              created_at TIMESTAMP DEFAULT NOW(),
+              updated_at TIMESTAMP DEFAULT NOW(),
+              status VARCHAR(50) DEFAULT 'active'
+            );
+            
+            CREATE TABLE IF NOT EXISTS test_sessions (
+              id SERIAL PRIMARY KEY,
+              user_id INTEGER REFERENCES test_users(id) ON DELETE CASCADE,
+              type VARCHAR(50) NOT NULL,
+              source VARCHAR(50) DEFAULT 'test',
+              source_id VARCHAR(255),
+              start_at TIMESTAMP NOT NULL,
+              end_at TIMESTAMP,
+              duration INTEGER,
+              payload JSONB,
+              session_hash VARCHAR(255),
+              created_at TIMESTAMP DEFAULT NOW(),
+              updated_at TIMESTAMP DEFAULT NOW()
+            );
+            
+            CREATE TABLE IF NOT EXISTS test_exercises (
+              id SERIAL PRIMARY KEY,
+              session_id INTEGER REFERENCES test_sessions(id) ON DELETE CASCADE,
+              name VARCHAR(255) NOT NULL,
+              sets INTEGER,
+              reps INTEGER,
+              weight_kg DECIMAL(5,2),
+              rpe INTEGER,
+              order_index INTEGER DEFAULT 0,
+              created_at TIMESTAMP DEFAULT NOW(),
+              updated_at TIMESTAMP DEFAULT NOW()
+            );
+            
+            CREATE INDEX IF NOT EXISTS idx_test_sessions_user_id ON test_sessions(user_id);
+            CREATE INDEX IF NOT EXISTS idx_test_sessions_start_at ON test_sessions(start_at);
+            CREATE INDEX IF NOT EXISTS idx_test_exercises_session_id ON test_exercises(session_id);
+          "
+
+      - name: Set environment variables
+        run: |
+          echo "DATABASE_URL=postgresql://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:${{ env.POSTGRES_PORT }}/${{ env.POSTGRES_DB }}" >> $GITHUB_ENV
+          echo "TEST_DATABASE_URL=postgresql://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:${{ env.POSTGRES_PORT }}/${{ env.POSTGRES_DB }}" >> $GITHUB_ENV
+          echo "JWT_SECRET=test-jwt-secret-for-ci" >> $GITHUB_ENV
+          echo "NODE_ENV=test" >> $GITHUB_ENV
+
+      - name: Run tests
+        run: npm test
+
+      - name: Run test coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        if: success()
+        with:
+          file: ./coverage/lcov.info
+          fail_ci_if_error: false
+
+  lint:
+    name: Lint and Format Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for linting issues
+        run: |
+          # Check for common JavaScript issues
+          echo "Checking for console.log statements..."
+          if grep -r "console\.log" --include="*.js" --exclude-dir=node_modules --exclude-dir=coverage .; then
+            echo "Warning: Found console.log statements in code"
+          fi
+          
+          # Check for TODO comments
+          echo "Checking for TODO comments..."
+          if grep -r "TODO\|FIXME\|HACK" --include="*.js" --exclude-dir=node_modules --exclude-dir=coverage .; then
+            echo "Info: Found TODO/FIXME/HACK comments in code"
+          fi
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run security audit
+        run: npm audit --audit-level moderate
+
+      - name: Check for hardcoded secrets
+        run: |
+          echo "Checking for potential hardcoded secrets..."
+          if grep -r -i "password\|secret\|key\|token" --include="*.js" --exclude-dir=node_modules --exclude-dir=coverage --exclude="*.test.js" . | grep -v "process\.env\|DATABASE_URL\|JWT_SECRET"; then
+            echo "Warning: Potential hardcoded secrets found"
+          fi
+
+  build:
+    name: Build Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify package.json
+        run: |
+          echo "Verifying package.json structure..."
+          node -e "
+            const pkg = require('./package.json');
+            console.log('Package name:', pkg.name);
+            console.log('Package version:', pkg.version);
+            console.log('Scripts available:', Object.keys(pkg.scripts || {}));
+          "
+
+      - name: Check file structure
+        run: |
+          echo "Checking project structure..."
+          ls -la
+          echo "Checking for required files..."
+          test -f package.json && echo "✓ package.json exists"
+          test -f vitest.config.js && echo "✓ vitest.config.js exists"
+          test -d tests && echo "✓ tests directory exists"
+          test -d netlify/functions && echo "✓ netlify/functions directory exists"
