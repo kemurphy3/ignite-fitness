@@ -29,6 +29,209 @@
     <!-- Stylesheets -->
     <link rel="stylesheet" href="styles/main.css">
     
+    <!-- Onboarding and Dashboard Styles -->
+    <style>
+        /* Onboarding Styles */
+        .onboarding-content {
+            max-width: 600px;
+            width: 90%;
+        }
+        
+        .onboarding-question {
+            padding: 20px 0;
+        }
+        
+        .question-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 20px 0;
+        }
+        
+        .option-card {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .option-card:hover {
+            border-color: #4299e1;
+            background-color: #f7fafc;
+        }
+        
+        .option-card input[type="radio"] {
+            margin-right: 12px;
+        }
+        
+        .option-card input[type="radio"]:checked + .option-content {
+            color: #2d3748;
+        }
+        
+        .option-card:has(input[type="radio"]:checked) {
+            border-color: #4299e1;
+            background-color: #ebf8ff;
+        }
+        
+        .option-content {
+            flex: 1;
+        }
+        
+        .option-title {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 4px;
+        }
+        
+        .option-description {
+            font-size: 14px;
+            color: #718096;
+        }
+        
+        .onboarding-progress {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #718096;
+        }
+        
+        /* Dashboard Styles */
+        .dashboard-container {
+            padding: 20px;
+        }
+        
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .dashboard-mode-indicator {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .mode-badge, .role-badge {
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .mode-badge {
+            background-color: #ebf8ff;
+            color: #2b6cb0;
+        }
+        
+        .role-badge {
+            background-color: #f0fff4;
+            color: #2f855a;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .dashboard-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .dashboard-card h3 {
+            margin: 0 0 12px 0;
+            color: #2d3748;
+            font-size: 18px;
+        }
+        
+        .dashboard-card p {
+            margin: 8px 0;
+            color: #718096;
+            font-size: 14px;
+        }
+        
+        /* Dashboard Mode Specific Styles */
+        .dashboard-container[data-mode="basics"] .dashboard-card {
+            background: #f7fafc;
+        }
+        
+        .dashboard-container[data-mode="basics"] .dashboard-card h3 {
+            color: #4a5568;
+        }
+        
+        .dashboard-container[data-mode="all_data"] .dashboard-card {
+            border-left: 4px solid #4299e1;
+        }
+        
+        /* Preferences Modal */
+        .preferences-section {
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .preferences-section:last-child {
+            border-bottom: none;
+        }
+        
+        .preferences-section h4 {
+            margin: 0 0 12px 0;
+            color: #2d3748;
+        }
+        
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            cursor: pointer;
+        }
+        
+        .radio-group input[type="radio"] {
+            margin-right: 8px;
+        }
+        
+        /* Dashboard Controls */
+        .dashboard-controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            
+            .dashboard-controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+    
     <!-- Skip to main content link for screen readers -->
     <style>
         .skip-link {
@@ -226,12 +429,37 @@
             <div id="resetError" style="color: #fc8181; margin-top: 10px; display: none;"></div>
         </div>
 
+        <!-- Onboarding Modal -->
+        <div id="onboardingModal" class="modal hidden">
+            <div class="modal-content onboarding-content">
+                <div class="modal-header">
+                    <h2>Welcome to Ignite Fitness!</h2>
+                    <p>Let's personalize your experience with a few quick questions.</p>
+                </div>
+                <div class="modal-body">
+                    <div id="onboardingContainer">
+                        <!-- Onboarding content will be dynamically loaded here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="skipOnboardingBtn" class="btn secondary" onclick="skipOnboarding()">Skip for now</button>
+                    <div class="onboarding-progress">
+                        <span id="onboardingStep">1</span> of <span id="onboardingTotal">6</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- User Dashboard -->
         <div id="userDashboard" class="hidden">
             <div class="form-section">
                 <h3>Welcome, <span id="currentAthleteName"></span></h3>
                 <p>Your AI-powered training platform is ready!</p>
-                <button class="btn" onclick="logout()">Logout</button>
+                <div class="dashboard-controls">
+                    <button class="btn" onclick="logout()">Logout</button>
+                    <button class="btn secondary" onclick="showPreferences()">Preferences</button>
+                    <button class="btn secondary" onclick="toggleRole()">Switch Role</button>
+                </div>
             </div>
 
             <!-- Tab Navigation -->
@@ -473,6 +701,52 @@
         </div>
     </div>
 
+    <!-- Preferences Modal -->
+    <div id="preferencesModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Preferences</h3>
+                <button onclick="closePreferences()" class="modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="preferences-section">
+                    <h4>Dashboard Mode</h4>
+                    <div class="radio-group">
+                        <label><input type="radio" name="dataPreference" value="basics"> Basics - Simple metrics only</label>
+                        <label><input type="radio" name="dataPreference" value="some_metrics"> Some Metrics - Progress charts and weekly load</label>
+                        <label><input type="radio" name="dataPreference" value="all_data"> All Data - Detailed analytics and periodization</label>
+                    </div>
+                </div>
+                
+                <div class="preferences-section">
+                    <h4>Role</h4>
+                    <div class="radio-group">
+                        <label><input type="radio" name="userRole" value="athlete"> Athlete - Training for personal goals</label>
+                        <label><input type="radio" name="userRole" value="coach"> Coach - Training athletes and clients</label>
+                    </div>
+                </div>
+                
+                <div class="preferences-section">
+                    <h4>Training Goals</h4>
+                    <div class="form-group">
+                        <label for="primaryGoalPref">Primary Goal</label>
+                        <select id="primaryGoalPref" class="form-input">
+                            <option value="strength">Strength & Power</option>
+                            <option value="sport_performance">Sport Performance</option>
+                            <option value="general_fitness">General Fitness</option>
+                            <option value="endurance">Endurance</option>
+                            <option value="weight_loss">Weight Loss</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="savePreferences()">Save Preferences</button>
+                <button class="btn secondary" onclick="closePreferences()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- AI Chat Toggle Button -->
     <button id="aiChatToggle" class="ai-chat-toggle" onclick="toggleAIChat()">
         🤖 AI Coach
@@ -498,6 +772,12 @@
     
     <!-- AI Modules -->
     <script src="js/modules/ai/CoachingEngine.js"></script>
+    
+    <!-- Onboarding Modules -->
+    <script src="js/modules/onboarding/OnboardingManager.js"></script>
+    
+    <!-- UI Modules -->
+    <script src="js/modules/ui/DashboardRenderer.js"></script>
     
     <!-- Legacy Modules (for compatibility) -->
     <script src="js/core/data-store.js"></script>

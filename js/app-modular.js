@@ -19,12 +19,18 @@ document.addEventListener('DOMContentLoaded', function() {
     if (window.AuthManager?.isUserLoggedIn()) {
         currentUser = window.AuthManager.getCurrentUsername();
         isLoggedIn = true;
-        showUserDashboard();
-        loadUserData();
-        updateSeasonalPhaseDisplay();
-        checkStravaConnection();
-        updateSyncStatus();
-        loadRecentWorkouts();
+        
+        // Check if user needs onboarding
+        if (window.OnboardingManager?.needsOnboarding()) {
+            showOnboarding();
+        } else {
+            showUserDashboard();
+            loadUserData();
+            updateSeasonalPhaseDisplay();
+            checkStravaConnection();
+            updateSyncStatus();
+            loadRecentWorkouts();
+        }
     } else {
         showLoginForm();
     }
@@ -191,8 +197,14 @@ function login() {
         currentUser = username;
         isLoggedIn = true;
         showSuccess('Login successful!');
-        showUserDashboard();
-        loadUserData();
+        
+        // Check if user needs onboarding
+        if (window.OnboardingManager?.needsOnboarding()) {
+            showOnboarding();
+        } else {
+            showUserDashboard();
+            loadUserData();
+        }
     } else {
         showError(errorDiv, result.error);
     }
@@ -427,4 +439,186 @@ function loadRecentWorkouts() {
 
 function sendToAI() {
     // Handled by AI coaching module
+}
+
+// Onboarding Functions
+function showOnboarding() {
+    const modal = document.getElementById('onboardingModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        startOnboardingFlow();
+    }
+}
+
+function startOnboardingFlow() {
+    const result = window.OnboardingManager?.startOnboarding();
+    if (result.success) {
+        renderOnboardingQuestion();
+    }
+}
+
+function renderOnboardingQuestion() {
+    const question = window.OnboardingManager?.getCurrentQuestion();
+    if (!question) return;
+
+    const container = document.getElementById('onboardingContainer');
+    if (!container) return;
+
+    const progress = window.OnboardingManager?.getOnboardingProgress();
+    
+    container.innerHTML = `
+        <div class="onboarding-question">
+            <h3>${question.question}</h3>
+            <div class="question-options">
+                ${question.options.map(option => `
+                    <label class="option-card">
+                        <input type="radio" name="onboardingAnswer" value="${option.value}">
+                        <div class="option-content">
+                            <div class="option-title">${option.label}</div>
+                            <div class="option-description">${option.description}</div>
+                        </div>
+                    </label>
+                `).join('')}
+            </div>
+            <div class="question-actions">
+                <button class="btn primary" onclick="answerOnboardingQuestion()" id="nextBtn" disabled>
+                    ${progress.completed ? 'Complete' : 'Next'}
+                </button>
+            </div>
+        </div>
+    `;
+
+    // Update progress
+    document.getElementById('onboardingStep').textContent = progress.currentStep + 1;
+    document.getElementById('onboardingTotal').textContent = progress.totalSteps;
+
+    // Add event listeners for radio buttons
+    const radioButtons = container.querySelectorAll('input[name="onboardingAnswer"]');
+    radioButtons.forEach(radio => {
+        radio.addEventListener('change', function() {
+            document.getElementById('nextBtn').disabled = false;
+        });
+    });
+}
+
+function answerOnboardingQuestion() {
+    const selectedAnswer = document.querySelector('input[name="onboardingAnswer"]:checked');
+    if (!selectedAnswer) return;
+
+    const answer = selectedAnswer.value;
+    const result = window.OnboardingManager?.answerQuestion(answer);
+    
+    if (result.success) {
+        const nextResult = window.OnboardingManager?.nextStep();
+        if (nextResult.success) {
+            if (nextResult.question) {
+                renderOnboardingQuestion();
+            } else {
+                completeOnboarding();
+            }
+        }
+    }
+}
+
+function completeOnboarding() {
+    const result = window.OnboardingManager?.completeOnboarding();
+    if (result.success) {
+        hideOnboarding();
+        showUserDashboard();
+        loadUserData();
+        updateSeasonalPhaseDisplay();
+        checkStravaConnection();
+        updateSyncStatus();
+        loadRecentWorkouts();
+        showSuccess('Onboarding completed! Your dashboard is personalized for you.');
+    } else {
+        showError(null, result.error);
+    }
+}
+
+function skipOnboarding() {
+    const result = window.OnboardingManager?.skipOnboarding();
+    if (result.success) {
+        hideOnboarding();
+        showUserDashboard();
+        loadUserData();
+        showSuccess('Onboarding skipped. You can change preferences later.');
+    } else {
+        showError(null, result.error);
+    }
+}
+
+function hideOnboarding() {
+    const modal = document.getElementById('onboardingModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+// Preferences Functions
+function showPreferences() {
+    const modal = document.getElementById('preferencesModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        loadCurrentPreferences();
+    }
+}
+
+function loadCurrentPreferences() {
+    const preferences = window.OnboardingManager?.getUserPreferences();
+    
+    // Set data preference
+    const dataPreference = preferences.data_preference || 'some_metrics';
+    document.querySelector(`input[name="dataPreference"][value="${dataPreference}"]`).checked = true;
+    
+    // Set role
+    const role = preferences.role || 'athlete';
+    document.querySelector(`input[name="userRole"][value="${role}"]`).checked = true;
+    
+    // Set primary goal
+    const primaryGoal = preferences.primary_goal || 'general_fitness';
+    document.getElementById('primaryGoalPref').value = primaryGoal;
+}
+
+function savePreferences() {
+    const dataPreference = document.querySelector('input[name="dataPreference"]:checked')?.value;
+    const role = document.querySelector('input[name="userRole"]:checked')?.value;
+    const primaryGoal = document.getElementById('primaryGoalPref').value;
+    
+    const newPreferences = {
+        data_preference: dataPreference,
+        role: role,
+        primary_goal: primaryGoal
+    };
+    
+    const result = window.OnboardingManager?.updateUserPreferences(newPreferences);
+    if (result.success) {
+        closePreferences();
+        // Re-render dashboard with new preferences
+        window.DashboardRenderer?.renderDashboard();
+        showSuccess('Preferences updated successfully!');
+    } else {
+        showError(null, result.error);
+    }
+}
+
+function closePreferences() {
+    const modal = document.getElementById('preferencesModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+function toggleRole() {
+    const currentRole = window.OnboardingManager?.getUserRole();
+    const newRole = currentRole === 'athlete' ? 'coach' : 'athlete';
+    
+    const result = window.OnboardingManager?.updateUserPreferences({ role: newRole });
+    if (result.success) {
+        // Re-render dashboard with new role
+        window.DashboardRenderer?.renderDashboard();
+        showSuccess(`Switched to ${newRole} mode`);
+    } else {
+        showError(null, result.error);
+    }
 }
