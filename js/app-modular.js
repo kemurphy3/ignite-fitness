@@ -622,3 +622,202 @@ function toggleRole() {
         showError(null, result.error);
     }
 }
+
+// Daily Check-in Functions
+function startWorkout() {
+    // Check if user needs daily check-in
+    if (window.DailyCheckIn && !window.DailyCheckIn.hasCompletedTodayCheckIn()) {
+        showDailyCheckIn();
+    } else {
+        proceedWithWorkout();
+    }
+}
+
+function proceedWithWorkout() {
+    showSuccess('Workout logging will be implemented in the full version!');
+}
+
+function showDailyCheckIn() {
+    const modal = document.getElementById('dailyCheckInModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        renderDailyCheckIn();
+    }
+}
+
+function renderDailyCheckIn() {
+    const container = document.getElementById('checkInContainer');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="checkin-metrics">
+            <!-- Sleep Section -->
+            <div class="checkin-metric">
+                <h3>😴 Sleep</h3>
+                <p>How did you sleep last night?</p>
+                <div class="sleep-inputs">
+                    <div class="sleep-hours-input">
+                        <label for="sleepHours">Hours of Sleep</label>
+                        <input type="number" id="sleepHours" min="4" max="12" step="0.5" value="8" 
+                               onchange="updateCheckInData('sleepHours', this.value)">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Sleep Quality</span>
+                            <span class="slider-value" id="sleepQualityValue">5</span>
+                        </div>
+                        <input type="range" id="sleepQuality" class="slider" min="1" max="10" value="5" step="1"
+                               oninput="updateSliderValue('sleepQuality', this.value)">
+                        <div class="slider-description" id="sleepQualityDesc">😐 Average sleep, okay rest</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stress Section -->
+            <div class="checkin-metric">
+                <h3>😟 Stress Level</h3>
+                <p>How stressed do you feel today?</p>
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Stress Level</span>
+                        <span class="slider-value" id="stressLevelValue">5</span>
+                    </div>
+                    <input type="range" id="stressLevel" class="slider" min="1" max="10" value="5" step="1"
+                           oninput="updateSliderValue('stressLevel', this.value)">
+                    <div class="slider-description" id="stressLevelDesc">😟 Moderate stress, affecting focus</div>
+                </div>
+            </div>
+
+            <!-- Energy Section -->
+            <div class="checkin-metric">
+                <h3>⚡ Energy Level</h3>
+                <p>How energetic do you feel today?</p>
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Energy Level</span>
+                        <span class="slider-value" id="energyLevelValue">5</span>
+                    </div>
+                    <input type="range" id="energyLevel" class="slider" min="1" max="10" value="5" step="1"
+                           oninput="updateSliderValue('energyLevel', this.value)">
+                    <div class="slider-description" id="energyLevelDesc">😐 Average energy, feeling okay</div>
+                </div>
+            </div>
+
+            <!-- Soreness Section -->
+            <div class="checkin-metric">
+                <h3>💪 Soreness Level</h3>
+                <p>How sore are your muscles today?</p>
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Soreness Level</span>
+                        <span class="slider-value" id="sorenessLevelValue">5</span>
+                    </div>
+                    <input type="range" id="sorenessLevel" class="slider" min="1" max="10" value="5" step="1"
+                           oninput="updateSliderValue('sorenessLevel', this.value)">
+                    <div class="slider-description" id="sorenessLevelDesc">😐 Moderate soreness, aware of it</div>
+                </div>
+            </div>
+
+            <!-- Readiness Summary -->
+            <div class="readiness-summary" id="readinessSummary" style="display: none;">
+                <div class="readiness-score">
+                    <span class="readiness-score-value" id="readinessScoreValue">5</span>
+                    <span class="readiness-score-label">Readiness Score</span>
+                </div>
+                <div class="coach-message" id="coachMessage"></div>
+                <div class="workout-adjustments" id="workoutAdjustments" style="display: none;">
+                    <h4>Workout Adjustments</h4>
+                    <div id="adjustmentDetails"></div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Add event listeners
+    document.getElementById('sleepHours').addEventListener('input', function() {
+        updateCheckInData('sleepHours', parseFloat(this.value));
+    });
+}
+
+function updateSliderValue(metric, value) {
+    const valueElement = document.getElementById(metric + 'Value');
+    const descElement = document.getElementById(metric + 'Desc');
+    
+    if (valueElement) valueElement.textContent = value;
+    
+    // Update description
+    const description = window.DailyCheckIn?.getSliderDescription(metric, parseInt(value));
+    if (descElement && description) {
+        descElement.textContent = description;
+    }
+    
+    // Update check-in data
+    updateCheckInData(metric, parseInt(value));
+}
+
+function updateCheckInData(metric, value) {
+    const result = window.DailyCheckIn?.updateCheckInData(metric, value);
+    if (result.success) {
+        updateReadinessSummary();
+    }
+}
+
+function updateReadinessSummary() {
+    const readinessScore = window.DailyCheckIn?.calculateReadinessScore();
+    const adjustments = window.DailyCheckIn?.getWorkoutAdjustments();
+    
+    if (readinessScore && adjustments) {
+        // Show readiness summary
+        document.getElementById('readinessSummary').style.display = 'block';
+        document.getElementById('readinessScoreValue').textContent = readinessScore;
+        document.getElementById('coachMessage').textContent = adjustments.coachMessage;
+        
+        // Show workout adjustments if any
+        if (adjustments.intensityReduced || adjustments.recoverySuggested) {
+            document.getElementById('workoutAdjustments').style.display = 'block';
+            let adjustmentText = '';
+            
+            if (adjustments.intensityReduced) {
+                adjustmentText += `• Intensity reduced by ${Math.round((1 - adjustments.intensityMultiplier) * 100)}%<br>`;
+            }
+            
+            if (adjustments.recoverySuggested) {
+                adjustmentText += `• Recovery workout suggested<br>`;
+            }
+            
+            document.getElementById('adjustmentDetails').innerHTML = adjustmentText;
+        }
+        
+        // Enable complete button
+        document.getElementById('completeCheckInBtn').disabled = false;
+    }
+}
+
+function completeDailyCheckIn() {
+    const result = window.DailyCheckIn?.completeDailyCheckIn();
+    if (result.success) {
+        hideDailyCheckIn();
+        proceedWithWorkout();
+        showSuccess('Daily check-in completed! Your workout has been adjusted based on your readiness.');
+    } else {
+        showError(null, result.error);
+    }
+}
+
+function skipDailyCheckIn() {
+    const result = window.DailyCheckIn?.skipDailyCheckIn();
+    if (result.success) {
+        hideDailyCheckIn();
+        proceedWithWorkout();
+        showSuccess('Check-in skipped. Proceeding with standard workout.');
+    } else {
+        showError(null, result.error);
+    }
+}
+
+function hideDailyCheckIn() {
+    const modal = document.getElementById('dailyCheckInModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
