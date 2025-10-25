@@ -1,7 +1,8 @@
 // Service Worker for IgniteFitness PWA
-const CACHE_NAME = 'ignitefitness-v2.0.0';
-const STATIC_CACHE = 'ignitefitness-static-v2.0.0';
-const DYNAMIC_CACHE = 'ignitefitness-dynamic-v2.0.0';
+const APP_VERSION = '2.0.0';
+const CACHE_NAME = `ignitefitness-v${APP_VERSION}`;
+const STATIC_CACHE = `ignitefitness-static-v${APP_VERSION}`;
+const DYNAMIC_CACHE = `ignitefitness-dynamic-v${APP_VERSION}`;
 
 // Core files to cache immediately
 const STATIC_URLS = [
@@ -147,14 +148,18 @@ async function cacheFirst(request, cacheName) {
   }
 }
 
-// Network First strategy - for API requests
+// Network First strategy - for API requests (no caching for dynamic data)
 async function networkFirst(request, cacheName) {
   try {
     const networkResponse = await fetch(request);
-    if (networkResponse.ok) {
+    
+    // Only cache GET requests for static API endpoints (like public config)
+    // Don't cache user-specific or dynamic data
+    if (networkResponse.ok && shouldCacheApiResponse(request)) {
       const cache = await caches.open(cacheName);
       cache.put(request, networkResponse.clone());
     }
+    
     return networkResponse;
   } catch (error) {
     console.log('[SW] Network failed, trying cache:', error);
@@ -217,6 +222,35 @@ function isStaticResource(url) {
 
 function isApiRequest(url) {
   return API_CACHE_PATTERNS.some(pattern => pattern.test(url.pathname));
+}
+
+// Determine if API response should be cached (only static, non-user-specific data)
+function shouldCacheApiResponse(request) {
+  const url = new URL(request.url);
+  
+  // Only cache public, non-user-specific endpoints
+  const cacheableEndpoints = [
+    '/.netlify/functions/public-config',
+    '/manifest.json'
+  ];
+  
+  // Don't cache if it's a user-specific endpoint
+  const userSpecificPatterns = [
+    /sessions/,
+    /exercises/,
+    /users/,
+    /admin/,
+    /strava/,
+    /auth/
+  ];
+  
+  // Don't cache if it contains user-specific data
+  if (userSpecificPatterns.some(pattern => pattern.test(url.pathname))) {
+    return false;
+  }
+  
+  // Only cache specific safe endpoints
+  return cacheableEndpoints.some(endpoint => url.pathname === endpoint);
 }
 
 function isHtmlRequest(request) {

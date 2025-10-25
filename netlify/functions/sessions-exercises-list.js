@@ -140,18 +140,16 @@ const sql = getNeonClient();
         const pagination = validatePaginationParams(params);
         
         // Build cursor condition for exercises
-        const cursorCondition = buildCursorCondition(pagination.cursor, 'order_index ASC, created_at ASC, id ASC', 'se');
+        const cursorCondition = buildCursorCondition(pagination.cursor, 'created_at ASC, id ASC', 'e');
         
         // Fetch exercises with stable ordering and pagination
         const exercisesQuery = `
             SELECT 
-                id, name, sets, reps, weight_kg, rpe,
-                tempo, rest_seconds, notes, superset_group,
-                order_index, equipment_type, muscle_groups,
-                exercise_type, created_at, updated_at
-            FROM session_exercises se
+                id, name, sets, reps, weight, rpe,
+                notes, created_at, updated_at
+            FROM exercises e
             WHERE session_id = $1 ${cursorCondition.condition}
-            ORDER BY order_index ASC, created_at ASC, id ASC
+            ORDER BY created_at ASC, id ASC
             LIMIT $${cursorCondition.values.length + 2}
         `;
         

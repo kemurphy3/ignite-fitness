@@ -94,17 +94,30 @@ const sql = getNeonClient();
                 throw new Error('AUTHZ_DENIED');
             }
             
-            // Delete and capture old data
+            // Check if exercise exists and belongs to user's session (idempotency)
+            const exerciseCheck = await sql`
+                SELECT id FROM session_exercises
+                WHERE id = ${exerciseId}
+                AND session_id = ${sessionId}
+            `;
+            
+            if (!exerciseCheck.length) {
+                // Exercise doesn't exist - idempotent success
+                return {
+                    statusCode: 204,
+                    headers,
+                    body: ''
+                };
+            }
+            
+            // Delete and capture old data - verify exercise belongs to user's session
             const deleted = await sql`
                 DELETE FROM session_exercises
                 WHERE id = ${exerciseId}
                 AND session_id = ${sessionId}
+                AND session_id IN (SELECT id FROM sessions WHERE user_id = ${userId})
                 RETURNING *
             `;
-            
-            if (!deleted.length) {
-                throw new Error('NOT_FOUND');
-            }
             
             // Log deletion
             await sql`

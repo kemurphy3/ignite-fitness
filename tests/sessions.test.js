@@ -187,4 +187,89 @@ describe('Sessions API Tests', () => {
       // - No data corruption occurs
     });
   });
+
+  describe('Session Exercise Security Tests', () => {
+    it('should prevent cross-user exercise deletion', async () => {
+      if (process.env.MOCK_DATABASE === 'true' || !db) {
+        console.log('⚠️  Mock database mode - skipping database integration tests');
+        return;
+      }
+
+      // Create two users
+      const user1 = await createTestUser({ external_id: 'test-user-1' });
+      const user2 = await createTestUser({ external_id: 'test-user-2' });
+
+      // Create session for user1
+      const session = await createTestSession({ user_id: user1.id });
+
+      // Create exercise for user1's session
+      const exercise = await db`
+        INSERT INTO session_exercises (session_id, user_id, name, sets, reps)
+        VALUES (${session.id}, ${user1.id}, 'Test Exercise', 3, 10)
+        RETURNING id
+      `;
+
+      // Try to delete exercise as user2 (should fail)
+      const deleteResponse = await fetch('/.netlify/functions/sessions-exercises-delete', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${user2.jwt_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          session_id: session.id,
+          exercise_id: exercise[0].id
+        })
+      });
+
+      expect(deleteResponse.status).toBe(403); // Should be forbidden
+    });
+
+    it('should handle idempotent DELETE operations', async () => {
+      if (process.env.MOCK_DATABASE === 'true' || !db) {
+        console.log('⚠️  Mock database mode - skipping database integration tests');
+        return;
+      }
+
+      const user = await createTestUser({ external_id: 'test-user-idempotent' });
+      const session = await createTestSession({ user_id: user.id });
+
+      // Create exercise
+      const exercise = await db`
+        INSERT INTO session_exercises (session_id, user_id, name, sets, reps)
+        VALUES (${session.id}, ${user.id}, 'Test Exercise', 3, 10)
+        RETURNING id
+      `;
+
+      // Delete exercise first time
+      const deleteResponse1 = await fetch('/.netlify/functions/sessions-exercises-delete', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${user.jwt_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          session_id: session.id,
+          exercise_id: exercise[0].id
+        })
+      });
+
+      expect(deleteResponse1.status).toBe(204);
+
+      // Delete same exercise again (should be idempotent)
+      const deleteResponse2 = await fetch('/.netlify/functions/sessions-exercises-delete', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${user.jwt_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          session_id: session.id,
+          exercise_id: exercise[0].id
+        })
+      });
+
+      expect(deleteResponse2.status).toBe(204); // Should still succeed
+    });
+  });
 });

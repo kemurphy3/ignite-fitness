@@ -71,6 +71,39 @@ describe('Exercises API Tests', () => {
       // - Invalid exercises are skipped
       // - Detailed error report is returned
     });
+
+    it('should enforce maximum limit of 50 exercises per request', async () => {
+      if (process.env.MOCK_DATABASE === 'true' || !db) {
+        console.log('⚠️  Mock database mode - skipping database integration tests');
+        return;
+      }
+
+      const user = await createTestUser({ external_id: 'test-user-bulk-limit' });
+      const session = await createTestSession({ user_id: user.id });
+
+      // Create 51 exercises (exceeds limit)
+      const exercises = Array(51).fill().map((_, i) => ({
+        name: `Exercise ${i}`,
+        sets: 3,
+        reps: 10
+      }));
+
+      const response = await fetch('/.netlify/functions/exercises-bulk-create', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${user.jwt_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          session_id: session.id,
+          exercises: exercises
+        })
+      });
+
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.error).toContain('Maximum 50 exercises allowed per request');
+    });
   });
 
   describe('Exercise Data Validation', () => {

@@ -150,7 +150,7 @@ exports.handler = async (event) => {
       LIMIT $${queryParams.length + 1}
     `;
     
-    queryParams.push(pagination.limit + 1); // Get one extra to check if there are more
+    queryParams.push(Math.min(pagination.limit + 1, 101)); // Get one extra to check if there are more, but cap at 101
 
     const sessions = await sql.unsafe(sessionsQuery, queryParams);
 

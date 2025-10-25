@@ -121,6 +121,18 @@
             line-height: 1.4;
         }
         
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+        
         .connection-status {
             position: fixed;
             top: 20px;
@@ -160,74 +172,84 @@
     </style>
 </head>
 <body>
-    <div class="connection-status" id="connectionStatus">
-        🔴 Offline
+    <div class="connection-status" 
+         id="connectionStatus" 
+         role="status" 
+         aria-live="polite" 
+         aria-label="Connection status">
+        <span aria-hidden="true">🔴</span> Offline
     </div>
     
-    <div class="offline-container">
-        <div class="offline-icon">📱</div>
-        <h1 class="offline-title">You're Offline</h1>
-        <p class="offline-message">
+    <div class="offline-container" role="main" aria-labelledby="offline-title">
+        <div class="offline-icon" role="img" aria-label="Mobile device icon">📱</div>
+        <h1 id="offline-title" class="offline-title">You're Offline</h1>
+        <p class="offline-message" role="status" aria-live="polite">
             Don't worry! IgniteFitness works offline too. You can still view your cached workouts, 
             track new exercises, and access your training data. Your progress will sync automatically 
             when you're back online.
         </p>
         
-        <div class="offline-actions">
-            <button class="btn btn-primary" onclick="goHome()">
+        <div class="offline-actions" role="group" aria-label="Offline actions">
+            <button class="btn btn-primary" 
+                    onclick="goHome()" 
+                    aria-describedby="home-help">
                 🏠 Go to Home
             </button>
-            <button class="btn btn-secondary" onclick="retryConnection()">
+            <button class="btn btn-secondary" 
+                    onclick="retryConnection()" 
+                    aria-describedby="retry-help">
                 🔄 Try Again
             </button>
         </div>
+        <div id="home-help" class="sr-only">Click to go to the home page</div>
+        <div id="retry-help" class="sr-only">Click to retry the internet connection</div>
         
-        <div class="offline-features">
-            <h3>🚀 Available Offline Features</h3>
-            <div class="feature-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">💪</div>
-                    <div class="feature-title">View Workouts</div>
+        <div class="offline-features" role="region" aria-labelledby="features-heading">
+            <h3 id="features-heading">🚀 Available Offline Features</h3>
+            <div class="feature-grid" role="list" aria-label="Offline features list">
+                <div class="feature-card" role="listitem" aria-labelledby="workout-title">
+                    <div class="feature-icon" role="img" aria-label="Muscle icon">💪</div>
+                    <div id="workout-title" class="feature-title">View Workouts</div>
                     <div class="feature-description">
                         Access your previously loaded workout plans and training schedules
                     </div>
                 </div>
                 
-                <div class="feature-card">
-                    <div class="feature-icon">📝</div>
-                    <div class="feature-title">Track Exercises</div>
+                <div class="feature-card" role="listitem" aria-labelledby="track-title">
+                    <div class="feature-icon" role="img" aria-label="Document icon">📝</div>
+                    <div id="track-title" class="feature-title">Track Exercises</div>
                     <div class="feature-description">
                         Log new exercises and workouts - they'll sync when you're online
                     </div>
                 </div>
                 
-                <div class="feature-card">
-                    <div class="feature-icon">📊</div>
-                    <div class="feature-title">View Progress</div>
+                <div class="feature-card" role="listitem" aria-labelledby="progress-title">
+                    <div class="feature-icon" role="img" aria-label="Chart icon">📊</div>
+                    <div id="progress-title" class="feature-title">View Progress</div>
                     <div class="feature-description">
                         Check your training history and performance metrics
                     </div>
                 </div>
                 
-                <div class="feature-card">
-                    <div class="feature-icon">🤖</div>
-                    <div class="feature-title">AI Coach</div>
+                <div class="feature-card" role="listitem" aria-labelledby="ai-title">
+                    <div class="feature-icon" role="img" aria-label="Robot icon">🤖</div>
+                    <div id="ai-title" class="feature-title">AI Coach</div>
                     <div class="feature-description">
                         Access cached AI recommendations and training tips
                     </div>
                 </div>
                 
-                <div class="feature-card">
-                    <div class="feature-icon">📱</div>
-                    <div class="feature-title">PWA Features</div>
+                <div class="feature-card" role="listitem" aria-labelledby="pwa-title">
+                    <div class="feature-icon" role="img" aria-label="Mobile app icon">📱</div>
+                    <div id="pwa-title" class="feature-title">PWA Features</div>
                     <div class="feature-description">
                         Full app experience with offline data storage
                     </div>
                 </div>
                 
-                <div class="feature-card">
-                    <div class="feature-icon">🔄</div>
-                    <div class="feature-title">Auto Sync</div>
+                <div class="feature-card" role="listitem" aria-labelledby="sync-title">
+                    <div class="feature-icon" role="img" aria-label="Sync icon">🔄</div>
+                    <div id="sync-title" class="feature-title">Auto Sync</div>
                     <div class="feature-description">
                         Your data will automatically sync when connection is restored
                     </div>

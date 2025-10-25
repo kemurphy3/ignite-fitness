@@ -13,12 +13,20 @@ const __dirname = dirname(__filename);
  */
 export async function setupTestEnvironment() {
   // Load environment variables from .env.test if it exists
-  const envPath = join(__dirname, '../../.env.test');
+  const envTestPath = join(__dirname, '../../.env.test');
+  const envPath = join(__dirname, '../../.env');
   
+  try {
+    dotenv.config({ path: envTestPath });
+  } catch (error) {
+    // .env.test doesn't exist, that's okay
+  }
+  
+  // Also try to load from .env if .env.test doesn't have the values we need
   try {
     dotenv.config({ path: envPath });
   } catch (error) {
-    // .env.test doesn't exist, that's okay
+    // .env doesn't exist, that's okay
   }
   
   // Set test-specific environment variables
@@ -51,8 +59,16 @@ export async function setupTestEnvironment() {
  * Get test environment configuration
  */
 export function getTestConfig() {
+  console.log('🔍 Debug - Environment variables:');
+  console.log('  DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
+  console.log('  TEST_DATABASE_URL:', process.env.TEST_DATABASE_URL ? 'SET' : 'NOT SET');
+  console.log('  JWT_SECRET:', process.env.JWT_SECRET ? 'SET' : 'NOT SET');
+  
+  const databaseUrl = process.env.TEST_DATABASE_URL || process.env.DATABASE_URL;
+  console.log('🔍 Debug - Final database URL:', databaseUrl ? databaseUrl.substring(0, 50) + '...' : 'NOT SET');
+  
   return {
-    databaseUrl: process.env.TEST_DATABASE_URL || process.env.DATABASE_URL,
+    databaseUrl: databaseUrl,
     jwtSecret: process.env.JWT_SECRET || 'test-jwt-secret',
     nodeEnv: process.env.NODE_ENV,
     testMode: process.env.TEST_MODE === 'true'
