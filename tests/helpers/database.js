@@ -30,21 +30,61 @@ export async function setupTestDatabase() {
   }
   
   try {
-    // Create Neon client for testing
-    testClient = neon(config.databaseUrl, {
-      poolQueryViaFetch: true,
-      fetchOptions: {
-        priority: 'high'
-      }
-    });
-    
-    // Create pg pool for more complex operations
-    testPool = new Pool({
-      connectionString: config.databaseUrl,
-      max: 5,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000
-    });
+    // For local PostgreSQL (CI), use pg Pool instead of Neon client
+    if (config.databaseUrl.includes('localhost') || config.databaseUrl.includes('127.0.0.1')) {
+      console.log('🔧 Using PostgreSQL Pool for local database');
+      
+      // Create pg pool for local PostgreSQL
+      testPool = new Pool({
+        connectionString: config.databaseUrl,
+        max: 5,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000
+      });
+      
+      // Create a client wrapper that mimics Neon's template literal interface
+      testClient = async (strings, ...values) => {
+        const client = await testPool.connect();
+        try {
+          const query = strings.join('$' + (values.length + 1)).replace(/\$(\d+)/g, (match, num) => {
+            const index = parseInt(num) - 1;
+            return index < values.length ? '$' + (index + 1) : match;
+          });
+          
+          let finalQuery = '';
+          for (let i = 0; i < strings.length; i++) {
+            finalQuery += strings[i];
+            if (i < values.length) {
+              finalQuery += '$' + (i + 1);
+            }
+          }
+          
+          const result = await client.query(finalQuery, values);
+          return result.rows;
+        } finally {
+          client.release();
+        }
+      };
+      
+    } else {
+      console.log('🔧 Using Neon client for cloud database');
+      
+      // Create Neon client for cloud database
+      testClient = neon(config.databaseUrl, {
+        poolQueryViaFetch: true,
+        fetchOptions: {
+          priority: 'high'
+        }
+      });
+      
+      // Create pg pool for more complex operations
+      testPool = new Pool({
+        connectionString: config.databaseUrl,
+        max: 5,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000
+      });
+    }
     
     // Test database connection
     // Drop existing tables first to avoid conflicts
