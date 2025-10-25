@@ -1166,8 +1166,9 @@
                         <input type="number" id="userWeight" class="form-input" min="80" max="300" placeholder="140">
                     </div>
                     <div class="form-group">
-                        <label for="userHeight">Height (inches)</label>
-                        <input type="number" id="userHeight" class="form-input" min="48" max="84" placeholder="65">
+                        <label for="userHeight">Height (total inches) <span style="color: #a0aec0; font-size: 12px;">e.g., 5'8" = 68 inches</span></label>
+                        <input type="number" id="userHeight" class="form-input" min="48" max="84" placeholder="68">
+                        <small style="color: #a0aec0; font-size: 11px; margin-top: 5px; display: block;">💡 To convert: (feet × 12) + inches = total inches</small>
                     </div>
                     <div class="form-group">
                         <label for="userSex">Sex</label>
@@ -1208,7 +1209,7 @@
             <div class="form-section">
                 <h3>Goals & Priorities</h3>
                 <div class="form-group">
-                    <label>Primary Goal</label>
+                    <label style="color: #68d391;">Primary Goal</label>
                     <select id="primaryGoal" class="form-select">
                         <option value="">Select primary goal...</option>
                         <option value="lose_weight">Lose Weight</option>
@@ -1224,20 +1225,156 @@
                 </div>
                 
                 <div class="form-group">
-                    <label>Secondary Goals (select all that apply)</label>
+                    <label style="color: #68d391;">Secondary Goals (select all that apply)</label>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
-                        <label><input type="checkbox" value="soccer_performance"> Soccer Performance</label>
-                        <label><input type="checkbox" value="injury_prevention"> Injury Prevention</label>
-                        <label><input type="checkbox" value="strength_gain"> Strength Gain</label>
-                        <label><input type="checkbox" value="speed_improvement"> Speed Improvement</label>
-                        <label><input type="checkbox" value="endurance_building"> Endurance Building</label>
-                        <label><input type="checkbox" value="agility_training"> Agility Training</label>
-                        <label><input type="checkbox" value="acl_support"> ACL Support</label>
-                        <label><input type="checkbox" value="core_stability"> Core Stability</label>
+                        <label style="color: #e2e8f0;"><input type="checkbox" value="soccer_performance"> ⚽ Soccer Performance</label>
+                        <label style="color: #e2e8f0;"><input type="checkbox" value="injury_prevention"> 🛡️ Injury Prevention</label>
+                        <label style="color: #e2e8f0;"><input type="checkbox" value="strength_gain"> 💪 Strength Gain</label>
+                        <label style="color: #e2e8f0;"><input type="checkbox" value="speed_improvement"> ⚡ Speed Improvement</label>
+                        <label style="color: #e2e8f0;"><input type="checkbox" value="endurance_building"> 🏃 Endurance Building</label>
+                        <label style="color: #e2e8f0;"><input type="checkbox" value="agility_training"> 🤸 Agility Training</label>
+                        <label style="color: #e2e8f0;"><input type="checkbox" value="acl_support"> 🦵 ACL Support</label>
+                        <label style="color: #e2e8f0;"><input type="checkbox" value="core_stability"> 🧘 Core Stability</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label style="color: #f59e0b;">Sport-Specific Training</label>
+                    <div style="margin-bottom: 15px;">
+                        <label style="color: #e2e8f0;"><input type="checkbox" id="sportSpecificTraining" onchange="toggleSeasonPhase()"> I want sport-specific training</label>
+                    </div>
+                    
+                    <div id="seasonPhaseSection" style="display: none; background: #2d3748; padding: 15px; border-radius: 8px; margin-top: 10px;">
+                        <label style="color: #f59e0b;">What part of the season are you in?</label>
+                        <select id="seasonPhase" class="form-select" style="margin-top: 8px;">
+                            <option value="">Select season phase...</option>
+                            <option value="pre_season">Pre-Season (Building fitness base)</option>
+                            <option value="mid_season">Mid-Season (Competition phase)</option>
+                            <option value="playoffs">Playoffs (Peak performance)</option>
+                            <option value="post_season">Post-Season (Recovery phase)</option>
+                            <option value="off_season">Off-Season (Rest & rebuild)</option>
+                        </select>
                     </div>
                 </div>
                 
                 <button class="btn" onclick="saveGoals()">Save Goals</button>
+            </div>
+
+            <div class="form-section">
+                <h3>🗓️ Workout Calendar</h3>
+                <p style="color: #a0aec0; margin-bottom: 20px;">Plan your weekly training schedule with different activity types</p>
+                
+                <div class="form-group">
+                    <label style="color: #68d391;">Soccer Schedule</label>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px;">
+                        <div>
+                            <label style="color: #e2e8f0; font-size: 14px; margin-bottom: 8px; display: block;">⚽ Indoor Games</label>
+                            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px;">
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Su</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Mo</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Tu</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">We</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Th</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Fr</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Sa</label>
+                                <input type="checkbox" name="indoorGames" value="0" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="indoorGames" value="1" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="indoorGames" value="2" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="indoorGames" value="3" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="indoorGames" value="4" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="indoorGames" value="5" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="indoorGames" value="6" style="width: 20px; height: 20px;">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label style="color: #e2e8f0; font-size: 14px; margin-bottom: 8px; display: block;">🌳 Outdoor Games</label>
+                            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px;">
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Su</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Mo</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Tu</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">We</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Th</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Fr</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Sa</label>
+                                <input type="checkbox" name="outdoorGames" value="0" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="outdoorGames" value="1" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="outdoorGames" value="2" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="outdoorGames" value="3" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="outdoorGames" value="4" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="outdoorGames" value="5" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="outdoorGames" value="6" style="width: 20px; height: 20px;">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label style="color: #e2e8f0; font-size: 14px; margin-bottom: 8px; display: block;">🏃 Practice</label>
+                            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px;">
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Su</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Mo</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Tu</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">We</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Th</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Fr</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Sa</label>
+                                <input type="checkbox" name="practiceDays" value="0" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="practiceDays" value="1" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="practiceDays" value="2" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="practiceDays" value="3" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="practiceDays" value="4" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="practiceDays" value="5" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="practiceDays" value="6" style="width: 20px; height: 20px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label style="color: #68d391;">Lifting Schedule</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <label style="color: #e2e8f0; font-size: 14px; margin-bottom: 8px; display: block;">💪 Preferred Lifting Days</label>
+                            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px;">
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Su</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Mo</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Tu</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">We</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Th</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Fr</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Sa</label>
+                                <input type="checkbox" name="liftingDays" value="0" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="liftingDays" value="1" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="liftingDays" value="2" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="liftingDays" value="3" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="liftingDays" value="4" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="liftingDays" value="5" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="liftingDays" value="6" style="width: 20px; height: 20px;">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label style="color: #e2e8f0; font-size: 14px; margin-bottom: 8px; display: block;">🧘 Recovery Days</label>
+                            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px;">
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Su</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Mo</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Tu</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">We</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Th</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Fr</label>
+                                <label style="font-size: 11px; text-align: center; color: #a0aec0;">Sa</label>
+                                <input type="checkbox" name="recoveryDays" value="0" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="recoveryDays" value="1" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="recoveryDays" value="2" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="recoveryDays" value="3" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="recoveryDays" value="4" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="recoveryDays" value="5" style="width: 20px; height: 20px;">
+                                <input type="checkbox" name="recoveryDays" value="6" style="width: 20px; height: 20px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="btn" onclick="saveWorkoutCalendar()">Save Workout Calendar</button>
             </div>
 
             <div class="form-section">
@@ -3920,10 +4057,10 @@
             // Also save to database
             try {
                 await saveUserData();
-                alert('Personal information saved to database!');
+                showSaveConfirmation('Personal information saved to database! ✅');
             } catch (error) {
                 console.log('Database save failed, but local save succeeded:', error);
-                alert('Personal information saved locally!');
+                showSaveConfirmation('Personal information saved locally! 💾');
             }
             
             // Refresh the form fields to show the saved data
@@ -3965,24 +4102,34 @@
 
             user.goals.primary = document.getElementById('primaryGoal').value;
             
-            // Get secondary goals
+            // Get secondary goals (only from the specific checkboxes in the goals section)
             const secondaryGoals = [];
-            document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
-                if (checkbox.value !== '') {
+            const goalCheckboxes = document.querySelectorAll('#personal input[type="checkbox"][value*="_"]');
+            goalCheckboxes.forEach(checkbox => {
+                if (checkbox.checked && checkbox.value !== '') {
                     secondaryGoals.push(checkbox.value);
                 }
             });
             user.goals.secondary = secondaryGoals;
+
+            // Handle sport-specific training
+            const sportSpecific = document.getElementById('sportSpecificTraining').checked;
+            const seasonPhase = document.getElementById('seasonPhase').value;
+            
+            user.goals.sportSpecific = sportSpecific;
+            if (sportSpecific && seasonPhase) {
+                user.goals.seasonPhase = seasonPhase;
+            }
 
             localStorage.setItem('ignitefitness_users', JSON.stringify(users));
             
             // Also save to database
             try {
                 await saveUserData();
-                alert('Goals saved to database!');
+                showSaveConfirmation('Goals saved to database! 🎯');
             } catch (error) {
                 console.log('Database save failed, but local save succeeded:', error);
-                alert('Goals saved locally!');
+                showSaveConfirmation('Goals saved locally! 🎯');
             }
             
             // Refresh the form fields to show the saved data
@@ -4016,9 +4163,62 @@
                 document.getElementById('primaryGoal').value = user.goals.primary || '';
                 
                 // Check secondary goals checkboxes
-                document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                document.querySelectorAll('#personal input[type="checkbox"][value*="_"]').forEach(checkbox => {
                     checkbox.checked = user.goals.secondary && user.goals.secondary.includes(checkbox.value);
                 });
+
+                // Load sport-specific training
+                if (user.goals.sportSpecific) {
+                    document.getElementById('sportSpecificTraining').checked = true;
+                    document.getElementById('seasonPhaseSection').style.display = 'block';
+                    document.getElementById('seasonPhase').value = user.goals.seasonPhase || '';
+                } else {
+                    document.getElementById('sportSpecificTraining').checked = false;
+                    document.getElementById('seasonPhaseSection').style.display = 'none';
+                }
+            }
+
+            // Load workout calendar
+            if (user.workoutCalendar) {
+                // Load indoor games
+                if (user.workoutCalendar.indoorGames) {
+                    user.workoutCalendar.indoorGames.forEach(day => {
+                        const checkbox = document.querySelector(`input[name="indoorGames"][value="${day}"]`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                }
+
+                // Load outdoor games
+                if (user.workoutCalendar.outdoorGames) {
+                    user.workoutCalendar.outdoorGames.forEach(day => {
+                        const checkbox = document.querySelector(`input[name="outdoorGames"][value="${day}"]`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                }
+
+                // Load practice days
+                if (user.workoutCalendar.practiceDays) {
+                    user.workoutCalendar.practiceDays.forEach(day => {
+                        const checkbox = document.querySelector(`input[name="practiceDays"][value="${day}"]`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                }
+
+                // Load lifting days
+                if (user.workoutCalendar.liftingDays) {
+                    user.workoutCalendar.liftingDays.forEach(day => {
+                        const checkbox = document.querySelector(`input[name="liftingDays"][value="${day}"]`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                }
+
+                // Load recovery days
+                if (user.workoutCalendar.recoveryDays) {
+                    user.workoutCalendar.recoveryDays.forEach(day => {
+                        const checkbox = document.querySelector(`input[name="recoveryDays"][value="${day}"]`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                }
             }
         }
 
@@ -12278,6 +12478,95 @@ You can now generate a personalized plan.`);
                 if (data.stats) {
                     this.costTracker = { ...this.costTracker, ...data.stats };
                 }
+            }
+        }
+
+        // ============ NEW UI IMPROVEMENT FUNCTIONS ============
+        
+        function showSaveConfirmation(message) {
+            // Create a nice toast notification
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #68d391;
+                color: #1a1a1a;
+                padding: 15px 20px;
+                border-radius: 8px;
+                font-weight: 600;
+                z-index: 10000;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+                animation: slideInRight 0.3s ease-out;
+            `;
+            toast.textContent = message;
+            
+            // Add animation CSS if not already present
+            if (!document.querySelector('#toast-styles')) {
+                const style = document.createElement('style');
+                style.id = 'toast-styles';
+                style.textContent = `
+                    @keyframes slideInRight {
+                        from { transform: translateX(100%); opacity: 0; }
+                        to { transform: translateX(0); opacity: 1; }
+                    }
+                    @keyframes slideOutRight {
+                        from { transform: translateX(0); opacity: 1; }
+                        to { transform: translateX(100%); opacity: 0; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            document.body.appendChild(toast);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.style.animation = 'slideOutRight 0.3s ease-in';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        function toggleSeasonPhase() {
+            const checkbox = document.getElementById('sportSpecificTraining');
+            const section = document.getElementById('seasonPhaseSection');
+            section.style.display = checkbox.checked ? 'block' : 'none';
+        }
+
+        async function saveWorkoutCalendar() {
+            if (!currentUser || !isLoggedIn) return;
+
+            const user = users[currentUser];
+            if (!user.workoutCalendar) user.workoutCalendar = {};
+
+            // Get selected days for each activity type
+            const indoorGames = Array.from(document.querySelectorAll('input[name="indoorGames"]:checked')).map(cb => parseInt(cb.value));
+            const outdoorGames = Array.from(document.querySelectorAll('input[name="outdoorGames"]:checked')).map(cb => parseInt(cb.value));
+            const practiceDays = Array.from(document.querySelectorAll('input[name="practiceDays"]:checked')).map(cb => parseInt(cb.value));
+            const liftingDays = Array.from(document.querySelectorAll('input[name="liftingDays"]:checked')).map(cb => parseInt(cb.value));
+            const recoveryDays = Array.from(document.querySelectorAll('input[name="recoveryDays"]:checked')).map(cb => parseInt(cb.value));
+
+            user.workoutCalendar = {
+                indoorGames,
+                outdoorGames,
+                practiceDays,
+                liftingDays,
+                recoveryDays,
+                updatedAt: new Date().toISOString()
+            };
+
+            localStorage.setItem('ignitefitness_users', JSON.stringify(users));
+            
+            try {
+                await saveUserData();
+                showSaveConfirmation('Workout calendar saved to database! 📅');
+            } catch (error) {
+                console.log('Database save failed, but local save succeeded:', error);
+                showSaveConfirmation('Workout calendar saved locally! 📅');
             }
         }
 

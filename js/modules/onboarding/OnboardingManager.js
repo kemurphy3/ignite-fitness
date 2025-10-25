@@ -50,8 +50,9 @@ class OnboardingManager {
                 question: 'What is your training background?',
                 type: 'radio',
                 options: [
-                    { value: 'beginner', label: 'Beginner', description: 'New to structured training' },
-                    { value: 'intermediate', label: 'Intermediate', description: 'Some experience with training' },
+                    { value: 'new_to_training', label: 'New to Training', description: 'Just starting structured fitness' },
+                    { value: 'some_experience', label: 'Some Experience', description: '6+ months of regular training' },
+                    { value: 'consistent_trainer', label: 'Consistent Trainer', description: '2+ years of regular training' },
                     { value: 'former_athlete', label: 'Former Athlete', description: 'Previous competitive sports experience' },
                     { value: 'current_competitor', label: 'Current Competitor', description: 'Currently competing in sports' },
                     { value: 'coach', label: 'Coach/Trainer', description: 'Training others professionally' }
