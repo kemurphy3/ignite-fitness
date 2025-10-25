@@ -121,8 +121,16 @@ class StravaDataProcessor {
      */
     processActivity(activity) {
         try {
+            // Validate input data
+            if (!activity || typeof activity !== 'object') {
+                return { success: false, error: 'Invalid activity data' };
+            }
+            
+            // Sanitize activity data
+            const sanitizedActivity = this.sanitizeActivityData(activity);
+            
             // Check for idempotency
-            const activityKey = `${activity.source}_${activity.external_id}`;
+            const activityKey = `${sanitizedActivity.source}_${sanitizedActivity.external_id}`;
             if (this.importedActivities.has(activityKey)) {
                 this.logger.debug('Activity already processed, skipping:', activityKey);
                 return { success: false, error: 'Activity already processed' };
@@ -391,6 +399,45 @@ class StravaDataProcessor {
     getUserAge() {
         // This would typically come from user profile
         return 30; // Default age
+    }
+
+    /**
+     * Sanitize activity data to prevent security issues
+     * @param {Object} activity - Raw activity data
+     * @returns {Object} Sanitized activity data
+     */
+    sanitizeActivityData(activity) {
+        const sanitized = {};
+        
+        // Only allow specific fields and sanitize them
+        const allowedFields = [
+            'id', 'type', 'moving_time', 'elapsed_time', 'distance', 'calories',
+            'average_heartrate', 'max_heartrate', 'total_elevation_gain',
+            'start_date', 'avg_watts', 'weighted_avg_watts', 'source'
+        ];
+        
+        for (const field of allowedFields) {
+            if (activity.hasOwnProperty(field)) {
+                const value = activity[field];
+                
+                // Sanitize string values
+                if (typeof value === 'string') {
+                    sanitized[field] = value.replace(/[<>\"'&]/g, '');
+                } else if (typeof value === 'number' && !isNaN(value) && isFinite(value)) {
+                    sanitized[field] = value;
+                } else if (typeof value === 'boolean') {
+                    sanitized[field] = value;
+                } else if (value === null || value === undefined) {
+                    sanitized[field] = value;
+                }
+            }
+        }
+        
+        // Ensure required fields have defaults
+        sanitized.source = sanitized.source || 'strava';
+        sanitized.external_id = sanitized.id ? sanitized.id.toString() : '';
+        
+        return sanitized;
     }
 
     /**
