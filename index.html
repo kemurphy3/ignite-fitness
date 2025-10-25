@@ -220,6 +220,492 @@
             width: 95%;
         }
         
+        /* Height Input Styles */
+        .height-input-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .height-unit {
+            width: 80px;
+            flex-shrink: 0;
+        }
+        
+        .height-feet-inches {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .height-feet-inches input {
+            width: 80px;
+        }
+        
+        /* Sport-Specific Training Styles */
+        .sport-specific-options {
+            margin-top: 16px;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        /* Training Goals Styles */
+        .goals-label {
+            color: #4a5568;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: block;
+        }
+        
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+        
+        .goal-option {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            background: #f7fafc;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .goal-option:hover {
+            background: #edf2f7;
+            border-color: #cbd5e0;
+        }
+        
+        .goal-option input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        
+        .goal-option input[type="checkbox"]:checked + span {
+            color: #2b6cb0;
+            font-weight: 600;
+        }
+        
+        /* Workout Calendar Styles */
+        .workout-calendar-section {
+            margin-bottom: 32px;
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 12px;
+            margin: 16px 0;
+        }
+        
+        .calendar-day {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .day-header {
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 8px;
+            text-align: center;
+            font-size: 14px;
+        }
+        
+        .activity-select {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        /* Save Status Styles */
+        .save-status {
+            margin-top: 12px;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .save-status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        
+        .save-status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        
+        /* Injury Prevention Styles */
+        .injury-prevention-section {
+            margin-top: 20px;
+            padding: 16px;
+            background: #fff5f5;
+            border-radius: 8px;
+            border: 1px solid #fed7d7;
+        }
+        
+        .injury-prevention-options {
+            margin-top: 16px;
+            padding: 16px;
+            background: #fef5e7;
+            border-radius: 8px;
+            border: 1px solid #fbd38d;
+        }
+        
+        .injury-option {
+            display: flex;
+            align-items: center;
+            padding: 6px 12px;
+            background: #fff;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .injury-option:hover {
+            background: #f7fafc;
+            border-color: #cbd5e0;
+        }
+        
+        .injury-option input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        
+        .injury-recommendations {
+            margin-top: 16px;
+            padding: 12px;
+            background: #e6fffa;
+            border-radius: 6px;
+            border: 1px solid #81e6d9;
+        }
+        
+        .injury-prevention-tab {
+            margin-bottom: 32px;
+            padding: 20px;
+            background: #f0fff4;
+            border-radius: 8px;
+            border: 1px solid #9ae6b4;
+        }
+        
+        .prevention-exercises {
+            margin-top: 16px;
+        }
+        
+        .exercise-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+        
+        .exercise-item {
+            padding: 12px;
+            background: #fff;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .exercise-item h6 {
+            margin: 0 0 8px 0;
+            color: #2d3748;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .exercise-item p {
+            margin: 0;
+            color: #718096;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        .exercise-item .exercise-type {
+            display: inline-block;
+            padding: 2px 6px;
+            background: #edf2f7;
+            color: #4a5568;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 500;
+            margin-top: 6px;
+        }
+        
+        /* ACL Prevention Styles */
+        .acl-prevention-section {
+            margin-top: 20px;
+            padding: 16px;
+            background: #fff5f5;
+            border-radius: 8px;
+            border: 1px solid #feb2b2;
+        }
+        
+        .acl-protocol {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-top: 12px;
+        }
+        
+        .protocol-phase {
+            padding: 12px;
+            background: #fff;
+            border-radius: 6px;
+            border: 1px solid #fed7d7;
+        }
+        
+        .protocol-phase h6 {
+            margin: 0 0 8px 0;
+            color: #c53030;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .protocol-phase ul {
+            margin: 0;
+            padding-left: 16px;
+        }
+        
+        .protocol-phase li {
+            margin-bottom: 4px;
+            color: #4a5568;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        /* Workout Frequency Styles */
+        .workout-frequency-section {
+            margin: 24px 0;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .frequency-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+        
+        .frequency-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .frequency-item label {
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 14px;
+        }
+        
+        .help-text {
+            margin-top: 8px;
+            color: #718096;
+            font-size: 12px;
+            font-style: italic;
+        }
+        
+        /* Enhanced Calendar Styles */
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .calendar-controls {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .calendar-grid.enhanced {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 12px;
+            margin: 16px 0;
+        }
+        
+        .calendar-day {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            min-height: 120px;
+        }
+        
+        .day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .day-name {
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 14px;
+        }
+        
+        .add-workout-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .add-workout-btn:hover {
+            background: #3730a3;
+            transform: scale(1.1);
+        }
+        
+        .day-workouts {
+            min-height: 80px;
+        }
+        
+        .workout-item {
+            background: #fff;
+            border-radius: 6px;
+            padding: 8px;
+            margin-bottom: 6px;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+            transition: all 0.2s;
+        }
+        
+        .workout-item:hover {
+            border-color: #cbd5e0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .workout-info {
+            flex: 1;
+        }
+        
+        .workout-type {
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 12px;
+        }
+        
+        .workout-duration {
+            color: #718096;
+            font-size: 10px;
+        }
+        
+        .workout-actions {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .workout-btn {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            border: none;
+            cursor: pointer;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .edit-btn {
+            background: #edf2f7;
+            color: #4a5568;
+        }
+        
+        .delete-btn {
+            background: #fed7d7;
+            color: #c53030;
+        }
+        
+        .workout-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        /* Workout Modal Styles */
+        .workout-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .workout-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin: 16px 0;
+        }
+        
+        .workout-option {
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .workout-option:hover {
+            border-color: #4f46e5;
+            background: #f8fafc;
+        }
+        
+        .workout-name {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 4px;
+        }
+        
+        .workout-duration {
+            color: #718096;
+            font-size: 12px;
+        }
+        
         .checkin-metric {
             margin-bottom: 32px;
             padding: 20px;
@@ -1566,49 +2052,363 @@
                         <input type="number" id="weight" class="form-input" placeholder="Enter your weight">
                     </div>
                     <div class="form-group">
-                        <label for="height">Height (cm)</label>
-                        <input type="number" id="height" class="form-input" placeholder="Enter your height">
+                        <label for="height">Height</label>
+                        <div class="height-input-group">
+                            <input type="number" id="height" class="form-input" placeholder="Enter your height">
+                            <select id="heightUnit" class="form-input height-unit">
+                                <option value="cm">cm</option>
+                                <option value="ft">ft & in</option>
+                            </select>
+                        </div>
+                        <div id="heightFeetInches" class="height-feet-inches" style="display: none;">
+                            <input type="number" id="heightFeet" class="form-input" placeholder="Feet" min="3" max="8">
+                            <input type="number" id="heightInches" class="form-input" placeholder="Inches" min="0" max="11">
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="experience">Training Experience</label>
                         <select id="experience" class="form-input">
                             <option value="">Select experience level</option>
-                            <option value="beginner">Beginner (0-1 years)</option>
-                            <option value="intermediate">Intermediate (1-3 years)</option>
-                            <option value="advanced">Advanced (3+ years)</option>
+                            <option value="newcomer">Newcomer (0-6 months)</option>
+                            <option value="novice">Novice (6 months - 2 years)</option>
+                            <option value="intermediate">Intermediate (2-5 years)</option>
+                            <option value="advanced">Advanced (5+ years)</option>
+                            <option value="elite">Elite (Competitive level)</option>
                         </select>
                     </div>
+                    
+                    <!-- Sport-Specific Training Section -->
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="sportSpecific" onchange="toggleSportSpecific()">
+                            Sport-Specific Training
+                        </label>
+                    </div>
+                    
+                    <div id="sportSpecificOptions" class="sport-specific-options" style="display: none;">
+                        <div class="form-group">
+                            <label for="sport">Sport</label>
+                            <select id="sport" class="form-input" onchange="updateInjuryPrevention()">
+                                <option value="">Select sport</option>
+                                <option value="soccer">Soccer</option>
+                                <option value="basketball">Basketball</option>
+                                <option value="tennis">Tennis</option>
+                                <option value="running">Running</option>
+                                <option value="cycling">Cycling</option>
+                                <option value="swimming">Swimming</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="seasonPhase">Season Phase</label>
+                            <select id="seasonPhase" class="form-input">
+                                <option value="">Select phase</option>
+                                <option value="off">Off-Season</option>
+                                <option value="pre">Pre-Season</option>
+                                <option value="mid">Mid-Season</option>
+                                <option value="playoffs">Playoffs</option>
+                                <option value="post">Post-Season</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Injury Prevention Section -->
+                        <div class="injury-prevention-section">
+                            <h4>Injury Prevention Focus</h4>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="injuryPrevention" onchange="toggleInjuryPrevention()">
+                                    Include Sport-Specific Injury Prevention
+                                </label>
+                            </div>
+                            
+                            <div id="injuryPreventionOptions" class="injury-prevention-options" style="display: none;">
+                                <div class="form-group">
+                                    <label>Previous Injuries (Select All That Apply)</label>
+                                    <div class="checkbox-group">
+                                        <label class="injury-option"><input type="checkbox" name="previousInjuries" value="acl"> ACL Tear/Injury</label>
+                                        <label class="injury-option"><input type="checkbox" name="previousInjuries" value="ankle"> Ankle Sprains</label>
+                                        <label class="injury-option"><input type="checkbox" name="previousInjuries" value="knee"> Other Knee Injuries</label>
+                                        <label class="injury-option"><input type="checkbox" name="previousInjuries" value="hamstring"> Hamstring Strains</label>
+                                        <label class="injury-option"><input type="checkbox" name="previousInjuries" value="shoulder"> Shoulder Issues</label>
+                                        <label class="injury-option"><input type="checkbox" name="previousInjuries" value="back"> Back Problems</label>
+                                        <label class="injury-option"><input type="checkbox" name="previousInjuries" value="none"> No Previous Injuries</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Injury Risk Level</label>
+                                    <select id="injuryRiskLevel" class="form-input">
+                                        <option value="low">Low Risk</option>
+                                        <option value="medium">Medium Risk</option>
+                                        <option value="high">High Risk</option>
+                                    </select>
+                                </div>
+                                
+                                <div id="injuryPreventionRecommendations" class="injury-recommendations"></div>
+                                
+                                <!-- ACL Prevention Special Section -->
+                                <div id="aclPreventionSection" class="acl-prevention-section" style="display: none;">
+                                    <h5>ACL Prevention Protocol</h5>
+                                    <div class="acl-protocol">
+                                        <div class="protocol-phase">
+                                            <h6>Phase 1: Foundation (Weeks 1-2)</h6>
+                                            <ul>
+                                                <li>Single-leg balance: 30 seconds each leg</li>
+                                                <li>Wall sits: 3 sets of 30 seconds</li>
+                                                <li>Clamshells: 3 sets of 15 each side</li>
+                                                <li>Glute bridges: 3 sets of 15</li>
+                                            </ul>
+                                        </div>
+                                        <div class="protocol-phase">
+                                            <h6>Phase 2: Strength (Weeks 3-4)</h6>
+                                            <ul>
+                                                <li>Single-leg squats: 3 sets of 8 each leg</li>
+                                                <li>Lateral lunges: 3 sets of 10 each side</li>
+                                                <li>Nordic hamstring curls: 3 sets of 8</li>
+                                                <li>Single-leg RDL: 3 sets of 8 each leg</li>
+                                            </ul>
+                                        </div>
+                                        <div class="protocol-phase">
+                                            <h6>Phase 3: Plyometrics (Weeks 5-6)</h6>
+                                            <ul>
+                                                <li>Jump landing mechanics: 3 sets of 8</li>
+                                                <li>Lateral bounds: 3 sets of 6 each direction</li>
+                                                <li>Single-leg hops: 3 sets of 8 each leg</li>
+                                                <li>Agility ladder drills: 10 minutes</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <button class="btn" onclick="savePersonalInfo()">Save Personal Info</button>
+                    <div id="personalDataStatus" class="save-status"></div>
                 </div>
 
                 <div class="tab-content hidden" id="goals">
-                    <h3>Training Goals</h3>
+                    <h3>Training Goals & Preferences</h3>
+                    
+                    <!-- Primary Goals Section -->
                     <div class="form-group">
-                        <label>Primary Goal</label>
-                        <div class="radio-group">
-                            <label><input type="radio" name="primaryGoal" value="strength"> Strength</label>
-                            <label><input type="radio" name="primaryGoal" value="endurance"> Endurance</label>
-                            <label><input type="radio" name="primaryGoal" value="speed"> Speed</label>
-                            <label><input type="radio" name="primaryGoal" value="injury_prevention"> Injury Prevention</label>
+                        <label class="goals-label">Primary Training Goals (Select All That Apply)</label>
+                        <div class="checkbox-group">
+                            <label class="goal-option"><input type="checkbox" name="trainingGoals" value="soccer_performance"> Soccer Performance</label>
+                            <label class="goal-option"><input type="checkbox" name="trainingGoals" value="weight_training"> Weight Training</label>
+                            <label class="goal-option"><input type="checkbox" name="trainingGoals" value="strength"> General Strength</label>
+                            <label class="goal-option"><input type="checkbox" name="trainingGoals" value="endurance"> Endurance</label>
+                            <label class="goal-option"><input type="checkbox" name="trainingGoals" value="speed"> Speed & Agility</label>
+                            <label class="goal-option"><input type="checkbox" name="trainingGoals" value="muscle_gain"> Muscle Gain</label>
+                            <label class="goal-option"><input type="checkbox" name="trainingGoals" value="fat_loss"> Fat Loss</label>
+                            <label class="goal-option"><input type="checkbox" name="trainingGoals" value="injury_prevention"> Injury Prevention</label>
+                            <label class="goal-option"><input type="checkbox" name="trainingGoals" value="flexibility"> Flexibility</label>
+                            <label class="goal-option"><input type="checkbox" name="trainingGoals" value="recovery"> Recovery & Wellness</label>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label>Secondary Goal</label>
-                        <div class="radio-group">
-                            <label><input type="radio" name="secondaryGoal" value="muscle_gain"> Muscle Gain</label>
-                            <label><input type="radio" name="secondaryGoal" value="fat_loss"> Fat Loss</label>
-                            <label><input type="radio" name="secondaryGoal" value="athletic_performance"> Athletic Performance</label>
+                    
+                    <!-- Workout Frequency Preferences -->
+                    <div class="workout-frequency-section">
+                        <h4>Workout Frequency Preferences</h4>
+                        <div class="frequency-grid">
+                            <div class="frequency-item">
+                                <label>Weight Training (days/week)</label>
+                                <select id="weightTrainingDays" class="form-input">
+                                    <option value="0">0 days</option>
+                                    <option value="1">1 day</option>
+                                    <option value="2">2 days</option>
+                                    <option value="3" selected>3 days</option>
+                                    <option value="4">4 days</option>
+                                    <option value="5">5 days</option>
+                                    <option value="6">6 days</option>
+                                </select>
+                            </div>
+                            <div class="frequency-item">
+                                <label>Soccer Training (days/week)</label>
+                                <select id="soccerTrainingDays" class="form-input">
+                                    <option value="0">0 days</option>
+                                    <option value="1">1 day</option>
+                                    <option value="2" selected>2 days</option>
+                                    <option value="3">3 days</option>
+                                    <option value="4">4 days</option>
+                                    <option value="5">5 days</option>
+                                    <option value="6">6 days</option>
+                                </select>
+                            </div>
+                            <div class="frequency-item">
+                                <label>Cardio (days/week)</label>
+                                <select id="cardioDays" class="form-input">
+                                    <option value="0">0 days</option>
+                                    <option value="1">1 day</option>
+                                    <option value="2">2 days</option>
+                                    <option value="3" selected>3 days</option>
+                                    <option value="4">4 days</option>
+                                    <option value="5">5 days</option>
+                                    <option value="6">6 days</option>
+                                </select>
+                            </div>
+                            <div class="frequency-item">
+                                <label>Recovery/Mobility (days/week)</label>
+                                <select id="recoveryDays" class="form-input">
+                                    <option value="0">0 days</option>
+                                    <option value="1">1 day</option>
+                                    <option value="2" selected>2 days</option>
+                                    <option value="3">3 days</option>
+                                    <option value="4">4 days</option>
+                                    <option value="5">5 days</option>
+                                    <option value="6">6 days</option>
+                                </select>
+                            </div>
+                            <div class="frequency-item">
+                                <label>Yoga (days/week)</label>
+                                <select id="yogaDays" class="form-input">
+                                    <option value="0">0 days</option>
+                                    <option value="1">1 day</option>
+                                    <option value="2">2 days</option>
+                                    <option value="3">3 days</option>
+                                    <option value="4">4 days</option>
+                                    <option value="5">5 days</option>
+                                    <option value="6">6 days</option>
+                                    <option value="7" selected>7 days (Daily)</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
-                    <button class="btn" onclick="saveGoals()">Save Goals</button>
+                    
+                    <!-- Auto-Assignment Option -->
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="autoAssignWorkouts" onchange="toggleAutoAssignment()">
+                            Automatically assign workouts based on my preferences
+                        </label>
+                        <p class="help-text">If checked, the system will automatically schedule your workouts based on your frequency preferences and available days.</p>
+                    </div>
+                    
+                    <button class="btn" onclick="saveGoals()">Save Goals & Preferences</button>
+                    <div id="goalsStatus" class="save-status"></div>
                 </div>
 
                 <div class="tab-content hidden" id="workoutPlan">
-                    <h3>Workout Planning</h3>
-                    <p>AI-powered workout planning will be available here.</p>
+                    <h3>Workout Planning & Calendar</h3>
+                    
+                    <!-- Injury Prevention Tab -->
+                    <div class="injury-prevention-tab">
+                        <h4>Sport-Specific Injury Prevention</h4>
+                        <div class="injury-prevention-content">
+                            <div class="form-group">
+                                <label for="preventionFocus">Prevention Focus</label>
+                                <select id="preventionFocus" class="form-input" onchange="updatePreventionExercises()">
+                                    <option value="">Select focus area</option>
+                                    <option value="acl_prevention">ACL Prevention (Soccer)</option>
+                                    <option value="ankle_stability">Ankle Stability</option>
+                                    <option value="knee_strength">Knee Strength</option>
+                                    <option value="hamstring_flexibility">Hamstring Flexibility</option>
+                                    <option value="shoulder_mobility">Shoulder Mobility</option>
+                                    <option value="core_stability">Core Stability</option>
+                                    <option value="balance_training">Balance Training</option>
+                                </select>
+                            </div>
+                            
+                            <div id="preventionExercises" class="prevention-exercises">
+                                <h5>Recommended Prevention Exercises</h5>
+                                <div id="exerciseList" class="exercise-list"></div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="includePrevention" onchange="togglePreventionInWorkout()">
+                                    Include Prevention Exercises in Workout Plans
+                                </label>
+                            </div>
+                            
+                            <button class="btn" onclick="saveInjuryPrevention()">Save Prevention Settings</button>
+                            <div id="preventionStatus" class="save-status"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Enhanced Workout Calendar -->
+                    <div class="workout-calendar-section">
+                        <div class="calendar-header">
+                            <h4>Weekly Workout Schedule</h4>
+                            <div class="calendar-controls">
+                                <button class="btn secondary" onclick="autoAssignWorkouts()">Auto-Assign</button>
+                                <button class="btn secondary" onclick="clearSchedule()">Clear All</button>
+                                <button class="btn" onclick="saveWorkoutCalendar()">Save Schedule</button>
+                            </div>
+                        </div>
+                        
+                        <div class="calendar-grid enhanced">
+                            <div class="calendar-day" data-day="monday">
+                                <div class="day-header">
+                                    <span class="day-name">Monday</span>
+                                    <button class="add-workout-btn" onclick="addWorkout('monday')" title="Add Workout">+</button>
+                                </div>
+                                <div class="day-workouts" id="monday-workouts">
+                                    <!-- Workouts will be added here -->
+                                </div>
+                            </div>
+                            <div class="calendar-day" data-day="tuesday">
+                                <div class="day-header">
+                                    <span class="day-name">Tuesday</span>
+                                    <button class="add-workout-btn" onclick="addWorkout('tuesday')" title="Add Workout">+</button>
+                                </div>
+                                <div class="day-workouts" id="tuesday-workouts">
+                                    <!-- Workouts will be added here -->
+                                </div>
+                            </div>
+                            <div class="calendar-day" data-day="wednesday">
+                                <div class="day-header">
+                                    <span class="day-name">Wednesday</span>
+                                    <button class="add-workout-btn" onclick="addWorkout('wednesday')" title="Add Workout">+</button>
+                                </div>
+                                <div class="day-workouts" id="wednesday-workouts">
+                                    <!-- Workouts will be added here -->
+                                </div>
+                            </div>
+                            <div class="calendar-day" data-day="thursday">
+                                <div class="day-header">
+                                    <span class="day-name">Thursday</span>
+                                    <button class="add-workout-btn" onclick="addWorkout('thursday')" title="Add Workout">+</button>
+                                </div>
+                                <div class="day-workouts" id="thursday-workouts">
+                                    <!-- Workouts will be added here -->
+                                </div>
+                            </div>
+                            <div class="calendar-day" data-day="friday">
+                                <div class="day-header">
+                                    <span class="day-name">Friday</span>
+                                    <button class="add-workout-btn" onclick="addWorkout('friday')" title="Add Workout">+</button>
+                                </div>
+                                <div class="day-workouts" id="friday-workouts">
+                                    <!-- Workouts will be added here -->
+                                </div>
+                            </div>
+                            <div class="calendar-day" data-day="saturday">
+                                <div class="day-header">
+                                    <span class="day-name">Saturday</span>
+                                    <button class="add-workout-btn" onclick="addWorkout('saturday')" title="Add Workout">+</button>
+                                </div>
+                                <div class="day-workouts" id="saturday-workouts">
+                                    <!-- Workouts will be added here -->
+                                </div>
+                            </div>
+                            <div class="calendar-day" data-day="sunday">
+                                <div class="day-header">
+                                    <span class="day-name">Sunday</span>
+                                    <button class="add-workout-btn" onclick="addWorkout('sunday')" title="Add Workout">+</button>
+                                </div>
+                                <div class="day-workouts" id="sunday-workouts">
+                                    <!-- Workouts will be added here -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="calendarStatus" class="save-status"></div>
+                    </div>
                     
                     <!-- Workout Plan Controls -->
                     <div class="workout-controls">
+                        <h4>Generate Workout Plan</h4>
                         <div class="form-group">
                             <label for="sessionType">Session Type</label>
                             <select id="sessionType" class="form-input">
@@ -2071,6 +2871,608 @@
         
         // Initial status check
         updateConnectionStatus();
+        
+        // Personal Data Functions
+        function savePersonalInfo() {
+            const age = document.getElementById('age').value;
+            const weight = document.getElementById('weight').value;
+            const height = document.getElementById('height').value;
+            const heightUnit = document.getElementById('heightUnit').value;
+            const heightFeet = document.getElementById('heightFeet').value;
+            const heightInches = document.getElementById('heightInches').value;
+            const experience = document.getElementById('experience').value;
+            const sportSpecific = document.getElementById('sportSpecific').checked;
+            const sport = document.getElementById('sport').value;
+            const seasonPhase = document.getElementById('seasonPhase').value;
+            
+            if (!age || !weight || !experience) {
+                showStatus('personalDataStatus', 'Please fill in all required fields', 'error');
+                return;
+            }
+            
+            let finalHeight = height;
+            if (heightUnit === 'ft' && heightFeet && heightInches) {
+                // Convert feet and inches to cm
+                finalHeight = (parseInt(heightFeet) * 30.48) + (parseInt(heightInches) * 2.54);
+            }
+            
+            const personalInfo = {
+                age: parseInt(age),
+                weight: parseFloat(weight),
+                height: parseFloat(finalHeight),
+                heightUnit: heightUnit,
+                experience: experience,
+                sportSpecific: sportSpecific,
+                sport: sport,
+                seasonPhase: seasonPhase,
+                savedAt: new Date().toISOString()
+            };
+            
+            localStorage.setItem('ignitefitness_personal_info', JSON.stringify(personalInfo));
+            showStatus('personalDataStatus', 'Personal information saved successfully!', 'success');
+        }
+        
+        function toggleSportSpecific() {
+            const sportSpecific = document.getElementById('sportSpecific').checked;
+            const sportOptions = document.getElementById('sportSpecificOptions');
+            
+            if (sportSpecific) {
+                sportOptions.style.display = 'block';
+            } else {
+                sportOptions.style.display = 'none';
+            }
+        }
+        
+        function toggleHeightUnit() {
+            const heightUnit = document.getElementById('heightUnit').value;
+            const heightFeetInches = document.getElementById('heightFeetInches');
+            const heightInput = document.getElementById('height');
+            
+            if (heightUnit === 'ft') {
+                heightFeetInches.style.display = 'flex';
+                heightInput.placeholder = 'Enter height in cm (auto-converted)';
+            } else {
+                heightFeetInches.style.display = 'none';
+                heightInput.placeholder = 'Enter your height';
+            }
+        }
+        
+        // Training Goals Functions
+        function saveGoals() {
+            const selectedGoals = [];
+            const goalCheckboxes = document.querySelectorAll('input[name="trainingGoals"]:checked');
+            
+            goalCheckboxes.forEach(checkbox => {
+                selectedGoals.push(checkbox.value);
+            });
+            
+            if (selectedGoals.length === 0) {
+                showStatus('goalsStatus', 'Please select at least one training goal', 'error');
+                return;
+            }
+            
+            // Get frequency preferences
+            const frequencyPreferences = {
+                weightTraining: parseInt(document.getElementById('weightTrainingDays').value),
+                soccerTraining: parseInt(document.getElementById('soccerTrainingDays').value),
+                cardio: parseInt(document.getElementById('cardioDays').value),
+                recovery: parseInt(document.getElementById('recoveryDays').value),
+                yoga: parseInt(document.getElementById('yogaDays').value)
+            };
+            
+            const autoAssign = document.getElementById('autoAssignWorkouts').checked;
+            
+            const goals = {
+                selectedGoals: selectedGoals,
+                frequencyPreferences: frequencyPreferences,
+                autoAssign: autoAssign,
+                savedAt: new Date().toISOString()
+            };
+            
+            localStorage.setItem('ignitefitness_goals', JSON.stringify(goals));
+            showStatus('goalsStatus', `Saved ${selectedGoals.length} training goals and preferences!`, 'success');
+            
+            // Auto-assign workouts if enabled
+            if (autoAssign) {
+                autoAssignWorkouts();
+            }
+        }
+        
+        function toggleAutoAssignment() {
+            const autoAssign = document.getElementById('autoAssignWorkouts').checked;
+            const helpText = document.querySelector('.help-text');
+            
+            if (autoAssign) {
+                helpText.textContent = 'Workouts will be automatically scheduled based on your frequency preferences.';
+            } else {
+                helpText.textContent = 'You can manually schedule workouts using the calendar below.';
+            }
+        }
+        
+        // Enhanced Workout Calendar Functions
+        function saveWorkoutCalendar() {
+            const calendarData = {};
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            
+            days.forEach(day => {
+                const dayWorkouts = document.getElementById(`${day}-workouts`);
+                const workouts = [];
+                
+                dayWorkouts.querySelectorAll('.workout-item').forEach(workout => {
+                    const type = workout.querySelector('.workout-type').textContent;
+                    const duration = workout.querySelector('.workout-duration').textContent;
+                    workouts.push({ type, duration });
+                });
+                
+                calendarData[day] = workouts;
+            });
+            
+            localStorage.setItem('ignitefitness_workout_calendar', JSON.stringify(calendarData));
+            showStatus('calendarStatus', 'Workout schedule saved successfully!', 'success');
+        }
+        
+        function addWorkout(day) {
+            const workoutTypes = [
+                { value: 'weight_training', label: 'Weight Training', duration: '60 min' },
+                { value: 'soccer_training', label: 'Soccer Training', duration: '90 min' },
+                { value: 'cardio', label: 'Cardio', duration: '45 min' },
+                { value: 'yoga', label: 'Yoga', duration: '30 min' },
+                { value: 'recovery', label: 'Recovery', duration: '30 min' },
+                { value: 'flexibility', label: 'Flexibility', duration: '20 min' },
+                { value: 'injury_prevention', label: 'Injury Prevention', duration: '25 min' },
+                { value: 'sport_specific', label: 'Sport Specific', duration: '75 min' }
+            ];
+            
+            // Create workout selection modal
+            const modal = document.createElement('div');
+            modal.className = 'workout-modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h4>Add Workout to ${day.charAt(0).toUpperCase() + day.slice(1)}</h4>
+                    <div class="workout-options">
+                        ${workoutTypes.map(workout => `
+                            <div class="workout-option" onclick="selectWorkout('${day}', '${workout.value}', '${workout.label}', '${workout.duration}')">
+                                <div class="workout-name">${workout.label}</div>
+                                <div class="workout-duration">${workout.duration}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button class="btn secondary" onclick="closeWorkoutModal()">Cancel</button>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+        
+        function selectWorkout(day, type, label, duration) {
+            const dayWorkouts = document.getElementById(`${day}-workouts`);
+            const workoutId = `workout-${Date.now()}`;
+            
+            const workoutItem = document.createElement('div');
+            workoutItem.className = 'workout-item';
+            workoutItem.id = workoutId;
+            workoutItem.innerHTML = `
+                <div class="workout-info">
+                    <div class="workout-type">${label}</div>
+                    <div class="workout-duration">${duration}</div>
+                </div>
+                <div class="workout-actions">
+                    <button class="workout-btn edit-btn" onclick="editWorkout('${workoutId}')" title="Edit">✏️</button>
+                    <button class="workout-btn delete-btn" onclick="removeWorkout('${workoutId}')" title="Delete">🗑️</button>
+                </div>
+            `;
+            
+            dayWorkouts.appendChild(workoutItem);
+            closeWorkoutModal();
+        }
+        
+        function removeWorkout(workoutId) {
+            const workout = document.getElementById(workoutId);
+            if (workout) {
+                workout.remove();
+            }
+        }
+        
+        function editWorkout(workoutId) {
+            // Implement workout editing functionality
+            console.log('Edit workout:', workoutId);
+        }
+        
+        function closeWorkoutModal() {
+            const modal = document.querySelector('.workout-modal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+        
+        function autoAssignWorkouts() {
+            // Get frequency preferences from localStorage
+            const goals = JSON.parse(localStorage.getItem('ignitefitness_goals') || '{}');
+            const frequencyPreferences = goals.frequencyPreferences || {
+                weightTraining: 3,
+                soccerTraining: 2,
+                cardio: 3,
+                recovery: 2,
+                yoga: 7
+            };
+            
+            // Clear existing workouts
+            clearSchedule();
+            
+            // Auto-assign based on preferences
+            const workoutTypes = [
+                { type: 'weight_training', label: 'Weight Training', duration: '60 min', days: frequencyPreferences.weightTraining },
+                { type: 'soccer_training', label: 'Soccer Training', duration: '90 min', days: frequencyPreferences.soccerTraining },
+                { type: 'cardio', label: 'Cardio', duration: '45 min', days: frequencyPreferences.cardio },
+                { type: 'yoga', label: 'Yoga', duration: '30 min', days: frequencyPreferences.yoga },
+                { type: 'recovery', label: 'Recovery', duration: '30 min', days: frequencyPreferences.recovery }
+            ];
+            
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            
+            workoutTypes.forEach(workoutType => {
+                if (workoutType.days > 0) {
+                    if (workoutType.days === 7) {
+                        // Daily workouts (like yoga) - assign to every day
+                        days.forEach(day => {
+                            selectWorkout(day, workoutType.type, workoutType.label, workoutType.duration);
+                        });
+                    } else {
+                        // Distribute workouts evenly across the week
+                        const interval = Math.floor(7 / workoutType.days);
+                        for (let i = 0; i < workoutType.days; i++) {
+                            const dayIndex = (i * interval) % 7;
+                            const day = days[dayIndex];
+                            selectWorkout(day, workoutType.type, workoutType.label, workoutType.duration);
+                        }
+                    }
+                }
+            });
+            
+            showStatus('calendarStatus', 'Workouts auto-assigned based on your preferences!', 'success');
+        }
+        
+        function clearSchedule() {
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            days.forEach(day => {
+                const dayWorkouts = document.getElementById(`${day}-workouts`);
+                dayWorkouts.innerHTML = '';
+            });
+        }
+        
+        // Utility Functions
+        function showStatus(elementId, message, type) {
+            const statusElement = document.getElementById(elementId);
+            statusElement.textContent = message;
+            statusElement.className = `save-status ${type}`;
+            
+            // Auto-hide after 3 seconds
+            setTimeout(() => {
+                statusElement.className = 'save-status';
+                statusElement.textContent = '';
+            }, 3000);
+        }
+        
+        // Injury Prevention Functions
+        function toggleInjuryPrevention() {
+            const injuryPrevention = document.getElementById('injuryPrevention').checked;
+            const injuryOptions = document.getElementById('injuryPreventionOptions');
+            
+            if (injuryPrevention) {
+                injuryOptions.style.display = 'block';
+                updateInjuryPrevention();
+            } else {
+                injuryOptions.style.display = 'none';
+            }
+        }
+        
+        function updateInjuryPrevention() {
+            const sport = document.getElementById('sport').value;
+            const injuryPrevention = document.getElementById('injuryPrevention').checked;
+            
+            if (!injuryPrevention || !sport) return;
+            
+            const recommendations = getSportSpecificRecommendations(sport);
+            const recommendationsDiv = document.getElementById('injuryPreventionRecommendations');
+            const aclSection = document.getElementById('aclPreventionSection');
+            
+            if (recommendations) {
+                recommendationsDiv.innerHTML = `
+                    <h6>${sport.charAt(0).toUpperCase() + sport.slice(1)}-Specific Recommendations:</h6>
+                    <ul>
+                        ${recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                    </ul>
+                `;
+            }
+            
+            // Show ACL prevention section for soccer players
+            if (sport === 'soccer') {
+                aclSection.style.display = 'block';
+            } else {
+                aclSection.style.display = 'none';
+            }
+        }
+        
+        // Check for ACL injury history and show special protocol
+        function checkACLHistory() {
+            const aclInjury = document.querySelector('input[name="previousInjuries"][value="acl"]');
+            const aclSection = document.getElementById('aclPreventionSection');
+            
+            if (aclInjury && aclInjury.checked) {
+                aclSection.style.display = 'block';
+                aclSection.innerHTML = `
+                    <h5>ACL Recovery & Prevention Protocol</h5>
+                    <div class="acl-protocol">
+                        <div class="protocol-phase">
+                            <h6>Post-ACL Recovery Phase</h6>
+                            <ul>
+                                <li>Focus on quad strength restoration</li>
+                                <li>Progressive single-leg balance</li>
+                                <li>Controlled range of motion</li>
+                                <li>Gradual return to sport activities</li>
+                            </ul>
+                        </div>
+                        <div class="protocol-phase">
+                            <h6>Prevention Maintenance</h6>
+                            <ul>
+                                <li>Daily balance training</li>
+                                <li>Hamstring-to-quad ratio monitoring</li>
+                                <li>Landing mechanics practice</li>
+                                <li>Sport-specific movement patterns</li>
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        function getSportSpecificRecommendations(sport) {
+            const recommendations = {
+                soccer: [
+                    'ACL injury prevention through proper landing mechanics',
+                    'Focus on ankle stability exercises',
+                    'Include hamstring flexibility work',
+                    'Add single-leg balance training',
+                    'Incorporate hip mobility exercises',
+                    'Include quad-to-hamstring strength ratio training',
+                    'Add lateral movement and cutting mechanics',
+                    'Focus on deceleration and change of direction'
+                ],
+                basketball: [
+                    'Emphasize knee strengthening',
+                    'Include ankle stability work',
+                    'Add core stability exercises',
+                    'Focus on landing mechanics'
+                ],
+                tennis: [
+                    'Include shoulder mobility exercises',
+                    'Add wrist and forearm strengthening',
+                    'Focus on rotational core work',
+                    'Include lateral movement training'
+                ],
+                running: [
+                    'Emphasize hip strengthening',
+                    'Include calf flexibility work',
+                    'Add single-leg stability',
+                    'Focus on running form drills'
+                ],
+                cycling: [
+                    'Include hip flexor stretches',
+                    'Add core stability work',
+                    'Focus on knee tracking',
+                    'Include upper body mobility'
+                ],
+                swimming: [
+                    'Include shoulder mobility',
+                    'Add core stability exercises',
+                    'Focus on hip flexibility',
+                    'Include breathing exercises'
+                ]
+            };
+            
+            return recommendations[sport] || ['General injury prevention exercises recommended'];
+        }
+        
+        function updatePreventionExercises() {
+            const focus = document.getElementById('preventionFocus').value;
+            const exerciseList = document.getElementById('exerciseList');
+            
+            if (!focus) {
+                exerciseList.innerHTML = '<p>Select a focus area to see recommended exercises.</p>';
+                return;
+            }
+            
+            const exercises = getPreventionExercises(focus);
+            exerciseList.innerHTML = exercises.map(exercise => `
+                <div class="exercise-item">
+                    <h6>${exercise.name}</h6>
+                    <p>${exercise.description}</p>
+                    <span class="exercise-type">${exercise.type}</span>
+                </div>
+            `).join('');
+        }
+        
+        function getPreventionExercises(focus) {
+            const exerciseDatabase = {
+                ankle_stability: [
+                    {
+                        name: 'Single-Leg Balance',
+                        description: 'Stand on one leg for 30-60 seconds, progress to eyes closed',
+                        type: 'Balance'
+                    },
+                    {
+                        name: 'Ankle Circles',
+                        description: 'Sit and rotate ankle in both directions, 10 reps each',
+                        type: 'Mobility'
+                    },
+                    {
+                        name: 'Calf Raises',
+                        description: 'Rise up on toes, hold 2 seconds, lower slowly. 3 sets of 15',
+                        type: 'Strength'
+                    }
+                ],
+                acl_prevention: [
+                    {
+                        name: 'Single-Leg Landing',
+                        description: 'Jump off box, land on one leg with soft knee bend, hold 3 seconds',
+                        type: 'Plyometric'
+                    },
+                    {
+                        name: 'Nordic Hamstring Curls',
+                        description: 'Kneel, partner holds ankles, lower slowly, return to start',
+                        type: 'Strength'
+                    },
+                    {
+                        name: 'Lateral Bounds',
+                        description: 'Jump laterally side to side, land softly with knee over toe',
+                        type: 'Plyometric'
+                    },
+                    {
+                        name: 'Single-Leg RDL',
+                        description: 'Stand on one leg, hinge at hip, reach opposite hand to ground',
+                        type: 'Strength'
+                    },
+                    {
+                        name: 'Lateral Lunges',
+                        description: 'Step sideways into lunge, keep knee tracking over toe',
+                        type: 'Strength'
+                    },
+                    {
+                        name: 'Jump Landing Mechanics',
+                        description: 'Jump and land with knees over toes, soft landing, 3 sets of 8',
+                        type: 'Plyometric'
+                    }
+                ],
+                knee_strength: [
+                    {
+                        name: 'Wall Sits',
+                        description: 'Hold seated position against wall for 30-60 seconds',
+                        type: 'Strength'
+                    },
+                    {
+                        name: 'Step-Ups',
+                        description: 'Step up onto box, control descent. 3 sets of 10 each leg',
+                        type: 'Strength'
+                    },
+                    {
+                        name: 'Lateral Lunges',
+                        description: 'Step sideways into lunge position, return to center',
+                        type: 'Strength'
+                    }
+                ],
+                hamstring_flexibility: [
+                    {
+                        name: 'Dynamic Leg Swings',
+                        description: 'Swing leg forward/back and side to side, 10 each direction',
+                        type: 'Mobility'
+                    },
+                    {
+                        name: 'Seated Hamstring Stretch',
+                        description: 'Sit with leg extended, reach toward toes, hold 30 seconds',
+                        type: 'Flexibility'
+                    },
+                    {
+                        name: 'Romanian Deadlifts',
+                        description: 'Hinge at hips, feel stretch in hamstrings, 3 sets of 12',
+                        type: 'Strength'
+                    }
+                ],
+                shoulder_mobility: [
+                    {
+                        name: 'Arm Circles',
+                        description: 'Large circles forward and backward, 10 each direction',
+                        type: 'Mobility'
+                    },
+                    {
+                        name: 'Shoulder Blade Squeezes',
+                        description: 'Squeeze shoulder blades together, hold 5 seconds, 15 reps',
+                        type: 'Strength'
+                    },
+                    {
+                        name: 'Doorway Stretch',
+                        description: 'Place arm on doorframe, lean forward to stretch chest',
+                        type: 'Flexibility'
+                    }
+                ],
+                core_stability: [
+                    {
+                        name: 'Plank',
+                        description: 'Hold straight line from head to heels, 30-60 seconds',
+                        type: 'Strength'
+                    },
+                    {
+                        name: 'Dead Bug',
+                        description: 'Lie on back, extend opposite arm/leg, return to start',
+                        type: 'Stability'
+                    },
+                    {
+                        name: 'Bird Dog',
+                        description: 'On hands and knees, extend opposite arm/leg, hold 5 seconds',
+                        type: 'Stability'
+                    }
+                ],
+                balance_training: [
+                    {
+                        name: 'Single-Leg Stand',
+                        description: 'Stand on one leg, progress to eyes closed, 30-60 seconds',
+                        type: 'Balance'
+                    },
+                    {
+                        name: 'Heel-to-Toe Walk',
+                        description: 'Walk in straight line, heel to toe, 20 steps',
+                        type: 'Balance'
+                    },
+                    {
+                        name: 'Bosu Ball Squats',
+                        description: 'Squat on unstable surface, 3 sets of 10',
+                        type: 'Stability'
+                    }
+                ]
+            };
+            
+            return exerciseDatabase[focus] || [];
+        }
+        
+        function togglePreventionInWorkout() {
+            const includePrevention = document.getElementById('includePrevention').checked;
+            // This would integrate with the workout generation system
+            console.log('Include prevention exercises:', includePrevention);
+        }
+        
+        function saveInjuryPrevention() {
+            const preventionFocus = document.getElementById('preventionFocus').value;
+            const includePrevention = document.getElementById('includePrevention').checked;
+            const previousInjuries = [];
+            const injuryCheckboxes = document.querySelectorAll('input[name="previousInjuries"]:checked');
+            
+            injuryCheckboxes.forEach(checkbox => {
+                previousInjuries.push(checkbox.value);
+            });
+            
+            const injuryPreventionData = {
+                preventionFocus: preventionFocus,
+                includePrevention: includePrevention,
+                previousInjuries: previousInjuries,
+                savedAt: new Date().toISOString()
+            };
+            
+            localStorage.setItem('ignitefitness_injury_prevention', JSON.stringify(injuryPreventionData));
+            showStatus('preventionStatus', 'Injury prevention settings saved successfully!', 'success');
+        }
+        
+        // Initialize height unit toggle and ACL injury monitoring
+        document.addEventListener('DOMContentLoaded', function() {
+            const heightUnitSelect = document.getElementById('heightUnit');
+            if (heightUnitSelect) {
+                heightUnitSelect.addEventListener('change', toggleHeightUnit);
+            }
+            
+            // Add event listeners for ACL injury history
+            const injuryCheckboxes = document.querySelectorAll('input[name="previousInjuries"]');
+            injuryCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', checkACLHistory);
+            });
+        });
     </script>
 </body>
 </html>
