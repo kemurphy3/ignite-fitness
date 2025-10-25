@@ -199,12 +199,26 @@
         .radio-group label {
             display: flex;
             align-items: center;
-            padding: 8px 0;
+            padding: 8px 12px;
             cursor: pointer;
+            border-radius: 6px;
+            background: #f7fafc;
+            color: #2d3748;
+            transition: all 0.2s;
+        }
+        
+        .radio-group label:hover {
+            background: #edf2f7;
+            border: 1px solid #cbd5e0;
         }
         
         .radio-group input[type="radio"] {
-            margin-right: 8px;
+            margin-right: 12px;
+        }
+        
+        .radio-group input[type="radio"]:checked + span {
+            font-weight: 600;
+            color: #4299e1;
         }
         
         /* Dashboard Controls */
@@ -667,12 +681,64 @@
         
         .modal-content {
             background: white;
+            color: #2d3748;
             border-radius: 8px;
             padding: 24px;
             max-width: 500px;
             width: 90%;
             max-height: 80vh;
             overflow-y: auto;
+        }
+        
+        .modal-header {
+            background: #4299e1;
+            color: white;
+            padding: 16px 24px;
+            border-radius: 8px 8px 0 0;
+            margin: -24px -24px 24px -24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h3 {
+            margin: 0;
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.2s ease;
+        }
+        
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .modal-body {
+            color: #2d3748;
+        }
+        
+        .modal-footer {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
         }
         
         .workout-options {
@@ -2584,44 +2650,60 @@
     <div id="preferencesModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Preferences</h3>
+                <h3>⚙️ App Preferences</h3>
                 <button onclick="closePreferences()" class="modal-close">×</button>
             </div>
             <div class="modal-body">
+                <div style="background: #eef2ff; border-left: 4px solid #4299e1; padding: 12px; margin-bottom: 24px; border-radius: 4px;">
+                    <strong style="color: #1e40af;">💡 Quick Tip:</strong>
+                    <p style="margin: 8px 0 0 0; color: #1e40af; font-size: 14px;">
+                        To set your goals and weekly schedule, go to the <strong>"Goals"</strong> and <strong>"Workout Plan"</strong> tabs in the main app!
+                    </p>
+                </div>
+                
                 <div class="preferences-section">
-                    <h4>Dashboard Mode</h4>
+                    <h4>📊 Dashboard Display</h4>
+                    <p style="color: #4a5568; font-size: 14px; margin-bottom: 12px;">Choose how much data you want to see on your dashboard:</p>
                     <div class="radio-group">
-                        <label><input type="radio" name="dataPreference" value="basics"> Basics - Simple metrics only</label>
-                        <label><input type="radio" name="dataPreference" value="some_metrics"> Some Metrics - Progress charts and weekly load</label>
-                        <label><input type="radio" name="dataPreference" value="all_data"> All Data - Detailed analytics and periodization</label>
+                        <label><input type="radio" name="dataPreference" value="basics"> <span>Basics - Simple metrics only</span></label>
+                        <label><input type="radio" name="dataPreference" value="some_metrics"> <span>Some Metrics - Progress charts and weekly load</span></label>
+                        <label><input type="radio" name="dataPreference" value="all_data"> <span>All Data - Detailed analytics and periodization</span></label>
                     </div>
                 </div>
                 
                 <div class="preferences-section">
-                    <h4>Role</h4>
+                    <h4>👤 Your Role</h4>
+                    <p style="color: #4a5568; font-size: 14px; margin-bottom: 12px;">How are you using this app?</p>
                     <div class="radio-group">
-                        <label><input type="radio" name="userRole" value="athlete"> Athlete - Training for personal goals</label>
-                        <label><input type="radio" name="userRole" value="coach"> Coach - Training athletes and clients</label>
+                        <label><input type="radio" name="userRole" value="athlete"> <span>Athlete - Training for personal goals</span></label>
+                        <label><input type="radio" name="userRole" value="coach"> <span>Coach - Training athletes and clients</span></label>
                     </div>
                 </div>
                 
                 <div class="preferences-section">
-                    <h4>Training Goals</h4>
+                    <h4>🎯 Primary Training Focus</h4>
+                    <p style="color: #4a5568; font-size: 14px; margin-bottom: 12px;">What's your main training goal?</p>
                     <div class="form-group">
-                        <label for="primaryGoalPref">Primary Goal</label>
                         <select id="primaryGoalPref" class="form-input">
-                            <option value="strength">Strength & Power</option>
-                            <option value="sport_performance">Sport Performance</option>
-                            <option value="general_fitness">General Fitness</option>
-                            <option value="endurance">Endurance</option>
-                            <option value="weight_loss">Weight Loss</option>
+                            <option value="strength">💪 Strength & Power</option>
+                            <option value="sport_performance">⚽ Sport Performance</option>
+                            <option value="general_fitness">🏃 General Fitness</option>
+                            <option value="endurance">🏃‍♀️ Endurance</option>
+                            <option value="weight_loss">⚖️ Weight Loss</option>
                         </select>
                     </div>
                 </div>
+                
+                <div style="background: #fff5e1; border-left: 4px solid #f59e0b; padding: 12px; margin-top: 24px; border-radius: 4px;">
+                    <strong style="color: #92400e;">📅 Don't Forget:</strong>
+                    <p style="margin: 8px 0 0 0; color: #92400e; font-size: 14px;">
+                        After saving preferences, go to <strong>"Goals"</strong> tab to set your training goals, and <strong>"Workout Plan"</strong> to create your weekly schedule!
+                    </p>
+                </div>
             </div>
             <div class="modal-footer">
-                <button class="btn" onclick="savePreferences()">Save Preferences</button>
                 <button class="btn secondary" onclick="closePreferences()">Cancel</button>
+                <button class="btn" onclick="savePreferences()">💾 Save Preferences</button>
             </div>
         </div>
     </div>
