@@ -131,9 +131,9 @@ async function createTestSchema() {
   }
 
   try {
-    // Create test tables (simplified versions for testing)
+    // Create test tables with IF NOT EXISTS for safety
     await testClient`
-      CREATE TABLE test_users (
+      CREATE TABLE IF NOT EXISTS test_users (
         id SERIAL PRIMARY KEY,
         external_id VARCHAR(255) UNIQUE,
         username VARCHAR(255) UNIQUE,
@@ -144,7 +144,7 @@ async function createTestSchema() {
     `;
 
     await testClient`
-      CREATE TABLE test_sessions (
+      CREATE TABLE IF NOT EXISTS test_sessions (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES test_users(id) ON DELETE CASCADE,
         type VARCHAR(50) NOT NULL,
@@ -161,7 +161,7 @@ async function createTestSchema() {
     `;
 
     await testClient`
-      CREATE TABLE test_exercises (
+      CREATE TABLE IF NOT EXISTS test_exercises (
         id SERIAL PRIMARY KEY,
         session_id INTEGER REFERENCES test_sessions(id) ON DELETE CASCADE,
         name VARCHAR(255) NOT NULL,
@@ -182,8 +182,13 @@ async function createTestSchema() {
 
     console.log('✅ Test schema created');
   } catch (error) {
-    console.error('❌ Test schema creation failed:', error.message);
-    throw error;
+    // For "already exists" errors, just log a warning instead of failing
+    if (error.message.includes('already exists') || error.message.includes('duplicate key')) {
+      console.log('⚠️  Test schema already exists, continuing...');
+    } else {
+      console.error('❌ Test schema creation failed:', error.message);
+      throw error;
+    }
   }
 }
 

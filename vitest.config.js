@@ -3,6 +3,11 @@
 
 import { defineConfig } from 'vitest/config';
 
+// Check if we have a real database URL (not mock)
+const hasRealDatabase = process.env.DATABASE_URL && 
+  !process.env.DATABASE_URL.includes('mock') && 
+  process.env.MOCK_DATABASE !== 'true';
+
 export default defineConfig({
   test: {
     // Test environment
@@ -48,11 +53,19 @@ export default defineConfig({
     // Watch mode configuration
     watch: false,
     
-    // Pool configuration for parallel tests
+    // Pool configuration - sequential for real DB, parallel for mock
     pool: 'threads',
     poolOptions: {
-      threads: {
-        singleThread: false
+      threads: hasRealDatabase ? {
+        // Sequential execution for real database to avoid table creation conflicts
+        singleThread: true,
+        minThreads: 1,
+        maxThreads: 1
+      } : {
+        // Parallel execution for mock database tests
+        singleThread: false,
+        minThreads: 1,
+        maxThreads: 4
       }
     },
     
