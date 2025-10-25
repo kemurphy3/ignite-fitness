@@ -50,6 +50,36 @@ class CoachingEngine {
      */
     async processUserInput(input) {
         try {
+            // Use PersonalizedCoaching for context-aware responses
+            if (window.PersonalizedCoaching) {
+                const personalizedResponse = window.PersonalizedCoaching.generateResponse(input);
+                
+                if (personalizedResponse.success) {
+                    this.logger.audit('AI_INTERACTION', { 
+                        input: input.substring(0, 100),
+                        responseLength: personalizedResponse.response.length,
+                        scenario: personalizedResponse.scenario
+                    });
+                    
+                    // Emit coaching event for analytics
+                    this.eventBus?.emit('coaching:responseGenerated', {
+                        user: this.authManager?.getCurrentUsername(),
+                        message: input,
+                        response: personalizedResponse.response,
+                        scenario: personalizedResponse.scenario,
+                        context: personalizedResponse.context
+                    });
+                    
+                    return {
+                        success: true,
+                        response: personalizedResponse.response,
+                        type: 'personalized_ai',
+                        scenario: personalizedResponse.scenario
+                    };
+                }
+            }
+
+            // Fallback to context-aware AI
             if (!this.contextAwareAI) {
                 return {
                     success: false,
