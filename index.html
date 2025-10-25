@@ -947,6 +947,325 @@
             resize: vertical;
         }
         
+        /* Load Management Styles */
+        .load-management-content, .strava-import-content {
+            max-width: 900px;
+            width: 95%;
+        }
+        
+        .load-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+        
+        .load-metric {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+        
+        .load-metric-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 4px;
+        }
+        
+        .load-metric-label {
+            font-size: 14px;
+            color: #718096;
+            margin-bottom: 8px;
+        }
+        
+        .load-metric-status {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        
+        .load-metric-status.low {
+            background: #f0fff4;
+            color: #2f855a;
+        }
+        
+        .load-metric-status.medium {
+            background: #fff5f5;
+            color: #c53030;
+        }
+        
+        .load-metric-status.high {
+            background: #fed7d7;
+            color: #9b2c2c;
+        }
+        
+        .recovery-status {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 16px 0;
+        }
+        
+        .recovery-status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .recovery-status-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .recovery-status-level {
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .recovery-status-level.excellent {
+            background: #f0fff4;
+            color: #2f855a;
+        }
+        
+        .recovery-status-level.good {
+            background: #ebf8ff;
+            color: #3182ce;
+        }
+        
+        .recovery-status-level.moderate {
+            background: #fff5f5;
+            color: #c53030;
+        }
+        
+        .recovery-status-level.poor {
+            background: #fed7d7;
+            color: #9b2c2c;
+        }
+        
+        .recovery-debt {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 12px 0;
+        }
+        
+        .recovery-debt-bar {
+            flex: 1;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .recovery-debt-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4299e1, #3182ce);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        .recovery-debt-text {
+            font-size: 14px;
+            color: #718096;
+            min-width: 80px;
+        }
+        
+        .activity-list {
+            margin: 20px 0;
+        }
+        
+        .activity-item {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .activity-info {
+            flex: 1;
+        }
+        
+        .activity-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 4px;
+        }
+        
+        .activity-details {
+            font-size: 14px;
+            color: #718096;
+        }
+        
+        .activity-metrics {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        
+        .activity-metric {
+            text-align: center;
+        }
+        
+        .activity-metric-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .activity-metric-label {
+            font-size: 12px;
+            color: #718096;
+        }
+        
+        .risk-assessment {
+            background: #fff5f5;
+            border: 1px solid #feb2b2;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+        
+        .risk-assessment.high {
+            background: #fed7d7;
+            border-color: #fc8181;
+        }
+        
+        .risk-assessment.medium {
+            background: #fff5f5;
+            border-color: #feb2b2;
+        }
+        
+        .risk-assessment.low {
+            background: #f0fff4;
+            border-color: #9ae6b4;
+        }
+        
+        .risk-factors {
+            margin: 8px 0;
+        }
+        
+        .risk-factor {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 4px 0;
+            font-size: 14px;
+        }
+        
+        .risk-factor-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        
+        .risk-factor-icon.high {
+            background: #fc8181;
+            color: white;
+        }
+        
+        .risk-factor-icon.medium {
+            background: #feb2b2;
+            color: white;
+        }
+        
+        .risk-factor-icon.low {
+            background: #9ae6b4;
+            color: white;
+        }
+        
+        .strava-import-form {
+            padding: 20px 0;
+        }
+        
+        .import-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+        
+        .import-option {
+            background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .import-option:hover {
+            border-color: #4299e1;
+            background-color: #ebf8ff;
+        }
+        
+        .import-option.selected {
+            border-color: #4299e1;
+            background-color: #ebf8ff;
+        }
+        
+        .import-option h4 {
+            margin: 0 0 8px 0;
+            color: #2d3748;
+        }
+        
+        .import-option p {
+            margin: 0;
+            color: #718096;
+            font-size: 14px;
+        }
+        
+        .import-progress {
+            margin: 20px 0;
+            padding: 16px;
+            background: #f7fafc;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .import-progress.show {
+            display: block;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4299e1, #3182ce);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-text {
+            font-size: 14px;
+            color: #718096;
+            text-align: center;
+        }
+        
         /* Responsive Design */
         @media (max-width: 768px) {
             .dashboard-grid {
@@ -1610,6 +1929,44 @@
         </div>
     </div>
 
+    <!-- Load Management Modal -->
+    <div id="loadManagementModal" class="modal hidden">
+        <div class="modal-content load-management-content">
+            <div class="modal-header">
+                <h3>Training Load & Recovery</h3>
+                <button onclick="closeLoadManagementModal()" class="modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="loadManagementContainer">
+                    <!-- Load management content will be dynamically loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn secondary" onclick="closeLoadManagementModal()">Close</button>
+                <button class="btn primary" onclick="refreshLoadData()">Refresh Data</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Strava Import Modal -->
+    <div id="stravaImportModal" class="modal hidden">
+        <div class="modal-content strava-import-content">
+            <div class="modal-header">
+                <h3>Import Strava Activities</h3>
+                <button onclick="closeStravaImportModal()" class="modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="stravaImportContainer">
+                    <!-- Strava import content will be dynamically loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn secondary" onclick="closeStravaImportModal()">Cancel</button>
+                <button class="btn primary" onclick="importStravaActivities()">Import Activities</button>
+            </div>
+        </div>
+    </div>
+
     <!-- AI Chat Toggle Button -->
     <button id="aiChatToggle" class="ai-chat-toggle" onclick="toggleAIChat()">
         🤖 AI Coach
@@ -1653,6 +2010,10 @@
     <!-- Goals & Habits Modules -->
     <script src="js/modules/goals/GoalManager.js"></script>
     <script src="js/modules/habits/HabitTracker.js"></script>
+    
+    <!-- Strava Integration & Load Management -->
+    <script src="js/modules/integration/StravaProcessor.js"></script>
+    <script src="js/modules/load/LoadCalculator.js"></script>
     
     <!-- Legacy Modules (for compatibility) -->
     <script src="js/core/data-store.js"></script>

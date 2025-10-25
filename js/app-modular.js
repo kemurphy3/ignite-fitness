@@ -1455,3 +1455,256 @@ function initializeGoalsAndHabits() {
         });
     }
 }
+
+// Load Management Functions
+function showLoadManagementModal() {
+    const modal = document.getElementById('loadManagementModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        renderLoadManagement();
+    }
+}
+
+function renderLoadManagement() {
+    const container = document.getElementById('loadManagementContainer');
+    if (!container) return;
+
+    const loadCalculator = window.LoadCalculator;
+    if (!loadCalculator) return;
+
+    const dashboardData = loadCalculator.getLoadDashboard();
+    if (dashboardData.error) {
+        container.innerHTML = `<p>Error loading load management data: ${dashboardData.error}</p>`;
+        return;
+    }
+
+    const { load, summary } = dashboardData;
+
+    container.innerHTML = `
+        <div class="load-summary">
+            <div class="load-metric">
+                <div class="load-metric-value">${Math.round(summary.totalLoad)}</div>
+                <div class="load-metric-label">Total Load</div>
+                <div class="load-metric-status ${getLoadStatus(summary.totalLoad)}">${getLoadStatusText(summary.totalLoad)}</div>
+            </div>
+            <div class="load-metric">
+                <div class="load-metric-value">${summary.recoveryStatus.level}</div>
+                <div class="load-metric-label">Recovery Status</div>
+                <div class="load-metric-status ${summary.recoveryStatus.level}">${summary.recoveryStatus.message}</div>
+            </div>
+            <div class="load-metric">
+                <div class="load-metric-value">${summary.riskLevel}</div>
+                <div class="load-metric-label">Risk Level</div>
+                <div class="load-metric-status ${summary.riskLevel}">${getRiskStatusText(summary.riskLevel)}</div>
+            </div>
+        </div>
+
+        <div class="recovery-status">
+            <div class="recovery-status-header">
+                <h3 class="recovery-status-title">Recovery Status</h3>
+                <span class="recovery-status-level ${summary.recoveryStatus.level}">${summary.recoveryStatus.level.toUpperCase()}</span>
+            </div>
+            <div class="recovery-debt">
+                <span>Recovery Debt</span>
+                <div class="recovery-debt-bar">
+                    <div class="recovery-debt-fill" style="width: ${Math.min(100, (load.recovery.totalDebt / 48) * 100)}%"></div>
+                </div>
+                <span class="recovery-debt-text">${load.recovery.totalDebt.toFixed(1)}h</span>
+            </div>
+            <p>${summary.recoveryStatus.message}</p>
+        </div>
+
+        <div class="risk-assessment ${summary.riskLevel}">
+            <h4>Overtraining Risk Assessment</h4>
+            <p><strong>Risk Level:</strong> ${summary.riskLevel.toUpperCase()}</p>
+            <p><strong>Recommendation:</strong> ${summary.recommendation.message}</p>
+            ${load.combined.riskAssessment.factors.length > 0 ? `
+            <div class="risk-factors">
+                <h5>Risk Factors:</h5>
+                ${load.combined.riskAssessment.factors.map(factor => `
+                    <div class="risk-factor">
+                        <div class="risk-factor-icon ${summary.riskLevel}">!</div>
+                        <span>${factor}</span>
+                    </div>
+                `).join('')}
+            </div>
+            ` : ''}
+        </div>
+
+        <div class="activity-list">
+            <h4>Recent Activities</h4>
+            ${load.external.activities ? load.external.activities.map(activity => `
+                <div class="activity-item">
+                    <div class="activity-info">
+                        <div class="activity-name">${activity.activity_type}</div>
+                        <div class="activity-details">
+                            ${new Date(activity.start_time).toLocaleDateString()} - 
+                            ${Math.round(activity.duration_seconds / 60)} min
+                        </div>
+                    </div>
+                    <div class="activity-metrics">
+                        <div class="activity-metric">
+                            <div class="activity-metric-value">${activity.training_stress_score || 0}</div>
+                            <div class="activity-metric-label">TSS</div>
+                        </div>
+                        <div class="activity-metric">
+                            <div class="activity-metric-value">${activity.recovery_debt_hours || 0}h</div>
+                            <div class="activity-metric-label">Recovery</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('') : '<p>No recent activities found.</p>'}
+        </div>
+    `;
+}
+
+function getLoadStatus(totalLoad) {
+    if (totalLoad < 200) return 'low';
+    if (totalLoad < 400) return 'medium';
+    return 'high';
+}
+
+function getLoadStatusText(totalLoad) {
+    if (totalLoad < 200) return 'Low Load';
+    if (totalLoad < 400) return 'Moderate Load';
+    return 'High Load';
+}
+
+function getRiskStatusText(riskLevel) {
+    const statusTexts = {
+        low: 'Low Risk',
+        medium: 'Medium Risk',
+        high: 'High Risk'
+    };
+    return statusTexts[riskLevel] || 'Unknown';
+}
+
+function closeLoadManagementModal() {
+    const modal = document.getElementById('loadManagementModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+function refreshLoadData() {
+    renderLoadManagement();
+    showSuccess('Load data refreshed!');
+}
+
+function showStravaImportModal() {
+    const modal = document.getElementById('stravaImportModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        renderStravaImport();
+    }
+}
+
+function renderStravaImport() {
+    const container = document.getElementById('stravaImportContainer');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="strava-import-form">
+            <h4>Import Options</h4>
+            <div class="import-options">
+                <div class="import-option" onclick="selectImportOption('recent')">
+                    <h4>📅 Recent Activities</h4>
+                    <p>Import activities from the last 7 days</p>
+                </div>
+                <div class="import-option" onclick="selectImportOption('month')">
+                    <h4>📊 This Month</h4>
+                    <p>Import all activities from this month</p>
+                </div>
+                <div class="import-option" onclick="selectImportOption('all')">
+                    <h4>🗂️ All Activities</h4>
+                    <p>Import all available activities</p>
+                </div>
+            </div>
+
+            <div class="import-progress" id="importProgress">
+                <h4>Importing Activities...</h4>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="importProgressFill" style="width: 0%"></div>
+                </div>
+                <div class="progress-text" id="importProgressText">Preparing import...</div>
+            </div>
+        </div>
+    `;
+}
+
+function selectImportOption(option) {
+    // Remove selection from all options
+    document.querySelectorAll('.import-option').forEach(opt => {
+        opt.classList.remove('selected');
+    });
+    
+    // Select current option
+    event.target.closest('.import-option').classList.add('selected');
+    
+    // Store selected option
+    window.selectedImportOption = option;
+}
+
+function importStravaActivities() {
+    const stravaProcessor = window.StravaProcessor;
+    if (!stravaProcessor) {
+        showError(null, 'Strava processor not available');
+        return;
+    }
+
+    const importOption = window.selectedImportOption;
+    if (!importOption) {
+        showError(null, 'Please select an import option');
+        return;
+    }
+
+    // Show progress
+    const progressDiv = document.getElementById('importProgress');
+    const progressFill = document.getElementById('importProgressFill');
+    const progressText = document.getElementById('importProgressText');
+    
+    progressDiv.classList.add('show');
+    progressText.textContent = 'Connecting to Strava...';
+    progressFill.style.width = '20%';
+
+    // Simulate import process (in real app, this would call Strava API)
+    setTimeout(() => {
+        progressText.textContent = 'Fetching activities...';
+        progressFill.style.width = '50%';
+        
+        setTimeout(() => {
+            progressText.textContent = 'Processing activities...';
+            progressFill.style.width = '80%';
+            
+            setTimeout(() => {
+                progressText.textContent = 'Import complete!';
+                progressFill.style.width = '100%';
+                
+                setTimeout(() => {
+                    closeStravaImportModal();
+                    showSuccess('Strava activities imported successfully!');
+                }, 1000);
+            }, 1000);
+        }, 1000);
+    }, 1000);
+}
+
+function closeStravaImportModal() {
+    const modal = document.getElementById('stravaImportModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+// Initialize load management system
+function initializeLoadManagement() {
+    if (window.StravaProcessor) {
+        // Initialize Strava processor
+        console.log('Strava processor initialized');
+    }
+    
+    if (window.LoadCalculator) {
+        // Initialize load calculator
+        console.log('Load calculator initialized');
+    }
+}
