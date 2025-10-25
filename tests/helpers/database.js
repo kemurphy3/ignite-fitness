@@ -87,17 +87,6 @@ export async function setupTestDatabase() {
     }
     
     // Test database connection
-    // Drop existing tables first to avoid conflicts
-    await testClient`DROP TABLE IF EXISTS test_exercises CASCADE`;
-    await testClient`DROP TABLE IF EXISTS test_sessions CASCADE`;
-    await testClient`DROP TABLE IF EXISTS test_users CASCADE`;
-    
-    // Drop sequences
-    await testClient`DROP SEQUENCE IF EXISTS test_users_id_seq CASCADE`;
-    await testClient`DROP SEQUENCE IF EXISTS test_sessions_id_seq CASCADE`;
-    await testClient`DROP SEQUENCE IF EXISTS test_exercises_id_seq CASCADE`;
-    
-    // Now create the tables
     await testClient`SELECT NOW() as current_time`;
     console.log('✅ Test database connection established');
     

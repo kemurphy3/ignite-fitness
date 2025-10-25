@@ -57,12 +57,12 @@ export default defineConfig({
     pool: 'threads',
     poolOptions: {
       threads: hasRealDatabase ? {
-        // Sequential execution for real database to avoid table creation conflicts
+        // Sequential execution for real database - reliable and simple
         singleThread: true,
         minThreads: 1,
         maxThreads: 1
       } : {
-        // Parallel execution for mock database tests
+        // Parallel execution for mock database tests - fast local development
         singleThread: false,
         minThreads: 1,
         maxThreads: 4
