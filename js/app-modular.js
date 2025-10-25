@@ -1097,3 +1097,361 @@ function adaptWorkoutToTime(availableTime) {
     
     return adaptedWorkout;
 }
+
+// Goals & Habits Functions
+function showGoalsModal() {
+    const modal = document.getElementById('goalsModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        renderGoals();
+    }
+}
+
+function renderGoals() {
+    const container = document.getElementById('goalsContainer');
+    if (!container) return;
+
+    const goalManager = window.GoalManager;
+    if (!goalManager) return;
+
+    const activeGoals = goalManager.getActiveGoals();
+    const completedGoals = goalManager.getCompletedGoals();
+    const progressSummary = goalManager.getGoalProgressSummary();
+
+    container.innerHTML = `
+        <div class="goals-summary">
+            <h4>Goals Overview</h4>
+            <div class="summary-stats">
+                <div class="stat">
+                    <span class="stat-number">${progressSummary.totalGoals}</span>
+                    <span class="stat-label">Total Goals</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">${progressSummary.completionRate}%</span>
+                    <span class="stat-label">Completion Rate</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">${progressSummary.averageProgress}%</span>
+                    <span class="stat-label">Avg Progress</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="active-goals">
+            <h4>Active Goals (${activeGoals.length})</h4>
+            ${activeGoals.length > 0 ? activeGoals.map(goal => renderGoalCard(goal)).join('') : '<p>No active goals. Set your first goal to get started!</p>'}
+        </div>
+
+        ${completedGoals.length > 0 ? `
+        <div class="completed-goals">
+            <h4>Completed Goals (${completedGoals.length})</h4>
+            ${completedGoals.map(goal => renderGoalCard(goal, true)).join('')}
+        </div>
+        ` : ''}
+    `;
+}
+
+function renderGoalCard(goal, isCompleted = false) {
+    const progressPercentage = Math.round(goal.progress_percentage);
+    
+    return `
+        <div class="goal-card ${isCompleted ? 'completed' : ''}">
+            <div class="goal-header">
+                <h3 class="goal-title">${goal.title}</h3>
+                <span class="goal-type">${goal.type}</span>
+            </div>
+            
+            <div class="goal-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${progressPercentage}%"></div>
+                </div>
+                <div class="progress-text">
+                    <span>${goal.current_value} ${goal.unit}</span>
+                    <span>${progressPercentage}%</span>
+                </div>
+            </div>
+
+            ${goal.milestones ? `
+            <div class="goal-milestones">
+                ${goal.milestones.map(milestone => `
+                    <div class="milestone ${milestone.achieved ? 'achieved' : ''}">
+                        <div class="milestone-percentage">${milestone.percentage}%</div>
+                        <div class="milestone-value">${milestone.value} ${goal.unit}</div>
+                        <div class="milestone-reward">${milestone.reward}</div>
+                    </div>
+                `).join('')}
+            </div>
+            ` : ''}
+
+            ${goal.description ? `<p class="goal-description">${goal.description}</p>` : ''}
+            
+            ${goal.deadline ? `<p class="goal-deadline">Deadline: ${new Date(goal.deadline).toLocaleDateString()}</p>` : ''}
+        </div>
+    `;
+}
+
+function showCreateGoalModal() {
+    const modal = document.getElementById('createGoalModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        renderCreateGoalForm();
+    }
+}
+
+function renderCreateGoalForm() {
+    const container = document.getElementById('createGoalContainer');
+    if (!container) return;
+
+    const goalManager = window.GoalManager;
+    if (!goalManager) return;
+
+    const goalTemplates = goalManager.goalTemplates;
+
+    container.innerHTML = `
+        <div class="create-goal-form">
+            <h4>Choose Your Goal Type</h4>
+            <div class="goal-type-selector">
+                <div class="goal-type-option" onclick="selectGoalType('strength')">
+                    <h4>💪 Strength</h4>
+                    <p>Build muscle and increase lifting capacity</p>
+                </div>
+                <div class="goal-type-option" onclick="selectGoalType('endurance')">
+                    <h4>🏃 Endurance</h4>
+                    <p>Improve cardiovascular fitness and stamina</p>
+                </div>
+                <div class="goal-type-option" onclick="selectGoalType('body_composition')">
+                    <h4>📊 Body Composition</h4>
+                    <p>Change your body weight or muscle mass</p>
+                </div>
+            </div>
+
+            <div id="goalFormFields" style="display: none;">
+                <h4>Goal Details</h4>
+                <div class="goal-form-fields">
+                    <div class="form-group">
+                        <label for="goalTitle">Goal Title</label>
+                        <input type="text" id="goalTitle" placeholder="e.g., Squat bodyweight for 5 reps">
+                    </div>
+                    <div class="form-group">
+                        <label for="goalDescription">Description (optional)</label>
+                        <textarea id="goalDescription" placeholder="Why is this goal important to you?"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="currentValue">Current Value</label>
+                        <input type="number" id="currentValue" step="0.1" placeholder="135">
+                    </div>
+                    <div class="form-group">
+                        <label for="targetValue">Target Value</label>
+                        <input type="number" id="targetValue" step="0.1" placeholder="180">
+                    </div>
+                    <div class="form-group">
+                        <label for="goalUnit">Unit</label>
+                        <select id="goalUnit">
+                            <option value="lbs">lbs</option>
+                            <option value="kg">kg</option>
+                            <option value="minutes">minutes</option>
+                            <option value="miles">miles</option>
+                            <option value="reps">reps</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="goalDeadline">Deadline (optional)</label>
+                        <input type="date" id="goalDeadline">
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function selectGoalType(type) {
+    // Remove selection from all options
+    document.querySelectorAll('.goal-type-option').forEach(option => {
+        option.classList.remove('selected');
+    });
+    
+    // Select current option
+    event.target.closest('.goal-type-option').classList.add('selected');
+    
+    // Show form fields
+    document.getElementById('goalFormFields').style.display = 'block';
+    
+    // Store selected type
+    window.selectedGoalType = type;
+    
+    // Pre-fill form with template if available
+    const goalManager = window.GoalManager;
+    if (goalManager && goalManager.goalTemplates[type]) {
+        const templates = goalManager.goalTemplates[type];
+        const firstTemplate = Object.values(templates)[0];
+        if (firstTemplate) {
+            document.getElementById('goalTitle').value = firstTemplate.specific;
+            document.getElementById('currentValue').value = firstTemplate.measurable.current;
+            document.getElementById('targetValue').value = firstTemplate.measurable.target;
+            document.getElementById('goalUnit').value = firstTemplate.measurable.unit;
+        }
+    }
+}
+
+function createGoal() {
+    const goalManager = window.GoalManager;
+    if (!goalManager) return;
+
+    const goalData = {
+        type: window.selectedGoalType,
+        title: document.getElementById('goalTitle').value,
+        description: document.getElementById('goalDescription').value,
+        current_value: parseFloat(document.getElementById('currentValue').value),
+        target_value: parseFloat(document.getElementById('targetValue').value),
+        unit: document.getElementById('goalUnit').value,
+        deadline: document.getElementById('goalDeadline').value || null
+    };
+
+    const result = goalManager.createGoal(goalData);
+    
+    if (result.success) {
+        closeCreateGoalModal();
+        showGoalsModal(); // Refresh goals display
+        showSuccess('Goal created successfully!');
+    } else {
+        showError(null, result.error);
+    }
+}
+
+function closeGoalsModal() {
+    const modal = document.getElementById('goalsModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+function closeCreateGoalModal() {
+    const modal = document.getElementById('createGoalModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+function showHabitsModal() {
+    const modal = document.getElementById('habitsModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        renderHabits();
+    }
+}
+
+function renderHabits() {
+    const container = document.getElementById('habitsContainer');
+    if (!container) return;
+
+    const habitTracker = window.HabitTracker;
+    if (!habitTracker) return;
+
+    const habitProgress = habitTracker.getHabitProgress(habitTracker.authManager?.getCurrentUsername());
+    const achievements = habitTracker.getUserAchievements(habitTracker.authManager?.getCurrentUsername());
+
+    container.innerHTML = `
+        <div class="habit-card">
+            <h4>Workout Streak</h4>
+            <div class="streak-display">
+                <div class="streak-current">
+                    <div class="streak-number">${habitProgress.currentStreak}</div>
+                    <div class="streak-label">Current Streak</div>
+                </div>
+                <div class="streak-details">
+                    <div class="streak-detail">
+                        <span class="streak-detail-label">Longest Streak</span>
+                        <span class="streak-detail-value">${habitProgress.longestStreak} days</span>
+                    </div>
+                    <div class="streak-detail">
+                        <span class="streak-detail-label">Total Workouts</span>
+                        <span class="streak-detail-value">${habitProgress.totalWorkouts}</span>
+                    </div>
+                    <div class="streak-detail">
+                        <span class="streak-detail-label">This Week</span>
+                        <span class="streak-detail-value">${habitProgress.weeklyProgress.current}/${habitProgress.weeklyProgress.goal}</span>
+                    </div>
+                    <div class="streak-detail">
+                        <span class="streak-detail-label">Habit Strength</span>
+                        <span class="streak-detail-value">${habitProgress.habitStrength}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="achievements-section">
+            <h4>Achievements (${achievements.length}/${habitProgress.achievements.total})</h4>
+            <div class="achievements-grid">
+                ${habitTracker.achievementDefinitions.map(achievement => `
+                    <div class="achievement ${achievement.unlocked ? 'unlocked' : ''}">
+                        <div class="achievement-icon">${getAchievementIcon(achievement.id)}</div>
+                        <div class="achievement-name">${achievement.name}</div>
+                        <div class="achievement-description">${achievement.description}</div>
+                        ${achievement.unlocked ? `<div class="achievement-reward">${achievement.reward}</div>` : ''}
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+function getAchievementIcon(achievementId) {
+    const icons = {
+        'first_workout': '🎉',
+        'first_week': '🔥',
+        'month_strong': '💪',
+        'consistency_king': '👑',
+        'comeback_kid': '⭐',
+        'weekend_warrior': '⚔️',
+        'early_bird': '🌅',
+        'streak_master': '🏆'
+    };
+    return icons[achievementId] || '🏅';
+}
+
+function closeHabitsModal() {
+    const modal = document.getElementById('habitsModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+function showMotivationalToast(message) {
+    const toast = document.getElementById('motivationalToast');
+    const messageElement = document.getElementById('motivationalMessage');
+    
+    if (toast && messageElement) {
+        messageElement.textContent = message;
+        toast.classList.remove('hidden');
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            closeMotivationalToast();
+        }, 5000);
+    }
+}
+
+function closeMotivationalToast() {
+    const toast = document.getElementById('motivationalToast');
+    if (toast) {
+        toast.classList.add('hidden');
+    }
+}
+
+// Initialize goals and habits system
+function initializeGoalsAndHabits() {
+    if (window.GoalManager) {
+        window.GoalManager.initialize();
+    }
+    
+    if (window.HabitTracker) {
+        window.HabitTracker.initialize();
+    }
+    
+    // Listen for motivational messages
+    if (window.EventBus) {
+        window.EventBus.on('motivational:message', (data) => {
+            showMotivationalToast(data.message);
+        });
+    }
+}

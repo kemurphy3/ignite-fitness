@@ -612,6 +612,341 @@
             font-weight: 600;
         }
         
+        /* Goals & Habits Styles */
+        .goals-content, .habits-content, .create-goal-content {
+            max-width: 800px;
+            width: 95%;
+        }
+        
+        .goal-card {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 16px 0;
+            position: relative;
+        }
+        
+        .goal-card.completed {
+            background: #f0fff4;
+            border-color: #9ae6b4;
+        }
+        
+        .goal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+        
+        .goal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2d3748;
+            margin: 0;
+        }
+        
+        .goal-type {
+            background: #4299e1;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .goal-progress {
+            margin: 16px 0;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4299e1, #3182ce);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #718096;
+        }
+        
+        .goal-milestones {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin: 16px 0;
+        }
+        
+        .milestone {
+            text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .milestone.achieved {
+            background: #f0fff4;
+            border-color: #9ae6b4;
+        }
+        
+        .milestone-percentage {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .milestone-value {
+            font-size: 14px;
+            color: #718096;
+        }
+        
+        .milestone-reward {
+            font-size: 12px;
+            color: #4a5568;
+            margin-top: 4px;
+        }
+        
+        /* Habit Tracking Styles */
+        .habit-card {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 16px 0;
+        }
+        
+        .streak-display {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 16px 0;
+        }
+        
+        .streak-current {
+            text-align: center;
+        }
+        
+        .streak-number {
+            font-size: 36px;
+            font-weight: 700;
+            color: #4299e1;
+            line-height: 1;
+        }
+        
+        .streak-label {
+            font-size: 14px;
+            color: #718096;
+            margin-top: 4px;
+        }
+        
+        .streak-details {
+            flex: 1;
+        }
+        
+        .streak-detail {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 14px;
+        }
+        
+        .streak-detail-label {
+            color: #718096;
+        }
+        
+        .streak-detail-value {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .achievements-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+        
+        .achievement {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+        
+        .achievement.unlocked {
+            background: #f0fff4;
+            border-color: #9ae6b4;
+        }
+        
+        .achievement-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .achievement-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 4px;
+        }
+        
+        .achievement-description {
+            font-size: 12px;
+            color: #718096;
+        }
+        
+        .achievement-reward {
+            font-size: 12px;
+            color: #4a5568;
+            margin-top: 8px;
+            font-style: italic;
+        }
+        
+        /* Motivational Toast Styles */
+        .motivational-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 400px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            animation: slideIn 0.3s ease;
+        }
+        
+        .motivational-toast.hidden {
+            display: none;
+        }
+        
+        .toast-content {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            gap: 12px;
+        }
+        
+        .toast-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+        
+        .toast-message {
+            flex: 1;
+            font-size: 14px;
+            color: #2d3748;
+        }
+        
+        .toast-close {
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: #718096;
+            cursor: pointer;
+            padding: 4px;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Create Goal Form Styles */
+        .create-goal-form {
+            padding: 20px 0;
+        }
+        
+        .goal-type-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin: 20px 0;
+        }
+        
+        .goal-type-option {
+            padding: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+        
+        .goal-type-option:hover {
+            border-color: #4299e1;
+            background-color: #f7fafc;
+        }
+        
+        .goal-type-option.selected {
+            border-color: #4299e1;
+            background-color: #ebf8ff;
+        }
+        
+        .goal-type-option h4 {
+            margin: 0 0 8px 0;
+            color: #2d3748;
+        }
+        
+        .goal-type-option p {
+            margin: 0;
+            color: #718096;
+            font-size: 14px;
+        }
+        
+        .goal-form-fields {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #2d3748;
+            margin-bottom: 4px;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
         /* Responsive Design */
         @media (max-width: 768px) {
             .dashboard-grid {
@@ -1210,6 +1545,71 @@
         </div>
     </div>
 
+    <!-- Goals Modal -->
+    <div id="goalsModal" class="modal hidden">
+        <div class="modal-content goals-content">
+            <div class="modal-header">
+                <h3>My Goals</h3>
+                <button onclick="closeGoalsModal()" class="modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="goalsContainer">
+                    <!-- Goals content will be dynamically loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn secondary" onclick="closeGoalsModal()">Close</button>
+                <button class="btn primary" onclick="showCreateGoalModal()">Set New Goal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Goal Modal -->
+    <div id="createGoalModal" class="modal hidden">
+        <div class="modal-content create-goal-content">
+            <div class="modal-header">
+                <h3>Set New Goal</h3>
+                <button onclick="closeCreateGoalModal()" class="modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="createGoalContainer">
+                    <!-- Create goal form will be dynamically loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn secondary" onclick="closeCreateGoalModal()">Cancel</button>
+                <button class="btn primary" onclick="createGoal()">Create Goal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Habits Modal -->
+    <div id="habitsModal" class="modal hidden">
+        <div class="modal-content habits-content">
+            <div class="modal-header">
+                <h3>My Habits & Streaks</h3>
+                <button onclick="closeHabitsModal()" class="modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="habitsContainer">
+                    <!-- Habits content will be dynamically loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn secondary" onclick="closeHabitsModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Motivational Message Toast -->
+    <div id="motivationalToast" class="motivational-toast hidden">
+        <div class="toast-content">
+            <div class="toast-icon">🎉</div>
+            <div class="toast-message" id="motivationalMessage"></div>
+            <button onclick="closeMotivationalToast()" class="toast-close">×</button>
+        </div>
+    </div>
+
     <!-- AI Chat Toggle Button -->
     <button id="aiChatToggle" class="ai-chat-toggle" onclick="toggleAIChat()">
         🤖 AI Coach
@@ -1249,6 +1649,10 @@
     <!-- Progression Modules -->
     <script src="js/modules/workout/ProgressionEngine.js"></script>
     <script src="js/modules/workout/ExerciseAdapter.js"></script>
+    
+    <!-- Goals & Habits Modules -->
+    <script src="js/modules/goals/GoalManager.js"></script>
+    <script src="js/modules/habits/HabitTracker.js"></script>
     
     <!-- Legacy Modules (for compatibility) -->
     <script src="js/core/data-store.js"></script>
