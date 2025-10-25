@@ -5,14 +5,13 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { getTestDatabase, createTestUser, createTestSession, cleanupTestData } from '../helpers/database.js';
 
 // Mock the Netlify function handler
-const mockHandler = async (event) => {
+const mockHandler = async (event, userId = 1) => {
   // Simulate sessions-list.js handler logic
   const testDb = getTestDatabase();
   const queryParams = event.queryStringParameters || {};
   
   // Validate pagination parameters
   const limit = Math.min(parseInt(queryParams.limit) || 20, 100);
-  const userId = 1; // Mock authenticated user
   
   // Get sessions with pagination
   const sessions = await testDb`
@@ -79,7 +78,7 @@ describe('API Endpoints Integration', () => {
         queryStringParameters: {}
       };
       
-      const response = await mockHandler(event);
+      const response = await mockHandler(event, testUser.id);
       const body = JSON.parse(response.body);
       
       expect(response.statusCode).toBe(200);
@@ -94,7 +93,7 @@ describe('API Endpoints Integration', () => {
         queryStringParameters: { limit: '3' }
       };
       
-      const response = await mockHandler(event);
+      const response = await mockHandler(event, testUser.id);
       const body = JSON.parse(response.body);
       
       expect(response.statusCode).toBe(200);
@@ -109,7 +108,7 @@ describe('API Endpoints Integration', () => {
         queryStringParameters: { limit: '150' }
       };
       
-      const response = await mockHandler(event);
+      const response = await mockHandler(event, testUser.id);
       const body = JSON.parse(response.body);
       
       expect(response.statusCode).toBe(200);
@@ -167,7 +166,7 @@ describe('API Endpoints Integration', () => {
         queryStringParameters: { limit: '1' }
       };
       
-      const response = await mockHandler(event);
+      const response = await mockHandler(event, testUser.id);
       const body = JSON.parse(response.body);
       
       expect(body.sessions).toHaveLength(1);
@@ -191,7 +190,7 @@ describe('API Endpoints Integration', () => {
         queryStringParameters: { limit: '3' }
       };
       
-      const response = await mockHandler(event);
+      const response = await mockHandler(event, testUser.id);
       const body = JSON.parse(response.body);
       
       expect(body.pagination).toHaveProperty('has_more');

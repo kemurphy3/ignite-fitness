@@ -30,6 +30,11 @@ afterAll(async () => {
 
 // Before each test
 beforeEach(async () => {
+  // Skip cleanup in mock mode to preserve test data across tests
+  if (process.env.MOCK_DATABASE === 'true') {
+    return;
+  }
+  
   // Reset database state if needed
   const db = getTestDatabase();
   if (db) {
@@ -45,6 +50,11 @@ beforeEach(async () => {
 
 // After each test
 afterEach(async () => {
+  // Skip cleanup in mock mode to preserve test data across tests
+  if (process.env.MOCK_DATABASE === 'true') {
+    return;
+  }
+  
   // Clean up any test data created during the test
   const db = getTestDatabase();
   if (db) {
