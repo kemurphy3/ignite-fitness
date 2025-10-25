@@ -478,13 +478,36 @@
         🤖 AI Coach
     </button>
 
-    <!-- Load simplified JavaScript -->
+    <!-- Load modular JavaScript architecture -->
+    <!-- Core Modules -->
+    <script src="js/modules/core/EventBus.js"></script>
+    <script src="js/modules/core/SafeLogger.js"></script>
+    
+    <!-- Authentication Modules -->
+    <script src="js/modules/auth/AuthManager.js"></script>
+    <script src="js/modules/auth/SessionManager.js"></script>
+    
+    <!-- Data Modules -->
+    <script src="js/modules/data/StorageManager.js"></script>
+    <script src="js/modules/data/ApiClient.js"></script>
+    <script src="js/modules/data/ExerciseDatabase.js"></script>
+    
+    <!-- Workout Modules -->
+    <script src="js/modules/workout/WorkoutTracker.js"></script>
+    <script src="js/modules/workout/ProgressionEngine.js"></script>
+    
+    <!-- AI Modules -->
+    <script src="js/modules/ai/CoachingEngine.js"></script>
+    
+    <!-- Legacy Modules (for compatibility) -->
     <script src="js/core/data-store.js"></script>
     <script src="js/training/workout-generator.js"></script>
     <script src="js/ai/pattern-detector.js"></script>
-    <script src="js/app.js"></script>
     <script src="js/ai/context-aware-ai.js"></script>
     <script src="js/training/seasonal-training.js"></script>
+    
+    <!-- Main Application -->
+    <script src="js/app-modular.js"></script>
     
     <!-- Service Worker Registration -->
     <script>

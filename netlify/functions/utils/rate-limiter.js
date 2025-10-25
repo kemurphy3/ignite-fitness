@@ -1,20 +1,24 @@
-// Enhanced Rate Limiting with Anomaly Detection
+// Enhanced Rate Limiting with Database Storage and Security
 const crypto = require('crypto');
 const { getDB } = require('./database');
 const { auditLog } = require('./audit');
 
 async function checkRateLimit(sql, userId, endpoint, limit = 100, window = 3600000) {
   const windowStart = new Date(Date.now() - window);
+  const scope = getScopeFromEndpoint(endpoint);
+  const ipHash = crypto.createHash('sha256').update('client-ip').digest('hex').substring(0, 16);
   
   try {
-    // Get recent requests
+    // Get recent requests using new schema
     const requests = await sql`
-      SELECT request_timestamp, request_hash
-      FROM api_rate_limits
-      WHERE user_id = ${userId}
-        AND endpoint = ${endpoint}
-        AND request_timestamp > ${windowStart}
-      ORDER BY request_timestamp DESC
+      SELECT window_start, count
+      FROM rate_limits
+      WHERE scope = ${scope}
+        AND user_id = ${userId || 0}
+        AND ip_hash = ${ipHash}
+        AND route = ${endpoint}
+        AND window_start > ${windowStart}
+      ORDER BY window_start DESC
     `;
     
     // Check for anomalous patterns
@@ -22,7 +26,7 @@ async function checkRateLimit(sql, userId, endpoint, limit = 100, window = 36000
       const intervals = [];
       for (let i = 1; i < Math.min(requests.length, 20); i++) {
         intervals.push(
-          requests[i-1].request_timestamp - requests[i].request_timestamp
+          requests[i-1].window_start - requests[i].window_start
         );
       }
       
@@ -48,14 +52,15 @@ async function checkRateLimit(sql, userId, endpoint, limit = 100, window = 36000
       }
     }
     
-    if (requests.length >= limit) {
+    const totalCount = requests.reduce((sum, req) => sum + req.count, 0);
+    if (totalCount >= limit) {
       await auditLog(sql, {
         user_id: userId,
         action: 'RATE_LIMIT_EXCEEDED',
         status: 'BLOCKED',
         metadata: { 
           endpoint,
-          requestCount: requests.length,
+          requestCount: totalCount,
           limit
         }
       });
@@ -64,26 +69,22 @@ async function checkRateLimit(sql, userId, endpoint, limit = 100, window = 36000
         allowed: false, 
         reason: 'Rate limit exceeded',
         type: 'limit',
-        resetAt: new Date(requests[0].request_timestamp.getTime() + window),
-        retryAfter: Math.ceil((requests[0].request_timestamp.getTime() + window - Date.now()) / 1000)
+        resetAt: new Date(windowStart.getTime() + window),
+        retryAfter: Math.ceil((windowStart.getTime() + window - Date.now()) / 1000)
       };
     }
     
-    // Log this request
-    const requestHash = crypto
-      .createHash('sha256')
-      .update(`${userId}${endpoint}${Date.now()}`)
-      .digest('hex');
-      
+    // Upsert rate limit record
     await sql`
-      INSERT INTO api_rate_limits (user_id, endpoint, request_hash)
-      VALUES (${userId}, ${endpoint}, ${requestHash})
-      ON CONFLICT (user_id, endpoint, request_hash) DO NOTHING
+      INSERT INTO rate_limits (scope, user_id, ip_hash, route, window_start, count)
+      VALUES (${scope}, ${userId || 0}, ${ipHash}, ${endpoint}, ${windowStart}, 1)
+      ON CONFLICT (scope, user_id, ip_hash, route, window_start)
+      DO UPDATE SET count = rate_limits.count + 1
     `;
     
     return { 
       allowed: true, 
-      remaining: limit - requests.length - 1,
+      remaining: limit - totalCount - 1,
       resetAt: new Date(Date.now() + window)
     };
     
@@ -96,6 +97,13 @@ async function checkRateLimit(sql, userId, endpoint, limit = 100, window = 36000
       error: error.message
     };
   }
+}
+
+// Helper function to determine scope from endpoint
+function getScopeFromEndpoint(endpoint) {
+  if (endpoint.includes('/admin')) return 'admin';
+  if (endpoint.includes('/auth') || endpoint.includes('/login')) return 'auth';
+  return 'public';
 }
 
 // Check rate limit with custom limits per endpoint
