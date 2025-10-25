@@ -405,6 +405,213 @@
             }
         }
         
+        /* Exercise Feedback Styles */
+        .feedback-content, .alternatives-content {
+            max-width: 600px;
+            width: 95%;
+        }
+        
+        .exercise-feedback-form {
+            padding: 20px 0;
+        }
+        
+        .feedback-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin: 20px 0;
+        }
+        
+        .feedback-option {
+            padding: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+        
+        .feedback-option:hover {
+            border-color: #4299e1;
+            background-color: #f7fafc;
+        }
+        
+        .feedback-option.selected {
+            border-color: #4299e1;
+            background-color: #ebf8ff;
+        }
+        
+        .feedback-option h4 {
+            margin: 0 0 8px 0;
+            color: #2d3748;
+        }
+        
+        .feedback-option p {
+            margin: 0;
+            color: #718096;
+            font-size: 14px;
+        }
+        
+        .feedback-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-family: inherit;
+            resize: vertical;
+        }
+        
+        /* Exercise Alternatives Styles */
+        .alternatives-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .alternative-exercise {
+            padding: 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #f7fafc;
+        }
+        
+        .alternative-exercise.selected {
+            border-color: #4299e1;
+            background-color: #ebf8ff;
+        }
+        
+        .alternative-exercise h4 {
+            margin: 0 0 8px 0;
+            color: #2d3748;
+        }
+        
+        .alternative-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin: 12px 0;
+        }
+        
+        .alternative-detail {
+            text-align: center;
+        }
+        
+        .alternative-detail-label {
+            font-size: 12px;
+            color: #718096;
+            margin-bottom: 4px;
+        }
+        
+        .alternative-detail-value {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .alternative-reason {
+            font-size: 14px;
+            color: #4a5568;
+            font-style: italic;
+        }
+        
+        /* Progression Display Styles */
+        .progression-summary {
+            background: #f0fff4;
+            border: 1px solid #9ae6b4;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+        
+        .progression-changes {
+            background: #ebf8ff;
+            border: 1px solid #bee3f8;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 12px 0;
+        }
+        
+        .progression-change {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 4px 0;
+        }
+        
+        .progression-change-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .progression-change-icon.increase {
+            background: #68d391;
+            color: white;
+        }
+        
+        .progression-change-icon.decrease {
+            background: #f6ad55;
+            color: white;
+        }
+        
+        .progression-change-icon.maintain {
+            background: #a0aec0;
+            color: white;
+        }
+        
+        /* Exercise Rating Styles */
+        .exercise-rating {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 12px 0;
+        }
+        
+        .rating-stars {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .rating-star {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            color: #e2e8f0;
+            transition: color 0.2s ease;
+        }
+        
+        .rating-star:hover,
+        .rating-star.active {
+            color: #f6ad55;
+        }
+        
+        /* Time Optimization Styles */
+        .time-optimization {
+            background: #fff5f5;
+            border: 1px solid #feb2b2;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+        
+        .time-optimization h4 {
+            margin: 0 0 8px 0;
+            color: #742a2a;
+        }
+        
+        .time-saved {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #2f855a;
+            font-weight: 600;
+        }
+        
         /* Responsive Design */
         @media (max-width: 768px) {
             .dashboard-grid {
@@ -419,6 +626,14 @@
             
             .dashboard-controls {
                 flex-direction: column;
+            }
+            
+            .feedback-options {
+                grid-template-columns: 1fr;
+            }
+            
+            .alternative-details {
+                grid-template-columns: repeat(2, 1fr);
             }
         }
     </style>
@@ -957,6 +1172,44 @@
         </div>
     </div>
 
+    <!-- Exercise Feedback Modal -->
+    <div id="exerciseFeedbackModal" class="modal hidden">
+        <div class="modal-content feedback-content">
+            <div class="modal-header">
+                <h3>Exercise Feedback</h3>
+                <button onclick="closeExerciseFeedback()" class="modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="exerciseFeedbackContainer">
+                    <!-- Exercise feedback content will be dynamically loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn secondary" onclick="closeExerciseFeedback()">Cancel</button>
+                <button class="btn primary" onclick="submitExerciseFeedback()">Submit Feedback</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exercise Alternatives Modal -->
+    <div id="exerciseAlternativesModal" class="modal hidden">
+        <div class="modal-content alternatives-content">
+            <div class="modal-header">
+                <h3>Exercise Alternatives</h3>
+                <button onclick="closeExerciseAlternatives()" class="modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="exerciseAlternativesContainer">
+                    <!-- Exercise alternatives content will be dynamically loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn secondary" onclick="closeExerciseAlternatives()">Keep Original</button>
+                <button class="btn primary" onclick="selectExerciseAlternative()">Use Alternative</button>
+            </div>
+        </div>
+    </div>
+
     <!-- AI Chat Toggle Button -->
     <button id="aiChatToggle" class="ai-chat-toggle" onclick="toggleAIChat()">
         🤖 AI Coach
@@ -991,6 +1244,10 @@
     
     <!-- Readiness Modules -->
     <script src="js/modules/readiness/DailyCheckIn.js"></script>
+    
+    <!-- Progression Modules -->
+    <script src="js/modules/workout/ProgressionEngine.js"></script>
+    <script src="js/modules/workout/ExerciseAdapter.js"></script>
     
     <!-- Legacy Modules (for compatibility) -->
     <script src="js/core/data-store.js"></script>

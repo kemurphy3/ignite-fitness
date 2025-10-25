@@ -1,428 +1,475 @@
 /**
- * ProgressionEngine - Handles workout progression and tracking
- * Manages weight progression, rep progression, and performance tracking
+ * ProgressionEngine - Intelligent progression tracking and weight management
+ * Handles auto-progression based on RPE, sets completed, and user feedback
  */
 class ProgressionEngine {
     constructor() {
-        this.progressionRules = {
-            strength: {
-                weightIncrease: 2.5, // kg
-                repIncrease: 1,
-                maxReps: 12,
-                minReps: 5
-            },
-            endurance: {
-                weightIncrease: 1.25, // kg
-                repIncrease: 2,
-                maxReps: 20,
-                minReps: 8
-            },
-            hypertrophy: {
-                weightIncrease: 2.5, // kg
-                repIncrease: 1,
-                maxReps: 15,
-                minReps: 6
-            }
-        };
-        
         this.logger = window.SafeLogger || console;
         this.eventBus = window.EventBus;
-        this.workoutTracker = window.WorkoutTracker;
+        this.storageManager = window.StorageManager;
+        
+        this.progressionRules = this.initializeProgressionRules();
+        this.exerciseBounds = this.initializeExerciseBounds();
+        this.repSchemes = this.initializeRepSchemes();
     }
 
     /**
-     * Calculate next workout progression
-     * @param {string} exerciseName - Exercise name
-     * @param {Object} lastWorkout - Last workout data
-     * @param {string} goal - Training goal
-     * @returns {Object} Progression recommendation
+     * Initialize progression rules
+     * @returns {Object} Progression rules and logic
      */
-    calculateProgression(exerciseName, lastWorkout, goal = 'strength') {
-        try {
-            if (!lastWorkout || !lastWorkout.sets || lastWorkout.sets.length === 0) {
-                return this.getInitialProgression(exerciseName, goal);
+    initializeProgressionRules() {
+        return {
+            weightIncrease: {
+                rpeThreshold: 8,
+                setsThreshold: 1.0, // All sets completed
+                increasePercentage: 0.025, // 2.5%
+                message: "Great work! Bumping up the weight 💪"
+            },
+            weightDecrease: {
+                rpeThreshold: 9,
+                decreasePercentage: 0.05, // 5%
+                message: "That was really tough - let's dial it back"
+            },
+            repProgression: {
+                rpeThreshold: 8,
+                setsThreshold: 1.0,
+                repIncrease: 1,
+                message: "Excellent! Adding a rep to build strength"
+            },
+            maintenance: {
+                message: "Keep up the great work! Maintain this load"
             }
+        };
+    }
 
-            const rules = this.progressionRules[goal] || this.progressionRules.strength;
-            const lastSet = lastWorkout.sets[lastWorkout.sets.length - 1];
-            const avgReps = this.calculateAverageReps(lastWorkout.sets);
-            const maxWeight = Math.max(...lastWorkout.sets.map(set => set.weight || 0));
+    /**
+     * Initialize exercise bounds (floor/ceiling weights)
+     * @returns {Object} Exercise weight bounds
+     */
+    initializeExerciseBounds() {
+        return {
+            'squat': { min: 45, max: 500 },
+            'deadlift': { min: 45, max: 600 },
+            'bench_press': { min: 45, max: 400 },
+            'overhead_press': { min: 20, max: 200 },
+            'barbell_row': { min: 45, max: 300 },
+            'pull_up': { min: 0, max: 100 }, // Bodyweight + added weight
+            'push_up': { min: 0, max: 50 }, // Bodyweight + added weight
+            'dumbbell_curl': { min: 5, max: 50 },
+            'dumbbell_press': { min: 10, max: 100 },
+            'lateral_raise': { min: 5, max: 30 },
+            'tricep_extension': { min: 5, max: 50 },
+            'leg_press': { min: 90, max: 1000 },
+            'leg_curl': { min: 20, max: 200 },
+            'calf_raise': { min: 0, max: 200 }
+        };
+    }
 
-            let recommendation = {
-                exercise: exerciseName,
-                sets: lastWorkout.sets.length,
-                reps: lastSet.reps,
-                weight: lastSet.weight,
-                progression: 'maintain',
-                reason: ''
+    /**
+     * Initialize rep schemes for different exercises
+     * @returns {Object} Rep schemes by exercise
+     */
+    initializeRepSchemes() {
+        return {
+            'squat': { min: 1, max: 20, progression: [5, 6, 8, 10, 12] },
+            'deadlift': { min: 1, max: 10, progression: [3, 5, 6, 8] },
+            'bench_press': { min: 1, max: 15, progression: [5, 6, 8, 10, 12] },
+            'overhead_press': { min: 1, max: 12, progression: [5, 6, 8, 10] },
+            'barbell_row': { min: 1, max: 15, progression: [5, 6, 8, 10, 12] },
+            'pull_up': { min: 1, max: 20, progression: [3, 5, 6, 8, 10] },
+            'push_up': { min: 1, max: 50, progression: [8, 10, 12, 15, 20] },
+            'dumbbell_curl': { min: 1, max: 20, progression: [8, 10, 12, 15] },
+            'dumbbell_press': { min: 1, max: 15, progression: [6, 8, 10, 12] },
+            'lateral_raise': { min: 1, max: 20, progression: [10, 12, 15, 20] },
+            'tricep_extension': { min: 1, max: 20, progression: [8, 10, 12, 15] },
+            'leg_press': { min: 1, max: 25, progression: [10, 12, 15, 20] },
+            'leg_curl': { min: 1, max: 20, progression: [10, 12, 15, 20] },
+            'calf_raise': { min: 1, max: 30, progression: [15, 20, 25, 30] }
+        };
+    }
+
+    /**
+     * Calculate next session parameters for an exercise
+     * @param {Object} exercise - Current exercise data
+     * @param {number} lastRPE - Last session RPE
+     * @param {number} setsCompleted - Sets completed (0-1 ratio)
+     * @param {number} repsCompleted - Reps completed in last set
+     * @returns {Object} Next session parameters
+     */
+    calculateNextSession(exercise, lastRPE, setsCompleted, repsCompleted = null) {
+        try {
+            const exerciseName = exercise.name?.toLowerCase().replace(/\s+/g, '_') || 'unknown';
+            const bounds = this.exerciseBounds[exerciseName] || { min: 0, max: 1000 };
+            const repScheme = this.repSchemes[exerciseName] || { min: 1, max: 20, progression: [8, 10, 12] };
+            
+            let nextSession = {
+                ...exercise,
+                progression: 'maintenance',
+                message: this.progressionRules.maintenance.message,
+                changes: []
             };
 
-            // Check if all sets were completed successfully
-            if (avgReps >= lastSet.reps * 0.9) {
-                // Increase weight
-                recommendation.weight = maxWeight + rules.weightIncrease;
-                recommendation.progression = 'increase_weight';
-                recommendation.reason = 'All sets completed successfully';
-            } else if (avgReps < lastSet.reps * 0.7) {
-                // Decrease weight
-                recommendation.weight = Math.max(maxWeight - rules.weightIncrease, 0);
-                recommendation.progression = 'decrease_weight';
-                recommendation.reason = 'Sets were too difficult';
-            } else {
-                // Maintain weight, increase reps
-                recommendation.reps = Math.min(lastSet.reps + rules.repIncrease, rules.maxReps);
-                recommendation.progression = 'increase_reps';
-                recommendation.reason = 'Maintain weight, increase reps';
+            // Check for weight increase (all sets completed at RPE 8+)
+            if (setsCompleted >= this.progressionRules.weightIncrease.setsThreshold && 
+                lastRPE >= this.progressionRules.weightIncrease.rpeThreshold) {
+                
+                const newWeight = Math.min(
+                    bounds.max,
+                    Math.round(exercise.weight * (1 + this.progressionRules.weightIncrease.increasePercentage) * 2.5) / 2.5 // Round to nearest 2.5
+                );
+                
+                if (newWeight > exercise.weight) {
+                    nextSession.weight = newWeight;
+                    nextSession.progression = 'weight_increase';
+                    nextSession.message = this.progressionRules.weightIncrease.message;
+                    nextSession.changes.push(`Weight increased from ${exercise.weight} to ${newWeight} lbs`);
+                }
             }
 
-            // Ensure reps are within bounds
-            recommendation.reps = Math.max(recommendation.reps, rules.minReps);
-            recommendation.reps = Math.min(recommendation.reps, rules.maxReps);
+            // Check for weight decrease (RPE 9-10)
+            if (lastRPE >= this.progressionRules.weightDecrease.rpeThreshold) {
+                const newWeight = Math.max(
+                    bounds.min,
+                    Math.round(exercise.weight * (1 - this.progressionRules.weightDecrease.decreasePercentage) * 2.5) / 2.5
+                );
+                
+                if (newWeight < exercise.weight) {
+                    nextSession.weight = newWeight;
+                    nextSession.progression = 'weight_decrease';
+                    nextSession.message = this.progressionRules.weightDecrease.message;
+                    nextSession.changes.push(`Weight decreased from ${exercise.weight} to ${newWeight} lbs`);
+                }
+            }
 
-            this.logger.debug('Progression calculated', { 
-                exercise: exerciseName, 
-                progression: recommendation.progression 
+            // Check for rep progression (if weight is at ceiling and RPE is good)
+            if (exercise.weight >= bounds.max * 0.95 && // Near weight ceiling
+                setsCompleted >= this.progressionRules.repProgression.setsThreshold &&
+                lastRPE >= this.progressionRules.repProgression.rpeThreshold &&
+                repsCompleted && repsCompleted < repScheme.max) {
+                
+                const currentReps = exercise.reps || 8;
+                const newReps = Math.min(repScheme.max, currentReps + this.progressionRules.repProgression.repIncrease);
+                
+                if (newReps > currentReps) {
+                    nextSession.reps = newReps;
+                    nextSession.progression = 'rep_increase';
+                    nextSession.message = this.progressionRules.repProgression.message;
+                    nextSession.changes.push(`Reps increased from ${currentReps} to ${newReps}`);
+                }
+            }
+
+            // Ensure weight stays within bounds
+            nextSession.weight = Math.max(bounds.min, Math.min(bounds.max, nextSession.weight));
+            
+            this.logger.debug('Progression calculated', {
+                exercise: exerciseName,
+                lastRPE,
+                setsCompleted,
+                progression: nextSession.progression,
+                changes: nextSession.changes
             });
 
-            return recommendation;
+            return nextSession;
         } catch (error) {
             this.logger.error('Failed to calculate progression', error);
-            return this.getInitialProgression(exerciseName, goal);
-        }
-    }
-
-    /**
-     * Get initial progression for new exercise
-     * @param {string} exerciseName - Exercise name
-     * @param {string} goal - Training goal
-     * @returns {Object} Initial progression
-     */
-    getInitialProgression(exerciseName, goal = 'strength') {
-        const rules = this.progressionRules[goal] || this.progressionRules.strength;
-        
-        return {
-            exercise: exerciseName,
-            sets: 3,
-            reps: Math.round((rules.minReps + rules.maxReps) / 2),
-            weight: this.getEstimatedStartingWeight(exerciseName),
-            progression: 'initial',
-            reason: 'Starting progression for new exercise'
-        };
-    }
-
-    /**
-     * Get estimated starting weight for exercise
-     * @param {string} exerciseName - Exercise name
-     * @returns {number} Estimated weight
-     */
-    getEstimatedStartingWeight(exerciseName) {
-        const estimates = {
-            'Bench Press': 20,
-            'Squat': 30,
-            'Deadlift': 40,
-            'Overhead Press': 15,
-            'Row': 20,
-            'Pull-up': 0, // Bodyweight
-            'Push-up': 0, // Bodyweight
-            'Dip': 0 // Bodyweight
-        };
-
-        return estimates[exerciseName] || 10; // Default 10kg
-    }
-
-    /**
-     * Calculate average reps from sets
-     * @param {Array} sets - Sets data
-     * @returns {number} Average reps
-     */
-    calculateAverageReps(sets) {
-        if (!sets || sets.length === 0) return 0;
-        
-        const totalReps = sets.reduce((sum, set) => sum + (set.reps || 0), 0);
-        return totalReps / sets.length;
-    }
-
-    /**
-     * Track exercise progress over time
-     * @param {string} exerciseName - Exercise name
-     * @param {number} days - Number of days to look back
-     * @returns {Object} Progress data
-     */
-    trackExerciseProgress(exerciseName, days = 30) {
-        try {
-            const progress = this.workoutTracker?.getExerciseProgress(exerciseName, days) || [];
-            
-            if (progress.length === 0) {
-                return {
-                    exercise: exerciseName,
-                    progress: [],
-                    trend: 'no_data',
-                    improvement: 0
-                };
-            }
-
-            const trend = this.calculateTrend(progress);
-            const improvement = this.calculateImprovement(progress);
-
             return {
-                exercise: exerciseName,
-                progress,
-                trend,
-                improvement,
-                dataPoints: progress.length
-            };
-        } catch (error) {
-            this.logger.error('Failed to track exercise progress', error);
-            return {
-                exercise: exerciseName,
-                progress: [],
-                trend: 'error',
-                improvement: 0
+                ...exercise,
+                progression: 'error',
+                message: 'Unable to calculate progression',
+                changes: []
             };
         }
     }
 
     /**
-     * Calculate trend from progress data
-     * @param {Array} progress - Progress data
-     * @returns {string} Trend direction
+     * Process exercise feedback and adjust accordingly
+     * @param {string} exerciseName - Name of the exercise
+     * @param {string} feedback - User feedback
+     * @param {Object} currentExercise - Current exercise data
+     * @returns {Object} Adjusted exercise or alternative
      */
-    calculateTrend(progress) {
-        if (progress.length < 2) return 'insufficient_data';
-
-        const weights = progress.map(p => p.maxWeight);
-        const firstHalf = weights.slice(0, Math.floor(weights.length / 2));
-        const secondHalf = weights.slice(Math.floor(weights.length / 2));
-
-        const firstAvg = firstHalf.reduce((sum, w) => sum + w, 0) / firstHalf.length;
-        const secondAvg = secondHalf.reduce((sum, w) => sum + w, 0) / secondHalf.length;
-
-        const change = ((secondAvg - firstAvg) / firstAvg) * 100;
-
-        if (change > 5) return 'improving';
-        if (change < -5) return 'declining';
-        return 'stable';
-    }
-
-    /**
-     * Calculate improvement percentage
-     * @param {Array} progress - Progress data
-     * @returns {number} Improvement percentage
-     */
-    calculateImprovement(progress) {
-        if (progress.length < 2) return 0;
-
-        const first = progress[0].maxWeight;
-        const last = progress[progress.length - 1].maxWeight;
-
-        return ((last - first) / first) * 100;
-    }
-
-    /**
-     * Generate workout recommendations
-     * @param {Object} userProfile - User profile data
-     * @param {Array} recentWorkouts - Recent workout data
-     * @returns {Object} Recommendations
-     */
-    generateWorkoutRecommendations(userProfile, recentWorkouts) {
+    processExerciseFeedback(exerciseName, feedback, currentExercise) {
         try {
-            const recommendations = {
-                exercises: [],
-                volume: 'moderate',
-                intensity: 'moderate',
-                rest: 'normal'
+            const feedbackLower = feedback.toLowerCase();
+            const exerciseNameLower = exerciseName.toLowerCase();
+            
+            let adjustment = {
+                exercise: currentExercise,
+                message: '',
+                alternative: null,
+                changes: []
             };
 
-            // Analyze recent performance
-            const performanceAnalysis = this.analyzeRecentPerformance(recentWorkouts);
-            
-            // Adjust recommendations based on performance
-            if (performanceAnalysis.fatigue > 0.7) {
-                recommendations.intensity = 'low';
-                recommendations.rest = 'extended';
-            } else if (performanceAnalysis.fatigue < 0.3) {
-                recommendations.intensity = 'high';
-                recommendations.volume = 'high';
+            // Handle different feedback types
+            if (feedbackLower.includes('hurt') || feedbackLower.includes('pain')) {
+                adjustment.message = "Let's find a safer alternative for you";
+                adjustment.alternative = this.findAlternativeExercise(exerciseNameLower, 'safer');
+                adjustment.changes.push('Exercise flagged for discomfort');
+            } else if (feedbackLower.includes('easy') || feedbackLower.includes('too light')) {
+                const newWeight = Math.round(currentExercise.weight * 1.1 * 2.5) / 2.5;
+                adjustment.exercise.weight = newWeight;
+                adjustment.message = "Let's make it more challenging!";
+                adjustment.changes.push(`Weight increased to ${newWeight} lbs`);
+            } else if (feedbackLower.includes("can't") || feedbackLower.includes('too hard')) {
+                adjustment.message = "Let's try a regression or alternative";
+                adjustment.alternative = this.findAlternativeExercise(exerciseNameLower, 'easier');
+                adjustment.changes.push('Exercise difficulty reduced');
+            } else if (feedbackLower.includes("don't like") || feedbackLower.includes('hate')) {
+                adjustment.message = "Let's find something you enjoy more";
+                adjustment.alternative = this.findAlternativeExercise(exerciseNameLower, 'preference');
+                adjustment.changes.push('Exercise replaced due to preference');
             }
 
-            // Get exercise recommendations
-            recommendations.exercises = this.getExerciseRecommendations(userProfile, performanceAnalysis);
-
-            this.logger.debug('Workout recommendations generated', { 
-                intensity: recommendations.intensity,
-                volume: recommendations.volume 
+            this.logger.debug('Exercise feedback processed', {
+                exercise: exerciseName,
+                feedback,
+                adjustment: adjustment.changes
             });
 
-            return recommendations;
+            return adjustment;
         } catch (error) {
-            this.logger.error('Failed to generate workout recommendations', error);
+            this.logger.error('Failed to process exercise feedback', error);
             return {
-                exercises: [],
-                volume: 'moderate',
-                intensity: 'moderate',
-                rest: 'normal'
+                exercise: currentExercise,
+                message: 'Unable to process feedback',
+                alternative: null,
+                changes: []
             };
         }
     }
 
     /**
-     * Analyze recent performance
-     * @param {Array} recentWorkouts - Recent workout data
-     * @returns {Object} Performance analysis
+     * Find alternative exercise based on feedback
+     * @param {string} originalExercise - Original exercise name
+     * @param {string} type - Type of alternative needed
+     * @returns {Object|null} Alternative exercise
      */
-    analyzeRecentPerformance(recentWorkouts) {
-        if (!recentWorkouts || recentWorkouts.length === 0) {
-            return { fatigue: 0.5, consistency: 0.5, improvement: 0 };
-        }
-
-        // Calculate fatigue based on recent workout frequency and intensity
-        const recentDays = 7;
-        const recentWorkouts = recentWorkouts.filter(workout => {
-            const workoutDate = new Date(workout.startTime);
-            const daysSince = (Date.now() - workoutDate.getTime()) / (1000 * 60 * 60 * 24);
-            return daysSince <= recentDays;
-        });
-
-        const fatigue = Math.min(recentWorkouts.length / 5, 1); // Max fatigue at 5 workouts per week
-        const consistency = this.calculateConsistency(recentWorkouts);
-        const improvement = this.calculateOverallImprovement(recentWorkouts);
-
-        return { fatigue, consistency, improvement };
-    }
-
-    /**
-     * Calculate workout consistency
-     * @param {Array} workouts - Workout data
-     * @returns {number} Consistency score (0-1)
-     */
-    calculateConsistency(workouts) {
-        if (workouts.length < 2) return 0.5;
-
-        const intervals = [];
-        for (let i = 1; i < workouts.length; i++) {
-            const prev = new Date(workouts[i-1].startTime);
-            const curr = new Date(workouts[i].startTime);
-            intervals.push(curr - prev);
-        }
-
-        const avgInterval = intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length;
-        const variance = intervals.reduce((sum, interval) => sum + Math.pow(interval - avgInterval, 2), 0) / intervals.length;
-        const consistency = 1 - (Math.sqrt(variance) / avgInterval);
-
-        return Math.max(0, Math.min(1, consistency));
-    }
-
-    /**
-     * Calculate overall improvement
-     * @param {Array} workouts - Workout data
-     * @returns {number} Improvement percentage
-     */
-    calculateOverallImprovement(workouts) {
-        if (workouts.length < 2) return 0;
-
-        const firstWorkout = workouts[workouts.length - 1];
-        const lastWorkout = workouts[0];
-
-        const firstTotalVolume = this.calculateWorkoutVolume(firstWorkout);
-        const lastTotalVolume = this.calculateWorkoutVolume(lastWorkout);
-
-        return ((lastTotalVolume - firstTotalVolume) / firstTotalVolume) * 100;
-    }
-
-    /**
-     * Calculate workout volume
-     * @param {Object} workout - Workout data
-     * @returns {number} Total volume
-     */
-    calculateWorkoutVolume(workout) {
-        if (!workout.exercises) return 0;
-
-        return workout.exercises.reduce((total, exercise) => {
-            const exerciseVolume = exercise.sets.reduce((sum, set) => {
-                return sum + ((set.weight || 0) * (set.reps || 0));
-            }, 0);
-            return total + exerciseVolume;
-        }, 0);
-    }
-
-    /**
-     * Get exercise recommendations
-     * @param {Object} userProfile - User profile
-     * @param {Object} performanceAnalysis - Performance analysis
-     * @returns {Array} Exercise recommendations
-     */
-    getExerciseRecommendations(userProfile, performanceAnalysis) {
-        const recommendations = [];
-
-        // Base exercises for different goals
-        const baseExercises = {
-            strength: ['Squat', 'Bench Press', 'Deadlift', 'Overhead Press', 'Row'],
-            endurance: ['Push-ups', 'Pull-ups', 'Lunges', 'Plank', 'Burpees'],
-            hypertrophy: ['Bench Press', 'Squat', 'Deadlift', 'Bicep Curls', 'Tricep Extensions']
+    findAlternativeExercise(originalExercise, type) {
+        const alternatives = {
+            'squat': {
+                safer: { name: 'Goblet Squat', weight: 0, reps: 12, sets: 3 },
+                easier: { name: 'Bodyweight Squat', weight: 0, reps: 15, sets: 3 },
+                preference: { name: 'Leg Press', weight: 90, reps: 12, sets: 3 }
+            },
+            'deadlift': {
+                safer: { name: 'Romanian Deadlift', weight: 0, reps: 10, sets: 3 },
+                easier: { name: 'RDL with Dumbbells', weight: 20, reps: 12, sets: 3 },
+                preference: { name: 'Hip Thrust', weight: 0, reps: 15, sets: 3 }
+            },
+            'bench_press': {
+                safer: { name: 'Dumbbell Press', weight: 20, reps: 10, sets: 3 },
+                easier: { name: 'Push-ups', weight: 0, reps: 10, sets: 3 },
+                preference: { name: 'Incline Press', weight: 45, reps: 8, sets: 3 }
+            },
+            'overhead_press': {
+                safer: { name: 'Dumbbell Press', weight: 15, reps: 10, sets: 3 },
+                easier: { name: 'Pike Push-ups', weight: 0, reps: 8, sets: 3 },
+                preference: { name: 'Lateral Raises', weight: 10, reps: 12, sets: 3 }
+            },
+            'pull_up': {
+                safer: { name: 'Lat Pulldown', weight: 50, reps: 10, sets: 3 },
+                easier: { name: 'Assisted Pull-ups', weight: 0, reps: 8, sets: 3 },
+                preference: { name: 'Cable Rows', weight: 40, reps: 12, sets: 3 }
+            }
         };
 
-        const goal = userProfile.goals?.primary || 'strength';
-        const exercises = baseExercises[goal] || baseExercises.strength;
-
-        // Adjust based on performance
-        if (performanceAnalysis.fatigue > 0.7) {
-            // Reduce intensity
-            recommendations.push(...exercises.slice(0, 3));
-        } else if (performanceAnalysis.fatigue < 0.3) {
-            // Increase variety
-            recommendations.push(...exercises);
-        } else {
-            // Normal selection
-            recommendations.push(...exercises.slice(0, 5));
-        }
-
-        return recommendations;
+        return alternatives[originalExercise]?.[type] || null;
     }
 
     /**
-     * Get progression summary
-     * @param {string} exerciseName - Exercise name
-     * @returns {Object} Progression summary
+     * Adapt workout to available time
+     * @param {number} availableTime - Available time in minutes
+     * @param {Object} plannedWorkout - Planned workout data
+     * @returns {Object} Adapted workout
      */
-    getProgressionSummary(exerciseName) {
+    adaptWorkoutToTime(availableTime, plannedWorkout) {
         try {
-            const progress = this.trackExerciseProgress(exerciseName, 30);
-            const lastWorkout = this.workoutTracker?.getWorkoutHistory(1)[0];
+            const estimatedTime = plannedWorkout.estimatedTime || 60;
+            const timeRatio = availableTime / estimatedTime;
             
-            if (!lastWorkout) {
-                return {
-                    exercise: exerciseName,
-                    status: 'no_data',
-                    message: 'No workout data available'
-                };
-            }
-
-            const lastExercise = lastWorkout.exercises.find(ex => ex.name === exerciseName);
-            if (!lastExercise) {
-                return {
-                    exercise: exerciseName,
-                    status: 'not_performed',
-                    message: 'Exercise not performed recently'
-                };
-            }
-
-            const recommendation = this.calculateProgression(exerciseName, lastExercise);
+            let adaptedWorkout = { ...plannedWorkout };
             
-            return {
-                exercise: exerciseName,
-                status: 'active',
-                lastWeight: Math.max(...lastExercise.sets.map(set => set.weight || 0)),
-                lastReps: lastExercise.sets[lastExercise.sets.length - 1].reps,
-                recommendation: recommendation,
-                progress: progress
-            };
+            if (timeRatio < 0.6) {
+                // Create superset version
+                adaptedWorkout = this.createSupersetVersion(plannedWorkout);
+                adaptedWorkout.message = `Workout adapted for ${availableTime} minutes using supersets`;
+            } else if (timeRatio < 0.8) {
+                // Reduce rest times
+                adaptedWorkout = this.reduceRestTimes(plannedWorkout);
+                adaptedWorkout.message = `Workout adapted for ${availableTime} minutes with reduced rest`;
+            } else {
+                adaptedWorkout.message = `Workout fits your ${availableTime} minute window`;
+            }
+            
+            adaptedWorkout.estimatedTime = availableTime;
+            
+            this.logger.debug('Workout adapted for time', {
+                availableTime,
+                originalTime: estimatedTime,
+                timeRatio,
+                adaptation: adaptedWorkout.message
+            });
+            
+            return adaptedWorkout;
         } catch (error) {
-            this.logger.error('Failed to get progression summary', error);
+            this.logger.error('Failed to adapt workout to time', error);
             return {
-                exercise: exerciseName,
-                status: 'error',
-                message: 'Failed to analyze progression'
+                ...plannedWorkout,
+                message: 'Unable to adapt workout for time',
+                estimatedTime: availableTime
             };
+        }
+    }
+
+    /**
+     * Create superset version of workout
+     * @param {Object} workout - Original workout
+     * @returns {Object} Superset workout
+     */
+    createSupersetVersion(workout) {
+        const exercises = workout.exercises || [];
+        const supersets = [];
+        
+        // Group exercises into supersets (2 exercises per superset)
+        for (let i = 0; i < exercises.length; i += 2) {
+            const superset = {
+                name: `Superset ${Math.floor(i / 2) + 1}`,
+                exercises: exercises.slice(i, i + 2),
+                restTime: 60, // 1 minute between supersets
+                sets: Math.min(3, exercises[i]?.sets || 3)
+            };
+            supersets.push(superset);
+        }
+        
+        return {
+            ...workout,
+            type: 'superset',
+            exercises: supersets,
+            estimatedTime: Math.ceil(workout.estimatedTime * 0.6),
+            message: 'Workout converted to supersets for time efficiency'
+        };
+    }
+
+    /**
+     * Reduce rest times in workout
+     * @param {Object} workout - Original workout
+     * @returns {Object} Workout with reduced rest
+     */
+    reduceRestTimes(workout) {
+        const exercises = workout.exercises || [];
+        const adaptedExercises = exercises.map(exercise => ({
+            ...exercise,
+            restTime: Math.max(30, Math.floor((exercise.restTime || 90) * 0.7)) // Reduce by 30%, minimum 30s
+        }));
+        
+        return {
+            ...workout,
+            exercises: adaptedExercises,
+            estimatedTime: Math.ceil(workout.estimatedTime * 0.8),
+            message: 'Workout adapted with reduced rest times'
+        };
+    }
+
+    /**
+     * Get progression history for an exercise
+     * @param {string} exerciseName - Name of the exercise
+     * @param {number} days - Number of days to look back
+     * @returns {Array} Progression history
+     */
+    getProgressionHistory(exerciseName, days = 30) {
+        try {
+            // This would typically fetch from database/IndexedDB
+            // For now, return mock data
+            const history = [];
+            const today = new Date();
+            
+            for (let i = days - 1; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                
+                history.push({
+                    date: date.toISOString().split('T')[0],
+                    weight: 100 + (Math.random() * 20),
+                    reps: 8 + Math.floor(Math.random() * 4),
+                    rpe: 6 + Math.floor(Math.random() * 4),
+                    progression: Math.random() > 0.7 ? 'increased' : 'maintained'
+                });
+            }
+            
+            return history;
+        } catch (error) {
+            this.logger.error('Failed to get progression history', error);
+            return [];
+        }
+    }
+
+    /**
+     * Save exercise preference
+     * @param {string} exerciseName - Name of the exercise
+     * @param {string} preference - User preference (avoid, prefer, neutral)
+     * @param {string} reason - Reason for preference
+     * @returns {Object} Save result
+     */
+    saveExercisePreference(exerciseName, preference, reason = '') {
+        try {
+            const preferenceData = {
+                exerciseName,
+                preference,
+                reason,
+                timestamp: new Date().toISOString()
+            };
+            
+            // Save to localStorage
+            const preferences = this.storageManager?.get('exercise_preferences', []);
+            const existingIndex = preferences.findIndex(p => p.exerciseName === exerciseName);
+            
+            if (existingIndex >= 0) {
+                preferences[existingIndex] = preferenceData;
+            } else {
+                preferences.push(preferenceData);
+            }
+            
+            this.storageManager?.set('exercise_preferences', preferences);
+            
+            this.logger.audit('EXERCISE_PREFERENCE_SAVED', {
+                exerciseName,
+                preference,
+                reason
+            });
+            
+            return { success: true, preference: preferenceData };
+        } catch (error) {
+            this.logger.error('Failed to save exercise preference', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * Get exercise preferences
+     * @returns {Array} Exercise preferences
+     */
+    getExercisePreferences() {
+        try {
+            return this.storageManager?.get('exercise_preferences', []);
+        } catch (error) {
+            this.logger.error('Failed to get exercise preferences', error);
+            return [];
+        }
+    }
+
+    /**
+     * Check if exercise should be avoided
+     * @param {string} exerciseName - Name of the exercise
+     * @returns {boolean} Should be avoided
+     */
+    shouldAvoidExercise(exerciseName) {
+        try {
+            const preferences = this.getExercisePreferences();
+            const preference = preferences.find(p => p.exerciseName === exerciseName);
+            return preference?.preference === 'avoid';
+        } catch (error) {
+            this.logger.error('Failed to check exercise avoidance', error);
+            return false;
         }
     }
 }

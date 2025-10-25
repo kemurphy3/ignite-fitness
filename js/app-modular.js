@@ -821,3 +821,279 @@ function hideDailyCheckIn() {
         modal.classList.add('hidden');
     }
 }
+
+// Exercise Feedback Functions
+function showExerciseFeedback(exerciseName, exerciseData) {
+    const modal = document.getElementById('exerciseFeedbackModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        renderExerciseFeedback(exerciseName, exerciseData);
+    }
+}
+
+function renderExerciseFeedback(exerciseName, exerciseData) {
+    const container = document.getElementById('exerciseFeedbackContainer');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="exercise-feedback-form">
+            <h4>How was your ${exerciseName}?</h4>
+            <p>Your feedback helps us adjust your workout for next time.</p>
+            
+            <div class="feedback-options">
+                <div class="feedback-option" onclick="selectFeedbackOption(this, 'pain')">
+                    <h4>😣 This hurts</h4>
+                    <p>Pain or discomfort</p>
+                </div>
+                <div class="feedback-option" onclick="selectFeedbackOption(this, 'easy')">
+                    <h4>😌 Too easy</h4>
+                    <p>Need more challenge</p>
+                </div>
+                <div class="feedback-option" onclick="selectFeedbackOption(this, 'hard')">
+                    <h4>😰 Can't do this</h4>
+                    <p>Too difficult</p>
+                </div>
+                <div class="feedback-option" onclick="selectFeedbackOption(this, 'boring')">
+                    <h4>😴 Don't like this</h4>
+                    <p>Not enjoyable</p>
+                </div>
+                <div class="feedback-option" onclick="selectFeedbackOption(this, 'good')">
+                    <h4>👍 Perfect</h4>
+                    <p>Just right</p>
+                </div>
+            </div>
+            
+            <div class="exercise-rating">
+                <span>Rate this exercise:</span>
+                <div class="rating-stars">
+                    ${Array.from({length: 5}, (_, i) => `
+                        <span class="rating-star" onclick="setExerciseRating(${i + 1})">★</span>
+                    `).join('')}
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="feedbackText">Additional comments (optional):</label>
+                <textarea id="feedbackText" class="feedback-textarea" 
+                          placeholder="Tell us more about your experience..."></textarea>
+            </div>
+        </div>
+    `;
+}
+
+function selectFeedbackOption(element, feedbackType) {
+    // Remove selection from all options
+    document.querySelectorAll('.feedback-option').forEach(opt => {
+        opt.classList.remove('selected');
+    });
+    
+    // Select current option
+    element.classList.add('selected');
+    
+    // Store selected feedback
+    window.currentExerciseFeedback = feedbackType;
+}
+
+function setExerciseRating(rating) {
+    // Update star display
+    document.querySelectorAll('.rating-star').forEach((star, index) => {
+        if (index < rating) {
+            star.classList.add('active');
+        } else {
+            star.classList.remove('active');
+        }
+    });
+    
+    // Store rating
+    window.currentExerciseRating = rating;
+}
+
+function submitExerciseFeedback() {
+    const feedbackType = window.currentExerciseFeedback;
+    const rating = window.currentExerciseRating || 3;
+    const comments = document.getElementById('feedbackText').value;
+    
+    if (!feedbackType) {
+        showError(null, 'Please select how the exercise felt');
+        return;
+    }
+    
+    // Process feedback with ExerciseAdapter
+    const result = window.ExerciseAdapter?.processExerciseFeedback(
+        window.currentExerciseName, 
+        feedbackType, 
+        window.currentExerciseData
+    );
+    
+    if (result.success && result.alternatives.length > 0) {
+        // Show alternatives
+        showExerciseAlternatives(result.alternatives);
+    } else {
+        // Save feedback and close
+        saveExerciseFeedback(feedbackType, rating, comments);
+        closeExerciseFeedback();
+        showSuccess('Feedback saved! We\'ll adjust your workout accordingly.');
+    }
+}
+
+function saveExerciseFeedback(feedbackType, rating, comments) {
+    // Save to progression engine
+    window.ProgressionEngine?.saveExercisePreference(
+        window.currentExerciseName,
+        feedbackType === 'good' ? 'prefer' : 'avoid',
+        comments
+    );
+    
+    // Save rating
+    if (window.currentExerciseData) {
+        window.currentExerciseData.userRating = rating;
+    }
+}
+
+function showExerciseAlternatives(alternatives) {
+    const modal = document.getElementById('exerciseAlternativesModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        renderExerciseAlternatives(alternatives);
+    }
+}
+
+function renderExerciseAlternatives(alternatives) {
+    const container = document.getElementById('exerciseAlternativesContainer');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="alternatives-list">
+            ${alternatives.map((alt, index) => `
+                <div class="alternative-exercise" onclick="selectAlternative(this, ${index})">
+                    <h4>${alt.name}</h4>
+                    <div class="alternative-details">
+                        <div class="alternative-detail">
+                            <div class="alternative-detail-label">Weight</div>
+                            <div class="alternative-detail-value">${alt.weight} lbs</div>
+                        </div>
+                        <div class="alternative-detail">
+                            <div class="alternative-detail-label">Reps</div>
+                            <div class="alternative-detail-value">${alt.reps}</div>
+                        </div>
+                        <div class="alternative-detail">
+                            <div class="alternative-detail-label">Sets</div>
+                            <div class="alternative-detail-value">${alt.sets}</div>
+                        </div>
+                        <div class="alternative-detail">
+                            <div class="alternative-detail-label">Difficulty</div>
+                            <div class="alternative-detail-value">${alt.difficulty}</div>
+                        </div>
+                    </div>
+                    <div class="alternative-reason">${alt.reason}</div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function selectAlternative(element, index) {
+    // Remove selection from all alternatives
+    document.querySelectorAll('.alternative-exercise').forEach(alt => {
+        alt.classList.remove('selected');
+    });
+    
+    // Select current alternative
+    element.classList.add('selected');
+    window.selectedAlternativeIndex = index;
+}
+
+function selectExerciseAlternative() {
+    const alternatives = window.currentAlternatives;
+    const selectedIndex = window.selectedAlternativeIndex;
+    
+    if (selectedIndex !== undefined && alternatives[selectedIndex]) {
+        const selectedAlternative = alternatives[selectedIndex];
+        
+        // Update current exercise with alternative
+        if (window.currentExerciseData) {
+            Object.assign(window.currentExerciseData, selectedAlternative);
+        }
+        
+        closeExerciseAlternatives();
+        closeExerciseFeedback();
+        showSuccess(`Exercise updated to ${selectedAlternative.name}!`);
+    } else {
+        showError(null, 'Please select an alternative exercise');
+    }
+}
+
+function closeExerciseFeedback() {
+    const modal = document.getElementById('exerciseFeedbackModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+function closeExerciseAlternatives() {
+    const modal = document.getElementById('exerciseAlternativesModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+// Progression Functions
+function calculateExerciseProgression(exerciseName, lastRPE, setsCompleted, repsCompleted) {
+    const exerciseData = {
+        name: exerciseName,
+        weight: 135, // This would come from current exercise data
+        reps: 8,
+        sets: 3
+    };
+    
+    const progression = window.ProgressionEngine?.calculateNextSession(
+        exerciseData, 
+        lastRPE, 
+        setsCompleted, 
+        repsCompleted
+    );
+    
+    if (progression && progression.changes.length > 0) {
+        showProgressionSummary(progression);
+    }
+    
+    return progression;
+}
+
+function showProgressionSummary(progression) {
+    const summaryHtml = `
+        <div class="progression-summary">
+            <h4>💪 Progression Update</h4>
+            <p>${progression.message}</p>
+            <div class="progression-changes">
+                ${progression.changes.map(change => `
+                    <div class="progression-change">
+                        <div class="progression-change-icon ${progression.progression}">
+                            ${progression.progression === 'weight_increase' ? '↑' : 
+                              progression.progression === 'weight_decrease' ? '↓' : '='}
+                        </div>
+                        <span>${change}</span>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    
+    // This would typically be displayed in the workout interface
+    console.log('Progression Summary:', summaryHtml);
+}
+
+function adaptWorkoutToTime(availableTime) {
+    const plannedWorkout = {
+        exercises: [], // This would come from current workout
+        estimatedTime: 60
+    };
+    
+    const adaptedWorkout = window.ProgressionEngine?.adaptWorkoutToTime(availableTime, plannedWorkout);
+    
+    if (adaptedWorkout && adaptedWorkout.message) {
+        showSuccess(adaptedWorkout.message);
+    }
+    
+    return adaptedWorkout;
+}
