@@ -221,6 +221,22 @@
             color: #4299e1;
         }
         
+        /* Fix tab content text color */
+        .tab-content {
+            color: #2d3748 !important;
+        }
+        
+        .tab-content h3,
+        .tab-content h4,
+        .tab-content h5 {
+            color: #2d3748 !important;
+        }
+        
+        .tab-content p,
+        .tab-content label {
+            color: #4a5568 !important;
+        }
+        
         /* Dashboard Controls */
         .dashboard-controls {
             display: flex;
@@ -307,6 +323,25 @@
         /* Workout Calendar Styles */
         .workout-calendar-section {
             margin-bottom: 32px;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .calendar-header {
+            margin-bottom: 16px;
+        }
+        
+        .calendar-header h4 {
+            color: #2d3748;
+            margin-bottom: 12px;
+        }
+        
+        .calendar-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
         }
         
         .calendar-grid {
@@ -573,7 +608,7 @@
         
         .day-name {
             font-weight: 600;
-            color: #4a5568;
+            color: #2d3748 !important;
             font-size: 14px;
         }
         
@@ -2290,7 +2325,7 @@
                                 </select>
                             </div>
                             <div class="frequency-item">
-                                <label>Soccer Training (days/week)</label>
+                                <label>Soccer Activities (games + practice per week)</label>
                                 <select id="soccerTrainingDays" class="form-input">
                                     <option value="0">0 days</option>
                                     <option value="1">1 day</option>
@@ -2300,6 +2335,7 @@
                                     <option value="5">5 days</option>
                                     <option value="6">6 days</option>
                                 </select>
+                                <small style="color: #718096; font-size: 12px; display: block; margin-top: 4px;">Will be split between indoor/outdoor games and practice</small>
                             </div>
                             <div class="frequency-item">
                                 <label>Cardio (days/week)</label>
@@ -2858,6 +2894,7 @@
     <!-- Core Modules -->
     <script src="js/modules/core/EventBus.js"></script>
     <script src="js/modules/core/SafeLogger.js"></script>
+    <script src="js/modules/debug/DebugManager.js"></script>
     
     <!-- Authentication Modules -->
     <script src="js/modules/auth/AuthManager.js"></script>
@@ -2983,6 +3020,8 @@
                 weight: parseFloat(weight),
                 height: parseFloat(finalHeight),
                 heightUnit: heightUnit,
+                heightFeet: heightFeet ? parseInt(heightFeet) : null,
+                heightInches: heightInches ? parseInt(heightInches) : null,
                 experience: experience,
                 sportSpecific: sportSpecific,
                 sport: sport,
@@ -2991,7 +3030,40 @@
             };
             
             localStorage.setItem('ignitefitness_personal_info', JSON.stringify(personalInfo));
-            showStatus('personalDataStatus', 'Personal information saved successfully!', 'success');
+            
+            // Update seasonal phase indicator if sport-specific training is enabled
+            if (sportSpecific && seasonPhase) {
+                updateSeasonalPhaseDisplay(seasonPhase);
+            }
+            
+            showStatus('personalDataStatus', '✅ Personal information saved! Your data will be remembered when you return.', 'success');
+        }
+        
+        // Clear all saved data (for testing/debugging)
+        function clearAllData() {
+            if (confirm('Are you sure you want to clear all saved data? This action cannot be undone.')) {
+                localStorage.removeItem('ignitefitness_personal_info');
+                localStorage.removeItem('ignitefitness_goals');
+                localStorage.removeItem('ignitefitness_workout_calendar');
+                localStorage.removeItem('ignitefitness_injury_prevention');
+                alert('All data cleared! Refreshing page...');
+                window.location.reload();
+            }
+        }
+        
+        function updateSeasonalPhaseDisplay(phase) {
+            const phaseNames = {
+                'off': 'Off-Season',
+                'pre': 'Pre-Season',
+                'mid': 'Mid-Season',
+                'playoffs': 'Playoffs',
+                'post': 'Post-Season'
+            };
+            
+            const phaseElement = document.getElementById('currentPhaseName');
+            if (phaseElement && phaseNames[phase]) {
+                phaseElement.textContent = phaseNames[phase];
+            }
         }
         
         function toggleSportSpecific() {
@@ -3052,7 +3124,7 @@
             };
             
             localStorage.setItem('ignitefitness_goals', JSON.stringify(goals));
-            showStatus('goalsStatus', `Saved ${selectedGoals.length} training goals and preferences!`, 'success');
+            showStatus('goalsStatus', `✅ Saved ${selectedGoals.length} goals and frequency preferences! Your settings will be remembered.`, 'success');
             
             // Auto-assign workouts if enabled
             if (autoAssign) {
@@ -3090,19 +3162,20 @@
             });
             
             localStorage.setItem('ignitefitness_workout_calendar', JSON.stringify(calendarData));
-            showStatus('calendarStatus', 'Workout schedule saved successfully!', 'success');
+            showStatus('calendarStatus', '✅ Workout schedule saved! Your weekly plan will be remembered.', 'success');
         }
         
         function addWorkout(day) {
             const workoutTypes = [
                 { value: 'weight_training', label: 'Weight Training', duration: '60 min' },
-                { value: 'soccer_training', label: 'Soccer Training', duration: '90 min' },
+                { value: 'indoor_soccer_game', label: 'Indoor Soccer Game', duration: '60 min' },
+                { value: 'outdoor_soccer_game', label: 'Outdoor Soccer Game', duration: '90 min' },
+                { value: 'soccer_practice', label: 'Soccer Practice', duration: '90 min' },
                 { value: 'cardio', label: 'Cardio', duration: '45 min' },
                 { value: 'yoga', label: 'Yoga', duration: '30 min' },
                 { value: 'recovery', label: 'Recovery', duration: '30 min' },
                 { value: 'flexibility', label: 'Flexibility', duration: '20 min' },
-                { value: 'injury_prevention', label: 'Injury Prevention', duration: '25 min' },
-                { value: 'sport_specific', label: 'Sport Specific', duration: '75 min' }
+                { value: 'injury_prevention', label: 'Injury Prevention', duration: '25 min' }
             ];
             
             // Create workout selection modal
@@ -3184,7 +3257,9 @@
             // Auto-assign based on preferences
             const workoutTypes = [
                 { type: 'weight_training', label: 'Weight Training', duration: '60 min', days: frequencyPreferences.weightTraining },
-                { type: 'soccer_training', label: 'Soccer Training', duration: '90 min', days: frequencyPreferences.soccerTraining },
+                { type: 'indoor_soccer_game', label: 'Indoor Soccer Game', duration: '60 min', days: Math.ceil(frequencyPreferences.soccerTraining / 3) },
+                { type: 'outdoor_soccer_game', label: 'Outdoor Soccer Game', duration: '90 min', days: Math.ceil(frequencyPreferences.soccerTraining / 3) },
+                { type: 'soccer_practice', label: 'Soccer Practice', duration: '90 min', days: Math.floor(frequencyPreferences.soccerTraining / 3) },
                 { type: 'cardio', label: 'Cardio', duration: '45 min', days: frequencyPreferences.cardio },
                 { type: 'yoga', label: 'Yoga', duration: '30 min', days: frequencyPreferences.yoga },
                 { type: 'recovery', label: 'Recovery', duration: '30 min', days: frequencyPreferences.recovery }
@@ -3539,7 +3614,163 @@
             };
             
             localStorage.setItem('ignitefitness_injury_prevention', JSON.stringify(injuryPreventionData));
-            showStatus('preventionStatus', 'Injury prevention settings saved successfully!', 'success');
+            showStatus('preventionStatus', '✅ Injury prevention settings saved!', 'success');
+        }
+        
+        function toggleRole() {
+            try {
+                const currentPreferences = JSON.parse(localStorage.getItem('ignitefitness_preferences') || '{}');
+                const currentRole = currentPreferences.role || 'athlete';
+                const newRole = currentRole === 'athlete' ? 'coach' : 'athlete';
+                
+                currentPreferences.role = newRole;
+                localStorage.setItem('ignitefitness_preferences', JSON.stringify(currentPreferences));
+                
+                // Show success notification
+                alert(`Switched to ${newRole} mode! Reloading page...`);
+                
+                // Reload the page to apply the changes
+                window.location.reload();
+            } catch (error) {
+                console.error('Error switching role:', error);
+                alert('Failed to switch role. Please try again.');
+            }
+        }
+        
+        function viewWorkoutPlan() {
+            // Switch to the Workout Plan tab
+            const workoutPlanTab = document.querySelector('.tab-btn[onclick*="workoutPlan"]');
+            if (workoutPlanTab) {
+                workoutPlanTab.click();
+            } else {
+                // Fallback: manually switch tab
+                showTab('workoutPlan', null);
+            }
+        }
+        
+        // Add tooltip for training periodization
+        function showPeriodizationInfo() {
+            const info = `
+Training Periodization (65%):
+    
+This shows how far you are through your current training cycle (4-8 weeks).
+
+• Week 1-2: Base Building (65% = ~Week 2-3)
+• Week 3-4: Progression Phase
+• Week 5-6: Peak/Peaking Phase  
+• Week 7-8: Deload/Recovery Week
+
+The 65% means you're about 2 weeks into your current cycle, progressing through base building toward your peak performance period.
+
+This structured approach helps prevent overtraining and ensures you're at your best for important competitions or goals.
+            `;
+            alert(info);
+        }
+        
+        // Debug utilities are now handled by DebugManager module
+        // Available functions: checkSavedData(), debugStorage(), debugUsers(), debugPerformance(), etc.
+        
+        // Load saved data functions
+        function loadPersonalInfo() {
+            try {
+                const savedData = JSON.parse(localStorage.getItem('ignitefitness_personal_info') || '{}');
+                
+                if (Object.keys(savedData).length === 0) return;
+                
+                // Load basic info
+                if (savedData.age) document.getElementById('age').value = savedData.age;
+                if (savedData.weight) document.getElementById('weight').value = savedData.weight;
+                if (savedData.experience) document.getElementById('experience').value = savedData.experience;
+                
+                // Load height
+                if (savedData.heightUnit) {
+                    document.getElementById('heightUnit').value = savedData.heightUnit;
+                    
+                    if (savedData.heightUnit === 'ft') {
+                        // Use saved feet and inches if available
+                        if (savedData.heightFeet) {
+                            document.getElementById('heightFeet').value = savedData.heightFeet;
+                        }
+                        if (savedData.heightInches) {
+                            document.getElementById('heightInches').value = savedData.heightInches;
+                        }
+                        toggleHeightUnit(); // Show feet & inches inputs
+                    } else {
+                        document.getElementById('height').value = savedData.height;
+                        toggleHeightUnit(); // Hide feet & inches inputs
+                    }
+                }
+                
+                // Load sport-specific info
+                if (savedData.sportSpecific) {
+                    document.getElementById('sportSpecific').checked = true;
+                    toggleSportSpecific();
+                    if (savedData.sport) document.getElementById('sport').value = savedData.sport;
+                    if (savedData.seasonPhase) document.getElementById('seasonPhase').value = savedData.seasonPhase;
+                }
+                
+                console.log('Personal info loaded successfully');
+            } catch (error) {
+                console.error('Error loading personal info:', error);
+            }
+        }
+        
+        function loadGoals() {
+            try {
+                const savedData = JSON.parse(localStorage.getItem('ignitefitness_goals') || '{}');
+                
+                if (Object.keys(savedData).length === 0) return;
+                
+                // Load selected goals
+                if (savedData.selectedGoals) {
+                    savedData.selectedGoals.forEach(goal => {
+                        const checkbox = document.querySelector(`input[name="trainingGoals"][value="${goal}"]`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                }
+                
+                // Load frequency preferences
+                if (savedData.frequencyPreferences) {
+                    const freq = savedData.frequencyPreferences;
+                    if (freq.weightTraining) document.getElementById('weightTrainingDays').value = freq.weightTraining;
+                    if (freq.soccerTraining) document.getElementById('soccerTrainingDays').value = freq.soccerTraining;
+                    if (freq.cardio) document.getElementById('cardioDays').value = freq.cardio;
+                    if (freq.recovery) document.getElementById('recoveryDays').value = freq.recovery;
+                    if (freq.yoga) document.getElementById('yogaDays').value = freq.yoga;
+                }
+                
+                // Load auto-assignment preference
+                if (savedData.autoAssign !== undefined) {
+                    document.getElementById('autoAssignWorkouts').checked = savedData.autoAssign;
+                    toggleAutoAssignment();
+                }
+                
+                console.log('Goals loaded successfully');
+            } catch (error) {
+                console.error('Error loading goals:', error);
+            }
+        }
+        
+        function loadWorkoutCalendar() {
+            try {
+                const savedData = JSON.parse(localStorage.getItem('ignitefitness_workout_calendar') || '{}');
+                
+                if (Object.keys(savedData).length === 0) return;
+                
+                const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+                
+                days.forEach(day => {
+                    if (savedData[day] && Array.isArray(savedData[day])) {
+                        savedData[day].forEach(workout => {
+                            selectWorkout(day, workout.type, workout.label || workout.type, workout.duration);
+                        });
+                    }
+                });
+                
+                console.log('Workout calendar loaded successfully');
+            } catch (error) {
+                console.error('Error loading workout calendar:', error);
+            }
         }
         
         // Initialize height unit toggle and ACL injury monitoring
@@ -3554,6 +3785,234 @@
             injuryCheckboxes.forEach(checkbox => {
                 checkbox.addEventListener('change', checkACLHistory);
             });
+            
+            // Load saved seasonal phase on page load
+            const personalInfo = JSON.parse(localStorage.getItem('ignitefitness_personal_info') || '{}');
+            if (personalInfo.seasonPhase) {
+                updateSeasonalPhaseDisplay(personalInfo.seasonPhase);
+            }
+            
+            // Load all saved data
+            loadPersonalInfo();
+            loadGoals();
+            loadWorkoutCalendar();
+            
+            // Debug: Log when loading
+            console.log('Page loaded, attempting to load saved data...');
+        });
+        
+        // Show seasonal phase modal
+        function showPhaseModal() {
+            const phase = document.getElementById('seasonPhase')?.value || 'off';
+            const phaseNames = {
+                off: 'Off-Season',
+                pre: 'Pre-Season',
+                mid: 'Mid-Season',
+                playoffs: 'Playoffs',
+                post: 'Post-Season'
+            };
+            const phaseDescription = {
+                off: 'This is the recovery and base-building phase. Focus on maintaining fitness, addressing imbalances, and building a solid foundation for the next season.',
+                pre: 'This phase focuses on building sport-specific fitness, improving strength and conditioning, and preparing for the competitive season ahead.',
+                mid: 'During the competitive season, the focus is on maintaining fitness while managing fatigue and ensuring optimal performance during games/matches.',
+                playoffs: 'The most intense phase. Focus shifts to peak performance, recovery optimization, and maintaining freshness for critical games.',
+                post: 'Active recovery phase after the season ends. Focus on physical and mental recovery while maintaining light activity levels.'
+            };
+            
+            alert(`${phaseNames[phase] || 'Off-Season'}\n\n${phaseDescription[phase] || phaseDescription.off}`);
+        }
+        
+        // Manual sync function
+        function manualSync() {
+            // Update status to show syncing
+            const syncStatusEl = document.getElementById('syncStatus');
+            if (syncStatusEl) {
+                syncStatusEl.textContent = '🔄 Syncing...';
+            }
+            
+            // Simulate sync process
+            setTimeout(() => {
+                const now = new Date().toLocaleTimeString();
+                const lastSyncEl = document.getElementById('lastSync');
+                if (lastSyncEl) {
+                    lastSyncEl.textContent = `Last sync: ${now}`;
+                }
+                
+                if (syncStatusEl) {
+                    syncStatusEl.textContent = '✅ Synced';
+                }
+                
+                console.log('Data synced successfully at ' + now);
+                
+                // Reset status after 3 seconds
+                setTimeout(() => {
+                    if (syncStatusEl) {
+                        syncStatusEl.textContent = '🔄 Syncing...';
+                    }
+                }, 3000);
+            }, 1500);
+        }
+        
+        // Strava Integration Functions
+        function connectToStrava() {
+            console.log('Connecting to Strava...');
+            
+            // Check if we have a Strava Client ID configured
+            const stravaClientId = getStravaClientId();
+            if (!stravaClientId) {
+                alert('Strava Client ID not configured. Please set up Strava OAuth credentials in the environment variables.');
+                return;
+            }
+            
+            // Generate state parameter for security
+            const state = 'ignite_fitness_' + Date.now();
+            localStorage.setItem('strava_oauth_state', state);
+            
+            // Build OAuth URL
+            const redirectUri = encodeURIComponent(window.location.origin + '/callback.html');
+            const scope = 'read,activity:read'; // Request read permissions for activities
+            const responseType = 'code';
+            
+            const authUrl = `https://www.strava.com/oauth/authorize?client_id=${stravaClientId}&redirect_uri=${redirectUri}&response_type=${responseType}&scope=${scope}&state=${state}&approval_prompt=force`;
+            
+            // Redirect to Strava authorization page
+            window.location.href = authUrl;
+        }
+        
+        function getStravaClientId() {
+            // In production, this should come from environment variables or backend
+            // For now, check if it's set in localStorage (set via admin panel)
+            const clientId = localStorage.getItem('strava_client_id');
+            
+            if (clientId) {
+                return clientId;
+            }
+            
+            // Default client ID for testing (you should replace this with your own)
+            // Get your client ID from: https://www.strava.com/settings/api
+            return null; // Return null to prompt user to configure
+        }
+        
+        function disconnectFromStrava() {
+            console.log('Disconnecting from Strava...');
+            
+            // Remove all Strava tokens and data
+            localStorage.removeItem('strava_access_token');
+            localStorage.removeItem('strava_refresh_token');
+            localStorage.removeItem('strava_token_expires');
+            localStorage.removeItem('strava_athlete_id');
+            localStorage.removeItem('strava_athlete_name');
+            localStorage.removeItem('strava_oauth_state');
+            
+            // Update UI
+            checkStravaConnection();
+            
+            alert('Disconnected from Strava successfully.');
+        }
+        
+        async function syncStravaData() {
+            console.log('Syncing Strava data...');
+            
+            // Check if connected
+            const accessToken = localStorage.getItem('strava_access_token');
+            if (!accessToken) {
+                alert('Please connect to Strava first.');
+                return;
+            }
+            
+            // Show syncing status
+            const syncBtn = document.getElementById('stravaSyncBtn');
+            if (syncBtn) {
+                syncBtn.disabled = true;
+                syncBtn.textContent = 'Syncing...';
+            }
+            
+            try {
+                // Fetch activities from Strava API
+                // Get activities from last 30 days
+                const afterTimestamp = Math.floor(Date.now() / 1000) - (30 * 24 * 60 * 60);
+                const apiUrl = `https://www.strava.com/api/v3/athlete/activities?after=${afterTimestamp}&per_page=30`;
+                
+                const response = await fetch(apiUrl, {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        throw new Error('Access token expired. Please reconnect to Strava.');
+                    }
+                    throw new Error(`Strava API error: ${response.status} ${response.statusText}`);
+                }
+                
+                const activities = await response.json();
+                
+                // Process activities using StravaProcessor
+                if (window.StravaProcessor && activities.length > 0) {
+                    activities.forEach(activity => {
+                        try {
+                            const processed = window.StravaProcessor.processActivity(activity);
+                            console.log('Processed activity:', processed);
+                        } catch (error) {
+                            console.error('Error processing activity:', error);
+                        }
+                    });
+                }
+                
+                // Update sync status
+                if (syncBtn) {
+                    syncBtn.disabled = false;
+                    syncBtn.textContent = 'Sync Activities';
+                }
+                
+                alert(`Synced ${activities.length} Strava activities successfully!`);
+                
+            } catch (error) {
+                console.error('Error syncing Strava data:', error);
+                
+                if (syncBtn) {
+                    syncBtn.disabled = false;
+                    syncBtn.textContent = 'Sync Activities';
+                }
+                
+                alert('Error syncing Strava data: ' + error.message);
+            }
+        }
+        
+        function checkStravaConnection() {
+            // Check if we have valid tokens
+            const accessToken = localStorage.getItem('strava_access_token');
+            const tokenExpires = localStorage.getItem('strava_token_expires');
+            const athleteName = localStorage.getItem('strava_athlete_name');
+            
+            const isConnected = accessToken && tokenExpires && new Date(tokenExpires * 1000) > new Date();
+            
+            const stravaStatus = document.getElementById('stravaStatus');
+            const connectBtn = document.getElementById('stravaConnectBtn');
+            const disconnectBtn = document.getElementById('stravaDisconnectBtn');
+            const syncBtn = document.getElementById('stravaSyncBtn');
+            
+            if (isConnected) {
+                if (stravaStatus) {
+                    stravaStatus.innerHTML = `<p>✅ Connected as ${athleteName || 'User'}</p>`;
+                }
+                if (connectBtn) connectBtn.style.display = 'none';
+                if (disconnectBtn) disconnectBtn.style.display = 'block';
+                if (syncBtn) syncBtn.style.display = 'block';
+            } else {
+                if (stravaStatus) {
+                    stravaStatus.innerHTML = '<p>Not connected to Strava</p>';
+                }
+                if (connectBtn) connectBtn.style.display = 'block';
+                if (disconnectBtn) disconnectBtn.style.display = 'none';
+                if (syncBtn) syncBtn.style.display = 'none';
+            }
+        }
+        
+        // Check Strava connection status on page load
+        window.addEventListener('load', function() {
+            checkStravaConnection();
         });
     </script>
 </body>

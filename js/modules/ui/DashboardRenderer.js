@@ -261,8 +261,8 @@ class DashboardRenderer {
                     <span class="streak-label">days</span>
                 </div>
                 ${config.simple ? 
-                    '<p>Keep up the great work!</p>' :
-                    '<p>Your consistency is building momentum. Maintain this rhythm for optimal results.</p>'
+                    '<p>Keep up the great work! <small>(Placeholder data - will update when workouts are logged)</small></p>' :
+                    '<p>Your consistency is building momentum. Maintain this rhythm for optimal results.</p><p style="color: #718096; font-size: 12px; margin-top: 8px;">📝 Note: Streak data will populate as you log workouts</p>'
                 }
             </div>
         `;
