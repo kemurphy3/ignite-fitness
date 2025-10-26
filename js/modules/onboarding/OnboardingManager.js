@@ -1,98 +1,46 @@
 /**
  * OnboardingManager - Handles user onboarding questionnaire and preferences
  * Manages onboarding flow, preference storage, and role-based access
+ * Updated for sport-specific onboarding flow
  */
 class OnboardingManager {
     constructor() {
-        this.onboardingVersion = 1;
+        this.onboardingVersion = 2; // Updated version for sport-specific flow
         this.logger = window.SafeLogger || console;
         this.eventBus = window.EventBus;
         this.authManager = window.AuthManager;
         this.storageManager = window.StorageManager;
         
-        this.onboardingQuestions = this.initializeQuestions();
+        this.onboardingSteps = this.initializeSteps();
         this.currentStep = 0;
         this.onboardingData = {};
+        this.isCompleted = false;
     }
 
     /**
-     * Initialize onboarding questions
-     * @returns {Array} Onboarding questions
+     * Initialize onboarding steps
+     * @returns {Array} Onboarding steps
      */
-    initializeQuestions() {
+    initializeSteps() {
         return [
             {
-                id: 'primary_goal',
-                question: 'What is your primary fitness goal?',
-                type: 'radio',
-                options: [
-                    { value: 'strength', label: 'Strength & Power', description: 'Build muscle and increase strength' },
-                    { value: 'sport_performance', label: 'Sport Performance', description: 'Improve athletic performance' },
-                    { value: 'general_fitness', label: 'General Fitness', description: 'Overall health and wellness' },
-                    { value: 'endurance', label: 'Endurance', description: 'Improve cardiovascular fitness' },
-                    { value: 'weight_loss', label: 'Weight Loss', description: 'Lose weight and get lean' }
-                ],
-                required: true
+                id: 'sport_selection',
+                title: "What's Your Sport?",
+                component: 'SportSelection',
+                description: 'Choose your primary sport to get personalized training'
             },
             {
-                id: 'data_preference',
-                question: 'How much data do you want to see?',
-                type: 'radio',
-                options: [
-                    { value: 'basics', label: 'Basics', description: 'Simple metrics, next workout, progress streak' },
-                    { value: 'some_metrics', label: 'Some Metrics', description: 'Progress charts, weekly load, strength gains' },
-                    { value: 'all_data', label: 'All Data', description: 'Detailed analytics, load management, periodization' }
-                ],
-                required: true
+                id: 'position_selection',
+                title: "What's Your Position/Focus?",
+                component: 'PositionSelection',
+                description: 'Select your position or training focus',
+                conditional: true
             },
             {
-                id: 'training_background',
-                question: 'What is your training background?',
-                type: 'radio',
-                options: [
-                    { value: 'new_to_training', label: 'New to Training', description: 'Just starting structured fitness' },
-                    { value: 'some_experience', label: 'Some Experience', description: '6+ months of regular training' },
-                    { value: 'consistent_trainer', label: 'Consistent Trainer', description: '2+ years of regular training' },
-                    { value: 'former_athlete', label: 'Former Athlete', description: 'Previous competitive sports experience' },
-                    { value: 'current_competitor', label: 'Current Competitor', description: 'Currently competing in sports' },
-                    { value: 'coach', label: 'Coach/Trainer', description: 'Training others professionally' }
-                ],
-                required: true
-            },
-            {
-                id: 'primary_sport',
-                question: 'What is your primary sport or activity?',
-                type: 'radio',
-                options: [
-                    { value: 'soccer', label: 'Soccer', description: 'Football/soccer focused training' },
-                    { value: 'multiple_sports', label: 'Multiple Sports', description: 'Participate in various sports' },
-                    { value: 'general_fitness', label: 'General Fitness', description: 'No specific sport focus' },
-                    { value: 'running', label: 'Running', description: 'Running and endurance sports' },
-                    { value: 'strength_sports', label: 'Strength Sports', description: 'Powerlifting, weightlifting, etc.' },
-                    { value: 'other', label: 'Other', description: 'Specify in notes' }
-                ],
-                required: true
-            },
-            {
-                id: 'time_commitment',
-                question: 'How many days per week can you train?',
-                type: 'radio',
-                options: [
-                    { value: '2-3_days', label: '2-3 Days', description: 'Light training schedule' },
-                    { value: '4-5_days', label: '4-5 Days', description: 'Moderate training schedule' },
-                    { value: '6+_days', label: '6+ Days', description: 'High frequency training' }
-                ],
-                required: true
-            },
-            {
-                id: 'role',
-                question: 'What is your role?',
-                type: 'radio',
-                options: [
-                    { value: 'athlete', label: 'Athlete', description: 'Training for personal goals' },
-                    { value: 'coach', label: 'Coach', description: 'Training athletes and clients' }
-                ],
-                required: true
+                id: 'profile_setup',
+                title: "Tell Us About Yourself",
+                component: 'ProfileSetup',
+                description: 'Help us personalize your training experience'
             }
         ];
     }
@@ -119,322 +67,321 @@ class OnboardingManager {
 
     /**
      * Start onboarding process
-     * @returns {Object} Start result
+     * @param {string} userId - User ID
      */
-    startOnboarding() {
-        try {
-            this.currentStep = 0;
-            this.onboardingData = {};
-            
-            this.logger.audit('ONBOARDING_STARTED', { 
-                userId: this.authManager?.getCurrentUsername() 
-            });
-            this.eventBus?.emit('onboarding:started');
-            
-            return { success: true, step: this.currentStep };
-        } catch (error) {
-            this.logger.error('Failed to start onboarding', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    /**
-     * Get current onboarding question
-     * @returns {Object} Current question
-     */
-    getCurrentQuestion() {
-        if (this.currentStep >= this.onboardingQuestions.length) {
-            return null;
-        }
+    startOnboarding(userId) {
+        this.currentStep = 0;
+        this.onboardingData = {};
+        this.isCompleted = false;
+        this.logger.audit('ONBOARDING_STARTED', { userId, version: this.onboardingVersion });
         
-        return {
-            ...this.onboardingQuestions[this.currentStep],
-            step: this.currentStep + 1,
-            totalSteps: this.onboardingQuestions.length
-        };
-    }
-
-    /**
-     * Answer current question
-     * @param {string} answer - User's answer
-     * @returns {Object} Answer result
-     */
-    answerQuestion(answer) {
-        try {
-            const currentQuestion = this.getCurrentQuestion();
-            if (!currentQuestion) {
-                return { success: false, error: 'No current question' };
-            }
-
-            // Validate answer
-            if (!answer && currentQuestion.required) {
-                return { success: false, error: 'Answer is required' };
-            }
-
-            // Store answer
-            this.onboardingData[currentQuestion.id] = answer;
-            
-            this.logger.debug('Onboarding question answered', { 
-                question: currentQuestion.id, 
-                answer 
-            });
-            
-            return { success: true, data: this.onboardingData };
-        } catch (error) {
-            this.logger.error('Failed to answer question', error);
-            return { success: false, error: error.message };
+        // Navigate to onboarding route
+        if (window.Router) {
+            window.Router.navigate('#/onboarding');
+        } else {
+            this.showOnboardingUI();
         }
     }
 
     /**
-     * Move to next question
-     * @returns {Object} Next step result
+     * Render onboarding step
+     * @returns {string} Onboarding HTML
+     */
+    render() {
+        if (this.isCompleted) {
+            return this.renderCompletion();
+        }
+
+        const step = this.onboardingSteps[this.currentStep];
+        if (!step) {
+            this.logger.error('Invalid onboarding step:', this.currentStep);
+            return this.renderError();
+        }
+
+        return `
+            <div class="onboarding-container">
+                <div class="onboarding-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${(this.currentStep + 1) / this.onboardingSteps.length * 100}%"></div>
+                    </div>
+                    <div class="progress-text">
+                        Step ${this.currentStep + 1} of ${this.onboardingSteps.length}
+                    </div>
+                </div>
+                
+                <div class="onboarding-content">
+                    ${this.renderStepComponent(step)}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render step component
+     * @param {Object} step - Step configuration
+     * @returns {string} Component HTML
+     */
+    renderStepComponent(step) {
+        switch (step.component) {
+            case 'SportSelection':
+                return window.SportSelection?.render() || this.renderFallback(step);
+            case 'PositionSelection':
+                return window.PositionSelection?.render() || this.renderFallback(step);
+            case 'ProfileSetup':
+                return window.ProfileSetup?.render() || this.renderFallback(step);
+            default:
+                return this.renderFallback(step);
+        }
+    }
+
+    /**
+     * Render fallback step
+     * @param {Object} step - Step configuration
+     * @returns {string} Fallback HTML
+     */
+    renderFallback(step) {
+        return `
+            <div class="onboarding-step">
+                <div class="step-header">
+                    <h1>${step.title}</h1>
+                    <p>${step.description}</p>
+                </div>
+                <div class="step-content">
+                    <p>Step content will be loaded here</p>
+                </div>
+                <div class="step-actions">
+                    <button class="btn-secondary" onclick="onboardingManager.previousStep()">
+                        Back
+                    </button>
+                    <button class="btn-primary" onclick="onboardingManager.nextStep()">
+                        Continue
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render completion screen
+     * @returns {string} Completion HTML
+     */
+    renderCompletion() {
+        return `
+            <div class="onboarding-completion">
+                <div class="completion-content">
+                    <div class="completion-icon">🎉</div>
+                    <h1>Welcome to IgniteFitness!</h1>
+                    <p>Your personalized training plan is ready</p>
+                    
+                    <div class="completion-summary">
+                        <h3>Your Profile</h3>
+                        <div class="profile-summary">
+                            <div class="summary-item">
+                                <strong>Sport:</strong> ${this.onboardingData.sport?.name || 'Not selected'}
+                            </div>
+                            <div class="summary-item">
+                                <strong>Position:</strong> ${this.onboardingData.position?.position || 'Not selected'}
+                            </div>
+                            <div class="summary-item">
+                                <strong>Experience:</strong> ${this.onboardingData.profile?.experience || 'Not selected'}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="completion-actions">
+                        <button class="btn-primary" onclick="onboardingManager.finishOnboarding()">
+                            Start Training
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render error state
+     * @returns {string} Error HTML
+     */
+    renderError() {
+        return `
+            <div class="onboarding-error">
+                <div class="error-content">
+                    <div class="error-icon">⚠️</div>
+                    <h1>Something went wrong</h1>
+                    <p>There was an error loading the onboarding step</p>
+                    <button class="btn-primary" onclick="onboardingManager.startOnboarding()">
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Navigate to next step
      */
     nextStep() {
-        try {
+        if (this.currentStep < this.onboardingSteps.length - 1) {
             this.currentStep++;
-            
-            if (this.currentStep >= this.onboardingQuestions.length) {
-                // Onboarding complete
-                return this.completeOnboarding();
-            }
-            
-            return { 
-                success: true, 
-                step: this.currentStep,
-                question: this.getCurrentQuestion()
-            };
-        } catch (error) {
-            this.logger.error('Failed to move to next step', error);
-            return { success: false, error: error.message };
+            this.updateOnboardingUI();
+            this.initializeCurrentStep();
+        } else {
+            this.completeOnboarding();
+        }
+    }
+
+    /**
+     * Navigate to previous step
+     */
+    previousStep() {
+        if (this.currentStep > 0) {
+            this.currentStep--;
+            this.updateOnboardingUI();
+            this.initializeCurrentStep();
         }
     }
 
     /**
      * Complete onboarding process
-     * @returns {Object} Completion result
      */
     completeOnboarding() {
-        try {
-            const user = this.authManager?.getCurrentUser();
-            if (!user) {
-                return { success: false, error: 'No user logged in' };
-            }
+        this.isCompleted = true;
+        this.logger.audit('ONBOARDING_COMPLETED', { 
+            data: this.onboardingData,
+            version: this.onboardingVersion 
+        });
+        
+        this.updateOnboardingUI();
+    }
 
-            // Update user preferences
-            const preferences = {
-                ...user.preferences,
-                ...this.onboardingData,
-                onboarding_version: this.onboardingVersion,
-                onboarding_completed_at: new Date().toISOString()
-            };
+    /**
+     * Finish onboarding and redirect to dashboard
+     */
+    finishOnboarding() {
+        // Save onboarding data
+        this.saveOnboardingData();
+        
+        // Navigate to dashboard
+        if (window.Router) {
+            window.Router.navigate('#/');
+        }
+        
+        this.logger.audit('ONBOARDING_FINISHED', { data: this.onboardingData });
+    }
 
-            // Save to user data
-            const updateResult = this.authManager.updateUserData({ preferences });
-            if (!updateResult.success) {
-                return { success: false, error: updateResult.error };
-            }
+    /**
+     * Update onboarding UI
+     */
+    updateOnboardingUI() {
+        const container = document.getElementById('app-content');
+        if (container) {
+            container.innerHTML = this.render();
+        }
+    }
 
-            // Save to server if available
-            this.saveOnboardingToServer(preferences);
+    /**
+     * Initialize current step
+     */
+    initializeCurrentStep() {
+        const step = this.onboardingSteps[this.currentStep];
+        if (!step) return;
 
-            this.logger.audit('ONBOARDING_COMPLETED', { 
-                userId: this.authManager.getCurrentUsername(),
-                preferences: this.onboardingData
-            });
-            this.eventBus?.emit('onboarding:completed', preferences);
+        // Initialize step component
+        switch (step.component) {
+            case 'SportSelection':
+                window.SportSelection?.init();
+                break;
+            case 'PositionSelection':
+                window.PositionSelection?.init();
+                break;
+            case 'ProfileSetup':
+                window.ProfileSetup?.init();
+                break;
+        }
+    }
+
+    /**
+     * Set onboarding data
+     * @param {string} key - Data key
+     * @param {*} value - Data value
+     */
+    setData(key, value) {
+        this.onboardingData[key] = value;
+        this.logger.debug('Onboarding data updated:', key, value);
+    }
+
+    /**
+     * Get onboarding data
+     * @param {string} key - Data key
+     * @returns {*} Data value
+     */
+    getData(key) {
+        return this.onboardingData[key];
+    }
+
+    /**
+     * Save onboarding data to storage
+     */
+    saveOnboardingData() {
+        if (this.authManager && this.authManager.getCurrentUsername()) {
+            const username = this.authManager.getCurrentUsername();
             
-            return { 
-                success: true, 
-                preferences,
-                message: 'Onboarding completed successfully!' 
-            };
-        } catch (error) {
-            this.logger.error('Failed to complete onboarding', error);
-            return { success: false, error: error.message };
+            // Save to user profile
+            if (window.users && window.users[username]) {
+                window.users[username].onboardingData = {
+                    ...this.onboardingData,
+                    completedAt: new Date().toISOString(),
+                    version: this.onboardingVersion
+                };
+                
+                // Update localStorage
+                localStorage.setItem('ignitefitness_users', JSON.stringify(window.users));
+            }
+        }
+        
+        this.logger.debug('Onboarding data saved');
+    }
+
+    /**
+     * Show onboarding UI (fallback method)
+     */
+    showOnboardingUI() {
+        const container = document.getElementById('app-content');
+        if (container) {
+            container.innerHTML = this.render();
+            this.initializeCurrentStep();
         }
     }
 
     /**
-     * Save onboarding data to server
-     * @param {Object} preferences - User preferences
+     * Get current step
+     * @returns {Object} Current step
      */
-    async saveOnboardingToServer(preferences) {
-        try {
-            if (window.ApiClient) {
-                await window.ApiClient.post('/user-preferences', preferences);
-                this.logger.debug('Onboarding data saved to server');
-            }
-        } catch (error) {
-            this.logger.warn('Failed to save onboarding to server', error);
-            // Fall back to IndexedDB for offline storage
-            if (this.storageManager) {
-                await this.storageManager.addToSyncQueue('user_preferences', preferences);
-            }
-        }
-    }
-
-    /**
-     * Skip onboarding (for existing users)
-     * @returns {Object} Skip result
-     */
-    skipOnboarding() {
-        try {
-            const user = this.authManager?.getCurrentUser();
-            if (!user) {
-                return { success: false, error: 'No user logged in' };
-            }
-
-            // Set default preferences
-            const defaultPreferences = {
-                data_preference: 'some_metrics',
-                primary_goal: 'general_fitness',
-                training_background: 'intermediate',
-                primary_sport: 'general_fitness',
-                time_commitment: '4-5_days',
-                role: 'athlete',
-                onboarding_version: this.onboardingVersion,
-                onboarding_skipped: true
-            };
-
-            const updateResult = this.authManager.updateUserData({ 
-                preferences: { ...user.preferences, ...defaultPreferences }
-            });
-
-            if (updateResult.success) {
-                this.logger.audit('ONBOARDING_SKIPPED', { 
-                    userId: this.authManager.getCurrentUsername() 
-                });
-                this.eventBus?.emit('onboarding:skipped', defaultPreferences);
-            }
-
-            return updateResult;
-        } catch (error) {
-            this.logger.error('Failed to skip onboarding', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    /**
-     * Get user preferences
-     * @returns {Object} User preferences
-     */
-    getUserPreferences() {
-        try {
-            const user = this.authManager?.getCurrentUser();
-            return user?.preferences || {};
-        } catch (error) {
-            this.logger.error('Failed to get user preferences', error);
-            return {};
-        }
-    }
-
-    /**
-     * Update user preferences
-     * @param {Object} newPreferences - New preferences
-     * @returns {Object} Update result
-     */
-    updateUserPreferences(newPreferences) {
-        try {
-            const user = this.authManager?.getCurrentUser();
-            if (!user) {
-                return { success: false, error: 'No user logged in' };
-            }
-
-            const updatedPreferences = {
-                ...user.preferences,
-                ...newPreferences,
-                updated_at: new Date().toISOString()
-            };
-
-            const updateResult = this.authManager.updateUserData({ 
-                preferences: updatedPreferences 
-            });
-
-            if (updateResult.success) {
-                this.logger.audit('PREFERENCES_UPDATED', { 
-                    userId: this.authManager.getCurrentUsername(),
-                    changes: newPreferences
-                });
-                this.eventBus?.emit('preferences:updated', updatedPreferences);
-            }
-
-            return updateResult;
-        } catch (error) {
-            this.logger.error('Failed to update preferences', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    /**
-     * Get dashboard mode based on data preference
-     * @returns {string} Dashboard mode
-     */
-    getDashboardMode() {
-        const preferences = this.getUserPreferences();
-        return preferences.data_preference || 'some_metrics';
-    }
-
-    /**
-     * Get user role
-     * @returns {string} User role
-     */
-    getUserRole() {
-        const preferences = this.getUserPreferences();
-        return preferences.role || 'athlete';
-    }
-
-    /**
-     * Check if user is a coach
-     * @returns {boolean} Is coach
-     */
-    isCoach() {
-        return this.getUserRole() === 'coach';
+    getCurrentStep() {
+        return this.onboardingSteps[this.currentStep];
     }
 
     /**
      * Get onboarding progress
-     * @returns {Object} Progress data
+     * @returns {Object} Progress information
      */
-    getOnboardingProgress() {
+    getProgress() {
         return {
             currentStep: this.currentStep,
-            totalSteps: this.onboardingQuestions.length,
-            progress: Math.round((this.currentStep / this.onboardingQuestions.length) * 100),
-            completed: this.currentStep >= this.onboardingQuestions.length
+            totalSteps: this.onboardingSteps.length,
+            progress: (this.currentStep + 1) / this.onboardingSteps.length * 100,
+            isCompleted: this.isCompleted
         };
     }
 
     /**
-     * Reset onboarding (for testing or re-onboarding)
-     * @returns {Object} Reset result
+     * Reset onboarding
      */
     resetOnboarding() {
-        try {
-            const user = this.authManager?.getCurrentUser();
-            if (!user) {
-                return { success: false, error: 'No user logged in' };
-            }
-
-            // Remove onboarding completion flag
-            const preferences = { ...user.preferences };
-            delete preferences.onboarding_version;
-            delete preferences.onboarding_completed_at;
-
-            const updateResult = this.authManager.updateUserData({ preferences });
-            
-            if (updateResult.success) {
-                this.logger.audit('ONBOARDING_RESET', { 
-                    userId: this.authManager.getCurrentUsername() 
-                });
-                this.eventBus?.emit('onboarding:reset');
-            }
-
-            return updateResult;
-        } catch (error) {
-            this.logger.error('Failed to reset onboarding', error);
-            return { success: false, error: error.message };
-        }
+        this.currentStep = 0;
+        this.onboardingData = {};
+        this.isCompleted = false;
+        this.logger.debug('Onboarding reset');
     }
 }
 

@@ -27,6 +27,12 @@
     <link rel="apple-touch-icon" href="/icon-192.png">
     
     <!-- Stylesheets -->
+    <!-- Mobile-First Styles -->
+    <link rel="stylesheet" href="styles/mobile-first.css">
+    <link rel="stylesheet" href="styles/design-tokens.css">
+    <link rel="stylesheet" href="styles/components.css">
+    
+    <!-- Existing Styles -->
     <link rel="stylesheet" href="styles/main.css">
     
     <!-- Onboarding and Dashboard Styles -->
@@ -1899,26 +1905,20 @@
     </style>
 </head>
 <body>
-    <!-- Skip to main content link for screen readers -->
-    <a href="#main-content" class="skip-link">Skip to main content</a>
-    
-    <div class="container">
-        <!-- Header -->
-        <header class="header" role="banner">
-            <h1>🔥 Ignite Fitness</h1>
-            <p>AI-Powered Training Platform for Athletes</p>
-            <div id="sync-status" 
-                 role="status" 
-                 aria-live="polite" 
-                 aria-label="Connection status"
-                 style="position: absolute; top: 20px; right: 20px; padding: 5px 10px; background: #2d3748; border-radius: 5px; font-size: 12px;">
-                <span aria-hidden="true">🟢</span> Online
+    <!-- Main App Container for SPA -->
+    <div class="app-container">
+        <div id="app-content" class="app-content">
+            <!-- Dynamic content will be loaded here by Router -->
+            <div class="loading-state">
+                <div class="loading-spinner"></div>
+                <p>Loading IgniteFitness...</p>
             </div>
-        </header>
+        </div>
+    </div>
 
-        <!-- Main Content -->
-        <main id="main-content" role="main">
-            <!-- Login Form -->
+    <!-- Legacy content (to be migrated) -->
+    <div style="display: none;">
+        <!-- Login Form -->
             <section id="loginForm" class="form-section" aria-labelledby="login-heading">
                 <h2 id="login-heading">Welcome Back</h2>
                 <form role="form" aria-label="User login form" onsubmit="login(); return false;">
@@ -2896,6 +2896,32 @@
     <script src="js/modules/core/SafeLogger.js"></script>
     <script src="js/modules/debug/DebugManager.js"></script>
     
+    <!-- UI Modules -->
+    <script src="js/modules/ui/Router.js"></script>
+    <script src="js/modules/ui/BottomNavigation.js"></script>
+    <script src="js/modules/ui/MobileOptimizer.js"></script>
+    <script src="js/modules/ui/GestureHandler.js"></script>
+    <script src="js/modules/ui/ComponentLibrary.js"></script>
+    <script src="js/modules/ui/TouchOptimizer.js"></script>
+    
+    <!-- Onboarding Modules -->
+    <script src="js/modules/onboarding/SportSelection.js"></script>
+    <script src="js/modules/onboarding/OnboardingManager.js"></script>
+    
+    <!-- Sport-Specific Modules -->
+    <script src="js/modules/sports/SportDefinitions.js"></script>
+    <script src="js/modules/sports/PositionTraining.js"></script>
+    <script src="js/modules/sports/SeasonalPrograms.js"></script>
+    <script src="js/modules/sports/SoccerExercises.js"></script>
+    <script src="js/modules/sports/ExerciseProgression.js"></script>
+    
+    <!-- Injury Prevention Modules -->
+    <script src="js/modules/assessment/MovementScreens.js"></script>
+    <script src="js/modules/assessment/ScreeningResults.js"></script>
+    <script src="js/modules/injury/CorrectiveExercises.js"></script>
+    <script src="js/modules/injury/RiskAssessment.js"></script>
+    <script src="js/modules/injury/PreventionProtocols.js"></script>
+    
     <!-- Authentication Modules -->
     <script src="js/modules/auth/AuthManager.js"></script>
     <script src="js/modules/auth/SessionManager.js"></script>
@@ -2945,6 +2971,8 @@
     <script src="js/app-modular.js"></script>
     
     <!-- Service Worker Registration -->
+    </div>
+
     <script>
         // Register service worker for PWA functionality
         if ('serviceWorker' in navigator) {
@@ -4013,6 +4041,31 @@ This structured approach helps prevent overtraining and ensures you're at your b
         // Check Strava connection status on page load
         window.addEventListener('load', function() {
             checkStravaConnection();
+        });
+        
+        // Initialize SPA
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize mobile optimizer
+            if (window.MobileOptimizer) {
+                console.log('Mobile optimizer initialized');
+            }
+            
+            // Initialize router
+            if (window.Router) {
+                console.log('Router initialized');
+            }
+            
+            // Initialize bottom navigation
+            if (window.BottomNavigation) {
+                console.log('Bottom navigation initialized');
+            }
+            
+            // Check if user needs onboarding
+            if (window.OnboardingManager && window.OnboardingManager.needsOnboarding()) {
+                window.Router.navigate('#/onboarding');
+            } else {
+                window.Router.navigate('#/');
+            }
         });
     </script>
 </body>

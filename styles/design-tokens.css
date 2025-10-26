@@ -1,0 +1,253 @@
+/**
+ * Sport-Themed Design Tokens
+ * Comprehensive design system with sport-specific themes
+ */
+
+:root {
+    /* Soccer Theme */
+    --soccer-primary: #00a651;
+    --soccer-secondary: #ffffff;
+    --soccer-accent: #ffcd00;
+    --soccer-background: #f0f9f4;
+    --soccer-surface: #ffffff;
+    --soccer-error: #e63946;
+    
+    /* Basketball Theme */
+    --basketball-primary: #ff8c00;
+    --basketball-secondary: #000000;
+    --basketball-accent: #ffffff;
+    --basketball-background: #fff5e6;
+    --basketball-surface: #ffffff;
+    --basketball-error: #e63946;
+    
+    /* Running Theme */
+    --running-primary: #3b82f6;
+    --running-secondary: #1e3a8a;
+    --running-accent: #60a5fa;
+    --running-background: #eff6ff;
+    --running-surface: #ffffff;
+    --running-error: #e63946;
+    
+    /* General Fitness Theme */
+    --general-primary: #8b5cf6;
+    --general-secondary: #4c1d95;
+    --general-accent: #a78bfa;
+    --general-background: #f5f3ff;
+    --general-surface: #ffffff;
+    --general-error: #e63946;
+    
+    /* Default Theme (Soccer) */
+    --theme-primary: var(--soccer-primary);
+    --theme-secondary: var(--soccer-secondary);
+    --theme-accent: var(--soccer-accent);
+    --theme-background: var(--soccer-background);
+    --theme-surface: var(--soccer-surface);
+    --theme-error: var(--soccer-error);
+    
+    /* Typography Scale */
+    --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    --font-family-mono: 'SF Mono', Menlo, Monaco, 'Courier New', monospace;
+    
+    --text-xs: 0.75rem;    /* 12px */
+    --text-sm: 0.875rem;   /* 14px */
+    --text-base: 1rem;     /* 16px */
+    --text-lg: 1.125rem;    /* 18px */
+    --text-xl: 1.25rem;    /* 20px */
+    --text-2xl: 1.5rem;    /* 24px */
+    --text-3xl: 1.875rem;  /* 30px */
+    --text-4xl: 2.25rem;   /* 36px */
+    
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    
+    --line-height-tight: 1.25;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.75;
+    
+    /* Spacing Scale */
+    --space-0: 0;
+    --space-1: 0.25rem;   /* 4px */
+    --space-2: 0.5rem;    /* 8px */
+    --space-3: 0.75rem;   /* 12px */
+    --space-4: 1rem;      /* 16px */
+    --space-5: 1.25rem;  /* 20px */
+    --space-6: 1.5rem;   /* 24px */
+    --space-8: 2rem;      /* 32px */
+    --space-10: 2.5rem;  /* 40px */
+    --space-12: 3rem;    /* 48px */
+    --space-16: 4rem;    /* 64px */
+    
+    /* Touch Targets (iOS HIG) */
+    --touch-target-min: 44px;
+    --button-height: 48px;
+    --tab-height: 60px;
+    --icon-size: 24px;
+    --icon-size-small: 20px;
+    --icon-size-large: 32px;
+    
+    /* Border Radius */
+    --radius-sm: 0.25rem;   /* 4px */
+    --radius-base: 0.5rem;  /* 8px */
+    --radius-md: 0.75rem;   /* 12px */
+    --radius-lg: 1rem;      /* 16px */
+    --radius-xl: 1.5rem;    /* 24px */
+    --radius-full: 9999px;
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-base: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    
+    /* Transitions */
+    --transition-fast: 150ms ease-in-out;
+    --transition-base: 250ms ease-in-out;
+    --transition-slow: 350ms ease-in-out;
+    
+    /* Z-Index Scale */
+    --z-dropdown: 1000;
+    --z-sticky: 1020;
+    --z-fixed: 1030;
+    --z-modal-backdrop: 1040;
+    --z-modal: 1050;
+    --z-popover: 1060;
+    --z-tooltip: 1070;
+    
+    /* Breakpoints */
+    --breakpoint-sm: 640px;
+    --breakpoint-md: 768px;
+    --breakpoint-lg: 1024px;
+    --breakpoint-xl: 1280px;
+    
+    /* Sport Icons */
+    --sport-icon-size: 32px;
+    --sport-icon-bg: var(--theme-primary);
+    --sport-icon-color: var(--theme-secondary);
+    
+    /* Status Colors */
+    --status-success: #10b981;
+    --status-warning: #f59e0b;
+    --status-error: #ef4444;
+    --status-info: #3b82f6;
+    
+    /* Card Styles */
+    --card-bg: var(--theme-surface);
+    --card-border: rgba(0, 0, 0, 0.1);
+    --card-shadow: var(--shadow-base);
+    --card-padding: var(--space-4);
+    
+    /* Input Styles */
+    --input-height: 48px;
+    --input-border: rgba(0, 0, 0, 0.2);
+    --input-border-focus: var(--theme-primary);
+    --input-padding: var(--space-3) var(--space-4);
+    
+    /* Button Styles */
+    --button-padding: var(--space-3) var(--space-6);
+    --button-border-radius: var(--radius-md);
+    --button-font-weight: var(--font-weight-semibold);
+    
+    /* Gradients */
+    --gradient-soccer: linear-gradient(135deg, #00a651 0%, #008d43 100%);
+    --gradient-basketball: linear-gradient(135deg, #ff8c00 0%, #cc7000 100%);
+    --gradient-running: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    --gradient-general: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    
+    /* Opacity */
+    --opacity-disabled: 0.4;
+    --opacity-hover: 0.8;
+    --opacity-pressed: 0.6;
+}
+
+/* Theme Class Variants */
+.theme-soccer {
+    --theme-primary: var(--soccer-primary);
+    --theme-secondary: var(--soccer-secondary);
+    --theme-accent: var(--soccer-accent);
+    --theme-background: var(--soccer-background);
+    --theme-surface: var(--soccer-surface);
+}
+
+.theme-basketball {
+    --theme-primary: var(--basketball-primary);
+    --theme-secondary: var(--basketball-secondary);
+    --theme-accent: var(--basketball-accent);
+    --theme-background: var(--basketball-background);
+    --theme-surface: var(--basketball-surface);
+}
+
+.theme-running {
+    --theme-primary: var(--running-primary);
+    --theme-secondary: var(--running-secondary);
+    --theme-accent: var(--running-accent);
+    --theme-background: var(--running-background);
+    --theme-surface: var(--running-surface);
+}
+
+.theme-general {
+    --theme-primary: var(--general-primary);
+    --theme-secondary: var(--general-secondary);
+    --theme-accent: var(--general-accent);
+    --theme-background: var(--general-background);
+    --theme-surface: var(--general-surface);
+}
+
+/* Mobile-First Responsive Typography */
+@media (max-width: 768px) {
+    :root {
+        --text-base: 0.9375rem; /* 15px */
+        --text-lg: 1.0625rem;   /* 17px */
+        --text-xl: 1.125rem;    /* 18px */
+        --text-2xl: 1.375rem;    /* 22px */
+        --text-3xl: 1.625rem;    /* 26px */
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --theme-background: #1a202c;
+        --theme-surface: #2d3748;
+        --card-bg: #2d3748;
+        --card-border: rgba(255, 255, 255, 0.1);
+        --input-border: rgba(255, 255, 255, 0.2);
+        
+        /* Status colors remain vibrant in dark mode */
+        --status-success: #34d399;
+        --status-warning: #fbbf24;
+        --status-error: #f87171;
+        --status-info: #60a5fa;
+    }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+    :root {
+        --shadow-base: 0 2px 4px rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.3);
+        --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.3);
+        
+        --input-border: #000000;
+        --input-border-focus: #000000;
+        
+        --button-height: 52px;
+        --tab-height: 64px;
+    }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --transition-fast: 0ms;
+        --transition-base: 0ms;
+        --transition-slow: 0ms;
+    }
+    
+    * {
+        animation-duration: 0ms !important;
+        transition-duration: 0ms !important;
+    }
+}

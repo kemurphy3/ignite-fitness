@@ -1,6 +1,7 @@
 /**
  * ExerciseDatabase - Exercise library and management
  * Handles exercise data, categories, and search functionality
+ * Enhanced with sport-specific exercise integration
  */
 class ExerciseDatabase {
     constructor() {
@@ -10,6 +11,14 @@ class ExerciseDatabase {
         this.equipment = [];
         this.logger = window.SafeLogger || console;
         this.eventBus = window.EventBus;
+        
+        // Sport-specific exercise libraries
+        this.sportLibraries = {
+            soccer: window.SoccerExercises,
+            basketball: null, // Would be implemented
+            running: null, // Would be implemented
+            general: null // Would be implemented
+        };
         
         this.initializeDatabase();
     }
@@ -366,6 +375,114 @@ class ExerciseDatabase {
             muscleGroups: this.muscleGroups.length,
             equipment: this.equipment.length
         };
+    }
+
+    /**
+     * Get exercises for specific sport and position
+     * @param {string} sportId - Sport ID
+     * @param {string} positionId - Position ID (optional)
+     * @returns {Array} Sport-specific exercises
+     */
+    getSportExercises(sportId, positionId = null) {
+        const sportLibrary = this.sportLibraries[sportId];
+        if (!sportLibrary) {
+            this.logger.warn(`No sport library found for ${sportId}`);
+            return [];
+        }
+
+        if (positionId) {
+            return sportLibrary.getExercisesForPosition(positionId);
+        }
+
+        // Get all exercises for sport
+        const allExercises = [];
+        Object.keys(sportLibrary.exercises).forEach(category => {
+            if (category === 'position_specific') {
+                Object.values(sportLibrary.exercises[category]).forEach(positionGroup => {
+                    allExercises.push(...positionGroup);
+                });
+            } else {
+                allExercises.push(...sportLibrary.exercises[category]);
+            }
+        });
+
+        return allExercises;
+    }
+
+    /**
+     * Get exercise with sport-specific details
+     * @param {string} exerciseId - Exercise ID
+     * @param {string} sportId - Sport ID
+     * @returns {Object|null} Exercise with sport details
+     */
+    getSportExercise(exerciseId, sportId) {
+        const sportLibrary = this.sportLibraries[sportId];
+        if (!sportLibrary) {
+            return null;
+        }
+
+        return sportLibrary.getExercise(exerciseId);
+    }
+
+    /**
+     * Search exercises across all sports
+     * @param {string} query - Search query
+     * @param {string} sportId - Sport ID (optional)
+     * @returns {Array} Matching exercises
+     */
+    searchSportExercises(query, sportId = null) {
+        const results = [];
+
+        if (sportId) {
+            const sportLibrary = this.sportLibraries[sportId];
+            if (sportLibrary && sportLibrary.searchExercises) {
+                return sportLibrary.searchExercises(query);
+            }
+        } else {
+            // Search across all sport libraries
+            Object.values(this.sportLibraries).forEach(sportLibrary => {
+                if (sportLibrary && sportLibrary.searchExercises) {
+                    results.push(...sportLibrary.searchExercises(query));
+                }
+            });
+        }
+
+        return results;
+    }
+
+    /**
+     * Integrate sport exercises with general database
+     * @param {string} sportId - Sport ID
+     */
+    integrateSportExercises(sportId) {
+        const sportLibrary = this.sportLibraries[sportId];
+        if (!sportLibrary) {
+            return;
+        }
+
+        const sportExercises = this.getSportExercises(sportId);
+        
+        // Add sport exercises to general database
+        sportExercises.forEach(exercise => {
+            const existingIndex = this.exercises.findIndex(ex => ex.id === exercise.id);
+            if (existingIndex === -1) {
+                this.exercises.push({
+                    ...exercise,
+                    sport: sportId,
+                    source: 'sport_specific'
+                });
+            } else {
+                // Update existing exercise with sport-specific details
+                this.exercises[existingIndex] = {
+                    ...this.exercises[existingIndex],
+                    ...exercise,
+                    sport: sportId,
+                    source: 'integrated'
+                };
+            }
+        });
+
+        this.logger.info(`Integrated ${sportExercises.length} exercises for ${sportId}`);
     }
 }
 

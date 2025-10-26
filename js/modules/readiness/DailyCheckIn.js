@@ -9,6 +9,8 @@ class DailyCheckIn {
         this.authManager = window.AuthManager;
         this.workoutTracker = window.WorkoutTracker;
         this.storageManager = window.StorageManager;
+        this.riskAssessment = window.RiskAssessment;
+        this.screeningResults = window.ScreeningResults;
         
         this.checkInData = {
             sleepHours: 8,
@@ -479,6 +481,149 @@ class DailyCheckIn {
             this.logger.error('Failed to reset check-in data', error);
             return { success: false, error: error.message };
         }
+    }
+
+    /**
+     * Calculate injury risk from daily check-in data
+     * @returns {Object} Injury risk assessment
+     */
+    calculateInjuryRisk() {
+        if (!this.riskAssessment) {
+            return { available: false, message: 'Risk assessment not available' };
+        }
+
+        const userData = {
+            userId: this.authManager?.getCurrentUsername(),
+            sport: this.getUserSport(),
+            sleep: this.checkInData.sleepHours,
+            soreness: this.checkInData.sorenessLevel,
+            stress: this.checkInData.stressLevel,
+            weeklyLoad: this.getWeeklyLoad(),
+            lastScreenScore: this.getLastScreenScore(),
+            injuryRisk: this.getInjuryHistory()
+        };
+
+        const riskAssessment = this.riskAssessment.calculateDailyRisk(userData);
+        
+        this.logger.audit('INJURY_RISK_CALCULATED', {
+            userId: userData.userId,
+            riskLevel: riskAssessment.level,
+            score: riskAssessment.score
+        });
+
+        return riskAssessment;
+    }
+
+    /**
+     * Get user sport
+     * @returns {string} Sport ID
+     */
+    getUserSport() {
+        try {
+            const username = this.authManager?.getCurrentUsername();
+            if (!username) return 'soccer';
+
+            const users = JSON.parse(localStorage.getItem('ignitefitness_users') || '{}');
+            const user = users[username];
+            if (!user) return 'soccer';
+
+            return user.onboardingData?.sport?.id || 'soccer';
+        } catch (error) {
+            return 'soccer';
+        }
+    }
+
+    /**
+     * Get weekly training load
+     * @returns {number} Weekly load
+     */
+    getWeeklyLoad() {
+        // This would calculate from recent workout data
+        return 150; // Placeholder
+    }
+
+    /**
+     * Get last movement screen score
+     * @returns {number} Screen score
+     */
+    getLastScreenScore() {
+        if (!this.screeningResults) return 2.5;
+
+        const username = this.authManager?.getCurrentUsername();
+        if (!username) return 2.5;
+
+        const latestResult = this.screeningResults.getUserResults(username)[0];
+        return latestResult ? latestResult.score : 2.5;
+    }
+
+    /**
+     * Get injury history count
+     * @returns {number} Injury history
+     */
+    getInjuryHistory() {
+        try {
+            const username = this.authManager?.getCurrentUsername();
+            if (!username) return 0;
+
+            const users = JSON.parse(localStorage.getItem('ignitefitness_users') || '{}');
+            const user = users[username];
+            if (!user || !user.injuryHistory) return 0;
+
+            return user.injuryHistory.length || 0;
+        } catch (error) {
+            return 0;
+        }
+    }
+
+    /**
+     * Get comprehensive daily assessment with injury risk
+     * @returns {Object} Complete daily assessment
+     */
+    getDailyAssessment() {
+        const readiness = this.calculateReadiness();
+        const workoutAdjustment = this.adjustWorkoutForReadiness();
+        const injuryRisk = this.calculateInjuryRisk();
+
+        return {
+            readiness: readiness,
+            workoutAdjustment: workoutAdjustment,
+            injuryRisk: injuryRisk,
+            recommendations: this.combineRecommendations(readiness, injuryRisk),
+            timestamp: new Date().toISOString()
+        };
+    }
+
+    /**
+     * Combine readiness and injury risk recommendations
+     * @param {Object} readiness - Readiness assessment
+     * @param {Object} injuryRisk - Injury risk assessment
+     * @returns {Array} Combined recommendations
+     */
+    combineRecommendations(readiness, injuryRisk) {
+        const recommendations = [];
+
+        // Priority: Injury risk recommendations
+        if (injuryRisk.available && injuryRisk.recommendations) {
+            recommendations.push(...injuryRisk.recommendations);
+        }
+
+        // Secondary: Readiness recommendations
+        if (readiness.recommendations) {
+            recommendations.push(...readiness.recommendations);
+        }
+
+        // Remove duplicates
+        const uniqueRecommendations = [];
+        const seenMessages = new Set();
+
+        recommendations.forEach(rec => {
+            if (!seenMessages.has(rec.message)) {
+                uniqueRecommendations.push(rec);
+                seenMessages.add(rec.message);
+            }
+        });
+
+        return uniqueRecommendations;
     }
 }
 
