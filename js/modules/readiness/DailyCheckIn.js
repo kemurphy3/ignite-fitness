@@ -201,17 +201,26 @@ class DailyCheckIn {
      */
     calculateReadinessScore(data = this.checkInData) {
         try {
-            const { sleepHours, sleepQuality, stressLevel, energyLevel, sorenessLevel } = data;
+            const { sleepQuality, stressLevel, energyLevel, sorenessLevel } = data;
+            
+            // Weighted formula: 30% sleep quality, 25% stress (inverted), 25% soreness (inverted), 20% energy
+            const sleepWeight = 0.30;
+            const stressWeight = 0.25;
+            const sorenessWeight = 0.25;
+            const energyWeight = 0.20;
+            
+            // Invert stress and soreness (lower is better)
+            const stressScore = 11 - stressLevel;
+            const sorenessScore = 11 - sorenessLevel;
             
             // Calculate weighted score
-            const sleepScore = Math.min(10, (sleepHours / 8) * 5 + (sleepQuality / 10) * 5);
-            const stressScore = 11 - stressLevel; // Invert stress (lower is better)
-            const energyScore = energyLevel;
-            const sorenessScore = 11 - sorenessLevel; // Invert soreness (lower is better)
+            const weightedScore = 
+                (sleepQuality * sleepWeight) +           // 30%
+                (stressScore * stressWeight) +          // 25%
+                (sorenessScore * sorenessWeight) +      // 25%
+                (energyLevel * energyWeight);           // 20%
             
-            const readinessScore = Math.round(
-                (sleepScore + stressScore + energyScore + sorenessScore) / 4
-            );
+            const readinessScore = Math.round(weightedScore);
             
             return Math.max(1, Math.min(10, readinessScore));
         } catch (error) {
@@ -235,32 +244,24 @@ class DailyCheckIn {
                 intensityReduced: false
             };
 
-            const { sleepHours, stressLevel, energyLevel, sorenessLevel } = data;
             const readinessScore = this.calculateReadinessScore(data);
 
-            // Check for intensity reduction triggers
-            if (sleepHours < 6 || stressLevel > 7 || energyLevel < 4) {
-                adjustments.intensityMultiplier *= 0.8;
-                adjustments.intensityReduced = true;
-                adjustments.coachMessage = this.adjustmentRules.coachMessages.intensityReduced;
-            }
-
-            // Check for recovery workout suggestion
-            if (sorenessLevel > 7) {
+            // Adjustment rules based on readiness score
+            if (readinessScore <= 4) {
+                // Readiness ≤ 4: Swap to recovery session
                 adjustments.workoutType = 'recovery';
                 adjustments.recoverySuggested = true;
-                adjustments.coachMessage = this.adjustmentRules.coachMessages.recoverySuggested;
-            }
-
-            // Set coach message based on readiness score
-            if (!adjustments.coachMessage) {
-                if (readinessScore >= 8) {
-                    adjustments.coachMessage = this.adjustmentRules.coachMessages.excellentReadiness;
-                } else if (readinessScore >= 6) {
-                    adjustments.coachMessage = this.adjustmentRules.coachMessages.goodReadiness;
-                } else {
-                    adjustments.coachMessage = this.adjustmentRules.coachMessages.moderateReadiness;
-                }
+                adjustments.intensityMultiplier = 0.5;
+                adjustments.coachMessage = 'Recovery session recommended due to low readiness. Focus on mobility and light movement.';
+            } else if (readinessScore >= 5 && readinessScore <= 7) {
+                // Readiness 5-7: Reduce intensity by 10%
+                adjustments.intensityMultiplier = 0.90;
+                adjustments.intensityReduced = true;
+                adjustments.coachMessage = 'Moderate readiness detected. Reducing intensity by 10% for optimal recovery.';
+            } else {
+                // Readiness 8-10: Normal load
+                adjustments.intensityMultiplier = 1.0;
+                adjustments.coachMessage = 'Excellent readiness! Ready for full intensity.';
             }
 
             this.logger.debug('Workout adjustments calculated', { 

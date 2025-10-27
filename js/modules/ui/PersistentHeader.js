@@ -1,0 +1,181 @@
+/**
+ * PersistentHeader - Persistent app header with title and connection status
+ * Always visible at top of app with season phase pill
+ */
+class PersistentHeader {
+    constructor() {
+        this.logger = window.SafeLogger || console;
+        this.isOnline = navigator.onLine;
+        this.connectionStatus = 'online';
+        
+        this.setupNetworkListeners();
+        this.createHeader();
+    }
+
+    /**
+     * Setup network connection listeners
+     */
+    setupNetworkListeners() {
+        window.addEventListener('online', () => {
+            this.isOnline = true;
+            this.connectionStatus = 'online';
+            this.updateConnectionStatus();
+            this.logger.info('Connection restored');
+        });
+
+        window.addEventListener('offline', () => {
+            this.isOnline = false;
+            this.connectionStatus = 'offline';
+            this.updateConnectionStatus();
+            this.logger.warn('Connection lost');
+        });
+    }
+
+    /**
+     * Create persistent header
+     */
+    createHeader() {
+        // Remove existing header if present
+        const existing = document.getElementById('persistent-header');
+        if (existing) existing.remove();
+
+        const header = document.createElement('header');
+        header.id = 'persistent-header';
+        header.className = 'persistent-header';
+        header.innerHTML = this.generateHeaderHTML();
+
+        // Insert at beginning of body or app container
+        const appContainer = document.querySelector('.app-container');
+        if (appContainer) {
+            appContainer.insertBefore(header, appContainer.firstChild);
+        } else {
+            document.body.insertBefore(header, document.body.firstChild);
+        }
+
+        // Update connection status
+        this.updateConnectionStatus();
+        
+        // Update season phase
+        this.updateSeasonPhase();
+        
+        // Listen for phase changes
+        window.addEventListener('phase:changed', () => this.updateSeasonPhase());
+    }
+
+    /**
+     * Generate header HTML
+     * @returns {string} Header HTML
+     */
+    generateHeaderHTML() {
+        return `
+            <div class="header-content">
+                <div class="header-left">
+                    <h1 class="app-title">IgniteFitness</h1>
+                    <span class="connection-indicator" id="connection-status">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Online</span>
+                    </span>
+                </div>
+                
+                <div class="header-right">
+                    <div class="season-phase-pill-container" id="season-phase-container">
+                        ${this.renderSeasonPhasePill()}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render season phase pill
+     * @returns {string} Season phase HTML
+     */
+    renderSeasonPhasePill() {
+        const phase = window.SeasonPhase?.getCurrentPhase();
+        
+        if (!phase || !phase.config) {
+            return '<div class="season-phase-pill"><span class="phase-emoji">🏔️</span><span class="phase-label">Off-Season</span></div>';
+        }
+
+        const config = phase.config;
+        
+        return `
+            <div class="season-phase-pill" style="--phase-color: ${config.color}">
+                <span class="phase-emoji">${config.emoji}</span>
+                <span class="phase-label">${config.label}</span>
+            </div>
+        `;
+    }
+
+    /**
+     * Update connection status display
+     */
+    updateConnectionStatus() {
+        const statusEl = document.getElementById('connection-status');
+        if (!statusEl) return;
+
+        const statusDot = statusEl.querySelector('.status-dot');
+        const statusText = statusEl.querySelector('.status-text');
+
+        if (this.connectionStatus === 'online') {
+            statusEl.className = 'connection-indicator online';
+            statusDot.style.background = '#10b981';
+            statusText.textContent = 'Online';
+        } else {
+            statusEl.className = 'connection-indicator offline';
+            statusDot.style.background = '#ef4444';
+            statusText.textContent = 'Offline';
+            
+            // Show sync icon if offline
+            statusEl.innerHTML = `
+                <span class="status-dot"></span>
+                <span class="status-icon">📡</span>
+                <span class="status-text">Offline - Sync pending</span>
+            `;
+        }
+    }
+
+    /**
+     * Update season phase pill
+     */
+    updateSeasonPhase() {
+        const container = document.getElementById('season-phase-container');
+        if (!container) return;
+
+        container.innerHTML = this.renderSeasonPhasePill();
+    }
+
+    /**
+     * Show notification in header
+     * @param {string} message - Notification message
+     * @param {string} type - Notification type
+     */
+    showNotification(message, type = 'info') {
+        const existing = document.querySelector('.header-notification');
+        if (existing) existing.remove();
+
+        const notification = document.createElement('div');
+        notification.className = `header-notification notification-${type}`;
+        notification.textContent = message;
+
+        const header = document.getElementById('persistent-header');
+        if (header) {
+            header.appendChild(notification);
+        }
+
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+}
+
+// Create global instance
+window.PersistentHeader = new PersistentHeader();
+
+// Export for module systems
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = PersistentHeader;
+}

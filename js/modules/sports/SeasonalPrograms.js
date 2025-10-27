@@ -11,6 +11,92 @@ class SeasonalPrograms {
     }
 
     /**
+     * Generate 4-week microcycle block
+     * @param {Object} phase - Phase configuration
+     * @param {number} blockNumber - Block number (1-4)
+     * @returns {Object} 4-week microcycle
+     */
+    generateMicrocycle(phase, blockNumber) {
+        const weeks = [];
+        
+        for (let week = 1; week <= 4; week++) {
+            let volumeMultiplier = 1.0;
+            let intensityMultiplier = 1.0;
+            
+            if (week <= 3) {
+                // Progressive loading weeks 1-3
+                volumeMultiplier = 0.7 + (week * 0.1);  // 0.8, 0.9, 1.0
+                intensityMultiplier = 0.9 + (week * 0.033); // 0.933, 0.966, 1.0
+            } else {
+                // Deload week 4
+                volumeMultiplier = 0.6;  // -40% volume
+                intensityMultiplier = 0.85; // -15% intensity
+            }
+            
+            weeks.push({
+                weekNumber: week,
+                volumeMultiplier,
+                intensityMultiplier,
+                isDeload: week === 4,
+                focus: phase.focus,
+                activities: phase.activities,
+                trainingLoad: this.calculateTrainingLoad(week, phase)
+            });
+        }
+        
+        return {
+            blockNumber,
+            phase: phase.name,
+            weeks,
+            totalDuration: '4 weeks',
+            startDate: this.calculateBlockStartDate(blockNumber),
+            endDate: this.calculateBlockEndDate(blockNumber)
+        };
+    }
+
+    /**
+     * Calculate training load for week
+     * @param {number} week - Week number (1-4)
+     * @param {Object} phase - Phase configuration
+     * @returns {string} Training load
+     */
+    calculateTrainingLoad(week, phase) {
+        if (week === 4) return 'low'; // Deload week
+        
+        const intensityMap = {
+            'low': ['low', 'low', 'moderate'],
+            'moderate': ['moderate', 'moderate', 'moderate-high'],
+            'high': ['moderate-high', 'high', 'high']
+        };
+        
+        return intensityMap[phase.intensity]?.[week - 1] || 'moderate';
+    }
+
+    /**
+     * Calculate block start date
+     * @param {number} blockNumber - Block number
+     * @returns {Date} Start date
+     */
+    calculateBlockStartDate(blockNumber) {
+        const now = new Date();
+        const weeksOffset = (blockNumber - 1) * 4;
+        now.setDate(now.getDate() + (weeksOffset * 7));
+        return now;
+    }
+
+    /**
+     * Calculate block end date
+     * @param {number} blockNumber - Block number
+     * @returns {Date} End date
+     */
+    calculateBlockEndDate(blockNumber) {
+        const startDate = this.calculateBlockStartDate(blockNumber);
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 28); // 4 weeks
+        return endDate;
+    }
+
+    /**
      * Initialize seasonal training templates
      * @returns {Object} Seasonal templates
      */

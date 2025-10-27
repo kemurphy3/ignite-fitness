@@ -27,6 +27,14 @@ class Router {
             requiresAuth: true
         });
 
+        this.routes.set('#/training', {
+            name: 'training',
+            title: 'Training',
+            component: 'TrainingView',
+            icon: '💪',
+            requiresAuth: true
+        });
+
         this.routes.set('#/workouts', {
             name: 'workouts',
             title: 'Workouts',
@@ -249,6 +257,7 @@ class Router {
     getStaticComponent(componentName) {
         const components = {
             'DashboardView': () => this.getDashboardHTML(),
+            'TrainingView': () => this.getTrainingHTML(),
             'WorkoutsView': () => this.getWorkoutsHTML(),
             'ProgressView': () => this.getProgressHTML(),
             'SportView': () => this.getSportHTML(),
@@ -362,6 +371,20 @@ class Router {
 
     // Component HTML generators
     getDashboardHTML() {
+        // Use DashboardHero component if available
+        if (window.DashboardHero) {
+            const hero = window.DashboardHero.render();
+            return `
+                <div data-component="DashboardView" class="dashboard-view">
+                    ${hero.outerHTML}
+                    <div class="dashboard-content">
+                        <!-- Additional dashboard content -->
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Fallback
         return `
             <div data-component="DashboardView" class="dashboard-view">
                 <div class="dashboard-header">
@@ -370,19 +393,32 @@ class Router {
                 </div>
                 <div class="dashboard-content">
                     <div class="quick-actions">
-                        <button class="action-card" onclick="router.navigate('#/workouts')">
+                        <button class="action-card" onclick="window.Router.navigate('#/training')">
                             <div class="action-icon">💪</div>
                             <div class="action-text">Start Workout</div>
                         </button>
-                        <button class="action-card" onclick="router.navigate('#/progress')">
+                        <button class="action-card" onclick="window.Router.navigate('#/progress')">
                             <div class="action-icon">📊</div>
                             <div class="action-text">View Progress</div>
                         </button>
-                        <button class="action-card" onclick="router.navigate('#/sport')">
+                        <button class="action-card" onclick="window.Router.navigate('#/sport')">
                             <div class="action-icon">⚽</div>
                             <div class="action-text">Sport Training</div>
                         </button>
                     </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    getTrainingHTML() {
+        return `
+            <div data-component="TrainingView" class="training-view">
+                <div class="view-header">
+                    <h1>Training</h1>
+                </div>
+                <div class="training-content">
+                    <p>Your training plan will be displayed here</p>
                 </div>
             </div>
         `;

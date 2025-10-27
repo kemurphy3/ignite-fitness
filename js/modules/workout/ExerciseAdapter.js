@@ -1,537 +1,275 @@
 /**
- * ExerciseAdapter - Exercise modification and alternative suggestions
- * Handles exercise substitutions, regressions, and user feedback
+ * ExerciseAdapter - Adapts exercises based on aesthetic focus and readiness
+ * Implements 70/30 split (performance/aesthetic) and readiness-based volume adjustment
  */
 class ExerciseAdapter {
     constructor() {
         this.logger = window.SafeLogger || console;
         this.eventBus = window.EventBus;
         this.storageManager = window.StorageManager;
-        this.progressionEngine = window.ProgressionEngine;
         
-        this.exerciseDatabase = this.initializeExerciseDatabase();
-        this.alternativeMappings = this.initializeAlternativeMappings();
-        this.regressionMappings = this.initializeRegressionMappings();
+        this.aestheticFocus = null;
+        this.readinessLevel = 8;
+        
+        this.loadUserPreferences();
     }
 
     /**
-     * Initialize exercise database with alternatives
-     * @returns {Object} Exercise database
+     * Load user aesthetic preferences
      */
-    initializeExerciseDatabase() {
-        return {
-            'squat': {
-                primary: 'Barbell Back Squat',
-                alternatives: [
-                    { name: 'Goblet Squat', difficulty: 'easier', equipment: 'dumbbell' },
-                    { name: 'Front Squat', difficulty: 'harder', equipment: 'barbell' },
-                    { name: 'Bulgarian Split Squat', difficulty: 'similar', equipment: 'bodyweight' },
-                    { name: 'Leg Press', difficulty: 'easier', equipment: 'machine' }
-                ],
-                regressions: [
-                    { name: 'Bodyweight Squat', difficulty: 'beginner' },
-                    { name: 'Wall Sit', difficulty: 'beginner' },
-                    { name: 'Chair Squat', difficulty: 'beginner' }
-                ],
-                progressions: [
-                    { name: 'Pause Squat', difficulty: 'advanced' },
-                    { name: 'Jump Squat', difficulty: 'advanced' },
-                    { name: 'Single Leg Squat', difficulty: 'expert' }
-                ]
-            },
-            'deadlift': {
-                primary: 'Conventional Deadlift',
-                alternatives: [
-                    { name: 'Romanian Deadlift', difficulty: 'easier', equipment: 'barbell' },
-                    { name: 'Sumo Deadlift', difficulty: 'similar', equipment: 'barbell' },
-                    { name: 'Trap Bar Deadlift', difficulty: 'easier', equipment: 'trap_bar' },
-                    { name: 'RDL with Dumbbells', difficulty: 'easier', equipment: 'dumbbell' }
-                ],
-                regressions: [
-                    { name: 'Hip Hinge', difficulty: 'beginner' },
-                    { name: 'Good Morning', difficulty: 'beginner' },
-                    { name: 'Romanian Deadlift', difficulty: 'intermediate' }
-                ],
-                progressions: [
-                    { name: 'Deficit Deadlift', difficulty: 'advanced' },
-                    { name: 'Rack Pull', difficulty: 'advanced' },
-                    { name: 'Single Leg RDL', difficulty: 'expert' }
-                ]
-            },
-            'bench_press': {
-                primary: 'Barbell Bench Press',
-                alternatives: [
-                    { name: 'Dumbbell Press', difficulty: 'similar', equipment: 'dumbbell' },
-                    { name: 'Incline Press', difficulty: 'similar', equipment: 'barbell' },
-                    { name: 'Push-ups', difficulty: 'easier', equipment: 'bodyweight' },
-                    { name: 'Machine Press', difficulty: 'easier', equipment: 'machine' }
-                ],
-                regressions: [
-                    { name: 'Push-ups', difficulty: 'beginner' },
-                    { name: 'Incline Push-ups', difficulty: 'beginner' },
-                    { name: 'Wall Push-ups', difficulty: 'beginner' }
-                ],
-                progressions: [
-                    { name: 'Close Grip Bench', difficulty: 'advanced' },
-                    { name: 'Spoto Press', difficulty: 'advanced' },
-                    { name: 'Floor Press', difficulty: 'advanced' }
-                ]
-            },
-            'overhead_press': {
-                primary: 'Barbell Overhead Press',
-                alternatives: [
-                    { name: 'Dumbbell Press', difficulty: 'similar', equipment: 'dumbbell' },
-                    { name: 'Seated Press', difficulty: 'easier', equipment: 'barbell' },
-                    { name: 'Pike Push-ups', difficulty: 'easier', equipment: 'bodyweight' },
-                    { name: 'Lateral Raises', difficulty: 'easier', equipment: 'dumbbell' }
-                ],
-                regressions: [
-                    { name: 'Pike Push-ups', difficulty: 'beginner' },
-                    { name: 'Wall Slides', difficulty: 'beginner' },
-                    { name: 'Lateral Raises', difficulty: 'beginner' }
-                ],
-                progressions: [
-                    { name: 'Push Press', difficulty: 'advanced' },
-                    { name: 'Behind Neck Press', difficulty: 'advanced' },
-                    { name: 'Handstand Push-ups', difficulty: 'expert' }
-                ]
-            },
-            'pull_up': {
-                primary: 'Pull-up',
-                alternatives: [
-                    { name: 'Lat Pulldown', difficulty: 'easier', equipment: 'machine' },
-                    { name: 'Assisted Pull-ups', difficulty: 'easier', equipment: 'assistance_band' },
-                    { name: 'Cable Rows', difficulty: 'similar', equipment: 'cable' },
-                    { name: 'Inverted Rows', difficulty: 'easier', equipment: 'bodyweight' }
-                ],
-                regressions: [
-                    { name: 'Assisted Pull-ups', difficulty: 'beginner' },
-                    { name: 'Negative Pull-ups', difficulty: 'beginner' },
-                    { name: 'Hanging', difficulty: 'beginner' }
-                ],
-                progressions: [
-                    { name: 'Weighted Pull-ups', difficulty: 'advanced' },
-                    { name: 'L-Sit Pull-ups', difficulty: 'advanced' },
-                    { name: 'One Arm Pull-ups', difficulty: 'expert' }
-                ]
-            }
-        };
-    }
-
-    /**
-     * Initialize alternative exercise mappings
-     * @returns {Object} Alternative mappings
-     */
-    initializeAlternativeMappings() {
-        return {
-            'pain': ['safer', 'easier'],
-            'hurt': ['safer', 'easier'],
-            'injury': ['safer', 'easier'],
-            'easy': ['harder', 'progression'],
-            'too_light': ['harder', 'progression'],
-            'boring': ['variation', 'alternative'],
-            'hate': ['alternative', 'preference'],
-            "don't_like": ['alternative', 'preference'],
-            'can\'t': ['regression', 'easier'],
-            'too_hard': ['regression', 'easier'],
-            'impossible': ['regression', 'easier']
-        };
-    }
-
-    /**
-     * Initialize regression mappings
-     * @returns {Object} Regression mappings
-     */
-    initializeRegressionMappings() {
-        return {
-            'beginner': ['bodyweight', 'assisted', 'machine'],
-            'intermediate': ['dumbbell', 'cable', 'variation'],
-            'advanced': ['barbell', 'weighted', 'complex']
-        };
-    }
-
-    /**
-     * Process exercise feedback and suggest alternatives
-     * @param {string} exerciseName - Name of the exercise
-     * @param {string} feedback - User feedback
-     * @param {Object} currentExercise - Current exercise data
-     * @returns {Object} Suggested alternatives and adjustments
-     */
-    processExerciseFeedback(exerciseName, feedback, currentExercise) {
+    async loadUserPreferences() {
         try {
-            const exerciseKey = exerciseName.toLowerCase().replace(/\s+/g, '_');
-            const exerciseData = this.exerciseDatabase[exerciseKey];
+            const authManager = window.AuthManager;
+            const userId = authManager?.getCurrentUsername();
             
-            if (!exerciseData) {
-                return {
-                    success: false,
-                    message: 'Exercise not found in database',
-                    alternatives: []
-                };
+            if (userId) {
+                const prefs = await this.storageManager.getPreferences(userId);
+                if (prefs) {
+                    this.aestheticFocus = prefs.aestheticFocus || 'functional';
+                    this.readinessLevel = prefs.lastReadinessScore || 8;
+                }
             }
-
-            const feedbackLower = feedback.toLowerCase();
-            const suggestions = this.analyzeFeedback(feedbackLower);
             
-            let alternatives = [];
-            let message = '';
-            let recommendedAction = 'maintain';
-
-            // Determine appropriate alternatives based on feedback
-            if (suggestions.includes('safer') || suggestions.includes('easier')) {
-                alternatives = this.getSaferAlternatives(exerciseData, currentExercise);
-                message = 'Here are some safer alternatives for you:';
-                recommendedAction = 'substitute';
-            } else if (suggestions.includes('harder') || suggestions.includes('progression')) {
-                alternatives = this.getProgressionAlternatives(exerciseData, currentExercise);
-                message = 'Ready for a challenge? Here are some harder variations:';
-                recommendedAction = 'progress';
-            } else if (suggestions.includes('regression')) {
-                alternatives = this.getRegressionAlternatives(exerciseData, currentExercise);
-                message = 'Let\'s build up to this exercise with some regressions:';
-                recommendedAction = 'regress';
-            } else if (suggestions.includes('alternative') || suggestions.includes('preference')) {
-                alternatives = this.getPreferenceAlternatives(exerciseData, currentExercise);
-                message = 'Here are some alternative exercises you might enjoy:';
-                recommendedAction = 'substitute';
-            }
-
-            const result = {
-                success: true,
-                message,
-                recommendedAction,
-                alternatives,
-                originalExercise: currentExercise,
-                feedback: feedback
-            };
-
-            this.logger.debug('Exercise feedback processed', {
-                exercise: exerciseName,
-                feedback,
-                alternatives: alternatives.length,
-                action: recommendedAction
+            // Listen for readiness updates
+            this.eventBus.on(this.eventBus.TOPICS.READINESS_UPDATED, (data) => {
+                this.readinessLevel = data.readiness?.readinessScore || 8;
             });
-
-            return result;
         } catch (error) {
-            this.logger.error('Failed to process exercise feedback', error);
-            return {
-                success: false,
-                message: 'Unable to process feedback',
-                alternatives: []
-            };
+            this.logger.error('Failed to load user preferences', error);
         }
     }
 
     /**
-     * Analyze feedback to determine suggestions
-     * @param {string} feedback - Lowercase feedback
-     * @returns {Array} Suggestions
+     * Adapt workout with aesthetic accessories
+     * @param {Object} workout - Base workout
+     * @param {number} readinessScore - Current readiness (1-10)
+     * @returns {Object} Adapted workout
      */
-    analyzeFeedback(feedback) {
-        const suggestions = [];
-        
-        for (const [keyword, types] of Object.entries(this.alternativeMappings)) {
-            if (feedback.includes(keyword)) {
-                suggestions.push(...types);
-            }
-        }
-        
-        return [...new Set(suggestions)]; // Remove duplicates
-    }
-
-    /**
-     * Get safer alternatives for an exercise
-     * @param {Object} exerciseData - Exercise database entry
-     * @param {Object} currentExercise - Current exercise data
-     * @returns {Array} Safer alternatives
-     */
-    getSaferAlternatives(exerciseData, currentExercise) {
-        return exerciseData.alternatives
-            .filter(alt => alt.difficulty === 'easier')
-            .map(alt => ({
-                ...alt,
-                weight: this.calculateAlternativeWeight(currentExercise.weight, alt.difficulty),
-                reps: this.calculateAlternativeReps(currentExercise.reps, alt.difficulty),
-                sets: currentExercise.sets,
-                reason: 'Safer alternative'
-            }));
-    }
-
-    /**
-     * Get progression alternatives for an exercise
-     * @param {Object} exerciseData - Exercise database entry
-     * @param {Object} currentExercise - Current exercise data
-     * @returns {Array} Progression alternatives
-     */
-    getProgressionAlternatives(exerciseData, currentExercise) {
-        return exerciseData.progressions
-            .map(prog => ({
-                ...prog,
-                weight: this.calculateAlternativeWeight(currentExercise.weight, prog.difficulty),
-                reps: this.calculateAlternativeReps(currentExercise.reps, prog.difficulty),
-                sets: currentExercise.sets,
-                reason: 'Progression variation'
-            }));
-    }
-
-    /**
-     * Get regression alternatives for an exercise
-     * @param {Object} exerciseData - Exercise database entry
-     * @param {Object} currentExercise - Current exercise data
-     * @returns {Array} Regression alternatives
-     */
-    getRegressionAlternatives(exerciseData, currentExercise) {
-        return exerciseData.regressions
-            .map(reg => ({
-                ...reg,
-                weight: this.calculateAlternativeWeight(currentExercise.weight, reg.difficulty),
-                reps: this.calculateAlternativeReps(currentExercise.reps, reg.difficulty),
-                sets: currentExercise.sets,
-                reason: 'Regression to build strength'
-            }));
-    }
-
-    /**
-     * Get preference alternatives for an exercise
-     * @param {Object} exerciseData - Exercise database entry
-     * @param {Object} currentExercise - Current exercise data
-     * @returns {Array} Preference alternatives
-     */
-    getPreferenceAlternatives(exerciseData, currentExercise) {
-        return exerciseData.alternatives
-            .map(alt => ({
-                ...alt,
-                weight: this.calculateAlternativeWeight(currentExercise.weight, alt.difficulty),
-                reps: this.calculateAlternativeReps(currentExercise.reps, alt.difficulty),
-                sets: currentExercise.sets,
-                reason: 'Alternative exercise'
-            }));
-    }
-
-    /**
-     * Calculate weight for alternative exercise
-     * @param {number} currentWeight - Current exercise weight
-     * @param {string} difficulty - Difficulty level
-     * @returns {number} Alternative weight
-     */
-    calculateAlternativeWeight(currentWeight, difficulty) {
-        const adjustments = {
-            'beginner': 0.5,
-            'easier': 0.7,
-            'similar': 1.0,
-            'harder': 1.2,
-            'advanced': 1.3,
-            'expert': 1.5
-        };
-        
-        return Math.round(currentWeight * (adjustments[difficulty] || 1.0) * 2.5) / 2.5;
-    }
-
-    /**
-     * Calculate reps for alternative exercise
-     * @param {number} currentReps - Current exercise reps
-     * @param {string} difficulty - Difficulty level
-     * @returns {number} Alternative reps
-     */
-    calculateAlternativeReps(currentReps, difficulty) {
-        const adjustments = {
-            'beginner': 1.5,
-            'easier': 1.2,
-            'similar': 1.0,
-            'harder': 0.8,
-            'advanced': 0.7,
-            'expert': 0.6
-        };
-        
-        return Math.round(currentReps * (adjustments[difficulty] || 1.0));
-    }
-
-    /**
-     * Suggest exercise based on user preferences and history
-     * @param {string} targetMuscle - Target muscle group
-     * @param {string} difficulty - Desired difficulty
-     * @param {Array} availableEquipment - Available equipment
-     * @returns {Object} Suggested exercise
-     */
-    suggestExercise(targetMuscle, difficulty, availableEquipment = []) {
+    adaptWorkout(workout, readinessScore = this.readinessLevel) {
         try {
-            const muscleGroups = {
-                'chest': ['bench_press', 'push_up', 'dumbbell_press'],
-                'back': ['pull_up', 'deadlift', 'barbell_row'],
-                'legs': ['squat', 'deadlift', 'leg_press'],
-                'shoulders': ['overhead_press', 'lateral_raise', 'dumbbell_press'],
-                'arms': ['dumbbell_curl', 'tricep_extension', 'close_grip_bench']
-            };
+            const adaptedWorkout = { ...workout };
             
-            const exercises = muscleGroups[targetMuscle] || [];
-            const preferences = this.getExercisePreferences();
+            // Calculate performance vs aesthetic split
+            const { performanceExercises, aestheticExercises } = this.calculateSplit(workout);
             
-            // Filter out avoided exercises
-            const availableExercises = exercises.filter(exercise => 
-                !preferences.some(pref => 
-                    pref.exerciseName === exercise && pref.preference === 'avoid'
-                )
-            );
-            
-            if (availableExercises.length === 0) {
-                return {
-                    success: false,
-                    message: 'No suitable exercises found for this muscle group',
-                    exercise: null
-                };
+            // Add accessories based on aesthetic focus
+            if (this.aestheticFocus && this.aestheticFocus !== 'functional') {
+                const accessories = this.getAccessoriesForFocus(this.aestheticFocus, readinessScore);
+                aestheticExercises.push(...accessories);
             }
             
-            // Select exercise based on difficulty and equipment
-            const selectedExercise = this.selectBestExercise(
-                availableExercises, 
-                difficulty, 
-                availableEquipment
-            );
+            // Apply readiness-based volume reduction to accessories
+            if (readinessScore <= 6) {
+                this.reduceAccessoryVolume(aestheticExercises, readinessScore);
+            }
             
-            return {
-                success: true,
-                exercise: selectedExercise,
-                message: `Suggested ${selectedExercise.name} for ${targetMuscle}`
+            adaptedWorkout.exercises = [
+                ...performanceExercises,
+                ...aestheticExercises
+            ];
+            
+            adaptedWorkout.adaptations = {
+                performancePercentage: '70%',
+                aestheticPercentage: '30%',
+                volumeReduced: readinessScore <= 6,
+                readinessLevel: readinessScore
             };
+            
+            return adaptedWorkout;
         } catch (error) {
-            this.logger.error('Failed to suggest exercise', error);
-            return {
-                success: false,
-                message: 'Unable to suggest exercise',
-                exercise: null
-            };
+            this.logger.error('Failed to adapt workout', error);
+            return workout;
         }
     }
 
     /**
-     * Select best exercise from available options
-     * @param {Array} exercises - Available exercises
-     * @param {string} difficulty - Desired difficulty
-     * @param {Array} equipment - Available equipment
-     * @returns {Object} Selected exercise
+     * Calculate 70/30 split between performance and aesthetic
+     * @param {Object} workout - Workout to split
+     * @returns {Object} Split exercises
      */
-    selectBestExercise(exercises, difficulty, equipment) {
-        // This would typically use more sophisticated logic
-        // For now, return the first available exercise with basic setup
-        const exerciseName = exercises[0];
-        const exerciseData = this.exerciseDatabase[exerciseName];
+    calculateSplit(workout) {
+        const performanceExercises = [];
+        const aestheticExercises = [];
         
-        return {
-            name: exerciseData?.primary || exerciseName,
-            weight: this.getDefaultWeight(exerciseName, difficulty),
-            reps: this.getDefaultReps(exerciseName, difficulty),
-            sets: 3,
-            equipment: equipment[0] || 'barbell',
-            difficulty: difficulty
-        };
-    }
-
-    /**
-     * Get default weight for exercise and difficulty
-     * @param {string} exerciseName - Name of exercise
-     * @param {string} difficulty - Difficulty level
-     * @returns {number} Default weight
-     */
-    getDefaultWeight(exerciseName, difficulty) {
-        const defaults = {
-            'squat': { beginner: 45, intermediate: 135, advanced: 225 },
-            'deadlift': { beginner: 45, intermediate: 185, advanced: 315 },
-            'bench_press': { beginner: 45, intermediate: 135, advanced: 185 },
-            'overhead_press': { beginner: 20, intermediate: 65, advanced: 95 }
-        };
-        
-        return defaults[exerciseName]?.[difficulty] || 45;
-    }
-
-    /**
-     * Get default reps for exercise and difficulty
-     * @param {string} exerciseName - Name of exercise
-     * @param {string} difficulty - Difficulty level
-     * @returns {number} Default reps
-     */
-    getDefaultReps(exerciseName, difficulty) {
-        const defaults = {
-            'beginner': 12,
-            'intermediate': 8,
-            'advanced': 5
-        };
-        
-        return defaults[difficulty] || 8;
-    }
-
-    /**
-     * Get exercise preferences
-     * @returns {Array} Exercise preferences
-     */
-    getExercisePreferences() {
-        try {
-            return this.storageManager?.get('exercise_preferences', []);
-        } catch (error) {
-            this.logger.error('Failed to get exercise preferences', error);
-            return [];
+        if (!workout.exercises || !Array.isArray(workout.exercises)) {
+            return { performanceExercises, aestheticExercises };
         }
-    }
-
-    /**
-     * Save exercise preference
-     * @param {string} exerciseName - Name of exercise
-     * @param {string} preference - User preference
-     * @param {string} reason - Reason for preference
-     * @returns {Object} Save result
-     */
-    saveExercisePreference(exerciseName, preference, reason = '') {
-        try {
-            const preferenceData = {
-                exerciseName,
-                preference,
-                reason,
-                timestamp: new Date().toISOString()
-            };
+        
+        // Performance movements take 70% of training focus
+        const performanceCount = Math.ceil(workout.exercises.length * 0.7);
+        
+        for (let i = 0; i < workout.exercises.length; i++) {
+            const exercise = workout.exercises[i];
             
-            const preferences = this.getExercisePreferences();
-            const existingIndex = preferences.findIndex(p => p.exerciseName === exerciseName);
-            
-            if (existingIndex >= 0) {
-                preferences[existingIndex] = preferenceData;
+            if (this.isPerformanceMovement(exercise.name)) {
+                performanceExercises.push(exercise);
+            } else if (i < performanceCount) {
+                performanceExercises.push(exercise);
             } else {
-                preferences.push(preferenceData);
+                aestheticExercises.push(exercise);
             }
+        }
+        
+        return { performanceExercises, aestheticExercises };
+    }
+
+    /**
+     * Check if exercise is a performance movement
+     * @param {string} exerciseName - Exercise name
+     * @returns {boolean} Is performance movement
+     */
+    isPerformanceMovement(exerciseName) {
+        const performanceMovements = [
+            'squat', 'deadlift', 'bench', 'overhead press', 'pull', 'dip',
+            'clean', 'snatch', 'power clean', 'overhead squat'
+        ];
+        
+        const name = exerciseName.toLowerCase();
+        return performanceMovements.some(movement => name.includes(movement));
+    }
+
+    /**
+     * Get accessories for aesthetic focus
+     * @param {string} focus - Aesthetic focus
+     * @param {number} readinessScore - Current readiness
+     * @returns {Array} Accessory exercises
+     */
+    getAccessoriesForFocus(focus, readinessScore) {
+        const accessories = this.getAccessoryMatrix()[focus] || [];
+        
+        return accessories.map(acc => ({
+            ...acc,
+            sets: this.adjustSetsForReadiness(acc.sets, readinessScore),
+            tooltip: acc.rationale || `Building ${focus}...`,
+            category: 'accessory',
+            aesthetic: true
+        }));
+    }
+
+    /**
+     * Get accessory matrix
+     * @returns {Object} Accessory matrix
+     */
+    getAccessoryMatrix() {
+        return {
+            v_taper: [
+                { name: 'Overhead Press', category: 'shoulders', sets: 3, reps: '8-10', rationale: 'Building V-taper: Wide shoulders' },
+                { name: 'Lat Pulldowns', category: 'back', sets: 4, reps: '10-12', rationale: 'Building V-taper: Wide lats' },
+                { name: 'Lateral Raises', category: 'shoulders', sets: 3, reps: '15-20', rationale: 'Building V-taper: Shoulder width' },
+                { name: 'Face Pulls', category: 'rear_delts', sets: 3, reps: '12-15', rationale: 'Building V-taper: Balanced shoulders' }
+            ],
+            glutes: [
+                { name: 'Hip Thrusts', category: 'glutes', sets: 4, reps: '12-15', rationale: 'Maximizing glutes: Hip thrust strength' },
+                { name: 'Bulgarian Split Squats', category: 'glutes_quads', sets: 3, reps: '10-12', rationale: 'Maximizing glutes: Unilateral strength' },
+                { name: 'Romanian Deadlift', category: 'glutes_hams', sets: 3, reps: '10-12', rationale: 'Maximizing glutes: Posterior chain' },
+                { name: 'Cable Kickbacks', category: 'glutes', sets: 3, reps: '15-20', rationale: 'Maximizing glutes: Glute isolation' }
+            ],
+            toned: [
+                { name: 'High Rep Lateral Raises', category: 'shoulders', sets: 3, reps: '20-25', rationale: 'Staying lean: Shoulder definition' },
+                { name: 'Cable Flies', category: 'chest', sets: 3, reps: '15-20', rationale: 'Staying lean: Chest definition' },
+                { name: 'Tricep Extensions', category: 'arms', sets: 3, reps: '15-20', rationale: 'Staying lean: Arm definition' },
+                { name: 'Dumbbell Curls', category: 'arms', sets: 3, reps: '15-20', rationale: 'Staying lean: Arm definition' }
+            ],
+            functional: []
+        };
+    }
+
+    /**
+     * Adjust sets based on readiness
+     * @param {number} sets - Original sets
+     * @param {number} readinessScore - Current readiness
+     * @returns {number} Adjusted sets
+     */
+    adjustSetsForReadiness(sets, readinessScore) {
+        if (readinessScore <= 6) {
+            return Math.max(1, Math.floor(sets * 0.7)); // 30% reduction
+        }
+        return sets;
+    }
+
+    /**
+     * Reduce accessory volume based on readiness
+     * @param {Array} exercises - Exercises to adjust
+     * @param {number} readinessScore - Current readiness
+     */
+    reduceAccessoryVolume(exercises, readinessScore) {
+        const reductionFactor = readinessScore <= 6 ? 0.7 : 1.0;
+        
+        exercises.forEach(exercise => {
+            if (exercise.aesthetic) {
+                exercise.sets = Math.max(1, Math.floor(exercise.sets * reductionFactor));
+                if (!exercise.modifications) {
+                    exercise.modifications = [];
+                }
+                exercise.modifications.push(`Reduced volume (readiness: ${readinessScore}/10)`);
+            }
+        });
+    }
+
+    /**
+     * Generate tooltip for exercise
+     * @param {Object} exercise - Exercise object
+     * @returns {string} Tooltip text
+     */
+    generateTooltip(exercise) {
+        if (exercise.tooltip) {
+            return exercise.tooltip;
+        }
+        
+        if (exercise.aesthetic) {
+            const focusDescription = {
+                v_taper: 'Building V-taper',
+                glutes: 'Maximizing glutes',
+                toned: 'Staying lean',
+                functional: 'Functional movement'
+            };
             
-            this.storageManager?.set('exercise_preferences', preferences);
+            return `${focusDescription[this.aestheticFocus] || 'Building physique'}: ${exercise.rationale || exercise.name}`;
+        }
+        
+        return exercise.rationale || exercise.name;
+    }
+
+    /**
+     * Update aesthetic focus
+     * @param {string} focus - New focus
+     */
+    async updateAestheticFocus(focus) {
+        try {
+            const authManager = window.AuthManager;
+            const userId = authManager?.getCurrentUsername();
             
-            this.logger.audit('EXERCISE_PREFERENCE_SAVED', {
-                exerciseName,
-                preference,
-                reason
+            if (!userId) {
+                throw new Error('User not logged in');
+            }
+
+            const prefs = await this.storageManager.getPreferences(userId);
+            await this.storageManager.savePreferences(userId, {
+                ...prefs,
+                aestheticFocus: focus
             });
             
-            return { success: true, preference: preferenceData };
+            this.aestheticFocus = focus;
+            
+            this.logger.debug('Aesthetic focus updated', { focus });
         } catch (error) {
-            this.logger.error('Failed to save exercise preference', error);
-            return { success: false, error: error.message };
+            this.logger.error('Failed to update aesthetic focus', error);
+            throw error;
         }
     }
 
     /**
-     * Get exercise alternatives for a given exercise
-     * @param {string} exerciseName - Name of exercise
-     * @returns {Array} Exercise alternatives
+     * Get current split information
+     * @returns {Object} Split info
      */
-    getExerciseAlternatives(exerciseName) {
-        try {
-            const exerciseKey = exerciseName.toLowerCase().replace(/\s+/g, '_');
-            const exerciseData = this.exerciseDatabase[exerciseKey];
-            
-            if (!exerciseData) {
-                return [];
-            }
-            
-            return exerciseData.alternatives || [];
-        } catch (error) {
-            this.logger.error('Failed to get exercise alternatives', error);
-            return [];
-        }
+    getSplitInfo() {
+        return {
+            aestheticFocus: this.aestheticFocus,
+            performancePercentage: '70%',
+            aestheticPercentage: '30%',
+            readinessLevel: this.readinessLevel,
+            accessoriesReduced: this.readinessLevel <= 6
+        };
     }
 }
 

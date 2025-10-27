@@ -1,362 +1,486 @@
 /**
- * StorageManager - Unified storage management
- * Handles localStorage, IndexedDB, and server synchronization
+ * StorageManager - Unified storage schema with sync queue pattern
+ * Provides idempotent writes and offline-first architecture
+ * 
+ * Tables: user_profiles, readiness_logs, session_logs, progression_events, injury_flags, preferences
+ * Each table keyed by (user_id, date) for idempotent writes
  */
 class StorageManager {
     constructor() {
         this.logger = window.SafeLogger || console;
         this.eventBus = window.EventBus;
-        this.indexedDB = null;
-        this.dbName = 'IgniteFitnessDB';
-        this.dbVersion = 1;
+        this.syncQueue = [];
+        this.isOnline = navigator.onLine;
+        this.syncInProgress = false;
         
-        this.initializeIndexedDB();
+        // Storage key prefixes
+        this.PREFIXES = {
+            PROFILES: 'ignitefitness_user_profiles',
+            READINESS: 'ignitefitness_readiness_logs',
+            SESSIONS: 'ignitefitness_session_logs',
+            PROGRESSION: 'ignitefitness_progression_events',
+            INJURY_FLAGS: 'ignitefitness_injury_flags',
+            PREFERENCES: 'ignitefitness_preferences',
+            SYNC_QUEUE: 'ignitefitness_sync_queue'
+        };
+        
+        this.initializeEventListeners();
+        this.loadSyncQueue();
     }
 
     /**
-     * Initialize IndexedDB for offline storage
+     * Initialize event listeners for online/offline state
      */
-    async initializeIndexedDB() {
-        try {
-            if (!window.indexedDB) {
-                this.logger.warn('IndexedDB not supported, using localStorage only');
-                return;
-            }
+    initializeEventListeners() {
+        window.addEventListener('online', () => {
+            this.isOnline = true;
+            this.attemptSync();
+            this.eventBus.emit(this.eventBus.TOPICS.OFFLINE_STATE_CHANGED, { isOnline: true });
+        });
 
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(this.dbName, this.dbVersion);
-                
-                request.onerror = () => {
-                    this.logger.error('IndexedDB initialization failed', request.error);
-                    reject(request.error);
-                };
-                
-                request.onsuccess = () => {
-                    this.indexedDB = request.result;
-                    this.logger.info('IndexedDB initialized successfully');
-                    resolve(this.indexedDB);
-                };
-                
-                request.onupgradeneeded = (event) => {
-                    const db = event.target.result;
-                    
-                    // Create object stores
-                    if (!db.objectStoreNames.contains('workouts')) {
-                        const workoutStore = db.createObjectStore('workouts', { keyPath: 'id', autoIncrement: true });
-                        workoutStore.createIndex('userId', 'userId', { unique: false });
-                        workoutStore.createIndex('date', 'date', { unique: false });
-                    }
-                    
-                    if (!db.objectStoreNames.contains('sessions')) {
-                        const sessionStore = db.createObjectStore('sessions', { keyPath: 'id', autoIncrement: true });
-                        sessionStore.createIndex('userId', 'userId', { unique: false });
-                        sessionStore.createIndex('startAt', 'startAt', { unique: false });
-                    }
-                    
-                    if (!db.objectStoreNames.contains('syncQueue')) {
-                        const syncStore = db.createObjectStore('syncQueue', { keyPath: 'id', autoIncrement: true });
-                        syncStore.createIndex('type', 'type', { unique: false });
-                        syncStore.createIndex('timestamp', 'timestamp', { unique: false });
-                    }
-                };
-            });
-        } catch (error) {
-            this.logger.error('Failed to initialize IndexedDB', error);
-        }
+        window.addEventListener('offline', () => {
+            this.isOnline = false;
+            this.eventBus.emit(this.eventBus.TOPICS.OFFLINE_STATE_CHANGED, { isOnline: false });
+        });
     }
 
     /**
-     * Save data to localStorage (UI state only)
-     * @param {string} key - Storage key
-     * @param {any} data - Data to save
-     * @returns {Object} Save result
-     */
-    saveToLocalStorage(key, data) {
-        try {
-            const appData = {
-                version: '2.0',
-                data: data,
-                last_updated: Date.now()
-            };
-            localStorage.setItem(`ignitefitness_${key}`, JSON.stringify(appData));
-            
-            this.logger.debug('Data saved to localStorage', { key });
-            this.eventBus?.emit('storage:localSaved', { key, data });
-            
-            return { success: true };
-        } catch (error) {
-            this.logger.error('Failed to save to localStorage', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    /**
-     * Get data from localStorage
-     * @param {string} key - Storage key
-     * @returns {any} Stored data
-     */
-    getFromLocalStorage(key) {
-        try {
-            const stored = localStorage.getItem(`ignitefitness_${key}`);
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                return parsed.data;
-            }
-            return null;
-        } catch (error) {
-            this.logger.error('Failed to get from localStorage', error);
-            return null;
-        }
-    }
-
-    /**
-     * Save workout to IndexedDB
-     * @param {Object} workout - Workout data
-     * @returns {Object} Save result
-     */
-    async saveWorkoutToIndexedDB(workout) {
-        try {
-            if (!this.indexedDB) {
-                return { success: false, error: 'IndexedDB not available' };
-            }
-
-            const transaction = this.indexedDB.transaction(['workouts'], 'readwrite');
-            const store = transaction.objectStore('workouts');
-            
-            const request = store.add({
-                ...workout,
-                userId: window.AuthManager?.getCurrentUsername() || 'anonymous',
-                timestamp: Date.now()
-            });
-
-            return new Promise((resolve, reject) => {
-                request.onsuccess = () => {
-                    this.logger.debug('Workout saved to IndexedDB', { id: request.result });
-                    this.eventBus?.emit('storage:workoutSaved', { workout, id: request.result });
-                    resolve({ success: true, id: request.result });
-                };
-                
-                request.onerror = () => {
-                    this.logger.error('Failed to save workout to IndexedDB', request.error);
-                    reject({ success: false, error: request.error });
-                };
-            });
-        } catch (error) {
-            this.logger.error('Failed to save workout to IndexedDB', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    /**
-     * Get workouts from IndexedDB
+     * Get compound key from user_id and date
      * @param {string} userId - User ID
-     * @param {number} limit - Limit results
-     * @returns {Array} Workouts
+     * @param {string} date - Date string (YYYY-MM-DD)
+     * @returns {string} Compound key
      */
-    async getWorkoutsFromIndexedDB(userId, limit = 50) {
-        try {
-            if (!this.indexedDB) {
-                return [];
-            }
+    getCompoundKey(userId, date) {
+        return `${userId}_${date}`;
+    }
 
-            const transaction = this.indexedDB.transaction(['workouts'], 'readonly');
-            const store = transaction.objectStore('workouts');
-            const index = store.index('userId');
+    /**
+     * Save user profile
+     * @param {string} userId - User ID
+     * @param {Object} profile - Profile data
+     * @returns {Promise<void>}
+     */
+    async saveUserProfile(userId, profile) {
+        try {
+            const profiles = this.getUserProfiles();
+            profiles[userId] = {
+                ...profile,
+                userId,
+                updatedAt: new Date().toISOString()
+            };
             
-            const request = index.getAll(userId);
+            this.setStorage(this.PREFIXES.PROFILES, profiles);
             
-            return new Promise((resolve, reject) => {
-                request.onsuccess = () => {
-                    const workouts = request.result
-                        .sort((a, b) => b.timestamp - a.timestamp)
-                        .slice(0, limit);
-                    resolve(workouts);
-                };
-                
-                request.onerror = () => {
-                    this.logger.error('Failed to get workouts from IndexedDB', request.error);
-                    reject([]);
-                };
-            });
+            // Emit event
+            this.eventBus.emit(this.eventBus.TOPICS.PROFILE_UPDATED, { userId, profile });
+            
+            // Add to sync queue if offline
+            if (!this.isOnline) {
+                this.addToSyncQueue('user_profiles', userId, profile);
+            }
         } catch (error) {
-            this.logger.error('Failed to get workouts from IndexedDB', error);
-            return [];
+            this.logger.error('Failed to save user profile:', error);
+            throw error;
         }
     }
 
     /**
-     * Save session to IndexedDB
-     * @param {Object} session - Session data
-     * @returns {Object} Save result
+     * Get user profile
+     * @param {string} userId - User ID
+     * @returns {Object|null} User profile
      */
-    async saveSessionToIndexedDB(session) {
+    getUserProfile(userId) {
+        const profiles = this.getUserProfiles();
+        return profiles[userId] || null;
+    }
+
+    /**
+     * Get all user profiles
+     * @returns {Object} All user profiles
+     */
+    getUserProfiles() {
+        return this.getStorage(this.PREFIXES.PROFILES, {});
+    }
+
+    /**
+     * Save readiness log
+     * @param {string} userId - User ID
+     * @param {string} date - Date string (YYYY-MM-DD)
+     * @param {Object} readiness - Readiness data
+     * @returns {Promise<void>}
+     */
+    async saveReadinessLog(userId, date, readiness) {
         try {
-            if (!this.indexedDB) {
-                return { success: false, error: 'IndexedDB not available' };
-            }
-
-            const transaction = this.indexedDB.transaction(['sessions'], 'readwrite');
-            const store = transaction.objectStore('sessions');
+            const key = this.getCompoundKey(userId, date);
+            const logs = this.getReadinessLogs();
             
-            const request = store.add({
-                ...session,
-                userId: window.AuthManager?.getCurrentUsername() || 'anonymous',
-                timestamp: Date.now()
-            });
-
-            return new Promise((resolve, reject) => {
-                request.onsuccess = () => {
-                    this.logger.debug('Session saved to IndexedDB', { id: request.result });
-                    this.eventBus?.emit('storage:sessionSaved', { session, id: request.result });
-                    resolve({ success: true, id: request.result });
-                };
-                
-                request.onerror = () => {
-                    this.logger.error('Failed to save session to IndexedDB', request.error);
-                    reject({ success: false, error: request.error });
-                };
-            });
+            logs[key] = {
+                userId,
+                date,
+                ...readiness,
+                updatedAt: new Date().toISOString()
+            };
+            
+            this.setStorage(this.PREFIXES.READINESS, logs);
+            
+            // Emit event
+            this.eventBus.emit(this.eventBus.TOPICS.READINESS_UPDATED, { userId, date, readiness });
+            
+            // Add to sync queue if offline
+            if (!this.isOnline) {
+                this.addToSyncQueue('readiness_logs', key, logs[key]);
+            }
         } catch (error) {
-            this.logger.error('Failed to save session to IndexedDB', error);
-            return { success: false, error: error.message };
+            this.logger.error('Failed to save readiness log:', error);
+            throw error;
         }
+    }
+
+    /**
+     * Get readiness log
+     * @param {string} userId - User ID
+     * @param {string} date - Date string (YYYY-MM-DD)
+     * @returns {Object|null} Readiness log
+     */
+    getReadinessLog(userId, date) {
+        const key = this.getCompoundKey(userId, date);
+        const logs = this.getReadinessLogs();
+        return logs[key] || null;
+    }
+
+    /**
+     * Get all readiness logs
+     * @returns {Object} All readiness logs
+     */
+    getReadinessLogs() {
+        return this.getStorage(this.PREFIXES.READINESS, {});
+    }
+
+    /**
+     * Save session log
+     * @param {string} userId - User ID
+     * @param {string} date - Date string (YYYY-MM-DD)
+     * @param {Object} session - Session data
+     * @returns {Promise<void>}
+     */
+    async saveSessionLog(userId, date, session) {
+        try {
+            const key = this.getCompoundKey(userId, date);
+            const logs = this.getSessionLogs();
+            
+            logs[key] = {
+                userId,
+                date,
+                ...session,
+                updatedAt: new Date().toISOString()
+            };
+            
+            this.setStorage(this.PREFIXES.SESSIONS, logs);
+            
+            // Emit event
+            this.eventBus.emit(this.eventBus.TOPICS.SESSION_COMPLETED, { userId, date, session });
+            
+            // Add to sync queue if offline
+            if (!this.isOnline) {
+                this.addToSyncQueue('session_logs', key, logs[key]);
+            }
+        } catch (error) {
+            this.logger.error('Failed to save session log:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get session log
+     * @param {string} userId - User ID
+     * @param {string} date - Date string (YYYY-MM-DD)
+     * @returns {Object|null} Session log
+     */
+    getSessionLog(userId, date) {
+        const key = this.getCompoundKey(userId, date);
+        const logs = this.getSessionLogs();
+        return logs[key] || null;
+    }
+
+    /**
+     * Get all session logs
+     * @returns {Object} All session logs
+     */
+    getSessionLogs() {
+        return this.getStorage(this.PREFIXES.SESSIONS, {});
+    }
+
+    /**
+     * Save progression event
+     * @param {string} userId - User ID
+     * @param {string} date - Date string (YYYY-MM-DD)
+     * @param {Object} event - Progression event data
+     * @returns {Promise<void>}
+     */
+    async saveProgressionEvent(userId, date, event) {
+        try {
+            const key = this.getCompoundKey(userId, date);
+            const events = this.getProgressionEvents();
+            
+            events[key] = {
+                userId,
+                date,
+                ...event,
+                updatedAt: new Date().toISOString()
+            };
+            
+            this.setStorage(this.PREFIXES.PROGRESSION, events);
+            
+            // Add to sync queue if offline
+            if (!this.isOnline) {
+                this.addToSyncQueue('progression_events', key, events[key]);
+            }
+        } catch (error) {
+            this.logger.error('Failed to save progression event:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get progression events
+     * @returns {Object} All progression events
+     */
+    getProgressionEvents() {
+        return this.getStorage(this.PREFIXES.PROGRESSION, {});
+    }
+
+    /**
+     * Save injury flag
+     * @param {string} userId - User ID
+     * @param {string} date - Date string (YYYY-MM-DD)
+     * @param {Object} flag - Injury flag data
+     * @returns {Promise<void>}
+     */
+    async saveInjuryFlag(userId, date, flag) {
+        try {
+            const key = this.getCompoundKey(userId, date);
+            const flags = this.getInjuryFlags();
+            
+            flags[key] = {
+                userId,
+                date,
+                ...flag,
+                updatedAt: new Date().toISOString()
+            };
+            
+            this.setStorage(this.PREFIXES.INJURY_FLAGS, flags);
+            
+            // Add to sync queue if offline
+            if (!this.isOnline) {
+                this.addToSyncQueue('injury_flags', key, flags[key]);
+            }
+        } catch (error) {
+            this.logger.error('Failed to save injury flag:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get injury flags
+     * @returns {Object} All injury flags
+     */
+    getInjuryFlags() {
+        return this.getStorage(this.PREFIXES.INJURY_FLAGS, {});
+    }
+
+    /**
+     * Save preference
+     * @param {string} userId - User ID
+     * @param {Object} preferences - Preference data
+     * @returns {Promise<void>}
+     */
+    async savePreferences(userId, preferences) {
+        try {
+            const allPreferences = this.getPreferences();
+            
+            allPreferences[userId] = {
+                userId,
+                ...preferences,
+                updatedAt: new Date().toISOString()
+            };
+            
+            this.setStorage(this.PREFIXES.PREFERENCES, allPreferences);
+            
+            // Add to sync queue if offline
+            if (!this.isOnline) {
+                this.addToSyncQueue('preferences', userId, allPreferences[userId]);
+            }
+        } catch (error) {
+            this.logger.error('Failed to save preferences:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get preferences
+     * @param {string} userId - User ID
+     * @returns {Object|null} User preferences
+     */
+    getPreferences(userId = null) {
+        const allPreferences = this.getStorage(this.PREFIXES.PREFERENCES, {});
+        return userId ? (allPreferences[userId] || null) : allPreferences;
     }
 
     /**
      * Add item to sync queue
-     * @param {string} type - Item type
-     * @param {Object} data - Item data
-     * @returns {Object} Add result
+     * @param {string} table - Table name
+     * @param {string} key - Item key
+     * @param {Object} data - Data to sync
      */
-    async addToSyncQueue(type, data) {
+    addToSyncQueue(table, key, data) {
+        const queueItem = {
+            table,
+            key,
+            data,
+            timestamp: Date.now(),
+            attempts: 0
+        };
+        
+        this.syncQueue.push(queueItem);
+        this.saveSyncQueue();
+        
+        this.eventBus.emit(this.eventBus.TOPICS.SYNC_QUEUE_UPDATED, { queueLength: this.syncQueue.length });
+    }
+
+    /**
+     * Load sync queue from storage
+     */
+    loadSyncQueue() {
         try {
-            if (!this.indexedDB) {
-                return { success: false, error: 'IndexedDB not available' };
-            }
-
-            const transaction = this.indexedDB.transaction(['syncQueue'], 'readwrite');
-            const store = transaction.objectStore('syncQueue');
-            
-            const request = store.add({
-                type,
-                data,
-                timestamp: Date.now(),
-                userId: window.AuthManager?.getCurrentUsername() || 'anonymous'
-            });
-
-            return new Promise((resolve, reject) => {
-                request.onsuccess = () => {
-                    this.logger.debug('Item added to sync queue', { type, id: request.result });
-                    this.eventBus?.emit('storage:syncQueued', { type, data, id: request.result });
-                    resolve({ success: true, id: request.result });
-                };
-                
-                request.onerror = () => {
-                    this.logger.error('Failed to add to sync queue', request.error);
-                    reject({ success: false, error: request.error });
-                };
-            });
+            const queue = this.getStorage(this.PREFIXES.SYNC_QUEUE, []);
+            this.syncQueue = Array.isArray(queue) ? queue : [];
         } catch (error) {
-            this.logger.error('Failed to add to sync queue', error);
-            return { success: false, error: error.message };
+            this.logger.error('Failed to load sync queue:', error);
+            this.syncQueue = [];
         }
     }
 
     /**
-     * Get sync queue items
-     * @param {string} type - Item type filter
-     * @returns {Array} Sync queue items
+     * Save sync queue to storage
      */
-    async getSyncQueue(type = null) {
+    saveSyncQueue() {
         try {
-            if (!this.indexedDB) {
-                return [];
-            }
-
-            const transaction = this.indexedDB.transaction(['syncQueue'], 'readonly');
-            const store = transaction.objectStore('syncQueue');
-            
-            const request = type ? store.index('type').getAll(type) : store.getAll();
-            
-            return new Promise((resolve, reject) => {
-                request.onsuccess = () => {
-                    const items = request.result.sort((a, b) => a.timestamp - b.timestamp);
-                    resolve(items);
-                };
-                
-                request.onerror = () => {
-                    this.logger.error('Failed to get sync queue', request.error);
-                    reject([]);
-                };
-            });
+            this.setStorage(this.PREFIXES.SYNC_QUEUE, this.syncQueue);
         } catch (error) {
-            this.logger.error('Failed to get sync queue', error);
-            return [];
+            this.logger.error('Failed to save sync queue:', error);
         }
     }
 
     /**
-     * Remove item from sync queue
-     * @param {number} id - Item ID
-     * @returns {Object} Remove result
+     * Attempt to sync queue
      */
-    async removeFromSyncQueue(id) {
+    async attemptSync() {
+        if (!this.isOnline || this.syncInProgress || this.syncQueue.length === 0) {
+            return;
+        }
+
+        this.syncInProgress = true;
+        
         try {
-            if (!this.indexedDB) {
-                return { success: false, error: 'IndexedDB not available' };
-            }
-
-            const transaction = this.indexedDB.transaction(['syncQueue'], 'readwrite');
-            const store = transaction.objectStore('syncQueue');
+            const itemsToSync = [...this.syncQueue];
             
-            const request = store.delete(id);
-
-            return new Promise((resolve, reject) => {
-                request.onsuccess = () => {
-                    this.logger.debug('Item removed from sync queue', { id });
-                    this.eventBus?.emit('storage:syncRemoved', { id });
-                    resolve({ success: true });
-                };
-                
-                request.onerror = () => {
-                    this.logger.error('Failed to remove from sync queue', request.error);
-                    reject({ success: false, error: request.error });
-                };
-            });
-        } catch (error) {
-            this.logger.error('Failed to remove from sync queue', error);
-            return { success: false, error: error.message };
+            for (const item of itemsToSync) {
+                try {
+                    // Attempt to sync to server
+                    const success = await this.syncItem(item);
+                    
+                    if (success) {
+                        // Remove from queue on success
+                        const index = this.syncQueue.findIndex(q => q === item);
+                        if (index !== -1) {
+                            this.syncQueue.splice(index, 1);
+                        }
+                    } else {
+                        // Increment attempt count
+                        item.attempts++;
+                    }
+                } catch (error) {
+                    this.logger.error('Failed to sync item:', error);
+                    item.attempts++;
+                }
+            }
+            
+            this.saveSyncQueue();
+            this.eventBus.emit(this.eventBus.TOPICS.SYNC_QUEUE_UPDATED, { queueLength: this.syncQueue.length });
+        } finally {
+            this.syncInProgress = false;
         }
     }
 
     /**
-     * Clear all storage
-     * @returns {Object} Clear result
+     * Sync a single item
+     * @param {Object} item - Sync queue item
+     * @returns {Promise<boolean>} Success status
      */
-    async clearAllStorage() {
+    async syncItem(item) {
+        // TODO: Implement actual sync to server
+        // For now, simulate successful sync
+        await new Promise(resolve => setTimeout(resolve, 100));
+        return true;
+    }
+
+    /**
+     * Get sync queue status
+     * @returns {Object} Queue status
+     */
+    getSyncQueueStatus() {
+        return {
+            queueLength: this.syncQueue.length,
+            isOnline: this.isOnline,
+            syncInProgress: this.syncInProgress
+        };
+    }
+
+    /**
+     * Generic storage getter
+     * @param {string} key - Storage key
+     * @param {any} defaultValue - Default value
+     * @returns {any} Stored value
+     */
+    getStorage(key, defaultValue = null) {
         try {
-            // Clear localStorage
-            const keys = Object.keys(localStorage).filter(key => key.startsWith('ignitefitness_'));
-            keys.forEach(key => localStorage.removeItem(key));
-            
-            // Clear IndexedDB
-            if (this.indexedDB) {
-                const transaction = this.indexedDB.transaction(['workouts', 'sessions', 'syncQueue'], 'readwrite');
-                
-                await Promise.all([
-                    transaction.objectStore('workouts').clear(),
-                    transaction.objectStore('sessions').clear(),
-                    transaction.objectStore('syncQueue').clear()
-                ]);
-            }
-            
-            this.logger.audit('STORAGE_CLEARED');
-            this.eventBus?.emit('storage:cleared');
-            
-            return { success: true };
+            const stored = localStorage.getItem(key);
+            return stored ? JSON.parse(stored) : defaultValue;
         } catch (error) {
-            this.logger.error('Failed to clear storage', error);
-            return { success: false, error: error.message };
+            this.logger.error(`Failed to get storage for key ${key}:`, error);
+            return defaultValue;
+        }
+    }
+
+    /**
+     * Generic storage setter
+     * @param {string} key - Storage key
+     * @param {any} value - Value to store
+     */
+    setStorage(key, value) {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+        } catch (error) {
+            this.logger.error(`Failed to set storage for key ${key}:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Clear all data
+     * @returns {Promise<void>}
+     */
+    async clearAllData() {
+        try {
+            Object.values(this.PREFIXES).forEach(prefix => {
+                localStorage.removeItem(prefix);
+            });
+            
+            this.syncQueue = [];
+            this.saveSyncQueue();
+        } catch (error) {
+            this.logger.error('Failed to clear all data:', error);
+            throw error;
         }
     }
 
@@ -364,54 +488,22 @@ class StorageManager {
      * Get storage statistics
      * @returns {Object} Storage statistics
      */
-    async getStorageStats() {
-        try {
-            const stats = {
-                localStorage: {
-                    keys: Object.keys(localStorage).filter(key => key.startsWith('ignitefitness_')).length,
-                    size: 0
-                },
-                indexedDB: {
-                    workouts: 0,
-                    sessions: 0,
-                    syncQueue: 0
-                }
+    getStorageStats() {
+        const stats = {};
+        
+        Object.entries(this.PREFIXES).forEach(([name, key]) => {
+            const data = this.getStorage(key, {});
+            const count = typeof data === 'object' && data !== null ? Object.keys(data).length : 0;
+            const size = new Blob([JSON.stringify(data)]).size;
+            
+            stats[name] = {
+                count,
+                size,
+                sizeKB: (size / 1024).toFixed(2)
             };
-
-            // Calculate localStorage size
-            Object.keys(localStorage).forEach(key => {
-                if (key.startsWith('ignitefitness_')) {
-                    stats.localStorage.size += localStorage.getItem(key).length;
-                }
-            });
-
-            // Get IndexedDB counts
-            if (this.indexedDB) {
-                const transaction = this.indexedDB.transaction(['workouts', 'sessions', 'syncQueue'], 'readonly');
-                
-                stats.indexedDB.workouts = await this.getObjectStoreCount(transaction.objectStore('workouts'));
-                stats.indexedDB.sessions = await this.getObjectStoreCount(transaction.objectStore('sessions'));
-                stats.indexedDB.syncQueue = await this.getObjectStoreCount(transaction.objectStore('syncQueue'));
-            }
-
-            return stats;
-        } catch (error) {
-            this.logger.error('Failed to get storage stats', error);
-            return null;
-        }
-    }
-
-    /**
-     * Get object store count
-     * @param {IDBObjectStore} store - Object store
-     * @returns {number} Count
-     */
-    async getObjectStoreCount(store) {
-        return new Promise((resolve, reject) => {
-            const request = store.count();
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(0);
         });
+        
+        return stats;
     }
 }
 

@@ -1,0 +1,279 @@
+/**
+ * Recovery Dashboard Styles
+ * Color-coded readiness circles, safety meter, and animations
+ */
+
+/* Readiness Circle */
+.readiness-circle {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 6px solid var(--readiness-color, #f59e0b);
+    background: rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    position: relative;
+    animation: pulse 2s ease-in-out infinite;
+    transition: all 0.3s ease;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 var(--readiness-color, #f59e0b);
+    }
+    50% {
+        transform: scale(1.02);
+        box-shadow: 0 0 0 8px transparent;
+    }
+}
+
+.readiness-value {
+    font-size: 32px;
+    font-weight: var(--font-weight-bold, 700);
+    color: var(--readiness-color, #f59e0b);
+    line-height: 1;
+}
+
+.readiness-label {
+    font-size: var(--text-xs, 0.75rem);
+    font-weight: var(--font-weight-medium, 500);
+    color: var(--text-muted, #6c757d);
+    margin-top: var(--space-1, 4px);
+}
+
+/* Safety Meter */
+.safety-meter {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2, 8px);
+    padding: var(--space-4, 16px);
+    background: var(--card-background, #f8f9fa);
+    border-radius: var(--radius-lg, 12px);
+    border-left: 4px solid;
+    transition: all 0.3s ease;
+}
+
+.safety-meter.low {
+    border-left-color: var(--status-success, #10b981);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.safety-meter.moderate {
+    border-left-color: var(--status-warning, #f59e0b);
+    background: rgba(245, 158, 11, 0.1);
+}
+
+.safety-meter.high {
+    border-left-color: var(--status-error, #ef4444);
+    background: rgba(239, 68, 68, 0.1);
+    animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.safety-meter-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.safety-meter-title {
+    font-size: var(--text-sm, 0.875rem);
+    font-weight: var(--font-weight-semibold, 600);
+    color: var(--text-primary, #212529);
+}
+
+.safety-meter-status {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2, 8px);
+    padding: var(--space-1, 4px) var(--space-2, 8px);
+    border-radius: var(--radius-full, 9999px);
+    font-size: var(--text-xs, 0.75rem);
+    font-weight: var(--font-weight-semibold, 600);
+}
+
+.safety-meter-status.low {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--status-success, #10b981);
+}
+
+.safety-meter-status.moderate {
+    background: rgba(245, 158, 11, 0.2);
+    color: var(--status-warning, #f59e0b);
+}
+
+.safety-meter-status.high {
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--status-error, #ef4444);
+}
+
+.safety-meter-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--card-border, #dee2e6);
+    border-radius: var(--radius-full, 9999px);
+    overflow: hidden;
+    position: relative;
+}
+
+.safety-meter-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--status-success, #10b981), var(--status-error, #ef4444));
+    border-radius: var(--radius-full, 9999px);
+    transition: width 0.6s ease;
+}
+
+.safety-meter-info {
+    font-size: var(--text-xs, 0.75rem);
+    color: var(--text-muted, #6c757d);
+}
+
+/* Injury Flag Tooltip */
+.injury-flag-indicator {
+    position: relative;
+    cursor: pointer;
+}
+
+.injury-flag-indicator:hover .injury-tooltip {
+    display: block;
+}
+
+.injury-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: var(--space-2, 8px);
+    padding: var(--space-3, 12px);
+    background: var(--theme-surface, #ffffff);
+    color: var(--text-primary, #212529);
+    border-radius: var(--radius-lg, 12px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    font-size: var(--text-xs, 0.75rem);
+    white-space: pre-wrap;
+    max-width: 250px;
+    z-index: 1000;
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+.injury-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: var(--theme-surface, #ffffff);
+}
+
+/* Readiness-based dashboard updates */
+.dashboard-hero[data-readiness="green"] .readiness-circle {
+    --readiness-color: #10b981;
+}
+
+.dashboard-hero[data-readiness="yellow"] .readiness-circle {
+    --readiness-color: #f59e0b;
+}
+
+.dashboard-hero[data-readiness="red"] .readiness-circle {
+    --readiness-color: #ef4444;
+    animation: pulse 2s ease-in-out infinite, pulse-red 2s ease-in-out infinite;
+}
+
+@keyframes pulse-red {
+    0%, 100% { border-color: #ef4444; }
+    50% { border-color: #ff7878; }
+}
+
+/* Volume trend indicator */
+.volume-trend {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1, 4px);
+    font-size: var(--text-xs, 0.75rem);
+    font-weight: var(--font-weight-semibold, 600);
+}
+
+.volume-trend.up {
+    color: var(--status-error, #ef4444);
+}
+
+.volume-trend.down {
+    color: var(--status-success, #10b981);
+}
+
+/* Animated values */
+.animated-value {
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.animated-value.updated {
+    animation: pop 0.3s ease;
+}
+
+@keyframes pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .readiness-circle {
+        width: 80px;
+        height: 80px;
+        border-width: 5px;
+    }
+    
+    .readiness-value {
+        font-size: 24px;
+    }
+    
+    .safety-meter {
+        padding: var(--space-3, 12px);
+    }
+    
+    .injury-tooltip {
+        max-width: 90%;
+        left: 5%;
+        transform: none;
+    }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+    .readiness-circle {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .safety-meter {
+        background: var(--card-background-dark, #374151);
+    }
+    
+    .injury-tooltip {
+        background: var(--theme-surface-dark, #2d3748);
+        color: var(--text-primary-dark, #f7fafc);
+    }
+}

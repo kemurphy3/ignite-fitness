@@ -31,6 +31,9 @@
     <link rel="stylesheet" href="styles/mobile-first.css">
     <link rel="stylesheet" href="styles/design-tokens.css">
     <link rel="stylesheet" href="styles/components.css">
+    <link rel="stylesheet" href="styles/persistent-header.css">
+    <link rel="stylesheet" href="styles/workout-flow.css">
+    <link rel="stylesheet" href="styles/recovery-dashboard.css">
     
     <!-- Existing Styles -->
     <link rel="stylesheet" href="styles/main.css">
@@ -2894,6 +2897,8 @@
     <!-- Core Modules -->
     <script src="js/modules/core/EventBus.js"></script>
     <script src="js/modules/core/SafeLogger.js"></script>
+    <script src="js/modules/core/LegalCopy.js"></script>
+    <script src="js/modules/data/StorageManager.js"></script>
     <script src="js/modules/debug/DebugManager.js"></script>
     
     <!-- UI Modules -->
@@ -2903,10 +2908,30 @@
     <script src="js/modules/ui/GestureHandler.js"></script>
     <script src="js/modules/ui/ComponentLibrary.js"></script>
     <script src="js/modules/ui/TouchOptimizer.js"></script>
+    <script src="js/modules/ui/DashboardHero.js"></script>
+    <script src="js/modules/ui/SeasonPhase.js"></script>
+    <script src="js/modules/ui/PersistentHeader.js"></script>
+    <script src="js/modules/ui/TimerOverlay.js"></script>
+    <script src="js/modules/ui/RPEInput.js"></script>
+    <script src="js/modules/ui/PeriodizationView.js"></script>
+    
+    <!-- Nutrition Modules -->
+    <script src="js/modules/nutrition/NutritionCard.js"></script>
+    
+    <!-- Settings Modules -->
+    <script src="js/modules/settings/IntegrationPanel.js"></script>
     
     <!-- Onboarding Modules -->
     <script src="js/modules/onboarding/SportSelection.js"></script>
     <script src="js/modules/onboarding/OnboardingManager.js"></script>
+    
+    <!-- Workout Modules -->
+    <script src="js/modules/workout/ProgressionEngine.js"></script>
+    <script src="js/modules/workout/ConflictResolver.js"></script>
+    <script src="js/modules/workout/WeightDisplay.js"></script>
+    <script src="js/modules/settings/EquipmentPrefs.js"></script>
+    <script src="js/modules/workout/ExerciseAdapter.js"></script>
+    <script src="js/modules/workout/WorkoutTracker.js"></script>
     
     <!-- Sport-Specific Modules -->
     <script src="js/modules/sports/SportDefinitions.js"></script>
@@ -2921,6 +2946,7 @@
     <script src="js/modules/injury/CorrectiveExercises.js"></script>
     <script src="js/modules/injury/RiskAssessment.js"></script>
     <script src="js/modules/injury/PreventionProtocols.js"></script>
+    <script src="js/modules/injury/InjuryCheck.js"></script>
     
     <!-- Authentication Modules -->
     <script src="js/modules/auth/AuthManager.js"></script>
@@ -2947,6 +2973,7 @@
     
     <!-- Readiness Modules -->
     <script src="js/modules/readiness/DailyCheckIn.js"></script>
+    <script src="js/modules/readiness/RecoverySummary.js"></script>
     
     <!-- Progression Modules -->
     <script src="js/modules/workout/ProgressionEngine.js"></script>
@@ -2969,6 +2996,39 @@
     
     <!-- Main Application -->
     <script src="js/app-modular.js"></script>
+    
+    <!-- Lighthouse Optimization -->
+    <script src="js/lighthouse-optimization.js"></script>
+    
+    <!-- Prompt 0.1 Verification -->
+    <script src="test-prompt01-verification.js"></script>
+    
+    <!-- Prompt 0.2 Verification -->
+    <script src="test-prompt02-verification.js"></script>
+    
+    <!-- Prompt 1.1 Verification -->
+    <script src="test-prompt11-verification.js"></script>
+    
+    <!-- Prompt 1.2 Verification -->
+    <script src="test-prompt12-verification.js"></script>
+    
+    <!-- Prompt 2.1 Verification -->
+    <script src="test-prompt21-verification.js"></script>
+    
+    <!-- Prompt 2.2 Verification -->
+    <script src="test-prompt22-verification.js"></script>
+    
+    <!-- Prompt 3.1 Verification -->
+    <script src="test-prompt31-verification.js"></script>
+    
+    <!-- Prompt 3.2 Verification -->
+    <script src="test-prompt32-verification.js"></script>
+    
+    <!-- Prompt 4.1 Verification -->
+    <script src="test-prompt41-verification.js"></script>
+    
+    <!-- Prompt 5.1 Verification -->
+    <script src="test-prompt51-verification.js"></script>
     
     <!-- Service Worker Registration -->
     </div>
@@ -4050,6 +4110,18 @@ This structured approach helps prevent overtraining and ensures you're at your b
                 console.log('Mobile optimizer initialized');
             }
             
+            // Initialize season phase
+            if (window.SeasonPhase) {
+                console.log('Season phase initialized');
+                // Ensure phase badge is visible
+                window.SeasonPhase.updateUIDisplay();
+            }
+            
+            // Initialize persistent header
+            if (window.PersistentHeader) {
+                console.log('Persistent header initialized');
+            }
+            
             // Initialize router
             if (window.Router) {
                 console.log('Router initialized');
@@ -4058,6 +4130,11 @@ This structured approach helps prevent overtraining and ensures you're at your b
             // Initialize bottom navigation
             if (window.BottomNavigation) {
                 console.log('Bottom navigation initialized');
+            }
+            
+            // Initialize dashboard hero
+            if (window.DashboardHero) {
+                console.log('Dashboard hero initialized');
             }
             
             // Check if user needs onboarding

@@ -1,11 +1,27 @@
 /**
  * EventBus - Central event management system
  * Provides pub/sub pattern for loose coupling between modules
+ * 
+ * Core Topics:
+ * - READINESS_UPDATED: Daily readiness check-in completed
+ * - SESSION_COMPLETED: Workout session completed
+ * - PHASE_CHANGED: Training phase changed
+ * - PROFILE_UPDATED: User profile updated
  */
 class EventBus {
     constructor() {
         this.events = new Map();
         this.maxListeners = 50;
+        
+        // Core event topics
+        this.TOPICS = {
+            READINESS_UPDATED: 'READINESS_UPDATED',
+            SESSION_COMPLETED: 'SESSION_COMPLETED',
+            PHASE_CHANGED: 'PHASE_CHANGED',
+            PROFILE_UPDATED: 'PROFILE_UPDATED',
+            SYNC_QUEUE_UPDATED: 'SYNC_QUEUE_UPDATED',
+            OFFLINE_STATE_CHANGED: 'OFFLINE_STATE_CHANGED'
+        };
     }
 
     /**

@@ -1,0 +1,332 @@
+/**
+ * Workout Flow UI Styles
+ * Timer overlays, progress bars, and touch-friendly buttons
+ */
+
+/* Timer Overlay */
+.timer-overlay {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--theme-surface, #ffffff);
+    border-top: 2px solid var(--theme-primary, #00a651);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1040;
+    padding: var(--space-4, 16px);
+}
+
+.timer-overlay.hidden {
+    display: none;
+}
+
+.timer-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3, 12px);
+    max-width: 100%;
+}
+
+/* Session Timer */
+.session-timer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3, 12px);
+    background: var(--card-background, #f8f9fa);
+    border-radius: var(--radius-lg, 12px);
+}
+
+.timer-label {
+    font-size: var(--text-sm, 0.875rem);
+    font-weight: var(--font-weight-semibold, 600);
+    color: var(--text-muted, #6c757d);
+}
+
+.timer-display {
+    font-size: var(--text-2xl, 1.5rem);
+    font-weight: var(--font-weight-bold, 700);
+    font-variant-numeric: tabular-nums;
+    color: var(--theme-primary, #00a651);
+}
+
+/* Rest Timer */
+.rest-timer {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3, 12px);
+    background: var(--status-warning-light, #fff3cd);
+    border-radius: var(--radius-lg, 12px);
+    border: 2px solid var(--status-warning, #ffc107);
+}
+
+.rest-timer.active {
+    display: flex;
+}
+
+.timer-display rest {
+    font-size: var(--text-2xl, 1.5rem);
+    font-weight: var(--font-weight-bold, 700);
+    color: var(--status-warning-dark, #856404);
+}
+
+.timer-display.rest.urgent {
+    animation: pulse 1s ease-in-out infinite;
+    color: var(--status-error, #dc3545);
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Progress Bar */
+.workout-progress {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2, 8px);
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 8px;
+    background: var(--card-border, #dee2e6);
+    border-radius: var(--radius-full, 9999px);
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--theme-primary, #00a651), var(--theme-accent, #ffcd00));
+    border-radius: var(--radius-full, 9999px);
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: var(--text-sm, 0.875rem);
+    font-weight: var(--font-weight-medium, 500);
+    color: var(--text-muted, #6c757d);
+    text-align: center;
+}
+
+/* RPE Input Modal */
+.rpe-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rpe-modal.hidden {
+    display: none;
+}
+
+.rpe-content {
+    max-width: 90%;
+    width: 400px;
+    background: var(--theme-surface, #ffffff);
+    border-radius: var(--radius-xl, 16px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    padding: var(--space-6, 24px);
+}
+
+.rpe-wheel-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4, 16px);
+    padding: var(--space-4, 16px);
+}
+
+.rpe-wheel {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3, 12px);
+}
+
+.rpe-value {
+    font-size: 64px;
+    font-weight: var(--font-weight-bold, 700);
+    text-align: center;
+    color: var(--theme-primary, #00a651);
+    transition: all 0.2s ease;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rpe-value.low {
+    color: var(--status-success, #10b981);
+}
+
+.rpe-value.moderate {
+    color: var(--status-info, #3b82f6);
+}
+
+.rpe-value.hard {
+    color: var(--status-warning, #f59e0b);
+}
+
+.rpe-value.max {
+    color: var(--status-error, #dc3545);
+}
+
+#rpe-slider {
+    width: 100%;
+    height: 48px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+#rpe-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--theme-primary, #00a651);
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+#rpe-slider::-moz-range-thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--theme-primary, #00a651);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+#rpe-slider::-webkit-slider-track {
+    height: 8px;
+    background: var(--card-border, #dee2e6);
+    border-radius: var(--radius-full, 9999px);
+}
+
+#rpe-slider::-moz-range-track {
+    height: 8px;
+    background: var(--card-border, #dee2e6);
+    border-radius: var(--radius-full, 9999px);
+}
+
+.rpe-descriptions {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--text-xs, 0.75rem);
+    color: var(--text-muted, #6c757d);
+}
+
+.rpe-descriptions span {
+    text-align: center;
+    flex: 1;
+}
+
+/* Large Touch-Friendly Buttons */
+.btn-primary.large,
+.btn-secondary.large {
+    min-height: 60px;
+    font-size: var(--text-lg, 1.125rem);
+    font-weight: var(--font-weight-semibold, 600);
+    padding: var(--space-4, 16px) var(--space-6, 24px);
+    border-radius: var(--radius-lg, 12px);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.btn-primary.large {
+    background: var(--theme-primary, #00a651);
+    color: white;
+    border: none;
+}
+
+.btn-primary.large:active {
+    transform: scale(0.98);
+}
+
+/* Workout Flow Buttons */
+.workout-controls {
+    display: flex;
+    gap: var(--space-3, 12px);
+    padding: var(--space-4, 16px);
+}
+
+.workout-button {
+    flex: 1;
+    min-height: 64px;
+    font-size: var(--text-base, 1rem);
+    font-weight: var(--font-weight-semibold, 600);
+    border-radius: var(--radius-lg, 12px);
+    border: none;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: all 0.2s ease;
+}
+
+.workout-button:active {
+    transform: scale(0.97);
+}
+
+.workout-button-primary {
+    background: var(--theme-primary, #00a651);
+    color: white;
+}
+
+.workout-button-secondary {
+    background: var(--card-background, #f8f9fa);
+    color: var(--text-primary, #212529);
+    border: 1px solid var(--card-border, #dee2e6);
+}
+
+.workout-button-danger {
+    background: var(--status-error, #dc3545);
+    color: white;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+    .timer-display {
+        font-size: var(--text-xl, 1.25rem);
+    }
+    
+    .rpe-value {
+        font-size: 48px;
+    }
+    
+    .rpe-content {
+        width: 95%;
+        padding: var(--space-4, 16px);
+    }
+    
+    .workout-button {
+        min-height: 72px;
+        font-size: var(--text-lg, 1.125rem);
+    }
+}
+
+/* Dark Mode */
+@media (prefers-color-scheme: dark) {
+    .timer-overlay {
+        background: var(--theme-surface-dark, #2d3748);
+        border-top-color: var(--theme-primary-dark, #60a5fa);
+    }
+    
+    .session-timer {
+        background: var(--card-background-dark, #374151);
+    }
+    
+    .rpe-content {
+        background: var(--theme-surface-dark, #2d3748);
+    }
+}

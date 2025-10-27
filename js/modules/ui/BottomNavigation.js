@@ -23,35 +23,40 @@ class BottomNavigation {
                 label: 'Home',
                 icon: '🏠',
                 route: '#/',
-                requiresAuth: true
+                requiresAuth: true,
+                shortLabel: 'Home'
             },
             {
-                id: 'workouts',
-                label: 'Workouts',
+                id: 'training',
+                label: 'Training',
                 icon: '💪',
-                route: '#/workouts',
-                requiresAuth: true
+                route: '#/training',
+                requiresAuth: true,
+                shortLabel: 'Train'
             },
             {
                 id: 'progress',
                 label: 'Progress',
                 icon: '📊',
                 route: '#/progress',
-                requiresAuth: true
+                requiresAuth: true,
+                shortLabel: 'Stats'
             },
             {
                 id: 'sport',
                 label: 'Sport',
                 icon: '⚽',
                 route: '#/sport',
-                requiresAuth: true
+                requiresAuth: true,
+                shortLabel: 'Sport'
             },
             {
                 id: 'profile',
                 label: 'Profile',
                 icon: '👤',
                 route: '#/profile',
-                requiresAuth: true
+                requiresAuth: true,
+                shortLabel: 'Me'
             }
         ];
 

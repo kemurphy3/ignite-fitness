@@ -37,6 +37,38 @@ class OnboardingManager {
                 conditional: true
             },
             {
+                id: 'aesthetic_focus',
+                title: "What's Your Training Focus?",
+                component: 'AestheticFocus',
+                description: 'Choose your primary training focus',
+                options: [
+                    { 
+                        id: 'v_taper', 
+                        emoji: '💪', 
+                        label: 'V-Taper', 
+                        description: 'Build wide shoulders and back' 
+                    },
+                    { 
+                        id: 'glutes', 
+                        emoji: '🍑', 
+                        label: 'Glutes', 
+                        description: 'Develop strong glutes and legs' 
+                    },
+                    { 
+                        id: 'toned', 
+                        emoji: '🔥', 
+                        label: 'Lean/Toned', 
+                        description: 'Stay lean and athletic' 
+                    },
+                    { 
+                        id: 'functional', 
+                        emoji: '⚙️', 
+                        label: 'Functional', 
+                        description: 'Movement and performance focused' 
+                    }
+                ]
+            },
+            {
                 id: 'profile_setup',
                 title: "Tell Us About Yourself",
                 component: 'ProfileSetup',

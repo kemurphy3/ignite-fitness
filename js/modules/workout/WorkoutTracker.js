@@ -1,391 +1,419 @@
 /**
- * WorkoutTracker - Handles workout logging and tracking
- * Extracted from app.js for modular architecture
+ * WorkoutTracker - Tracks workout session with timers, RPE, and flow
+ * Provides in-gym experience with progress tracking and RPE collection
  */
 class WorkoutTracker {
     constructor() {
-        this.currentWorkout = null;
-        this.workoutHistory = [];
         this.logger = window.SafeLogger || console;
         this.eventBus = window.EventBus;
         this.storageManager = window.StorageManager;
+        this.timerOverlay = window.TimerOverlay;
+        this.progressionEngine = window.ProgressionEngine;
         
-        this.loadWorkoutHistory();
+        this.currentSession = null;
+        this.currentExerciseIndex = 0;
+        this.exerciseData = [];
+        this.sessionStartTime = null;
+        this.totalDuration = 0;
+        this.isActive = false;
+        
+        this.initializeSession();
     }
 
     /**
-     * Load workout history from storage
+     * Initialize workout session
+     * @param {Object} workout - Workout data
      */
-    loadWorkoutHistory() {
-        try {
-            const stored = this.storageManager?.getFromLocalStorage('workout_history');
-            if (stored) {
-                this.workoutHistory = stored;
-            }
-        } catch (error) {
-            this.logger.error('Failed to load workout history', error);
-            this.workoutHistory = [];
+    initializeSession(workout) {
+        if (!workout) {
+            this.logger.warn('No workout provided');
+            return;
+        }
+        
+        this.currentSession = {
+            workoutId: workout.id || `workout_${Date.now()}`,
+            workoutName: workout.name || 'Workout',
+            exercises: workout.exercises || [],
+            startTime: new Date().toISOString(),
+            status: 'active',
+            exercises: []
+        };
+        
+        this.currentExerciseIndex = 0;
+        this.exerciseData = [];
+        this.sessionStartTime = Date.now();
+        this.isActive = true;
+        
+        this.logger.debug('Workout session initialized', this.currentSession);
+        
+        // Start session timer
+        if (this.timerOverlay) {
+            this.timerOverlay.startSessionTimer();
         }
     }
 
     /**
-     * Save workout history to storage
+     * Start next exercise
+     * @returns {Object|null} Next exercise data
      */
-    saveWorkoutHistory() {
-        try {
-            this.storageManager?.saveToLocalStorage('workout_history', this.workoutHistory);
-        } catch (error) {
-            this.logger.error('Failed to save workout history', error);
+    startNextExercise() {
+        if (!this.currentSession) {
+            this.logger.warn('No active session');
+            return null;
         }
+        
+        const exercise = this.currentSession.exercises[this.currentExerciseIndex];
+        if (!exercise) {
+            this.logger.debug('All exercises completed');
+            return null;
+        }
+        
+        const exerciseData = {
+            exerciseId: exercise.id || `exercise_${Date.now()}`,
+            exerciseName: exercise.name,
+            sets: exercise.sets || 1,
+            reps: exercise.reps || '8-10',
+            weight: exercise.weight || null,
+            status: 'in_progress',
+            startTime: new Date().toISOString(),
+            completedSets: [],
+            rpeData: []
+        };
+        
+        this.exerciseData.push(exerciseData);
+        
+        this.logger.debug('Exercise started', exerciseData);
+        return exerciseData;
     }
 
     /**
-     * Start a new workout
-     * @param {Object} workoutData - Workout data
-     * @returns {Object} Start result
-     */
-    startWorkout(workoutData) {
-        try {
-            if (this.currentWorkout) {
-                return { success: false, error: 'Workout already in progress' };
-            }
-
-            const workout = {
-                id: `workout_${Date.now()}`,
-                name: workoutData.name || 'Workout',
-                type: workoutData.type || 'General',
-                startTime: new Date().toISOString(),
-                exercises: [],
-                notes: workoutData.notes || '',
-                userId: window.AuthManager?.getCurrentUsername() || 'anonymous',
-                status: 'in_progress'
-            };
-
-            this.currentWorkout = workout;
-            
-            this.logger.audit('WORKOUT_STARTED', { 
-                workoutId: workout.id, 
-                type: workout.type 
-            });
-            this.eventBus?.emit('workout:started', workout);
-            
-            return { success: true, workout };
-        } catch (error) {
-            this.logger.error('Failed to start workout', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    /**
-     * Add exercise to current workout
-     * @param {Object} exerciseData - Exercise data
-     * @returns {Object} Add result
-     */
-    addExerciseToWorkout(exerciseData) {
-        try {
-            if (!this.currentWorkout) {
-                return { success: false, error: 'No workout in progress' };
-            }
-
-            const exercise = {
-                id: `exercise_${Date.now()}`,
-                name: exerciseData.name,
-                sets: exerciseData.sets || [],
-                notes: exerciseData.notes || '',
-                addedAt: new Date().toISOString()
-            };
-
-            this.currentWorkout.exercises.push(exercise);
-            
-            this.logger.debug('Exercise added to workout', { 
-                workoutId: this.currentWorkout.id, 
-                exerciseName: exercise.name 
-            });
-            this.eventBus?.emit('workout:exerciseAdded', { 
-                workout: this.currentWorkout, 
-                exercise 
-            });
-            
-            return { success: true, exercise };
-        } catch (error) {
-            this.logger.error('Failed to add exercise to workout', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    /**
-     * Add set to exercise
-     * @param {string} exerciseId - Exercise ID
+     * Complete current set
      * @param {Object} setData - Set data
-     * @returns {Object} Add result
+     * @returns {Object} Updated exercise data
      */
-    addSetToExercise(exerciseId, setData) {
-        try {
-            if (!this.currentWorkout) {
-                return { success: false, error: 'No workout in progress' };
-            }
-
-            const exercise = this.currentWorkout.exercises.find(ex => ex.id === exerciseId);
-            if (!exercise) {
-                return { success: false, error: 'Exercise not found' };
-            }
-
-            const set = {
-                id: `set_${Date.now()}`,
-                reps: setData.reps,
-                weight: setData.weight,
-                duration: setData.duration,
-                rest: setData.rest,
-                rpe: setData.rpe,
-                notes: setData.notes || '',
-                completedAt: new Date().toISOString()
-            };
-
-            exercise.sets.push(set);
-            
-            this.logger.debug('Set added to exercise', { 
-                workoutId: this.currentWorkout.id, 
-                exerciseId, 
-                set 
-            });
-            this.eventBus?.emit('workout:setAdded', { 
-                workout: this.currentWorkout, 
-                exercise, 
-                set 
-            });
-            
-            return { success: true, set };
-        } catch (error) {
-            this.logger.error('Failed to add set to exercise', error);
-            return { success: false, error: error.message };
+    completeSet(setData = {}) {
+        const currentExercise = this.getCurrentExercise();
+        if (!currentExercise) {
+            return null;
         }
-    }
-
-    /**
-     * Complete current workout
-     * @param {Object} completionData - Completion data
-     * @returns {Object} Complete result
-     */
-    completeWorkout(completionData = {}) {
-        try {
-            if (!this.currentWorkout) {
-                return { success: false, error: 'No workout in progress' };
-            }
-
-            const endTime = new Date().toISOString();
-            const duration = new Date(endTime) - new Date(this.currentWorkout.startTime);
-
-            const completedWorkout = {
-                ...this.currentWorkout,
-                endTime,
-                duration: Math.round(duration / 1000 / 60), // minutes
-                status: 'completed',
-                notes: completionData.notes || this.currentWorkout.notes,
-                rating: completionData.rating,
-                completedAt: endTime
-            };
-
-            // Add to history
-            this.workoutHistory.unshift(completedWorkout);
-            
-            // Keep only last 100 workouts
-            if (this.workoutHistory.length > 100) {
-                this.workoutHistory = this.workoutHistory.slice(0, 100);
-            }
-
-            // Save to storage
-            this.saveWorkoutHistory();
-            
-            // Save to IndexedDB for offline storage
-            if (this.storageManager) {
-                this.storageManager.saveWorkoutToIndexedDB(completedWorkout);
-            }
-
-            // Clear current workout
-            this.currentWorkout = null;
-            
-            this.logger.audit('WORKOUT_COMPLETED', { 
-                workoutId: completedWorkout.id, 
-                duration: completedWorkout.duration,
-                exercises: completedWorkout.exercises.length 
-            });
-            this.eventBus?.emit('workout:completed', completedWorkout);
-            
-            return { success: true, workout: completedWorkout };
-        } catch (error) {
-            this.logger.error('Failed to complete workout', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    /**
-     * Cancel current workout
-     * @returns {Object} Cancel result
-     */
-    cancelWorkout() {
-        try {
-            if (!this.currentWorkout) {
-                return { success: false, error: 'No workout in progress' };
-            }
-
-            const workoutId = this.currentWorkout.id;
-            this.currentWorkout = null;
-            
-            this.logger.audit('WORKOUT_CANCELLED', { workoutId });
-            this.eventBus?.emit('workout:cancelled', { workoutId });
-            
-            return { success: true };
-        } catch (error) {
-            this.logger.error('Failed to cancel workout', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    /**
-     * Get current workout
-     * @returns {Object|null} Current workout
-     */
-    getCurrentWorkout() {
-        return this.currentWorkout;
-    }
-
-    /**
-     * Get workout history
-     * @param {number} limit - Limit results
-     * @returns {Array} Workout history
-     */
-    getWorkoutHistory(limit = 50) {
-        return this.workoutHistory.slice(0, limit);
-    }
-
-    /**
-     * Get workout by ID
-     * @param {string} id - Workout ID
-     * @returns {Object|null} Workout
-     */
-    getWorkoutById(id) {
-        return this.workoutHistory.find(workout => workout.id === id) || null;
-    }
-
-    /**
-     * Get workouts by date range
-     * @param {Date} startDate - Start date
-     * @param {Date} endDate - End date
-     * @returns {Array} Workouts in range
-     */
-    getWorkoutsByDateRange(startDate, endDate) {
-        return this.workoutHistory.filter(workout => {
-            const workoutDate = new Date(workout.startTime);
-            return workoutDate >= startDate && workoutDate <= endDate;
-        });
-    }
-
-    /**
-     * Get workout statistics
-     * @param {number} days - Number of days to look back
-     * @returns {Object} Statistics
-     */
-    getWorkoutStatistics(days = 30) {
-        const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() - days);
         
-        const recentWorkouts = this.workoutHistory.filter(workout => 
-            new Date(workout.startTime) >= cutoffDate
-        );
-
-        const totalWorkouts = recentWorkouts.length;
-        const totalDuration = recentWorkouts.reduce((sum, workout) => sum + (workout.duration || 0), 0);
-        const totalExercises = recentWorkouts.reduce((sum, workout) => sum + workout.exercises.length, 0);
+        const set = {
+            setNumber: (currentExercise.completedSets.length + 1),
+            weight: setData.weight || currentExercise.weight,
+            reps: setData.reps || currentExercise.reps,
+            completedAt: new Date().toISOString(),
+            restCompleted: setData.restCompleted || false
+        };
         
-        const workoutTypes = {};
-        recentWorkouts.forEach(workout => {
-            workoutTypes[workout.type] = (workoutTypes[workout.type] || 0) + 1;
+        currentExercise.completedSets.push(set);
+        
+        this.logger.debug('Set completed', set);
+        
+        // Emit event
+        this.eventBus.emit('workout:set_completed', {
+            sessionId: this.currentSession.workoutId,
+            exercise: currentExercise,
+            set
         });
+        
+        return currentExercise;
+    }
 
+    /**
+     * Record RPE for current exercise
+     * @param {number} rpe - Rate of perceived exertion (1-10)
+     * @param {Object} context - Additional context
+     * @returns {Object} Updated exercise data
+     */
+    recordRPE(rpe, context = {}) {
+        if (rpe < 1 || rpe > 10) {
+            this.logger.warn('Invalid RPE value:', rpe);
+            return null;
+        }
+        
+        const currentExercise = this.getCurrentExercise();
+        if (!currentExercise) {
+            return null;
+        }
+        
+        const rpeData = {
+            rpe,
+            exerciseId: currentExercise.exerciseId,
+            exerciseName: currentExercise.exerciseName,
+            recordedAt: new Date().toISOString(),
+            ...context
+        };
+        
+        currentExercise.rpeData.push(rpeData);
+        
+        this.logger.debug('RPE recorded', rpeData);
+        
+        // Emit event
+        this.eventBus.emit('workout:rpe_recorded', rpeData);
+        
+        // Store in progression system
+        if (this.progressionEngine) {
+            this.progressionEngine.saveRPE(
+                this.getUserId(),
+                new Date().toISOString().split('T')[0],
+                {
+                    rpe,
+                    exercise: currentExercise.exerciseName,
+                    ...context
+                }
+            );
+        }
+        
+        return currentExercise;
+    }
+
+    /**
+     * Complete current exercise and move to next
+     * @returns {Object|null} Next exercise
+     */
+    completeExercise() {
+        const currentExercise = this.getCurrentExercise();
+        if (!currentExercise) {
+            return null;
+        }
+        
+        currentExercise.status = 'completed';
+        currentExercise.endTime = new Date().toISOString();
+        currentExercise.duration = Date.now() - new Date(currentExercise.startTime).getTime();
+        
+        this.logger.debug('Exercise completed', currentExercise);
+        
+        // Emit event
+        this.eventBus.emit('workout:exercise_completed', {
+            sessionId: this.currentSession.workoutId,
+            exercise: currentExercise
+        });
+        
+        // Move to next exercise
+        this.currentExerciseIndex++;
+        
+        return this.startNextExercise();
+    }
+
+    /**
+     * Swap exercise for alternative
+     * @param {Object} alternativeExercise - Alternative exercise
+     * @returns {Object} Updated session
+     */
+    swapExercise(alternativeExercise) {
+        if (!this.currentSession) {
+            return null;
+        }
+        
+        const currentIndex = this.currentExerciseIndex;
+        const currentExercise = this.currentSession.exercises[currentIndex];
+        
+        // Replace in session
+        this.currentSession.exercises[currentIndex] = {
+            ...alternativeExercise,
+            swapped: true,
+            originalExercise: currentExercise.name,
+            swappedAt: new Date().toISOString()
+        };
+        
+        this.logger.debug('Exercise swapped', {
+            from: currentExercise.name,
+            to: alternativeExercise.name
+        });
+        
+        // Emit event
+        this.eventBus.emit('workout:exercise_swapped', {
+            sessionId: this.currentSession.workoutId,
+            from: currentExercise,
+            to: alternativeExercise
+        });
+        
+        return this.currentSession;
+    }
+
+    /**
+     * Get current exercise
+     * @returns {Object|null} Current exercise data
+     */
+    getCurrentExercise() {
+        if (!this.exerciseData.length) {
+            return null;
+        }
+        
+        return this.exerciseData[this.exerciseData.length - 1];
+    }
+
+    /**
+     * Get workout progress
+     * @returns {Object} Progress data
+     */
+    getProgress() {
+        if (!this.currentSession) {
+            return { percentage: 0, completedExercises: 0, totalExercises: 0 };
+        }
+        
+        const totalExercises = this.currentSession.exercises.length;
+        const completedExercises = this.currentExerciseIndex;
+        const percentage = (completedExercises / totalExercises) * 100;
+        
+        const currentExercise = this.getCurrentExercise();
+        let exerciseProgress = 0;
+        
+        if (currentExercise) {
+            const totalSets = currentExercise.sets;
+            const completedSets = currentExercise.completedSets.length;
+            exerciseProgress = (completedSets / totalSets) * 100;
+        }
+        
         return {
-            totalWorkouts,
-            totalDuration,
+            percentage: Math.round(percentage),
+            completedExercises,
             totalExercises,
-            averageDuration: totalWorkouts > 0 ? Math.round(totalDuration / totalWorkouts) : 0,
-            workoutTypes,
-            period: `${days} days`
+            currentExerciseProgress: Math.round(exerciseProgress),
+            currentExercise: this.currentSession.exercises[this.currentExerciseIndex],
+            elapsedTime: Date.now() - this.sessionStartTime
         };
     }
 
     /**
-     * Get exercise progress
-     * @param {string} exerciseName - Exercise name
-     * @param {number} days - Number of days to look back
-     * @returns {Array} Exercise progress
+     * Complete entire workout session
+     * @returns {Promise<Object>} Session completion data
      */
-    getExerciseProgress(exerciseName, days = 30) {
-        const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() - days);
+    async completeSession() {
+        if (!this.currentSession || !this.isActive) {
+            return null;
+        }
         
-        const progress = [];
+        const endTime = new Date().toISOString();
+        this.totalDuration = Date.now() - this.sessionStartTime;
         
-        this.workoutHistory.forEach(workout => {
-            if (new Date(workout.startTime) >= cutoffDate) {
-                const exercise = workout.exercises.find(ex => ex.name === exerciseName);
-                if (exercise && exercise.sets.length > 0) {
-                    const maxWeight = Math.max(...exercise.sets.map(set => set.weight || 0));
-                    const totalReps = exercise.sets.reduce((sum, set) => sum + (set.reps || 0), 0);
-                    
-                    progress.push({
-                        date: workout.startTime,
-                        maxWeight,
-                        totalReps,
-                        sets: exercise.sets.length
-                    });
-                }
-            }
-        });
-
-        return progress.sort((a, b) => new Date(a.date) - new Date(b.date));
+        const sessionData = {
+            ...this.currentSession,
+            status: 'completed',
+            endTime,
+            duration: this.totalDuration,
+            exercises: this.exerciseData,
+            totalExercises: this.exerciseData.length,
+            totalVolume: this.calculateTotalVolume(),
+            averageRPE: this.calculateAverageRPE()
+        };
+        
+        // Save to storage
+        const userId = this.getUserId();
+        if (userId) {
+            const date = new Date().toISOString().split('T')[0];
+            await this.storageManager.saveSessionLog(userId, date, sessionData);
+        }
+        
+        // Emit SESSION_COMPLETED event
+        this.eventBus.emit(this.eventBus.TOPICS.SESSION_COMPLETED, sessionData);
+        
+        // Stop timers
+        if (this.timerOverlay) {
+            this.timerOverlay.stopSessionTimer();
+        }
+        
+        this.isActive = false;
+        
+        this.logger.audit('SESSION_COMPLETED', sessionData);
+        
+        return sessionData;
     }
 
     /**
-     * Quick log workout
-     * @param {Object} workoutData - Quick workout data
-     * @returns {Object} Log result
+     * Calculate total volume
+     * @returns {number} Total volume
      */
-    quickLogWorkout(workoutData) {
-        try {
-            const workout = {
-                id: `quick_${Date.now()}`,
-                name: workoutData.name || 'Quick Workout',
-                type: workoutData.type || 'General',
-                startTime: new Date().toISOString(),
-                endTime: new Date().toISOString(),
-                duration: workoutData.duration || 30,
-                exercises: workoutData.exercises || [],
-                notes: workoutData.notes || '',
-                userId: window.AuthManager?.getCurrentUsername() || 'anonymous',
-                status: 'completed',
-                isQuickLog: true,
-                completedAt: new Date().toISOString()
-            };
+    calculateTotalVolume() {
+        return this.exerciseData.reduce((total, exercise) => {
+            const exerciseVolume = exercise.completedSets.reduce((sum, set) => {
+                return sum + (set.weight * set.reps);
+            }, 0);
+            return total + exerciseVolume;
+        }, 0);
+    }
 
-            // Add to history
-            this.workoutHistory.unshift(workout);
-            this.saveWorkoutHistory();
+    /**
+     * Calculate average RPE
+     * @returns {number} Average RPE
+     */
+    calculateAverageRPE() {
+        const allRPE = this.exerciseData.flatMap(ex => ex.rpeData.map(r => r.rpe));
+        if (allRPE.length === 0) return 0;
+        
+        const avg = allRPE.reduce((sum, rpe) => sum + rpe, 0) / allRPE.length;
+        return Math.round(avg * 10) / 10;
+    }
+
+    /**
+     * Pause session
+     */
+    pauseSession() {
+        if (this.isActive && this.timerOverlay) {
+            this.timerOverlay.pauseSessionTimer();
+            this.isActive = false;
             
-            // Save to IndexedDB
-            if (this.storageManager) {
-                this.storageManager.saveWorkoutToIndexedDB(workout);
+            this.logger.debug('Session paused');
+        }
+    }
+
+    /**
+     * Resume session
+     */
+    resumeSession() {
+        if (!this.isActive) {
+            this.isActive = true;
+            if (this.timerOverlay) {
+                this.timerOverlay.resumeSessionTimer();
             }
             
-            this.logger.audit('QUICK_WORKOUT_LOGGED', { 
-                workoutId: workout.id, 
-                duration: workout.duration 
-            });
-            this.eventBus?.emit('workout:quickLogged', workout);
-            
-            return { success: true, workout };
-        } catch (error) {
-            this.logger.error('Failed to quick log workout', error);
-            return { success: false, error: error.message };
+            this.logger.debug('Session resumed');
         }
+    }
+
+    /**
+     * Get user ID
+     * @returns {string} User ID
+     */
+    getUserId() {
+        const authManager = window.AuthManager;
+        return authManager?.getCurrentUsername() || 'anonymous';
+    }
+
+    /**
+     * Get session summary
+     * @returns {Object} Session summary
+     */
+    getSessionSummary() {
+        if (!this.currentSession) {
+            return null;
+        }
+        
+        const progress = this.getProgress();
+        
+        return {
+            sessionId: this.currentSession.workoutId,
+            workoutName: this.currentSession.workoutName,
+            status: this.currentSession.status,
+            progress: progress.percentage + '%',
+            completedExercises: progress.completedExercises + '/' + progress.totalExercises,
+            elapsedTime: this.formatDuration(Date.now() - this.sessionStartTime),
+            currentExercise: progress.currentExercise?.name || 'None',
+            isActive: this.isActive
+        };
+    }
+
+    /**
+     * Format duration
+     * @param {number} ms - Milliseconds
+     * @returns {string} Formatted duration
+     */
+    formatDuration(ms) {
+        const seconds = Math.floor(ms / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        
+        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
     }
 }
 
