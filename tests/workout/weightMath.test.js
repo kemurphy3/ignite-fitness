@@ -3,14 +3,15 @@
  * Tests for practical gym math and plate loading
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 
 describe('WeightMath', () => {
     let weightMath;
     
     beforeEach(() => {
-        // Mock window.WeightMath
-        if (!window.WeightMath) {
+        // Mock window.WeightMath for Node.js environment
+        global.window = global.window || {};
+        if (!global.window.WeightMath) {
             class MockWeightMath {
                 constructor() {
                     this.equipment = {
@@ -22,12 +23,12 @@ describe('WeightMath', () => {
                 }
                 
                 gymLoadPlan(config, targetWeight) {
-                    const barWeight = 45;
+                    const barWeight = config.barWeight || 45;
                     const weightPerSide = (targetWeight - barWeight) / 2;
                     
                     if (weightPerSide <= 0) {
                         return {
-                            target: barWeight,
+                            target: targetWeight,
                             totalWeight: barWeight,
                             sides: [],
                             text: `${barWeight} lb bar only`,
@@ -35,24 +36,43 @@ describe('WeightMath', () => {
                         };
                     }
                     
-                    // Simple plate calculation
-                    const plates = [45, 35, 25, 10, 5, 2.5].filter(p => p <= weightPerSide);
+                    // Greedy plate calculation
+                    const availablePlates = config.availablePlates || [45, 35, 25, 10, 5, 2.5];
+                    const plates = [];
+                    let remaining = weightPerSide;
+                    
+                    for (const plate of availablePlates) {
+                        while (remaining >= plate) {
+                            plates.push(plate);
+                            remaining -= plate;
+                        }
+                    }
+                    
                     const total = plates.reduce((sum, p) => sum + p, 0);
+                    const actualTotal = barWeight + (total * 2);
+                    const isExact = Math.abs(actualTotal - targetWeight) < 0.1;
+                    
+                    let text = `Load ${barWeight} ${config.unit || 'lb'} bar + ${plates.join(' + ')} per side → ${actualTotal} ${config.unit || 'lb'} total`;
+                    if (!isExact) {
+                        text += ` (target: ${targetWeight} ${config.unit || 'lb'})`;
+                    }
                     
                     return {
                         target: targetWeight,
-                        totalWeight: barWeight + (total * 2),
+                        totalWeight: actualTotal,
                         sides: plates,
-                        text: `Load ${barWeight} lb bar + ${plates.join(' + ')} per side → ${barWeight + (total * 2)} lb total`,
-                        exact: Math.abs(total - weightPerSide) < 0.1
+                        text: text,
+                        exact: isExact,
+                        note: !isExact ? `Closest possible with available plates` : undefined,
+                        unit: config.unit || 'lb'
                     };
                 }
             }
             
-            window.WeightMath = MockWeightMath;
+            global.window.WeightMath = MockWeightMath;
         }
         
-        weightMath = new window.WeightMath();
+        weightMath = new global.window.WeightMath();
     });
 
     describe('gymLoadPlan', () => {

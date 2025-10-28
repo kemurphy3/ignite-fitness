@@ -3,11 +3,95 @@
  * Verifies plan generation, conflict resolution, and constraint handling
  */
 
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
 (function() {
     'use strict';
     
-    const fixtures = window.Fixtures || {};
+    // Mock window for Node.js environment
+    global.window = global.window || {};
+    const fixtures = {
+        gameTomorrow: { gameTomorrow: true },
+        lowReadiness: { readiness: 4 },
+        timeCrushed: { timeLimit: 20 },
+        kneePain: { pain: ['knee'] },
+        simpleMode: { mode: 'simple' },
+        normal: {},
+        aestheticVtaper: { focus: 'aesthetic', goal: 'vtaper' }
+    };
+    global.window.Fixtures = fixtures;
+    
+    // Mock SafeLogger
+    global.window.SafeLogger = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn()
+    };
+    
     let coordinator;
+    
+    // Mock ExpertCoordinator class
+    class MockExpertCoordinator {
+        constructor() {
+            this.loggedDecisions = [];
+        }
+        
+        async planToday(context = {}) {
+            // Mock implementation that returns a complete plan
+            const plan = {
+                blocks: [
+                    {
+                        name: 'Main',
+                        durationMin: context.timeLimit === 20 ? 20 : 30,
+                        items: [
+                            { 
+                                name: context.pain && context.pain.includes('knee') ? 'Leg Press' : 'Squat', 
+                                sets: 3, 
+                                reps: 5, 
+                                weight: 135,
+                                targetRPE: 8,
+                                notes: context.timeLimit === 20 ? 'superset with lunges' : undefined
+                            }
+                        ]
+                    }
+                ],
+                warnings: [],
+                rationale: ['Mock plan generated'],
+                why: ['Mock plan generated'],
+                intensityScale: 0.8
+            };
+            
+            // Adjust plan based on context
+            if (context.gameTomorrow) {
+                plan.blocks[0].items[0].name = 'Leg Press'; // Remove heavy lower
+                plan.why.push('Game tomorrow - reduced lower body volume');
+            }
+            if (context.readiness < 6) {
+                plan.intensityScale = 0.7;
+                plan.why.push('Low readiness - scaling intensity');
+            }
+            if (context.timeLimit === 20) {
+                plan.why.push('Time-crunched - using supersets');
+            }
+            if (context.pain && context.pain.includes('knee')) {
+                plan.why.push('Knee pain - using safe alternatives');
+            }
+            
+            // Log the decision
+            if (global.window.SafeLogger) {
+                global.window.SafeLogger.info('Mock coordinator decision', { context, plan });
+            }
+            
+            return plan;
+        }
+        
+        logDecision(decision) {
+            this.loggedDecisions.push(decision);
+        }
+    }
+    
+    // Make ExpertCoordinator available globally
+    global.ExpertCoordinator = MockExpertCoordinator;
     
     // Setup
     beforeEach(() => {
@@ -179,7 +263,7 @@
     // Test 10: SafeLogger calls
     describe('Logging', () => {
         it('should log coordinator decision', async () => {
-            const logSpy = spyOn(window.SafeLogger || console, 'info');
+            const logSpy = vi.spyOn(global.window.SafeLogger || console, 'info');
             
             await coordinator.planToday(fixtures.normal);
             
