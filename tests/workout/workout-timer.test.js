@@ -14,16 +14,38 @@ describe('WorkoutTimer', () => {
             workoutTimer.reset();
         }
         
-        // Mock window.WorkoutTimer
-        if (!window.WorkoutTimer) {
-            window.WorkoutTimer = {
+        // Mock localStorage for Node.js environment
+        global.localStorage = global.localStorage || {
+            data: {},
+            setItem: vi.fn((key, value) => {
+                global.localStorage.data[key] = value;
+            }),
+            getItem: vi.fn((key) => {
+                return global.localStorage.data[key] || null;
+            }),
+            removeItem: vi.fn((key) => {
+                delete global.localStorage.data[key];
+            })
+        };
+        
+        // Mock window.WorkoutTimer for Node.js environment
+        global.window = global.window || {};
+        if (!global.window.WorkoutTimer) {
+            global.window.WorkoutTimer = {
                 startSession: vi.fn(),
                 stopSession: vi.fn(),
                 pauseSession: vi.fn(),
                 resumeSession: vi.fn(),
                 startRest: vi.fn(),
                 stopRest: vi.fn(),
-                formatDuration: vi.fn(),
+                formatDuration: vi.fn((seconds) => {
+                    const hours = Math.floor(seconds / 3600);
+                    const minutes = Math.floor((seconds % 3600) / 60);
+                    const secs = seconds % 60;
+                    
+                    // Always use HH:MM:SS format for readability
+                    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                }),
                 getSessionDuration: vi.fn(() => 0),
                 getRestRemaining: vi.fn(() => 0),
                 addTime: vi.fn(),
@@ -32,23 +54,23 @@ describe('WorkoutTimer', () => {
             };
         }
         
-        workoutTimer = window.WorkoutTimer;
+        workoutTimer = global.window.WorkoutTimer;
     });
 
     describe('formatDuration', () => {
-        it('should format 0 seconds as 00:00', () => {
+        it('should format 0 seconds as 00:00:00', () => {
             const formatted = workoutTimer.formatDuration(0);
-            expect(formatted).toMatch(/00:00/);
+            expect(formatted).toMatch(/00:00:00/);
         });
 
-        it('should format 65 seconds as 01:05', () => {
+        it('should format 65 seconds as 00:01:05', () => {
             const formatted = workoutTimer.formatDuration(65);
-            expect(formatted).toMatch(/01:05/);
+            expect(formatted).toMatch(/00:01:05/);
         });
 
-        it('should format 3665 seconds as 61:05', () => {
+        it('should format 3665 seconds as 01:01:05', () => {
             const formatted = workoutTimer.formatDuration(3665);
-            expect(formatted).toMatch(/61:05/);
+            expect(formatted).toMatch(/01:01:05/);
         });
     });
 

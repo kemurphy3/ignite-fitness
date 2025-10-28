@@ -9,8 +9,9 @@ describe('Seasonal Constraints', () => {
     let seasonalPrograms;
 
     beforeEach(() => {
-        // Mock SeasonalPrograms
-        if (!window.SeasonalPrograms) {
+        // Mock SeasonalPrograms for Node.js environment
+        global.window = global.window || {};
+        if (!global.window.SeasonalPrograms) {
             class MockSeasonalPrograms {
                 constructor() {
                     this.phases = {
@@ -79,7 +80,7 @@ describe('Seasonal Constraints', () => {
                             result.hasGame = true;
                             result.daysUntil = daysUntil;
                             result.isTomorrow = daysUntil === 1;
-                            result.isWithin48h = daysUntil <= 1;
+                            result.isWithin48h = daysUntil <= 2; // Within 48 hours
                             
                             if (result.isWithin48h) {
                                 result.suppressHeavyLower = true;
@@ -93,10 +94,10 @@ describe('Seasonal Constraints', () => {
                 }
             }
             
-            window.SeasonalPrograms = MockSeasonalPrograms;
+            global.window.SeasonalPrograms = MockSeasonalPrograms;
         }
         
-        seasonalPrograms = new window.SeasonalPrograms();
+        seasonalPrograms = new global.window.SeasonalPrograms();
     });
 
     describe('getSeasonContext', () => {

@@ -8,6 +8,7 @@ class ExpertCoordinator {
         this.whyDecider = new WhyThisDecider();
         this.readinessInference = window.ReadinessInference;
         this.seasonalPrograms = window.SeasonalPrograms;
+        this.coordinatorContext = window.CoordinatorContext;
         
         this.experts = {
             strength: new StrengthCoach(),
@@ -25,6 +26,12 @@ class ExpertCoordinator {
      */
     async planToday(context) {
         try {
+            // Build enhanced context with load metrics and confidence
+            if (this.coordinatorContext) {
+                const enhancedContext = await this.coordinatorContext.buildContext(context);
+                context = enhancedContext;
+            }
+            
             // Check if we need to infer readiness
             let readiness = context.readiness;
             let isInferred = false;
@@ -50,6 +57,9 @@ class ExpertCoordinator {
             
             // Update context with readiness (possibly inferred)
             context.readiness = readiness;
+            
+            // Apply load-based adjustments
+            this.applyLoadBasedAdjustments(context);
             
             // Get seasonal context
             let seasonalContext = null;
@@ -96,6 +106,13 @@ class ExpertCoordinator {
                 structuredPlan.why.push(`Readiness inferred (${readiness}/10): ${inferenceRationale}`);
             }
             
+            // Add load-based adjustments to rationale
+            if (context.loadAdjustments && context.loadAdjustments.length > 0) {
+                for (const adjustment of context.loadAdjustments) {
+                    structuredPlan.why.push(adjustment);
+                }
+            }
+
             // Add seasonal context to rationale
             if (seasonalContext) {
                 structuredPlan.why.push(`${seasonalContext.phase} (Week ${seasonalContext.weekOfBlock} of 4)`);
@@ -612,6 +629,86 @@ class ExpertCoordinator {
             sessionNotes: 'Error generating custom plan - using fallback protocol',
             isFallback: true
         };
+    }
+
+    /**
+     * Apply load-based adjustments to context
+     * @param {Object} context - User context with load metrics
+     */
+    applyLoadBasedAdjustments(context) {
+        const load = context.load || {};
+        const yesterday = context.yesterday || {};
+        const dataConfidence = context.dataConfidence || {};
+
+        // Track adjustments for why panel
+        context.loadAdjustments = [];
+
+        // High-intensity yesterday (Z4/Z5) → cap lower-body volume today
+        if (yesterday.z4_min >= 20 || yesterday.z5_min >= 10) {
+            context.suppressHeavyLower = true;
+            context.loadAdjustments.push(`Synced HR shows ${yesterday.z4_min} min in Z4 and ${yesterday.z5_min} min in Z5 yesterday → dialing back lower-body volume.`);
+            this.logger.info('Suppressing heavy lower due to high-intensity yesterday', { z4_min: yesterday.z4_min, z5_min: yesterday.z5_min });
+        }
+
+        // High strain → recommend deload or mobility
+        if (load.strain > 150 || (load.monotony > 2.0 && load.atl7 > load.ctl28 * 1.2)) {
+            context.recommendDeload = true;
+            context.loadAdjustments.push(`High weekly strain detected (${load.strain}) or monotony > 2.0 → adding mobility emphasis.`);
+            this.logger.info('Recommending deload due to high strain/monotony', { strain: load.strain, monotony: load.monotony });
+        }
+
+        // Scale intensity by readiness proxy from rolling load
+        const readinessProxy = this.calculateReadinessProxy(load, yesterday, dataConfidence);
+        if (readinessProxy < 0.8) {
+            context.intensityScale *= readinessProxy;
+            context.loadAdjustments.push(`Rolling load suggests lower readiness → scaling intensity to ${(readinessProxy * 100).toFixed(0)}%.`);
+            this.logger.info('Scaling intensity based on readiness proxy', { proxy: readinessProxy, scaledIntensity: context.intensityScale });
+        }
+
+        // Low data confidence → conservative recommendations
+        if (dataConfidence.recent7days < 0.5) {
+            context.conservativeMode = true;
+            context.loadAdjustments.push(`Limited HR data this week (confidence ${(dataConfidence.recent7days * 100).toFixed(0)}%) → conservative recommendation.`);
+            this.logger.info('Using conservative mode due to low data confidence', { confidence: dataConfidence.recent7days });
+        }
+    }
+
+    /**
+     * Calculate readiness proxy from rolling load
+     * @param {Object} load - Load metrics
+     * @param {Object} yesterday - Yesterday's activity
+     * @param {Object} dataConfidence - Data confidence metrics
+     * @returns {number} Readiness proxy (0.0-1.0)
+     */
+    calculateReadinessProxy(load, yesterday, dataConfidence) {
+        let proxy = 1.0;
+
+        // High ATL relative to CTL suggests fatigue
+        if (load.ctl28 > 0) {
+            const atlCtlRatio = load.atl7 / load.ctl28;
+            if (atlCtlRatio > 1.2) {
+                proxy *= 0.8; // Fatigue detected
+            } else if (atlCtlRatio < 0.8) {
+                proxy *= 1.1; // Fresh
+            }
+        }
+
+        // Yesterday's high-intensity work reduces today's readiness
+        if (yesterday.z4_min >= 20) {
+            proxy *= 0.85;
+        } else if (yesterday.z5_min >= 10) {
+            proxy *= 0.9;
+        }
+
+        // High monotony suggests accumulated fatigue
+        if (load.monotony > 2.0) {
+            proxy *= 0.85;
+        }
+
+        // Scale by data confidence
+        proxy *= (0.5 + dataConfidence.recent7days * 0.5);
+
+        return Math.max(0.5, Math.min(1.2, proxy));
     }
 }
 

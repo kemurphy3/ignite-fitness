@@ -116,7 +116,7 @@ async function createTestSchema() {
     await testClient`DROP SEQUENCE IF EXISTS test_sessions_id_seq CASCADE`;
     await testClient`DROP SEQUENCE IF EXISTS test_exercises_id_seq CASCADE`;
   } catch (e) {
-    console.log('⚠️  Pre-cleanup warnings:', e.message);
+    // Ignore errors during pre-cleanup
   }
 
   try {
@@ -501,8 +501,20 @@ export async function cleanupTestData() {
   }
   
   if (testClient) {
-    await testClient`DELETE FROM test_exercises`;
-    await testClient`DELETE FROM test_sessions`;
-    await testClient`DELETE FROM test_users`;
+    try {
+      await testClient`DELETE FROM test_exercises`;
+    } catch (e) {
+      // Table might not exist, ignore error
+    }
+    try {
+      await testClient`DELETE FROM test_sessions`;
+    } catch (e) {
+      // Table might not exist, ignore error
+    }
+    try {
+      await testClient`DELETE FROM test_users`;
+    } catch (e) {
+      // Table might not exist, ignore error
+    }
   }
 }

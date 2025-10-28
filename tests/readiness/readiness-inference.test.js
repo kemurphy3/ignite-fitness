@@ -9,8 +9,9 @@ describe('ReadinessInference', () => {
     let inference;
 
     beforeEach(() => {
-        // Mock window.ReadinessInference
-        if (!window.ReadinessInference) {
+        // Mock window.ReadinessInference for Node.js environment
+        global.window = global.window || {};
+        if (!global.window.ReadinessInference) {
             class MockReadinessInference {
                 async inferReadiness({ lastSessions = [], schedule = {} }) {
                     let readiness = 7;
@@ -29,6 +30,17 @@ describe('ReadinessInference', () => {
                         }
                     }
                     
+                    // Game proximity logic
+                    if (schedule.daysUntilGame !== undefined) {
+                        if (schedule.daysUntilGame <= 1) {
+                            readiness -= 1;
+                            rationale.push('Game tomorrow - reducing intensity');
+                        } else if (schedule.daysUntilGame <= 3) {
+                            readiness -= 0.5;
+                            rationale.push('Game soon - moderate reduction');
+                        }
+                    }
+                    
                     return {
                         score: Math.max(1, Math.min(10, Math.round(readiness))),
                         inferred: true,
@@ -37,10 +49,10 @@ describe('ReadinessInference', () => {
                 }
             }
             
-            window.ReadinessInference = MockReadinessInference;
+            global.window.ReadinessInference = MockReadinessInference;
         }
         
-        inference = new window.ReadinessInference();
+        inference = new global.window.ReadinessInference();
     });
 
     describe('inferReadiness', () => {

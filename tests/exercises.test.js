@@ -8,6 +8,7 @@ import {
   teardownTestDB, 
   getTestDatabase,
   createTestUser,
+  createTestSession,
   createTestExercise,
   cleanupTestData
 } from './helpers/db.js';
