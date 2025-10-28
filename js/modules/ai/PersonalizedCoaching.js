@@ -30,7 +30,7 @@ class PersonalizedCoaching {
                 regression: "I noticed your {exercise} weight dropped a bit. No worries - this happens when life gets busy or stress is high. Let's focus on getting back to your baseline first."
             },
             motivation: {
-                streak: "Week {number} in the books! You're building a real habit here. Consistency like this is what separates people who see results from those who don't.",
+                streak: "Week {number} in the books. You are building a real habit here. Consistency like this is what separates people who see results from those who do not.",
                 return: "Welcome back! Taking {days} days off wasn't a setback - sometimes your body needs that reset. Let's ease back in with a lighter session.",
                 consistency: "You've been crushing it with {frequency} workouts per week! This kind of consistency is where the magic happens.",
                 comeback: "I love seeing you back in the gym! That break actually might have done you some good - fresh start, renewed motivation."
@@ -561,7 +561,7 @@ class PersonalizedCoaching {
         
         // Check for injury-related content
         if (messageAnalysis.topics.includes('injury') && this.guardrails.injury_diagnosis) {
-            return "I'm not a doctor, so I can't diagnose injuries. If you're experiencing pain, please consult a healthcare professional.";
+            return "I am not a doctor, so I cannot diagnose injuries. If you are experiencing pain, please consult a healthcare professional.";
         }
         
         return response;

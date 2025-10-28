@@ -266,7 +266,7 @@ class ExerciseDatabase {
 
             const exercise = this.exercises[exerciseIndex];
             if (!exercise.isCustom) {
-                return { success: false, error: 'Cannot update built-in exercise' };
+                return { success: false, error: 'Cannot update built-in exercise.' };
             }
 
             this.exercises[exerciseIndex] = {
@@ -301,7 +301,7 @@ class ExerciseDatabase {
 
             const exercise = this.exercises[exerciseIndex];
             if (!exercise.isCustom) {
-                return { success: false, error: 'Cannot delete built-in exercise' };
+                return { success: false, error: 'Cannot delete built-in exercise.' };
             }
 
             this.exercises.splice(exerciseIndex, 1);

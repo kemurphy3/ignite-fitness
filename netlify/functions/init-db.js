@@ -49,25 +49,29 @@ async function seedDatabase() {
             columns: ['userId', 'email', 'username', 'sport', 'position', 'createdAt', 'updatedAt'],
             indexes: ['userId', 'email']
         },
-        readiness_logs: {
-            columns: ['userId', 'date', 'sleep', 'soreness', 'stress', 'energy', 'readiness_score', 'createdAt', 'updatedAt'],
-            indexes: ['userId', 'date']
+        preferences: {
+            columns: ['userId', 'theme', 'notifications', 'language', 'units', 'aestheticFocus', 'sessionLength', 'createdAt', 'updatedAt'],
+            indexes: ['userId']
         },
         session_logs: {
-            columns: ['userId', 'date', 'workout_id', 'exercises', 'duration', 'volume', 'createdAt', 'updatedAt'],
+            columns: ['userId', 'date', 'workout_id', 'exercises', 'duration', 'volume', 'averageRPE', 'createdAt', 'updatedAt'],
             indexes: ['userId', 'date']
         },
         progression_events: {
-            columns: ['userId', 'date', 'exercise', 'previous_level', 'new_level', 'reason', 'createdAt', 'updatedAt'],
+            columns: ['userId', 'date', 'exercise', 'previous_level', 'new_level', 'reason', 'eventType', 'createdAt', 'updatedAt'],
             indexes: ['userId', 'date', 'exercise']
         },
         injury_flags: {
-            columns: ['userId', 'date', 'risk_level', 'factors', 'recommendations', 'createdAt', 'updatedAt'],
+            columns: ['userId', 'date', 'risk_level', 'location', 'severity', 'factors', 'recommendations', 'createdAt', 'updatedAt'],
             indexes: ['userId', 'date']
         },
-        preferences: {
-            columns: ['userId', 'theme', 'notifications', 'language', 'units', 'createdAt', 'updatedAt'],
-            indexes: ['userId']
+        external_activities: {
+            columns: ['userId', 'source', 'type', 'duration', 'distance', 'averageIntensity', 'timestamp', 'name', 'createdAt', 'updatedAt'],
+            indexes: ['userId', 'timestamp', 'source']
+        },
+        nutrition_profiles: {
+            columns: ['userId', 'date', 'calories', 'protein', 'carbs', 'fat', 'hydration', 'createdAt', 'updatedAt'],
+            indexes: ['userId', 'date']
         }
     };
 

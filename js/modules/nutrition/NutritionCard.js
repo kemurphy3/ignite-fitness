@@ -22,6 +22,8 @@ class NutritionCard {
         
         const macros = this.getTodayMacros();
         const dayType = this.getDayType();
+        const rationale = macros.rationale || this.generateDefaultRationale(dayType, macros);
+        const hydration = macros.hydration || { daily: 2000, unit: 'ml' };
         
         card.innerHTML = `
             <div class="card-header">
@@ -39,11 +41,40 @@ class NutritionCard {
                 ${this.renderMacroBar('fat', macros.fat, macros.fatPct)}
             </div>
             
+            <div class="hydration-section">
+                <div class="hydration-target">
+                    <span class="hydration-icon">💧</span>
+                    <span class="hydration-label">Hydration</span>
+                    <span class="hydration-value">${hydration.daily}${hydration.unit || 'ml'}</span>
+                </div>
+                <div class="hydration-tip">${hydration.duringWorkout || 'Drink 150ml every 20min during training'}</div>
+            </div>
+            
             ${this.renderMealExamples(dayType)}
             ${this.renderCarbTiming(dayType)}
+            
+            <div class="card-footer">
+                <div class="rationale-text">💡 Why: ${rationale}</div>
+            </div>
         `;
         
         return card;
+    }
+    
+    /**
+     * Generate default rationale
+     * @param {string} dayType - Day type
+     * @param {Object} macros - Macros breakdown
+     * @returns {string} Rationale text
+     */
+    generateDefaultRationale(dayType, macros) {
+        const dayText = {
+            game: 'Higher carbs fuel explosive game performance',
+            training: 'Balanced macros support training adaptation',
+            rest: 'Lower carbs aid recovery'
+        };
+        
+        return dayText[dayType] || 'Nutrition supports your training goals';
     }
 
     /**

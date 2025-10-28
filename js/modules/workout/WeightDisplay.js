@@ -162,7 +162,7 @@ class WeightDisplay {
             }
         }
 
-        // Warning if can't hit exact weight
+        // Warning if cannot hit exact weight
         if (Math.abs(remainingWeight) > 0.1) {
             const config = this.getConfig();
             warnings.push(`Cannot achieve exact weight. Closest match will be ±${Math.abs(remainingWeight).toFixed(1)} ${config.unit} per side.`);
@@ -185,12 +185,14 @@ class WeightDisplay {
             plateCounts[p.weight] = (plateCounts[p.weight] || 0) + 1;
         });
 
+        // Format: "Load 45 lb bar + 35 + 10 + 2.5 per side → 135 lb total"
         const plateStrings = [];
         for (const [weight, count] of Object.entries(plateCounts).sort((a, b) => b[0] - a[0])) {
+            // Do not show "each side" if only one plate of each type
             if (count === 1) {
-                plateStrings.push(`${weight} ${config.unit}`);
+                plateStrings.push(weight);
             } else {
-                plateStrings.push(`${count}x${weight} ${config.unit}`);
+                plateStrings.push(`${count}x${weight}`);
             }
         }
 
@@ -198,7 +200,7 @@ class WeightDisplay {
         const totalPlateWeight = plates.reduce((sum, p) => sum + p.weight * 2, 0);
         const actualTotal = barWeight + totalPlateWeight;
 
-        return `Load ${barWeight} ${config.unit} bar + ${platesPerSide} each side → ${actualTotal.toFixed(1)} ${config.unit} total`;
+        return `Load ${barWeight} ${config.unit} bar + ${platesPerSide} per side → ${actualTotal.toFixed(0)} ${config.unit} total`;
     }
 
     /**

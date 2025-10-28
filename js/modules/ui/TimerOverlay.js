@@ -33,9 +33,19 @@ class TimerOverlay {
                 </div>
                 
                 <!-- Rest Timer -->
-                <div class="rest-timer" id="rest-timer">
+                <div class="rest-timer hidden" id="rest-timer">
                     <div class="timer-label">Rest</div>
                     <div class="timer-display rest" id="rest-timer-display">0:00</div>
+                    <div class="rest-controls">
+                        <button class="rest-control-btn" aria-label="Add 15 seconds" onclick="window.TimerOverlay?.adjustRestTimer(15)">
+                            <span class="timer-icon">+</span>
+                            <span class="control-label">+15s</span>
+                        </button>
+                        <button class="rest-control-btn" aria-label="Subtract 15 seconds" onclick="window.TimerOverlay?.adjustRestTimer(-15)">
+                            <span class="timer-icon">−</span>
+                            <span class="control-label">-15s</span>
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- Progress Bar -->

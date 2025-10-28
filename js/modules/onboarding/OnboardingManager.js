@@ -24,55 +24,32 @@ class OnboardingManager {
     initializeSteps() {
         return [
             {
-                id: 'sport_selection',
-                title: "What's Your Sport?",
-                component: 'SportSelection',
-                description: 'Choose your primary sport to get personalized training'
+                id: 'goals',
+                title: "What are your training goals?",
+                component: 'Goals',
+                description: 'Select all that apply',
+                skippable: true
             },
             {
-                id: 'position_selection',
-                title: "What's Your Position/Focus?",
-                component: 'PositionSelection',
-                description: 'Select your position or training focus',
-                conditional: true
+                id: 'sport_soccer',
+                title: "Soccer-Specific Details",
+                component: 'SportSoccer',
+                description: 'Your position and season phase',
+                skippable: true
             },
             {
-                id: 'aesthetic_focus',
-                title: "What's Your Training Focus?",
-                component: 'AestheticFocus',
-                description: 'Choose your primary training focus',
-                options: [
-                    { 
-                        id: 'v_taper', 
-                        emoji: '💪', 
-                        label: 'V-Taper', 
-                        description: 'Build wide shoulders and back' 
-                    },
-                    { 
-                        id: 'glutes', 
-                        emoji: '🍑', 
-                        label: 'Glutes', 
-                        description: 'Develop strong glutes and legs' 
-                    },
-                    { 
-                        id: 'toned', 
-                        emoji: '🔥', 
-                        label: 'Lean/Toned', 
-                        description: 'Stay lean and athletic' 
-                    },
-                    { 
-                        id: 'functional', 
-                        emoji: '⚙️', 
-                        label: 'Functional', 
-                        description: 'Movement and performance focused' 
-                    }
-                ]
+                id: 'equipment_time',
+                title: "Training Constraints",
+                component: 'EquipmentTime',
+                description: 'Schedule and equipment preferences',
+                skippable: true
             },
             {
-                id: 'profile_setup',
-                title: "Tell Us About Yourself",
-                component: 'ProfileSetup',
-                description: 'Help us personalize your training experience'
+                id: 'preferences',
+                title: "Review & Complete",
+                component: 'Preferences',
+                description: 'Finalize your profile',
+                skippable: false
             }
         ];
     }
@@ -276,14 +253,85 @@ class OnboardingManager {
     /**
      * Complete onboarding process
      */
-    completeOnboarding() {
+    async completeOnboarding() {
         this.isCompleted = true;
+        
+        // Save complete user profile and preferences in single object
+        await this.saveCompleteProfile();
+        
         this.logger.audit('ONBOARDING_COMPLETED', { 
             data: this.onboardingData,
             version: this.onboardingVersion 
         });
         
         this.updateOnboardingUI();
+    }
+    
+    /**
+     * Save complete profile (user_profile + preferences combined)
+     */
+    async saveCompleteProfile() {
+        try {
+            const userId = this.getUserId();
+            
+            // Combine all onboarding data into single object
+            const completeProfile = {
+                // User profile data
+                user_profile: {
+                    userId,
+                    goals: this.onboardingData.goals || ['general_fitness'],
+                    sport: this.onboardingData.sport || 'soccer',
+                    position: this.onboardingData.position || 'midfielder',
+                    season_phase: this.onboardingData.season_phase || 'in-season',
+                    experience_level: this.onboardingData.experience || 'intermediate',
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                },
+                
+                // Preferences
+                preferences: {
+                    available_days: this.onboardingData.available_days || ['monday', 'wednesday', 'friday'],
+                    session_length: this.onboardingData.session_length || 45,
+                    equipment_type: this.onboardingData.equipment || 'commercial_gym',
+                    exercise_dislikes: this.onboardingData.exercise_dislikes || [],
+                    aesthetic_focus: this.onboardingData.aesthetic_focus || 'functional',
+                    training_mode: 'simple', // Default to simple mode
+                    onboarding_version: this.onboardingVersion,
+                    completed_at: new Date().toISOString()
+                }
+            };
+            
+            // Save to StorageManager
+            await this.storageManager.saveUserProfile(userId, completeProfile);
+            
+            // Also save preferences separately for easy access
+            await this.storageManager.savePreferences(userId, completeProfile.preferences);
+            
+            this.logger.debug('Complete profile saved', completeProfile);
+        } catch (error) {
+            this.logger.error('Failed to save complete profile', error);
+            throw error;
+        }
+    }
+    
+    /**
+     * Skip current step
+     */
+    skipStep() {
+        const step = this.onboardingSteps[this.currentStep];
+        
+        if (step.skippable) {
+            this.logger.debug('Step skipped', { step: step.id });
+            this.nextStep();
+        }
+    }
+    
+    /**
+     * Get user ID
+     * @returns {string} User ID
+     */
+    getUserId() {
+        return this.authManager?.getCurrentUsername() || 'anonymous';
     }
 
     /**

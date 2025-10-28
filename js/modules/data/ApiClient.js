@@ -64,7 +64,7 @@ class ApiClient {
                     error: error.message 
                 });
 
-                // Don't retry on certain errors
+                // Do not retry on certain errors
                 if (this.shouldNotRetry(error)) {
                     break;
                 }
@@ -177,17 +177,17 @@ class ApiClient {
      * @returns {boolean} Should not retry
      */
     shouldNotRetry(error) {
-        // Don't retry on authentication errors
+        // Do not retry on authentication errors
         if (error.message.includes('401') || error.message.includes('403')) {
             return true;
         }
 
-        // Don't retry on client errors (4xx)
+        // Do not retry on client errors (4xx)
         if (error.message.includes('400') || error.message.includes('404')) {
             return true;
         }
 
-        // Don't retry on timeout
+        // Do not retry on timeout
         if (error.name === 'AbortError') {
             return true;
         }

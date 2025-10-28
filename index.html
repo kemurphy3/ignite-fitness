@@ -34,6 +34,8 @@
     <link rel="stylesheet" href="styles/persistent-header.css">
     <link rel="stylesheet" href="styles/workout-flow.css">
     <link rel="stylesheet" href="styles/recovery-dashboard.css">
+    <link rel="stylesheet" href="styles/nutrition-card.css">
+    <link rel="stylesheet" href="styles/why-this.css">
     
     <!-- Existing Styles -->
     <link rel="stylesheet" href="styles/main.css">
@@ -2898,6 +2900,7 @@
     <script src="js/modules/core/EventBus.js"></script>
     <script src="js/modules/core/SafeLogger.js"></script>
     <script src="js/modules/core/LegalCopy.js"></script>
+    <script src="js/modules/core/FeatureFlags.js"></script>
     <script src="js/modules/data/StorageManager.js"></script>
     <script src="js/modules/debug/DebugManager.js"></script>
     
@@ -2914,20 +2917,29 @@
     <script src="js/modules/ui/TimerOverlay.js"></script>
     <script src="js/modules/ui/RPEInput.js"></script>
     <script src="js/modules/ui/PeriodizationView.js"></script>
+    <script src="js/modules/ui/WhyThis.js"></script>
+    <script src="js/modules/ui/UpgradeNudge.js"></script>
     
     <!-- Nutrition Modules -->
     <script src="js/modules/nutrition/NutritionCard.js"></script>
     
     <!-- Settings Modules -->
     <script src="js/modules/settings/IntegrationPanel.js"></script>
+    <script src="js/modules/settings/PrivacyPanel.js"></script>
     
     <!-- Onboarding Modules -->
     <script src="js/modules/onboarding/SportSelection.js"></script>
     <script src="js/modules/onboarding/OnboardingManager.js"></script>
+    <script src="js/modules/onboarding/steps/Goals.js"></script>
+    <script src="js/modules/onboarding/steps/SportSoccer.js"></script>
+    <script src="js/modules/onboarding/steps/EquipmentTime.js"></script>
+    <script src="js/modules/onboarding/steps/Preferences.js"></script>
     
     <!-- Workout Modules -->
     <script src="js/modules/workout/ProgressionEngine.js"></script>
     <script src="js/modules/workout/ConflictResolver.js"></script>
+    <script src="js/modules/workout/SessionOutcomeLogger.js"></script>
+    <script src="js/modules/workout/LoadController.js"></script>
     <script src="js/modules/workout/WeightDisplay.js"></script>
     <script src="js/modules/settings/EquipmentPrefs.js"></script>
     <script src="js/modules/workout/ExerciseAdapter.js"></script>
@@ -2974,6 +2986,7 @@
     <!-- Readiness Modules -->
     <script src="js/modules/readiness/DailyCheckIn.js"></script>
     <script src="js/modules/readiness/RecoverySummary.js"></script>
+    <script src="js/modules/readiness/PassiveReadiness.js"></script>
     
     <!-- Progression Modules -->
     <script src="js/modules/workout/ProgressionEngine.js"></script>
@@ -2983,9 +2996,27 @@
     <script src="js/modules/goals/GoalManager.js"></script>
     <script src="js/modules/habits/HabitTracker.js"></script>
     
+    <!-- AI Expert Coordination Brain -->
+    <script src="js/modules/ai/experts/StrengthCoach.js"></script>
+    <script src="js/modules/ai/experts/SportsCoach.js"></script>
+    <script src="js/modules/ai/experts/PhysioCoach.js"></script>
+    <script src="js/modules/ai/experts/NutritionCoach.js"></script>
+    <script src="js/modules/ai/experts/AestheticsCoach.js"></script>
+    <script src="js/modules/ai/ExpertCoordinator.js"></script>
+    <script src="js/modules/ai/WhyThisDecider.js"></script>
+    <script src="js/modules/ai/CoachChat.js"></script>
+    
+    <!-- Mode Management & UI -->
+    <script src="js/modules/ui/ModeManager.js"></script>
+    <script src="js/modules/ui/QuickStart.js"></script>
+    <script src="js/modules/ui/OverrideBar.js"></script>
+    
     <!-- Strava Integration & Load Management -->
     <script src="js/modules/integration/StravaProcessor.js"></script>
+    <script src="js/modules/integration/StravaHook.js"></script>
+    <script src="js/modules/load/LoadController.js"></script>
     <script src="js/modules/load/LoadCalculator.js"></script>
+    <script src="js/modules/load/ExternalLoadAdapter.js"></script>
     
     <!-- Legacy Modules (for compatibility) -->
     <script src="js/core/data-store.js"></script>
@@ -3008,6 +3039,30 @@
     
     <!-- Prompt 1.1 Verification -->
     <script src="test-prompt11-verification.js"></script>
+    
+    <!-- Prompt 5 Verification -->
+    <script src="test-prompt05-nutrition.js"></script>
+    
+    <!-- Prompt 6 Verification -->
+    <script src="test-prompt06-substitution.js"></script>
+    
+    <!-- Prompt 7 Verification -->
+    <script src="test-prompt07-why-this.js"></script>
+    
+    <!-- Prompt 8 Verification -->
+    <script src="test-prompt08-passive-readiness.js"></script>
+    
+    <!-- Prompt 9 Verification -->
+    <script src="test-prompt09-workout-flow.js"></script>
+    
+    <!-- Prompt 10 Verification -->
+    <script src="test-prompt10-periodization.js"></script>
+    
+    <!-- Prompt 11 Verification -->
+    <script src="test-prompt11-privacy.js"></script>
+    
+    <!-- Prompt 12 Verification -->
+    <script src="test-prompt12-feature-flags.js"></script>
     
     <!-- Prompt 1.2 Verification -->
     <script src="test-prompt12-verification.js"></script>

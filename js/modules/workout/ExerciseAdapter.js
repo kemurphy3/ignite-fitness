@@ -81,6 +81,207 @@ class ExerciseAdapter {
             return workout;
         }
     }
+    
+    /**
+     * Substitute exercise based on dislikes or pain
+     * @param {string} exerciseName - Current exercise
+     * @param {Array} dislikes - User's disliked exercises
+     * @param {string} painLocation - Pain location if any
+     * @param {Object} constraints - Additional constraints (e.g., equipment, time)
+     * @returns {Object} Substitution suggestions with rationale
+     */
+    suggestSubstitutions(exerciseName, dislikes = [], painLocation = null, constraints = {}) {
+        try {
+            const substitutionRules = this.getSubstitutionRules();
+            const exerciseRules = substitutionRules[exerciseName.toLowerCase()];
+            
+            if (!exerciseRules) {
+                return {
+                    alternatives: [],
+                    message: `No substitutions available for ${exerciseName}`
+                };
+            }
+            
+            // Filter by dislikes
+            let alternatives = exerciseRules.alternatives
+                .filter(alt => !dislikes.some(dislike => 
+                    alt.name.toLowerCase().includes(dislike.toLowerCase())
+                ));
+            
+            // Apply pain-based modifications
+            if (painLocation) {
+                alternatives = this.applyPainModifications(alternatives, painLocation);
+            }
+            
+            // Apply constraints
+            if (constraints.equipment || constraints.time) {
+                alternatives = this.applyConstraints(alternatives, constraints);
+            }
+            
+            // Return top 2 alternatives
+            const suggestions = alternatives.slice(0, 2).map(alt => ({
+                name: alt.name,
+                rationale: alt.rationale,
+                restAdjustment: alt.restAdjustment || 0,
+                volumeAdjustment: alt.volumeAdjustment || 1.0
+            }));
+            
+            return {
+                alternatives: suggestions,
+                message: suggestions.length > 0 
+                    ? `Suggested alternatives for ${exerciseName}`
+                    : `No suitable alternatives found for ${exerciseName}`
+            };
+        } catch (error) {
+            this.logger.error('Failed to suggest substitutions', error);
+            return {
+                alternatives: [],
+                message: 'Unable to suggest alternatives'
+            };
+        }
+    }
+    
+    /**
+     * Get substitution rules database
+     * @returns {Object} Substitution rules
+     */
+    getSubstitutionRules() {
+        return {
+            'bulgarian split squat': {
+                alternatives: [
+                    {
+                        name: 'Walking Lunges',
+                        rationale: 'Same unilateral leg training, better balance, less knee stress',
+                        restAdjustment: 0, // Same rest time
+                        volumeAdjustment: 1.0
+                    },
+                    {
+                        name: 'Reverse Lunges',
+                        rationale: 'Unilateral leg work with reduced forward knee stress',
+                        restAdjustment: -15, // Slightly less rest needed
+                        volumeAdjustment: 1.0
+                    },
+                    {
+                        name: 'Step-ups',
+                        rationale: 'Similar single-leg stimulus, less dynamic loading on knee',
+                        restAdjustment: 0,
+                        volumeAdjustment: 1.1
+                    }
+                ]
+            },
+            'back squat': {
+                alternatives: [
+                    {
+                        name: 'Goblet Squat',
+                        rationale: 'Maintains squat pattern with less spinal loading',
+                        restAdjustment: -30,
+                        volumeAdjustment: 0.9
+                    },
+                    {
+                        name: 'Front Squat',
+                        rationale: 'Same movement pattern, different load placement',
+                        restAdjustment: 0,
+                        volumeAdjustment: 0.85
+                    },
+                    {
+                        name: 'Landmine Squat',
+                        rationale: 'Unique loading vector, less spinal compression',
+                        restAdjustment: 0,
+                        volumeAdjustment: 1.0
+                    }
+                ]
+            },
+            'deadlift': {
+                alternatives: [
+                    {
+                        name: 'Romanian Deadlift',
+                        rationale: 'Reduces lower back stress, similar hinge pattern',
+                        restAdjustment: -15,
+                        volumeAdjustment: 1.0
+                    },
+                    {
+                        name: 'Trap Bar Deadlift',
+                        rationale: 'More upright torso, less shear stress',
+                        restAdjustment: 0,
+                        volumeAdjustment: 1.1
+                    },
+                    {
+                        name: 'Single Leg RDL',
+                        rationale: 'Same hinge, less load, unilateral',
+                        restAdjustment: -30,
+                        volumeAdjustment: 1.2
+                    }
+                ]
+            },
+            'overhead press': {
+                alternatives: [
+                    {
+                        name: 'Seated DB Press',
+                        rationale: 'Same shoulder stimulus, removes core/lower back',
+                        restAdjustment: -15,
+                        volumeAdjustment: 1.0
+                    },
+                    {
+                        name: 'Landmine Press',
+                        rationale: 'Unique angle reduces shoulder impingement risk',
+                        restAdjustment: 0,
+                        volumeAdjustment: 1.0
+                    }
+                ]
+            }
+        };
+    }
+    
+    /**
+     * Apply pain-based modifications
+     * @param {Array} alternatives - Alternative exercises
+     * @param {string} painLocation - Pain location
+     * @returns {Array} Filtered alternatives
+     */
+    applyPainModifications(alternatives, painLocation) {
+        const painModifications = {
+            'knee': (alt) => 
+                !alt.name.toLowerCase().includes('squat') &&
+                !alt.name.toLowerCase().includes('lunge') &&
+                alt.name.toLowerCase().includes('hinge') || 
+                alt.name.toLowerCase().includes('press'),
+            'lower back': (alt) =>
+                !alt.name.toLowerCase().includes('deadlift') &&
+                !alt.name.toLowerCase().includes('row') &&
+                alt.name.toLowerCase().includes('supported') ||
+                alt.name.toLowerCase().includes('bodyweight'),
+            'shoulder': (alt) =>
+                !alt.name.toLowerCase().includes('press') &&
+                !alt.name.toLowerCase().includes('lateral') &&
+                alt.name.toLowerCase().includes('pull') ||
+                alt.name.toLowerCase().includes('supported')
+        };
+        
+        const filter = painModifications[painLocation.toLowerCase()];
+        if (filter) {
+            return alternatives.filter(alt => filter(alt));
+        }
+        
+        return alternatives;
+    }
+    
+    /**
+     * Apply additional constraints
+     * @param {Array} alternatives - Alternative exercises
+     * @param {Object} constraints - Constraints
+     * @returns {Array} Filtered alternatives
+     */
+    applyConstraints(alternatives, constraints) {
+        return alternatives.filter(alt => {
+            if (constraints.equipment && alt.equipment && !constraints.equipment.includes(alt.equipment)) {
+                return false;
+            }
+            if (constraints.time && alt.estimatedTime && alt.estimatedTime > constraints.time) {
+                return false;
+            }
+            return true;
+        });
+    }
 
     /**
      * Calculate 70/30 split between performance and aesthetic
