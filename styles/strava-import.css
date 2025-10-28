@@ -1,0 +1,386 @@
+/**
+ * Strava Import UI Styles
+ * Styling for Strava activity import interface
+ */
+
+/* Strava Import Section */
+.strava-import-section {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.strava-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.strava-header h3 {
+    margin: 0;
+    color: #2d3748;
+    font-size: 18px;
+}
+
+.import-status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.import-status.connected {
+    background: #c6f6d5;
+    color: #22543d;
+}
+
+.import-status.disconnected {
+    background: #fed7d7;
+    color: #742a2a;
+}
+
+.strava-description {
+    color: #4a5568;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
+/* File Upload Area */
+.file-upload-area {
+    border: 2px dashed #cbd5e0;
+    border-radius: 8px;
+    padding: 30px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: #f7fafc;
+}
+
+.file-upload-area:hover {
+    border-color: #4299e1;
+    background: #ebf8ff;
+}
+
+.upload-prompt {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.upload-icon {
+    font-size: 32px;
+}
+
+.upload-text strong {
+    display: block;
+    color: #2d3748;
+    margin-bottom: 5px;
+}
+
+.upload-text small {
+    color: #718096;
+}
+
+/* Loading States */
+.upload-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.loading-spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #e2e8f0;
+    border-top: 2px solid #4299e1;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+    color: #4a5568;
+    font-size: 14px;
+}
+
+/* Success State */
+.upload-success {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: #c6f6d5;
+    border-radius: 6px;
+    color: #22543d;
+}
+
+.success-icon {
+    font-size: 24px;
+}
+
+.success-text strong {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.success-text small {
+    display: block;
+    opacity: 0.8;
+}
+
+/* Error State */
+.upload-error {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: #fed7d7;
+    border-radius: 6px;
+    color: #742a2a;
+}
+
+.error-icon {
+    font-size: 24px;
+}
+
+.error-text strong {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.error-text small {
+    display: block;
+    opacity: 0.8;
+}
+
+/* Import Info */
+.import-info {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.last-import {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.info-label {
+    color: #4a5568;
+    font-size: 14px;
+}
+
+.info-value {
+    color: #2d3748;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.import-help {
+    text-align: center;
+}
+
+.help-btn {
+    background: none;
+    border: none;
+    color: #4299e1;
+    font-size: 12px;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.help-btn:hover {
+    color: #2b6cb0;
+}
+
+/* Recent Activities */
+.recent-activities {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.recent-activities-list h4 {
+    margin: 0 0 15px 0;
+    color: #2d3748;
+    font-size: 16px;
+}
+
+.activities-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.activity-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: #f7fafc;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+}
+
+.activity-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+}
+
+.activity-type {
+    font-size: 16px;
+}
+
+.activity-name {
+    color: #2d3748;
+    font-weight: 500;
+    flex: 1;
+}
+
+.activity-time {
+    color: #718096;
+    font-size: 12px;
+}
+
+.activity-stats {
+    display: flex;
+    gap: 15px;
+    font-size: 12px;
+    color: #4a5568;
+}
+
+.activity-duration {
+    font-weight: 500;
+}
+
+.activity-load {
+    color: #4299e1;
+}
+
+.activity-actions {
+    margin-left: 10px;
+}
+
+.btn-remove {
+    background: #fed7d7;
+    border: none;
+    color: #742a2a;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-remove:hover {
+    background: #feb2b2;
+}
+
+.no-activities {
+    text-align: center;
+    padding: 20px;
+    color: #718096;
+    font-style: italic;
+}
+
+/* Import Actions */
+.import-actions {
+    margin-top: 15px;
+    text-align: center;
+}
+
+/* Token Import (Future) */
+.token-import {
+    text-align: center;
+    padding: 20px;
+}
+
+.import-note {
+    margin-top: 10px;
+    color: #718096;
+    font-size: 12px;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .strava-import-section {
+        padding: 15px;
+        margin: 15px 0;
+    }
+    
+    .strava-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    
+    .file-upload-area {
+        padding: 20px 15px;
+    }
+    
+    .activity-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .activity-info {
+        width: 100%;
+    }
+    
+    .activity-stats {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .activity-actions {
+        align-self: flex-end;
+        margin-left: 0;
+    }
+}
+
+/* Button Styles */
+.btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn.primary {
+    background: #4299e1;
+    color: white;
+}
+
+.btn.primary:hover {
+    background: #3182ce;
+}
+
+.btn.secondary {
+    background: #e2e8f0;
+    color: #4a5568;
+}
+
+.btn.secondary:hover {
+    background: #cbd5e0;
+}

@@ -33,9 +33,13 @@
     <link rel="stylesheet" href="styles/components.css">
     <link rel="stylesheet" href="styles/persistent-header.css">
     <link rel="stylesheet" href="styles/workout-flow.css">
+    <link rel="stylesheet" href="styles/workout-timer.css">
     <link rel="stylesheet" href="styles/recovery-dashboard.css">
     <link rel="stylesheet" href="styles/nutrition-card.css">
     <link rel="stylesheet" href="styles/why-this.css">
+    <link rel="stylesheet" href="styles/why-panel.css">
+    <link rel="stylesheet" href="styles/charts.css">
+    <link rel="stylesheet" href="styles/strava-import.css">
     
     <!-- Existing Styles -->
     <link rel="stylesheet" href="styles/main.css">
@@ -2915,17 +2919,25 @@
     <script src="js/modules/ui/SeasonPhase.js"></script>
     <script src="js/modules/ui/PersistentHeader.js"></script>
     <script src="js/modules/ui/TimerOverlay.js"></script>
+    <script src="js/modules/ui/components/WorkoutTimer.js"></script>
     <script src="js/modules/ui/RPEInput.js"></script>
     <script src="js/modules/ui/PeriodizationView.js"></script>
     <script src="js/modules/ui/WhyThis.js"></script>
     <script src="js/modules/ui/UpgradeNudge.js"></script>
+    <script src="js/modules/ui/components/WhyPanel.js"></script>
+    <script src="js/modules/ui/charts/Trends.js"></script>
+    <script src="js/modules/ui/StravaImportUI.js"></script>
     
     <!-- Nutrition Modules -->
     <script src="js/modules/nutrition/NutritionCard.js"></script>
+    <script src="js/modules/nutrition/MacroGuidance.js"></script>
     
     <!-- Settings Modules -->
     <script src="js/modules/settings/IntegrationPanel.js"></script>
     <script src="js/modules/settings/PrivacyPanel.js"></script>
+    
+    <!-- Integration Modules -->
+    <script src="js/modules/integration/StravaProcessor.js"></script>
     
     <!-- Onboarding Modules -->
     <script src="js/modules/onboarding/SportSelection.js"></script>
@@ -2944,6 +2956,7 @@
     <script src="js/modules/settings/EquipmentPrefs.js"></script>
     <script src="js/modules/workout/ExerciseAdapter.js"></script>
     <script src="js/modules/workout/WorkoutTracker.js"></script>
+    <script src="js/modules/workout/WeightMath.js"></script>
     
     <!-- Sport-Specific Modules -->
     <script src="js/modules/sports/SportDefinitions.js"></script>
@@ -4200,5 +4213,9 @@ This structured approach helps prevent overtraining and ensures you're at your b
             }
         });
     </script>
+
+    <!-- Expert Coordinator Tests (for manual QA in browser console) -->
+    <script src="tests/ai/expert-coordinator-test.js"></script>
+    <script src="tests/ai/fixtures.js"></script>
 </body>
 </html>

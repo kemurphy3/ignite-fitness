@@ -1,0 +1,344 @@
+/**
+ * Workout Timer Styles
+ * Session and rest timer display for workout flow
+ */
+
+.workout-timers {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.timer-card {
+    flex: 1;
+    min-width: 200px;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.timer-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-secondary);
+}
+
+.timer-display {
+    font-size: 2.5rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    color: var(--color-text);
+}
+
+.timer-display.warning {
+    color: var(--color-warning);
+    animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}
+
+.timer-controls {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+.timer-btn {
+    padding: 0.5rem 1rem;
+    background: var(--color-surface-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--color-text);
+    min-width: 44px;
+    touch-action: manipulation;
+}
+
+.timer-btn:hover {
+    background: var(--color-primary-light);
+    border-color: var(--color-primary);
+}
+
+.timer-btn:active {
+    transform: scale(0.95);
+}
+
+.timer-btn:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/**
+ * Session Timer Specific Styles
+ */
+
+.session-timer {
+    border-color: var(--color-primary);
+}
+
+.session-timer .timer-display {
+    color: var(--color-primary);
+}
+
+/**
+ * Rest Timer Specific Styles
+ */
+
+.rest-timer {
+    border-color: var(--color-secondary);
+    position: relative;
+}
+
+.rest-timer::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 4px;
+    width: var(--rest-percentage, 100%);
+    background: var(--color-secondary);
+    border-radius: 0 0 12px 12px;
+    transition: width 1s linear;
+}
+
+.rest-timer .timer-display {
+    color: var(--color-secondary);
+}
+
+.rest-timer .timer-display.warning {
+    color: var(--color-warning);
+}
+
+/**
+ * Exercise RPE Input
+ */
+
+.rpe-input-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--color-surface);
+    border-radius: 8px;
+    margin: 1rem 0;
+}
+
+.rpe-input-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.rpe-input-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.5rem;
+}
+
+.rpe-btn {
+    padding: 1rem;
+    background: var(--color-surface-secondary);
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    touch-action: manipulation;
+}
+
+.rpe-btn:hover {
+    border-color: var(--color-primary);
+    background: var(--color-primary-light);
+}
+
+.rpe-btn.selected {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+}
+
+.rpe-btn:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.rpe-anchor {
+    font-size: 0.75rem;
+    font-weight: 400;
+    margin-top: 0.25rem;
+    color: var(--color-text-secondary);
+}
+
+/**
+ * Next Exercise Preview
+ */
+
+.next-exercise-preview {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: var(--color-surface-secondary);
+    border-radius: 8px;
+    border-left: 4px solid var(--color-primary);
+}
+
+.next-exercise-preview h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.next-exercise-name {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.next-exercise-details {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    margin-top: 0.25rem;
+}
+
+/**
+ * RPE Quick Input
+ */
+
+.rpe-quick-input {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.rpe-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.rpe-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.rpe-buttons .rpe-btn {
+    flex: 1;
+    padding: 0.75rem;
+    background: var(--color-surface-secondary);
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    font-size: 1.25rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    touch-action: manipulation;
+    min-height: 44px;
+}
+
+.rpe-buttons .rpe-btn:hover {
+    border-color: var(--color-primary);
+    background: var(--color-primary-light);
+}
+
+.rpe-buttons .rpe-btn.selected {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+}
+
+.rpe-buttons .rpe-btn:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/**
+ * Item Actions
+ */
+
+.item-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-end;
+}
+
+/**
+ * Completed State
+ */
+
+.workout-item.completed {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.workout-item.completed .item-name {
+    text-decoration: line-through;
+}
+
+/**
+ * Mobile Optimization
+ */
+
+@media (max-width: 768px) {
+    .workout-timers {
+        flex-direction: column;
+    }
+
+    .timer-card {
+        min-width: 100%;
+    }
+
+    .timer-display {
+        font-size: 2rem;
+    }
+
+    .rpe-input-grid {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 0.25rem;
+    }
+
+    .rpe-btn {
+        padding: 0.75rem;
+        font-size: 1.25rem;
+    }
+}
+
+/**
+ * Dark Mode Support
+ */
+
+@media (prefers-color-scheme: dark) {
+    .timer-card {
+        background: var(--color-surface-dark);
+    }
+
+    .timer-btn:hover {
+        background: rgba(79, 70, 229, 0.2);
+    }
+
+    .next-exercise-preview {
+        background: var(--color-surface-dark);
+    }
+}
+

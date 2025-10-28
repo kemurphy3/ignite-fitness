@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workout Timer Manual QA Test</title>
+    <link rel="stylesheet" href="../../styles/design-tokens.css">
+    <link rel="stylesheet" href="../../styles/components.css">
+    <link rel="stylesheet" href="../../styles/workout-timer.css">
+    <style>
+        body {
+            padding: 2rem;
+            font-family: system-ui, -apple-system, sans-serif;
+            background: var(--color-background);
+            color: var(--color-text);
+        }
+        
+        .test-section {
+            margin-bottom: 3rem;
+            padding: 1.5rem;
+            background: var(--color-surface);
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
+        }
+        
+        h1 {
+            margin-bottom: 0.5rem;
+        }
+        
+        .test-description {
+            color: var(--color-text-secondary);
+            margin-bottom: 1.5rem;
+        }
+        
+        .test-result {
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 6px;
+        }
+        
+        .pass {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #16a34a;
+        }
+        
+        .fail {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #dc2626;
+        }
+        
+        button {
+            margin: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            position: relative;
+            z-index: 1;
+            display: inline-block;
+            visibility: visible;
+        }
+        
+        button:hover {
+            opacity: 0.9;
+        }
+        
+        #console-output {
+            background: #1a1a1a;
+            color: #fff;
+            padding: 1rem;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+        
+        .log-entry {
+            padding: 0.25rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Workout Timer Manual QA Test</h1>
+    <p>This page provides interactive tests for the WorkoutTimer component.</p>
+    
+    <!-- Mock Dependencies -->
+    <script>
+        // Mock SafeLogger
+        if (!window.SafeLogger) {
+            window.SafeLogger = {
+                info: console.log.bind(console, '[INFO]'),
+                debug: console.log.bind(console, '[DEBUG]'),
+                warn: console.warn.bind(console, '[WARN]'),
+                error: console.error.bind(console, '[ERROR]')
+            };
+        }
+        
+        // Mock StorageManager
+        if (!window.StorageManager) {
+            window.StorageManager = {
+                save: localStorage.setItem.bind(localStorage),
+                load: localStorage.getItem.bind(localStorage),
+                remove: localStorage.removeItem.bind(localStorage)
+            };
+        }
+        
+        // Console output capture
+        const consoleOutput = document.getElementById('console-output');
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        function addLogEntry(level, ...args) {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${level}: ${args.join(' ')}`;
+            consoleOutput.appendChild(entry);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+        
+        console.log = (...args) => {
+            if (consoleOutput) addLogEntry('INFO', ...args);
+            originalLog(...args);
+        };
+        
+        console.error = (...args) => {
+            if (consoleOutput) addLogEntry('ERROR', ...args);
+            originalError(...args);
+        };
+    </script>
+    
+    <!-- Load WorkoutTimer -->
+    <script src="../../js/modules/ui/components/WorkoutTimer.js"></script>
+    
+    <div class="test-section">
+        <h2>1. WorkoutTimer Component Load Test</h2>
+        <p class="test-description">Verify WorkoutTimer is loaded and accessible.</p>
+        <button onclick="testWorkoutTimerLoad()">Test Load</button>
+        <div id="load-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Session Timer Test</h2>
+        <p class="test-description">Test session timer functionality.</p>
+        <button onclick="testSessionTimer()">Start Session Timer</button>
+        <button onclick="window.WorkoutTimer.pauseSession()">⏸ Pause</button>
+        <button onclick="window.WorkoutTimer.resumeSession()">▶ Resume</button>
+        <button onclick="window.WorkoutTimer.stopSession()">⏹ Stop</button>
+        <div id="session-display" style="font-size: 2.5rem; font-weight: 700; margin-top: 1rem;">00:00</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Rest Timer Test</h2>
+        <p class="test-description">Test rest timer functionality.</p>
+        <button onclick="window.WorkoutTimer.startRest(90)">Start 90s Rest</button>
+        <button onclick="window.WorkoutTimer.startRest(60)">Start 60s Rest</button>
+        <button onclick="window.WorkoutTimer.addRestTime(15)">+15s</button>
+        <button onclick="window.WorkoutTimer.stopRest()">Skip Rest</button>
+        <div id="rest-display" style="font-size: 2.5rem; font-weight: 700; margin-top: 1rem; color: var(--color-secondary);">00:00</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Format Duration Test</h2>
+        <p class="test-description">Test time formatting.</p>
+        <button onclick="testFormatDuration()">Test Format</button>
+        <div id="format-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>5. Session Persistence Test</h2>
+        <p class="test-description">Test localStorage persistence.</p>
+        <button onclick="testPersistence()">Save State</button>
+        <button onclick="testLoadPersistence()">Load State</button>
+        <button onclick="testClearPersistence()">Clear State</button>
+        <div id="persistence-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>6. Console Output</h2>
+        <div id="console-output"></div>
+        <button onclick="document.getElementById('console-output').innerHTML = ''">Clear Console</button>
+    </div>
+    
+    <script>
+        // Test 1: WorkoutTimer Load
+        function testWorkoutTimerLoad() {
+            const resultDiv = document.getElementById('load-result');
+            
+            if (!window.WorkoutTimer) {
+                resultDiv.className = 'test-result fail';
+                resultDiv.innerHTML = '❌ FAIL: WorkoutTimer not loaded';
+                return;
+            }
+            
+            if (typeof window.WorkoutTimer.startSession !== 'function') {
+                resultDiv.className = 'test-result fail';
+                resultDiv.innerHTML = '❌ FAIL: WorkoutTimer.startSession() not found';
+                return;
+            }
+            
+            resultDiv.className = 'test-result pass';
+            resultDiv.innerHTML = '✅ PASS: WorkoutTimer loaded and all methods available';
+        }
+        
+        // Test 2: Session Timer
+        function testSessionTimer() {
+            window.WorkoutTimer.startSession();
+            
+            // Update display every second
+            const sessionDisplay = document.getElementById('session-display');
+            setInterval(() => {
+                if (sessionDisplay && window.WorkoutTimer) {
+                    const duration = window.WorkoutTimer.getSessionDuration();
+                    sessionDisplay.textContent = window.WorkoutTimer.formatDuration(duration);
+                }
+            }, 1000);
+        }
+        
+        // Test 3: Format Duration
+        function testFormatDuration() {
+            const resultDiv = document.getElementById('format-result');
+            const tests = [
+                { seconds: 0, expected: '00:00' },
+                { seconds: 65, expected: '01:05' },
+                { seconds: 3665, expected: '61:05' }
+            ];
+            
+            let allPass = true;
+            let results = '';
+            
+            tests.forEach(test => {
+                const formatted = window.WorkoutTimer.formatDuration(test.seconds);
+                const pass = formatted === test.expected;
+                results += `<div>${pass ? '✅' : '❌'} ${test.seconds}s → ${formatted} (expected ${test.expected})</div>`;
+                if (!pass) allPass = false;
+            });
+            
+            resultDiv.className = allPass ? 'test-result pass' : 'test-result fail';
+            resultDiv.innerHTML = results;
+        }
+        
+        // Test 4: Persistence
+        function testPersistence() {
+            const resultDiv = document.getElementById('persistence-result');
+            
+            window.WorkoutTimer.saveSessionState();
+            
+            const saved = localStorage.getItem('workout_timer_session_state');
+            if (saved) {
+                resultDiv.className = 'test-result pass';
+                resultDiv.innerHTML = '✅ Session state saved to localStorage';
+            } else {
+                resultDiv.className = 'test-result fail';
+                resultDiv.innerHTML = '❌ Failed to save session state';
+            }
+        }
+        
+        function testLoadPersistence() {
+            const resultDiv = document.getElementById('persistence-result');
+            
+            const success = window.WorkoutTimer.loadSessionState();
+            
+            if (success) {
+                resultDiv.className = 'test-result pass';
+                resultDiv.innerHTML = '✅ Session state loaded from localStorage';
+            } else {
+                resultDiv.className = 'test-result fail';
+                resultDiv.innerHTML = '❌ Failed to load session state';
+            }
+        }
+        
+        function testClearPersistence() {
+            const resultDiv = document.getElementById('persistence-result');
+            
+            window.WorkoutTimer.clearSessionState();
+            
+            const cleared = localStorage.getItem('workout_timer_session_state');
+            if (!cleared) {
+                resultDiv.className = 'test-result pass';
+                resultDiv.innerHTML = '✅ Session state cleared from localStorage';
+            } else {
+                resultDiv.className = 'test-result fail';
+                resultDiv.innerHTML = '❌ Failed to clear session state';
+            }
+        }
+        
+        // Update rest timer display
+        setInterval(() => {
+            const restDisplay = document.getElementById('rest-display');
+            if (restDisplay && window.WorkoutTimer) {
+                const remaining = window.WorkoutTimer.getRestRemaining();
+                if (remaining > 0) {
+                    restDisplay.textContent = window.WorkoutTimer.formatDuration(remaining);
+                } else {
+                    restDisplay.textContent = '00:00';
+                }
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
+

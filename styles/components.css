@@ -3,6 +3,15 @@
  * Sport-themed UI components with mobile-first design
  */
 
+/* Global Button Style - Ensure visibility */
+button, .button {
+    position: relative;
+    z-index: 1;
+    visibility: visible;
+    opacity: 1;
+    display: inline-block;
+}
+
 /* Button Components */
 .btn {
     display: inline-flex;
@@ -23,6 +32,10 @@
     white-space: nowrap;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
+    position: relative;
+    z-index: 1;
+    visibility: visible;
+    opacity: 1;
 }
 
 .btn:focus {

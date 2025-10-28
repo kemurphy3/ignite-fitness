@@ -8,6 +8,267 @@ class SeasonalPrograms {
         this.sportDefinitions = window.SportDefinitions;
         this.currentPrograms = new Map();
         this.seasonalTemplates = this.initializeSeasonalTemplates();
+        
+        // Define seasonal phases with durations
+        this.phases = {
+            off: { name: 'Off-Season', duration: '3-4 months', focus: 'strength_power_development' },
+            pre: { name: 'Pre-Season', duration: '6-8 weeks', focus: 'sport_specific_preparation' },
+            in: { name: 'In-Season', duration: '6-9 months', focus: 'performance_maintenance' },
+            post: { name: 'Post-Season', duration: '2-4 weeks', focus: 'recovery_regeneration' }
+        };
+    }
+
+    /**
+     * Get seasonal context for planning
+     * @param {Date} date - Current date
+     * @param {Object} userProfile - User profile with season info
+     * @param {Object} calendar - Calendar with key matches
+     * @returns {Object} Season context with phase, week, and deload info
+     */
+    getSeasonContext(date, userProfile, calendar = {}) {
+        try {
+            const phase = this.determinePhase(date, userProfile);
+            const weekOfBlock = this.getWeekOfBlock(date);
+            const deloadThisWeek = weekOfBlock === 4;
+            
+            // Check for game proximity in-season
+            const gameProximity = this.checkGameProximity(date, calendar, phase);
+            
+            const context = {
+                phase: phase.name,
+                phaseKey: phase.key,
+                weekOfBlock,
+                deloadThisWeek,
+                volumeModifier: this.getVolumeModifier(deloadThisWeek, phase),
+                gameProximity,
+                emphasis: phase.focus,
+                isSpecialPhase: phase.isSpecialPhase || false,
+                specialPhaseInfo: phase.isSpecialPhase ? {
+                    name: phase.specialPhaseName,
+                    peakPerformance: phase.peakPerformance,
+                    tapering: phase.tapering
+                } : null,
+                rules: this.getPhaseRules(phase.key, gameProximity, phase)
+            };
+            
+            this.logger.debug('Season context', context);
+            
+            return context;
+        } catch (error) {
+            this.logger.error('Failed to get season context', error);
+            return {
+                phase: 'In-Season',
+                phaseKey: 'in',
+                weekOfBlock: 1,
+                deloadThisWeek: false,
+                volumeModifier: 1.0,
+                gameProximity: {},
+                emphasis: 'performance_maintenance',
+                rules: []
+            };
+        }
+    }
+
+    /**
+     * Determine current training phase
+     * @param {Date} date - Current date
+     * @param {Object} userProfile - User profile
+     * @returns {Object} Phase configuration
+     */
+    determinePhase(date, userProfile) {
+        const currentMonth = date.getMonth() + 1; // 1-12
+        
+        // Check for custom season calendar in user profile
+        if (userProfile && userProfile.seasonCalendar) {
+            const customPhase = this.getPhaseFromCalendar(date, userProfile.seasonCalendar);
+            if (customPhase) {
+                return { ...this.phases[customPhase], key: customPhase };
+            }
+        }
+        
+        // Check for explicit season phase override
+        if (userProfile && userProfile.seasonPhase) {
+            const basePhase = { ...this.phases[userProfile.seasonPhase], key: userProfile.seasonPhase };
+            
+            // Check if in a special sub-phase (playoffs, tournament, etc.)
+            if (userProfile.seasonCalendar && userProfile.seasonCalendar.specialPhases) {
+                for (const specialPhase of userProfile.seasonCalendar.specialPhases) {
+                    if (this.isDateInRange(date, specialPhase)) {
+                        return {
+                            ...basePhase,
+                            isSpecialPhase: true,
+                            specialPhaseName: specialPhase.name,
+                            peakPerformance: specialPhase.peakPerformance || false,
+                            tapering: specialPhase.tapering || false
+                        };
+                    }
+                }
+            }
+            
+            return basePhase;
+        }
+        
+        // Auto-detect based on month
+        if (currentMonth >= 12 || currentMonth <= 2) {
+            return { ...this.phases.off, key: 'off' };
+        } else if (currentMonth >= 3 && currentMonth <= 5) {
+            return { ...this.phases.pre, key: 'pre' };
+        } else {
+            return { ...this.phases.in, key: 'in' };
+        }
+    }
+
+    /**
+     * Get phase from custom season calendar
+     * @param {Date} date - Current date
+     * @param {Object} calendar - Custom season calendar
+     * @returns {string|null} Phase key
+     */
+    getPhaseFromCalendar(date, calendar) {
+        if (!calendar.phases) return null;
+        
+        for (const [phaseKey, phaseDates] of Object.entries(calendar.phases)) {
+            if (this.isDateInRange(date, phaseDates)) {
+                return phaseKey;
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Check if date is within a date range
+     * @param {Date} date - Date to check
+     * @param {Object} range - Date range with start and end
+     * @returns {boolean} Is in range
+     */
+    isDateInRange(date, range) {
+        if (!range.start || !range.end) return false;
+        
+        const startDate = new Date(range.start);
+        const endDate = new Date(range.end);
+        
+        return date >= startDate && date <= endDate;
+    }
+
+    /**
+     * Get current week of 4-week block
+     * @param {Date} date - Current date
+     * @returns {number} Week number (1-4)
+     */
+    getWeekOfBlock(date) {
+        // Assume blocks start at program start or specific date
+        // For now, calculate from arbitrary start date
+        const startDate = new Date(date.getFullYear(), 0, 1); // Jan 1
+        const daysSince = Math.floor((date - startDate) / (1000 * 60 * 60 * 24));
+        const weekNumber = Math.floor(daysSince / 7);
+        
+        return (weekNumber % 4) + 1; // Returns 1-4
+    }
+
+    /**
+     * Check game proximity in calendar
+     * @param {Date} date - Current date
+     * @param {Object} calendar - Calendar with key matches
+     * @param {Object} phase - Current phase
+     * @returns {Object} Game proximity info
+     */
+    checkGameProximity(date, calendar, phase) {
+        const result = {
+            hasGame: false,
+            daysUntil: null,
+            isTomorrow: false,
+            isWithin48h: false,
+            suppressHeavyLower: false
+        };
+        
+        // Only check in-season
+        if (phase.key !== 'in') {
+            return result;
+        }
+        
+        const keyMatches = calendar.keyMatches || [];
+        const games = calendar.games || [];
+        
+        for (const game of [...keyMatches, ...games]) {
+            const gameDate = new Date(game.date);
+            const daysUntil = Math.floor((gameDate - date) / (1000 * 60 * 60 * 24));
+            
+            if (daysUntil >= 0 && daysUntil <= 2) {
+                result.hasGame = true;
+                result.daysUntil = daysUntil;
+                result.isTomorrow = daysUntil === 1;
+                result.isWithin48h = daysUntil <= 1;
+                
+                // Suppress heavy lower body within 48h of game
+                if (result.isWithin48h) {
+                    result.suppressHeavyLower = true;
+                }
+                
+                break;
+            }
+        }
+        
+        return result;
+    }
+
+    /**
+     * Get phase-specific rules
+     * @param {string} phaseKey - Phase key
+     * @param {Object} gameProximity - Game proximity info
+     * @param {Object} phaseInfo - Additional phase info (special phases, etc.)
+     * @returns {Array} Array of applicable rules
+     */
+    getPhaseRules(phaseKey, gameProximity, phaseInfo = {}) {
+        const rules = [];
+        
+        // Special phases (playoffs, tournament, etc.)
+        if (phaseInfo.isSpecialPhase) {
+            if (phaseInfo.peakPerformance) {
+                rules.push(`${phaseInfo.specialPhaseName}: Peak performance focus`);
+                rules.push('Maximize readiness without fatigue');
+            }
+            
+            if (phaseInfo.tapering) {
+                rules.push(`${phaseInfo.specialPhaseName}: Tapering protocol`);
+                rules.push('Reduce volume while maintaining intensity');
+            }
+        }
+        
+        // Deload rule
+        if (this.getWeekOfBlock(new Date()) === 4 && !phaseInfo.isSpecialPhase) {
+            rules.push('Deload week: -20% volume');
+        }
+        
+        // Off-season: emphasize strength
+        if (phaseKey === 'off') {
+            rules.push('Off-season: Emphasize strength blocks');
+            rules.push('Higher volume allowed');
+        }
+        
+        // Pre-season: sport-specific prep
+        if (phaseKey === 'pre') {
+            rules.push('Pre-season: Sport-specific preparation');
+            rules.push('Balance strength and conditioning');
+        }
+        
+        // In-season: game proximity
+        if (phaseKey === 'in' && gameProximity.hasGame) {
+            if (gameProximity.isTomorrow) {
+                rules.push('Game tomorrow: Upper body light only');
+                rules.push('No heavy lower body work');
+            } else if (gameProximity.isWithin48h) {
+                rules.push('Game within 48h: Suppress heavy lower');
+            }
+        }
+        
+        // Post-season: recovery
+        if (phaseKey === 'post') {
+            rules.push('Post-season: Recovery and regeneration');
+            rules.push('Reduce intensity and volume');
+        }
+        
+        return rules;
     }
 
     /**
@@ -93,6 +354,31 @@ class SeasonalPrograms {
         });
     }
     
+    /**
+     * Get volume modifier based on deload and phase
+     * @param {boolean} deloadThisWeek - Is this a deload week
+     * @param {Object} phase - Phase information
+     * @returns {number} Volume modifier (0.6-1.0)
+     */
+    getVolumeModifier(deloadThisWeek, phase) {
+        // Special phases might have custom modifiers
+        if (phase.isSpecialPhase) {
+            if (phase.peakPerformance) {
+                return 0.85; // Slightly reduced volume for peak performance
+            }
+            if (phase.tapering) {
+                return 0.7; // Tapering reduces volume
+            }
+        }
+        
+        // Regular deload week
+        if (deloadThisWeek) {
+            return 0.8; // -20% volume
+        }
+        
+        return 1.0; // Normal volume
+    }
+
     /**
      * Check if key match is in this block
      * @param {Date} matchDate - Match date

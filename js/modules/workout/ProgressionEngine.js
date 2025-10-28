@@ -110,7 +110,7 @@ class ProgressionEngine {
      * @returns {Object} Deload adjustments
      */
     getDeloadAdjustments() {
-        return {
+            return {
             intensityMultiplier: 1.0, // Maintain intensity
             volumeMultiplier: 0.80,    // Reduce volume by 20%
             deload: true,
@@ -143,7 +143,7 @@ class ProgressionEngine {
             };
         } else if (daysToGame === 2) {
             // Game -2 days: No heavy legs (RPE > 7)
-            return {
+        return {
                 intensityMultiplier: 0.7,
                 volumeMultiplier: 0.8,
                 maxRPE: 7,

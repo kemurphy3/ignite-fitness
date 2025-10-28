@@ -6,6 +6,8 @@ class ExpertCoordinator {
     constructor() {
         this.logger = window.SafeLogger || console;
         this.whyDecider = new WhyThisDecider();
+        this.readinessInference = window.ReadinessInference;
+        this.seasonalPrograms = window.SeasonalPrograms;
         
         this.experts = {
             strength: new StrengthCoach(),
@@ -17,7 +19,125 @@ class ExpertCoordinator {
     }
 
     /**
-     * Get unified session plan for today
+     * Plan today's workout with full structure
+     * @param {Object} context - User context
+     * @returns {Promise<Object>} Complete workout plan
+     */
+    async planToday(context) {
+        try {
+            // Check if we need to infer readiness
+            let readiness = context.readiness;
+            let isInferred = false;
+            let inferenceRationale = '';
+            
+            // If no explicit check-in, infer readiness
+            if (!readiness || isNaN(readiness)) {
+                if (this.readinessInference && typeof this.readinessInference.inferReadiness === 'function') {
+                    const lastSessions = context.history?.lastSessions || [];
+                    const schedule = context.schedule || {};
+                    
+                    const inferenceResult = await this.readinessInference.inferReadiness({ lastSessions, schedule });
+                    readiness = inferenceResult.score;
+                    isInferred = inferenceResult.inferred;
+                    inferenceRationale = inferenceResult.rationale;
+                    
+                    this.logger.info('Readiness inferred', { score: readiness, rationale: inferenceRationale });
+                } else {
+                    // Fallback if inference not available
+                    readiness = 7;
+                }
+            }
+            
+            // Update context with readiness (possibly inferred)
+            context.readiness = readiness;
+            
+            // Get seasonal context
+            let seasonalContext = null;
+            if (this.seasonalPrograms && typeof this.seasonalPrograms.getSeasonContext === 'function') {
+                const userProfile = context.profile || {};
+                const calendar = context.calendar || {};
+                
+                seasonalContext = this.seasonalPrograms.getSeasonContext(new Date(), userProfile, calendar);
+                
+                // Apply seasonal rules
+                if (seasonalContext.deloadThisWeek) {
+                    context.deloadWeek = true;
+                }
+                
+                // Apply game proximity rules in-season
+                if (seasonalContext.phaseKey === 'in' && seasonalContext.gameProximity.suppressHeavyLower) {
+                    context.suppressHeavyLower = true;
+                    context.gameTomorrow = seasonalContext.gameProximity.isTomorrow;
+                }
+                
+                this.logger.info('Season context', seasonalContext);
+            }
+            
+            this.logger.info('Coordinator decision', { 
+                readiness,
+                inferred: isInferred,
+                mode: context.preferences?.trainingMode,
+                gameDay: context.schedule?.isGameDay,
+                phase: seasonalContext?.phase
+            });
+            
+            // Get proposals from all experts
+            const proposals = this.gatherProposals(context);
+            
+            // Merge and resolve
+            const mergedPlan = this.mergeProposals(proposals, context);
+            const resolvedPlan = this.resolveConflicts(mergedPlan, proposals, context);
+            
+            // Convert to required structure
+            const structuredPlan = this.structurePlan(resolvedPlan, context);
+            
+            // Add inference note if applicable
+            if (isInferred && inferenceRationale) {
+                structuredPlan.why.push(`Readiness inferred (${readiness}/10): ${inferenceRationale}`);
+            }
+            
+            // Add seasonal context to rationale
+            if (seasonalContext) {
+                structuredPlan.why.push(`${seasonalContext.phase} (Week ${seasonalContext.weekOfBlock} of 4)`);
+                
+                if (seasonalContext.deloadThisWeek) {
+                    structuredPlan.why.push('Deload week: -20% volume for recovery');
+                }
+                
+                if (seasonalContext.gameProximity.hasGame) {
+                    if (seasonalContext.gameProximity.isTomorrow) {
+                        structuredPlan.why.push('Game tomorrow: Reduced lower body volume');
+                    } else {
+                        structuredPlan.why.push(`Game in ${seasonalContext.gameProximity.daysUntil} days: Lightening load`);
+                    }
+                }
+                
+                // Add phase emphasis
+                if (seasonalContext.emphasis) {
+                    structuredPlan.why.push(`Focus: ${seasonalContext.emphasis.replace(/_/g, ' ')}`);
+                }
+            }
+            
+            // Apply intensity scaling for inferred readiness
+            if (isInferred && readiness < 7) {
+                structuredPlan.intensityScale *= 0.85; // Scale down 15% for safety
+                structuredPlan.why.push('Intensity reduced due to inferred low readiness');
+            }
+            
+            // Apply deload volume modifier
+            if (seasonalContext && seasonalContext.deloadThisWeek) {
+                structuredPlan.intensityScale *= seasonalContext.volumeModifier;
+            }
+            
+            return structuredPlan;
+        } catch (error) {
+            this.logger.error('Failed to generate session plan', error);
+            return this.getFallbackPlanStructured(context);
+        }
+    }
+
+    /**
+     * Get unified session plan for today (legacy method)
      * @param {Object} context - User context
      * @returns {Object} Unified session plan
      */
@@ -161,23 +281,54 @@ class ExpertCoordinator {
      * @returns {Object} Resolved plan
      */
     resolveConflicts(plan, proposals, context) {
-        // Check for knee pain with squats
+        // Check for knee pain or knee flags
         const kneePain = proposals.physio?.blocks?.find(b => 
             b.exercise?.rationale?.toLowerCase().includes('knee')
-        );
+        ) || context.constraints?.flags?.includes('knee_pain');
         
         if (kneePain) {
-            // Remove heavy squats, substitute with safer alternative
+            // Get safe alternatives from ExerciseAdapter
+            const exerciseAdapter = new ExerciseAdapter();
+            
             plan.mainSets = plan.mainSets.map(main => {
-                if (main.exercise && main.exercise.includes('squat') && !main.exercise.includes('goblet')) {
-                    return {
-                        ...main,
-                        exercise: 'goblet_squat',
-                        rationale: 'Switched to goblet squat due to knee discomfort - safer biomechanics',
-                        constraintSource: 'physio'
-                    };
+                const exerciseName = main.exercise || main.name;
+                
+                // Check for Bulgarian Split Squats specifically
+                if (exerciseName && exerciseName.toLowerCase().includes('bulgarian split squat')) {
+                    const alternates = exerciseAdapter.getAlternates(exerciseName);
+                    if (alternates.length > 0) {
+                        return {
+                            ...main,
+                            exercise: alternates[0].name,
+                            name: alternates[0].name,
+                            rationale: alternates[0].rationale,
+                            constraintSource: 'physio'
+                        };
+                    }
                 }
+                
+                // Check for other squat variations
+                if (exerciseName && exerciseName.includes('squat') && !exerciseName.includes('goblet')) {
+                    const alternates = exerciseAdapter.getAlternates(exerciseName);
+                    if (alternates.length > 0) {
+                        return {
+                            ...main,
+                            exercise: alternates[0].name,
+                            name: alternates[0].name,
+                            rationale: alternates[0].rationale,
+                            constraintSource: 'physio'
+                        };
+                    }
+                }
+                
                 return main;
+            });
+            
+            // Add warning note
+            plan.notes = plan.notes || [];
+            plan.notes.push({
+                source: 'physio',
+                text: 'Exercises modified due to knee concerns. Safe alternatives provided.'
             });
         }
 
@@ -207,7 +358,40 @@ class ExpertCoordinator {
             
             plan.notes.push({
                 source: 'readiness',
-                text: 'Reduced volume due to low readiness (≤4) - prioritize recovery'
+                text: 'Reduced volume due to low readiness (≤4). Prioritize recovery.'
+            });
+        }
+
+        // Simple mode: limit to 1-2 blocks
+        const isSimpleMode = context.preferences?.trainingMode === 'simple';
+        if (isSimpleMode) {
+            // Keep only warmup and main in simple mode
+            plan.accessories = [];
+            plan.finishers = plan.finishers?.slice(0, 1) || []; // One finisher only
+            
+            plan.notes.push({
+                source: 'mode',
+                text: 'Simple mode. Streamlined plan for quick execution.'
+            });
+        }
+
+        // Time-crunched: trim and superset
+        const timeLimit = context.constraints?.timeLimit;
+        if (timeLimit && timeLimit <= 25) {
+            // Reduce accessories and finishers
+            plan.accessories = plan.accessories?.slice(0, 1) || [];
+            plan.finishers = plan.finishers?.slice(0, 1) || [];
+            
+            // Mark for supersets
+            plan.mainSets = plan.mainSets.map(ex => ({
+                ...ex,
+                notes: `${ex.notes || ''} (superset to save time)`.trim(),
+                superset: true
+            }));
+            
+            plan.notes.push({
+                source: 'time',
+                text: `Time-crunched plan (${timeLimit} min). Superset main work for efficiency.`
             });
         }
 
@@ -234,6 +418,177 @@ class ExpertCoordinator {
         }
         
         return notes.join('. ') + '.';
+    }
+
+    /**
+     * Structure plan into required format
+     * @param {Object} plan - Resolved plan
+     * @param {Object} context - User context
+     * @returns {Object} Structured plan
+     */
+    structurePlan(plan, context) {
+        const blocks = [];
+        const warnings = [];
+        const why = [];
+        
+        // Calculate intensity scale based on readiness
+        const intensityScale = this.calculateIntensityScale(context.readiness);
+        
+        // Build warm-up block
+        if (plan.warmup && plan.warmup.length > 0) {
+            blocks.push({
+                name: 'Warm-up',
+                items: plan.warmup.map(item => this.createExerciseItem(item)),
+                durationMin: 10
+            });
+            why.push('Dynamic warm-up prepares movement patterns');
+        }
+        
+        // Build main block
+        if (plan.mainSets && plan.mainSets.length > 0) {
+            blocks.push({
+                name: 'Main',
+                items: plan.mainSets.map(item => this.createExerciseItem(item)),
+                durationMin: this.calculateMainDuration(plan.mainSets, context)
+            });
+            why.push('Main movements target strength and power');
+        }
+        
+        // Build accessories block
+        if (plan.accessories && plan.accessories.length > 0) {
+            blocks.push({
+                name: 'Accessories',
+                items: plan.accessories.map(item => this.createExerciseItem(item)),
+                durationMin: 15
+            });
+            why.push('Accessory work supports main movements');
+        }
+        
+        // Build recovery block
+        if (plan.finishers && plan.finishers.length > 0) {
+            blocks.push({
+                name: 'Recovery',
+                items: plan.finishers.map(item => this.createExerciseItem(item)),
+                durationMin: 10
+            });
+            why.push('Recovery work promotes adaptation');
+        }
+        
+        // Add rationale from notes
+        if (plan.notes) {
+            plan.notes.forEach(note => {
+                why.push(note.text);
+            });
+        }
+        
+        // Add game day warning if applicable
+        if (context.schedule?.daysUntilGame <= 1) {
+            warnings.push('Game tomorrow. Reduced volume and intensity for performance.');
+            why.push('Lower intensity due to upcoming game');
+        }
+        
+        // Add low readiness warning
+        if (context.readiness <= 4) {
+            warnings.push('Low readiness. Focus on recovery and form.');
+            why.push('Volume reduced due to low readiness');
+        }
+        
+        return {
+            blocks,
+            intensityScale,
+            why,
+            warnings: warnings.length > 0 ? warnings : undefined
+        };
+    }
+
+    /**
+     * Create exercise item in required format
+     * @param {Object} exercise - Exercise data
+     * @returns {Object} Formatted exercise item
+     */
+    createExerciseItem(exercise) {
+        return {
+            name: exercise.name || exercise.exercise || 'Unknown Exercise',
+            sets: exercise.sets || 3,
+            reps: exercise.reps || '8-12',
+            targetRPE: exercise.rpe?.target || exercise.targetRPE || 7,
+            notes: exercise.rationale || exercise.notes,
+            category: exercise.category
+        };
+    }
+
+    /**
+     * Calculate intensity scale
+     * @param {number} readiness - Readiness score (1-10)
+     * @returns {number} Intensity scale (0.6-1.1)
+     */
+    calculateIntensityScale(readiness) {
+        if (readiness >= 8) return 1.0;
+        if (readiness >= 6) return 0.9;
+        if (readiness >= 4) return 0.8;
+        return 0.6;
+    }
+
+    /**
+     * Calculate main duration based on exercises
+     * @param {Array} exercises - Main exercises
+     * @param {Object} context - Context
+     * @returns {number} Duration in minutes
+     */
+    calculateMainDuration(exercises, context) {
+        const baseDuration = exercises.length * 8; // 8 min per exercise
+        const sessionLength = context.preferences?.sessionLength || 45;
+        const timeLimit = context.constraints?.timeLimit || sessionLength;
+        
+        // If time-crunched, reduce duration
+        if (timeLimit <= 25) {
+            return Math.min(baseDuration * 0.6, 20);
+        }
+        
+        return Math.min(baseDuration, 40);
+    }
+
+    /**
+     * Get structured fallback plan
+     * @param {Object} context - User context
+     * @returns {Object} Fallback plan
+     */
+    getFallbackPlanStructured(context) {
+        return {
+            blocks: [
+                {
+                    name: 'Warm-up',
+                    items: [
+                        {
+                            name: 'General Mobility',
+                            sets: 1,
+                            reps: '5-10',
+                            targetRPE: 5,
+                            notes: 'Light movement preparation',
+                            category: 'warmup'
+                        }
+                    ],
+                    durationMin: 10
+                },
+                {
+                    name: 'Main',
+                    items: [
+                        {
+                            name: 'Bodyweight Circuit',
+                            sets: 3,
+                            reps: '10-15',
+                            targetRPE: 7,
+                            notes: 'Fallback session due to planning error',
+                            category: 'circuit'
+                        }
+                    ],
+                    durationMin: 20
+                }
+            ],
+            intensityScale: 0.8,
+            why: ['Simplified session due to technical issue'],
+            warnings: ['Using fallback plan']
+        };
     }
 
     /**

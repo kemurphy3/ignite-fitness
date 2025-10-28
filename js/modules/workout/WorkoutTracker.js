@@ -9,8 +9,12 @@ class WorkoutTracker {
         this.storageManager = window.StorageManager;
         this.timerOverlay = window.TimerOverlay;
         this.progressionEngine = window.ProgressionEngine;
+        this.whyPanel = window.WhyPanel;
+        this.workoutTimer = window.WorkoutTimer;
+        this.weightMath = window.WeightMath;
         
         this.currentSession = null;
+        this.currentPlan = null; // Store current plan
         this.currentExerciseIndex = 0;
         this.exerciseData = [];
         this.sessionStartTime = null;
@@ -18,6 +22,323 @@ class WorkoutTracker {
         this.isActive = false;
         
         this.initializeSession();
+    }
+
+    /**
+     * Start workout with plan
+     * @param {Object} plan - Workout plan
+     */
+    startWorkout(plan) {
+        this.currentPlan = plan;
+        
+        if (!plan || !plan.blocks) {
+            this.logger.warn('No plan provided');
+            return;
+        }
+
+        // Store plan for overrides
+        this.initializeSession({ exercises: this.extractExercises(plan) });
+        
+        // Start session timer
+        if (this.workoutTimer) {
+            this.workoutTimer.startSession();
+        }
+        
+        // Render workout view
+        this.render();
+    }
+
+    /**
+     * Extract exercises from plan blocks
+     * @param {Object} plan - Workout plan
+     * @returns {Array} Exercise list
+     */
+    extractExercises(plan) {
+        const exercises = [];
+        
+        plan.blocks.forEach(block => {
+            if (block.items) {
+                block.items.forEach(item => {
+                    exercises.push({
+                        name: item.name,
+                        sets: item.sets,
+                        reps: item.reps,
+                        targetRPE: item.targetRPE,
+                        notes: item.notes,
+                        category: item.category
+                    });
+                });
+            }
+        });
+        
+        return exercises;
+    }
+
+    /**
+     * Render workout view with WhyPanel
+     */
+    render() {
+        if (!this.currentPlan) {
+            this.logger.warn('No plan to render');
+            return;
+        }
+
+        const workoutView = document.getElementById('workout-view') || document.querySelector('.workout-view');
+        
+        if (!workoutView) {
+            this.logger.warn('Workout view container not found');
+            return;
+        }
+
+        // Render why panel
+        const whyPanelHtml = this.whyPanel?.render(this.currentPlan) || '';
+        
+        // Render timer display
+        const timerHtml = this.renderTimers();
+        
+        // Render plan blocks
+        const blocksHtml = this.renderPlanBlocks(this.currentPlan);
+        
+        workoutView.innerHTML = `
+            <div class="workout-container">
+                ${whyPanelHtml}
+                ${timerHtml}
+                
+                <div class="workout-plan">
+                    ${blocksHtml}
+                </div>
+            </div>
+        `;
+
+        this.logger.debug('Workout rendered', this.currentPlan);
+    }
+
+    /**
+     * Render timer display
+     * @returns {string} HTML for timer section
+     */
+    renderTimers() {
+        if (!this.workoutTimer) {
+            return '';
+        }
+
+        const sessionDuration = this.workoutTimer.getSessionDuration();
+        const sessionTime = this.workoutTimer.formatDuration(sessionDuration);
+        const restRemaining = this.workoutTimer.getRestRemaining();
+        const restTime = restRemaining > 0 ? this.workoutTimer.formatDuration(restRemaining) : '0:00';
+
+        return `
+            <div class="workout-timers">
+                <div class="timer-card session-timer">
+                    <div class="timer-label">Session</div>
+                    <div class="timer-display" id="session-timer-display">${sessionTime}</div>
+                    <div class="timer-controls">
+                        <button class="timer-btn" onclick="window.WorkoutTracker.workoutTimer.pauseSession()" aria-label="Pause session">⏸</button>
+                        <button class="timer-btn" onclick="window.WorkoutTracker.workoutTimer.resumeSession()" aria-label="Resume session">▶</button>
+                        <button class="timer-btn" onclick="window.WorkoutTracker.workoutTimer.stopSession()" aria-label="Stop session">⏹</button>
+                    </div>
+                </div>
+                
+                ${restRemaining > 0 ? `
+                    <div class="timer-card rest-timer">
+                        <div class="timer-label">Rest</div>
+                        <div class="timer-display warning" id="rest-timer-display">${restTime}</div>
+                        <div class="timer-controls">
+                            <button class="timer-btn" onclick="window.WorkoutTracker.workoutTimer.addRestTime(15)" aria-label="Add 15 seconds">+15s</button>
+                            <button class="timer-btn" onclick="window.WorkoutTracker.workoutTimer.stopRest()" aria-label="Skip rest">Skip</button>
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    /**
+     * Render plan blocks with override buttons
+     * @param {Object} plan - Workout plan
+     * @returns {string} HTML for plan blocks
+     */
+    renderPlanBlocks(plan) {
+        if (!plan.blocks || plan.blocks.length === 0) {
+            return '<p>No workout plan available</p>';
+        }
+
+        // Get next exercise for preview
+        const nextExercise = this.getNextExercise(plan);
+
+        return `
+            ${nextExercise ? this.renderNextExercisePreview(nextExercise) : ''}
+            ${plan.blocks.map((block, blockIndex) => `
+                <div class="workout-block" data-block="${blockIndex}">
+                    <h3 class="block-title">${block.name}</h3>
+                    <div class="block-duration">${block.durationMin} minutes</div>
+                    
+                    <div class="block-items">
+                        ${block.items.map((item, itemIndex) => `
+                            <div class="workout-item">
+                                <div class="item-header">
+                                    <div class="item-info">
+                                        <strong class="item-name">${item.name}</strong>
+                                        <div class="item-details">
+                                            ${item.sets} sets × ${item.reps} reps @ RPE ${item.targetRPE || 7}
+                                        </div>
+                                        ${item.notes ? `<div class="item-notes">${item.notes}</div>` : ''}
+                                    </div>
+                                    <div class="item-actions">
+                                        ${this.renderRPEQuickInput(item, itemIndex)}
+                                        ${this.whyPanel?.renderOverrideButton(item.name, itemIndex) || ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('')}
+        `;
+    }
+
+    /**
+     * Get next exercise to preview
+     * @param {Object} plan - Workout plan
+     * @returns {Object|null} Next exercise info
+     */
+    getNextExercise(plan) {
+        if (!plan.blocks || plan.blocks.length === 0) {
+            return null;
+        }
+
+        // Find first incomplete exercise
+        for (const block of plan.blocks) {
+            if (block.items && block.items.length > 0) {
+                for (const item of block.items) {
+                    // Check if this exercise hasn't been completed
+                    if (!item.completed) {
+                        return {
+                            name: item.name,
+                            sets: item.sets,
+                            reps: item.reps,
+                            targetRPE: item.targetRPE || 7,
+                            notes: item.notes
+                        };
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Render next exercise preview
+     * @param {Object} exercise - Exercise info
+     * @returns {string} HTML for preview
+     */
+    renderNextExercisePreview(exercise) {
+        if (!exercise) return '';
+
+        return `
+            <div class="next-exercise-preview">
+                <h4>Next Up</h4>
+                <div class="next-exercise-name">${exercise.name}</div>
+                <div class="next-exercise-details">
+                    ${exercise.sets} sets × ${exercise.reps} reps @ RPE ${exercise.targetRPE}
+                    ${exercise.notes ? ` · ${exercise.notes}` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render RPE quick input buttons
+     * @param {Object} exercise - Exercise item
+     * @param {number} index - Exercise index
+     * @returns {string} HTML for RPE input
+     */
+    renderRPEQuickInput(exercise, index) {
+        return `
+            <div class="rpe-quick-input">
+                <label class="rpe-label">RPE:</label>
+                <div class="rpe-buttons">
+                    ${[6, 7, 8, 9, 10].map(rpe => `
+                        <button 
+                            class="rpe-btn ${exercise.targetRPE === rpe ? 'selected' : ''}"
+                            onclick="window.WorkoutTracker.recordRPEQuick(${rpe}, ${index})"
+                            aria-label="RPE ${rpe}"
+                        >
+                            ${rpe}
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Record RPE from quick input
+     * @param {number} rpe - RPE value (6-10)
+     * @param {number} exerciseIndex - Exercise index
+     */
+    recordRPEQuick(rpe, exerciseIndex) {
+        if (rpe < 6 || rpe > 10) {
+            this.logger.warn('Invalid RPE value for quick input:', rpe);
+            return;
+        }
+
+        // Record RPE
+        this.recordRPE(rpe, { exerciseIndex });
+
+        // Start rest timer
+        if (this.workoutTimer) {
+            this.workoutTimer.startRest(90); // 90 second default rest
+        }
+
+        // Update UI to show completed
+        const exerciseItem = document.querySelector(`[data-index="${exerciseIndex}"]`);
+        if (exerciseItem) {
+            exerciseItem.classList.add('completed');
+        }
+
+        this.logger.debug('Quick RPE recorded', { rpe, exerciseIndex });
+    }
+
+    /**
+     * Format target weight as plate loading instruction
+     * @param {number} targetWeight - Target weight in pounds/kg
+     * @param {string} unit - 'lb' or 'kg'
+     * @returns {string} Loading instruction text
+     */
+    formatWeightInstruction(targetWeight, unit = 'lb') {
+        if (!this.weightMath) {
+            return `${targetWeight} ${unit}`;
+        }
+
+        const config = {
+            mode: unit === 'kg' ? 'metric' : 'us',
+            unit
+        };
+
+        const loadPlan = this.weightMath.gymLoadPlan(config, targetWeight);
+        
+        return loadPlan.text;
+    }
+
+    /**
+     * Update plan after override
+     * @param {Object} newPlan - Updated plan
+     */
+    updatePlan(newPlan) {
+        this.currentPlan = newPlan;
+        this.render();
+    }
+
+    /**
+     * Refresh for mode
+     * @param {string} mode - Current mode
+     */
+    refreshForMode(mode) {
+        if (this.currentPlan) {
+            this.render();
+        }
     }
 
     /**
@@ -34,7 +355,7 @@ class WorkoutTracker {
             workoutId: workout.id || `workout_${Date.now()}`,
             workoutName: workout.name || 'Workout',
             exercises: workout.exercises || [],
-            startTime: new Date().toISOString(),
+                startTime: new Date().toISOString(),
             status: 'active',
             exercises: []
         };
@@ -95,9 +416,9 @@ class WorkoutTracker {
         const currentExercise = this.getCurrentExercise();
         if (!currentExercise) {
             return null;
-        }
-        
-        const set = {
+            }
+
+            const set = {
             setNumber: (currentExercise.completedSets.length + 1),
             weight: setData.weight || currentExercise.weight,
             reps: setData.reps || currentExercise.reps,
@@ -113,9 +434,9 @@ class WorkoutTracker {
         this.eventBus.emit('workout:set_completed', {
             sessionId: this.currentSession.workoutId,
             exercise: currentExercise,
-            set
-        });
-        
+                set 
+            });
+            
         return currentExercise;
     }
 

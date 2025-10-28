@@ -140,7 +140,7 @@ class ExerciseAdapter {
             };
         }
     }
-    
+
     /**
      * Get substitution rules database
      * @returns {Object} Substitution rules
@@ -281,6 +281,27 @@ class ExerciseAdapter {
             }
             return true;
         });
+    }
+
+    /**
+     * Get alternate exercises for a given exercise
+     * @param {string} exerciseName - Exercise name
+     * @returns {Array} Alternate exercises
+     */
+    getAlternates(exerciseName) {
+        const rules = this.getSubstitutionRules();
+        const exerciseRules = rules[exerciseName.toLowerCase()];
+        
+        if (!exerciseRules) {
+            return [];
+        }
+        
+        return exerciseRules.alternatives.map(alt => ({
+            name: alt.name,
+            rationale: alt.rationale,
+            restAdjustment: alt.restAdjustment || 0,
+            volumeAdjustment: alt.volumeAdjustment || 1.0
+            }));
     }
 
     /**
