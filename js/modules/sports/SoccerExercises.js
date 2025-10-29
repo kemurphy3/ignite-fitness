@@ -1017,9 +1017,8 @@ class SoccerExercises {
                 this.exercises[category].forEach(exercise => {
                     if (exercise.injuryPrevention.includes(injuryType)) {
                         exercises.push(exercise);
-                        }
-                    });
-                }
+                    }
+                });
             }
         });
 

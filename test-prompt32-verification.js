@@ -177,7 +177,7 @@ class Prompt32Verification {
         }
         
         // Check for CSS transition/animation classes
-        const sheet = document.querySelector('link[href*="recovery-dashboard"])');
+        const sheet = document.querySelector('link[href*="recovery-dashboard"]');
         if (sheet) {
             this.results.passed.push('Animations available in stylesheet');
         }

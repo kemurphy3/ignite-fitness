@@ -383,6 +383,7 @@ class Trends {
             this.logger.error('Failed to create chart:', error);
             throw error;
         }
+    }
 
     /**
      * Add accessibility features to chart

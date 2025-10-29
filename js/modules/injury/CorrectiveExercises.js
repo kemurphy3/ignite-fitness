@@ -583,6 +583,58 @@ class CorrectiveExercises {
     }
 
     /**
+     * Get exercise modifications for specific issues
+     * @param {string|Array} issues - Movement issues to address (can be string or array)
+     * @returns {Object} Exercise modifications
+     */
+    getModifications(issues) {
+        // Ensure issues is an array - handle both string and array inputs
+        const issuesArray = Array.isArray(issues) ? issues : (issues ? [issues] : []);
+        
+        if (issuesArray.length === 0) {
+            return {
+                warmUp: [],
+                mainExercises: [],
+                coolDown: [],
+                substitute: [],
+                frequency: 'Daily',
+                duration: '15-20 minutes'
+            };
+        }
+        
+        const modifications = {
+            warmUp: [],
+            mainExercises: [],
+            coolDown: [],
+            substitute: [],
+            frequency: 'Daily',
+            duration: '15-20 minutes'
+        };
+
+        issuesArray.forEach(issue => {
+            const exercises = this.selectExercises([issue]);
+            exercises.forEach(exercise => {
+                if (exercise.name.toLowerCase().includes('stretch') || 
+                    exercise.name.toLowerCase().includes('mobility')) {
+                    modifications.warmUp.push(exercise);
+                } else if (exercise.name.toLowerCase().includes('strength') ||
+                           exercise.name.toLowerCase().includes('stability')) {
+                    modifications.mainExercises.push(exercise);
+                } else {
+                    modifications.coolDown.push(exercise);
+                }
+                
+                // Add exercise to substitute list if it's a corrective exercise
+                if (exercise.purpose && exercise.purpose.includes(issue)) {
+                    modifications.substitute.push(exercise);
+                }
+            });
+        });
+
+        return modifications;
+    }
+
+    /**
      * Generate unique ID
      * @returns {string} Unique ID
      */

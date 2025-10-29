@@ -27,7 +27,8 @@
     <link rel="preload" href="/js/app.js" as="script" crossorigin="anonymous">
     <link rel="preload" href="/js/modules/ui/VirtualList.js" as="script" crossorigin="anonymous">
     <link rel="preload" href="/js/modules/cache/LRUCache.js" as="script" crossorigin="anonymous">
-    <link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+    <!-- Font preloads -->
+    <!-- <link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin="anonymous"> -->
     
     <!-- DNS Prefetch for External Resources -->
     <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
@@ -3009,6 +3010,7 @@
     <script src="js/modules/ui/BottomNavigation.js"></script>
     <script src="js/modules/ui/MobileOptimizer.js"></script>
     <script src="js/modules/ui/GestureHandler.js"></script>
+    <script src="js/modules/ui/BaseComponent.js"></script>
     <script src="js/modules/ui/ComponentLibrary.js"></script>
     <script src="js/modules/ui/TouchOptimizer.js"></script>
     <script src="js/modules/ui/DashboardHero.js"></script>
@@ -3045,14 +3047,12 @@
     <script src="js/modules/onboarding/steps/Preferences.js"></script>
     
     <!-- Workout Modules -->
-    <script src="js/modules/workout/ProgressionEngine.js"></script>
     <script src="js/modules/workout/ConflictResolver.js"></script>
     <script src="js/modules/workout/SessionOutcomeLogger.js"></script>
     <script src="js/modules/workout/LoadController.js"></script>
     <script src="js/modules/workout/WeightDisplay.js"></script>
     <script src="js/modules/settings/EquipmentPrefs.js"></script>
     <script src="js/modules/workout/ExerciseAdapter.js"></script>
-    <script src="js/modules/workout/WorkoutTracker.js"></script>
     <script src="js/modules/workout/WeightMath.js"></script>
     
     <!-- Sport-Specific Modules -->
@@ -3075,20 +3075,16 @@
     <script src="js/modules/auth/SessionManager.js"></script>
     
     <!-- Data Modules -->
-    <script src="js/modules/data/StorageManager.js"></script>
+    <!-- Data & API Modules -->
     <script src="js/modules/data/ApiClient.js"></script>
     <script src="js/modules/data/ExerciseDatabase.js"></script>
-    
-    <!-- Workout Modules -->
-    <script src="js/modules/workout/WorkoutTracker.js"></script>
-    <script src="js/modules/workout/ProgressionEngine.js"></script>
     
     <!-- AI Modules -->
     <script src="js/modules/ai/PersonalizedCoaching.js"></script>
     <script src="js/modules/ai/CoachingEngine.js"></script>
     
     <!-- Onboarding Modules -->
-    <script src="js/modules/onboarding/OnboardingManager.js"></script>
+    <!-- <script src="js/modules/onboarding/OnboardingManager.js"></script> -->
     
     <!-- UI Modules -->
     <script src="js/modules/ui/DashboardRenderer.js"></script>
@@ -3100,7 +3096,6 @@
     
     <!-- Progression Modules -->
     <script src="js/modules/workout/ProgressionEngine.js"></script>
-    <script src="js/modules/workout/ExerciseAdapter.js"></script>
     
     <!-- Goals & Habits Modules -->
     <script src="js/modules/goals/GoalManager.js"></script>
@@ -3108,7 +3103,6 @@
     
     <!-- AI Expert Coordination Brain -->
     <script src="js/modules/ai/AIDataValidator.js"></script>
-    <script src="netlify/functions/utils/ai-context-database.js"></script>
     <script src="js/modules/ai/context/CoordinatorContext.js"></script>
     <script src="js/modules/ai/experts/StrengthCoach.js"></script>
     <script src="js/modules/ai/experts/SportsCoach.js"></script>
@@ -3125,9 +3119,7 @@
     <script src="js/modules/ui/OverrideBar.js"></script>
     
     <!-- Strava Integration & Load Management -->
-    <script src="js/modules/integration/StravaProcessor.js"></script>
     <script src="js/modules/integration/StravaHook.js"></script>
-    <script src="js/modules/load/LoadController.js"></script>
     <script src="js/modules/load/LoadCalculator.js"></script>
     <script src="js/modules/load/ExternalLoadAdapter.js"></script>
     

@@ -145,7 +145,8 @@ class Prompt22Verification {
                 this.results.passed.push('Knee pain: Avoids back squats (biomechanically sound)');
             }
             
-            if (kneeMods.substitute && kneeMods.substitute.some(s => s.includes('goblet'))) {
+            if (kneeMods.substitute && kneeMods.substitute.some(exercise => 
+                exercise.name && exercise.name.toLowerCase().includes('goblet'))) {
                 this.results.passed.push('Knee pain: Suggests goblet squats (safer option)');
             }
         }
@@ -157,7 +158,8 @@ class Prompt22Verification {
                 this.results.passed.push('Lower back: Avoids conventional deadlifts');
             }
             
-            if (lbMods.substitute && lbMods.substitute.some(s => s.includes('trap'))) {
+            if (lbMods.substitute && lbMods.substitute.some(exercise => 
+                exercise.name && exercise.name.toLowerCase().includes('trap'))) {
                 this.results.passed.push('Lower back: Suggests trap bar (safer biomechanics)');
             }
         }

@@ -5,7 +5,7 @@
 class AuthManager {
     constructor() {
         this.currentUser = null;
-        this.isLoggedIn = false;
+        this.loggedInStatus = false;
         this.users = {};
         this.logger = window.SafeLogger || console;
         this.eventBus = window.EventBus;
@@ -38,7 +38,7 @@ class AuthManager {
             const savedUser = localStorage.getItem('ignitefitness_current_user');
             if (savedUser && this.users[savedUser]) {
                 this.currentUser = savedUser;
-                this.isLoggedIn = true;
+                this.loggedInStatus = true;
                 this.logger.info('Current user loaded', { user: savedUser });
             }
         } catch (error) {
@@ -79,7 +79,7 @@ class AuthManager {
                 const passwordHash = this.simpleHash(password);
                 if (this.users[username].passwordHash === passwordHash) {
                     this.currentUser = username;
-                    this.isLoggedIn = true;
+                    this.loggedInStatus = true;
                     
                     // Save to localStorage
                     localStorage.setItem('ignitefitness_current_user', username);
@@ -216,7 +216,7 @@ class AuthManager {
             }
 
             this.currentUser = null;
-            this.isLoggedIn = false;
+            this.loggedInStatus = false;
             localStorage.removeItem('ignitefitness_current_user');
             
             return { success: true };
@@ -239,7 +239,15 @@ class AuthManager {
      * @returns {boolean} Login status
      */
     isUserLoggedIn() {
-        return this.isLoggedIn && this.currentUser !== null;
+        return this.loggedInStatus && this.currentUser !== null;
+    }
+
+    /**
+     * Check if user is logged in (alias for compatibility)
+     * @returns {boolean} Login status
+     */
+    isLoggedIn() {
+        return this.isUserLoggedIn();
     }
 
     /**
