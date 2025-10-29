@@ -60,6 +60,13 @@ class PersistentHeader {
         
         // Listen for phase changes
         window.addEventListener('phase:changed', () => this.updateSeasonPhase());
+        
+        // Update sign-in button on auth state changes (initially and on events)
+        this.updateSignInButton();
+        if (window.EventBus) {
+            window.EventBus.on('user:login', () => this.updateSignInButton());
+            window.EventBus.on('user:logout', () => this.updateSignInButton());
+        }
     }
 
     /**
@@ -67,6 +74,12 @@ class PersistentHeader {
      * @returns {string} Header HTML
      */
     generateHeaderHTML() {
+        // Check auth state for Sign In button
+        const authState = window.AuthManager?.getAuthState() || { isAuthenticated: false };
+        const signInButton = !authState.isAuthenticated 
+            ? '<button onclick="window.Router?.navigate(\'#/login\')" class="header-sign-in-btn" style="padding: 0.5rem 1rem; background: #4299e1; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem; font-weight: 600;">Sign In</button>'
+            : '';
+        
         return `
             <div class="header-content">
                 <div class="header-left">
@@ -78,6 +91,7 @@ class PersistentHeader {
                 </div>
                 
                 <div class="header-right">
+                    ${signInButton}
                     <div class="season-phase-pill-container" id="season-phase-container">
                         ${this.renderSeasonPhasePill()}
                     </div>
@@ -143,6 +157,30 @@ class PersistentHeader {
         if (!container) return;
 
         container.innerHTML = this.renderSeasonPhasePill();
+    }
+
+    /**
+     * Update Sign In button visibility
+     */
+    updateSignInButton() {
+        const header = document.getElementById('persistent-header');
+        if (!header) return;
+        
+        const authState = window.AuthManager?.getAuthState() || { isAuthenticated: false };
+        const headerRight = header.querySelector('.header-right');
+        if (!headerRight) return;
+        
+        const existingBtn = headerRight.querySelector('.header-sign-in-btn');
+        if (authState.isAuthenticated && existingBtn) {
+            existingBtn.remove();
+        } else if (!authState.isAuthenticated && !existingBtn) {
+            const signInBtn = document.createElement('button');
+            signInBtn.className = 'header-sign-in-btn';
+            signInBtn.textContent = 'Sign In';
+            signInBtn.style.cssText = 'padding: 0.5rem 1rem; background: #4299e1; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem; font-weight: 600;';
+            signInBtn.onclick = () => window.Router?.navigate('#/login');
+            headerRight.insertBefore(signInBtn, headerRight.firstChild);
+        }
     }
 
     /**

@@ -7,6 +7,18 @@ class DashboardHero {
         this.logger = window.SafeLogger || console;
         this.authManager = window.AuthManager;
         this.seasonPhase = window.SeasonPhase;
+        
+        // Listen for Simple Mode changes
+        if (window.EventBus) {
+            window.EventBus.on('simpleMode:changed', () => {
+                // Re-render if hero is already in DOM
+                const existingHero = document.querySelector('.dashboard-hero');
+                if (existingHero && existingHero.parentElement) {
+                    const newHero = this.render();
+                    existingHero.replaceWith(newHero);
+                }
+            });
+        }
     }
 
     /**
@@ -37,6 +49,46 @@ class DashboardHero {
                 </div>`
             : '<div class="readiness-placeholder" style="padding: 1rem; text-align: center; color: #6c757d; font-size: 0.875rem;">Complete daily check-in to see readiness</div>';
         
+        // Check Simple Mode
+        const simpleMode = window.SimpleModeManager?.isEnabled() ?? true;
+        
+        // In Simple Mode: show only 4 actions; hide season phase
+        const seasonPhaseHTML = simpleMode ? '' : (currentPhase ? this.renderSeasonPhase(currentPhase) : '');
+        
+        const quickActionsHTML = simpleMode 
+            ? `
+                <button class="action-card" data-route="#/workouts">
+                    <div class="action-icon">💪</div>
+                    <div class="action-label">Start Workout</div>
+                </button>
+                <button class="action-card" data-route="#/sport" data-action="log-sport">
+                    <div class="action-icon">⚽</div>
+                    <div class="action-label">Log Sport Session</div>
+                </button>
+                <button class="action-card" data-route="#/recovery" data-action="recovery">
+                    <div class="action-icon">🔄</div>
+                    <div class="action-label">Recovery Session</div>
+                </button>
+                <button class="action-card" data-action="ask-coach">
+                    <div class="action-icon">💬</div>
+                    <div class="action-label">Ask Coach</div>
+                </button>
+            `
+            : `
+                <button class="action-card" data-route="#/workouts">
+                    <div class="action-icon">💪</div>
+                    <div class="action-label">Start Workout</div>
+                </button>
+                <button class="action-card" data-route="#/progress">
+                    <div class="action-icon">📊</div>
+                    <div class="action-label">View Progress</div>
+                </button>
+                <button class="action-card" data-route="#/sport">
+                    <div class="action-icon">⚽</div>
+                    <div class="action-label">Training</div>
+                </button>
+            `;
+        
         hero.innerHTML = `
             <div class="hero-content">
                 <div class="hero-greeting">
@@ -44,27 +96,15 @@ class DashboardHero {
                     <p class="hero-username">${username}</p>
                 </div>
                 
-                <!-- Readiness Circle -->
+                <!-- Readiness Circle (shown even in Simple Mode) -->
                 ${readinessCircleHTML}
                 
-                ${currentPhase ? this.renderSeasonPhase(currentPhase) : ''}
+                <!-- Season Phase (hidden in Simple Mode) -->
+                ${seasonPhaseHTML}
             </div>
             
             <div class="hero-quick-actions">
-                <button class="action-card" data-route="#/workouts">
-                    <div class="action-icon">💪</div>
-                    <div class="action-label">Start Workout</div>
-                </button>
-                
-                <button class="action-card" data-route="#/progress">
-                    <div class="action-icon">📊</div>
-                    <div class="action-label">View Progress</div>
-                </button>
-                
-                <button class="action-card" data-route="#/sport">
-                    <div class="action-icon">⚽</div>
-                    <div class="action-label">Training</div>
-                </button>
+                ${quickActionsHTML}
             </div>
         `;
         
@@ -72,7 +112,21 @@ class DashboardHero {
         hero.querySelectorAll('.action-card').forEach(card => {
             card.addEventListener('click', () => {
                 const route = card.dataset.route;
-                if (window.Router) {
+                const action = card.dataset.action;
+                
+                if (action === 'ask-coach') {
+                    // Open AI chat
+                    if (window.CoachChat) {
+                        window.CoachChat.openChat();
+                    } else if (window.toggleAIChat) {
+                        window.toggleAIChat();
+                    }
+                } else if (action === 'recovery') {
+                    // Navigate to recovery/dashboard or show recovery options
+                    if (window.Router) {
+                        window.Router.navigate('#/dashboard');
+                    }
+                } else if (route && window.Router) {
                     window.Router.navigate(route);
                 }
             });

@@ -4,45 +4,172 @@
  */
 class AuthManager {
     constructor() {
-        this.currentUser = null;
-        this.loggedInStatus = false;
+        this.authState = {
+            isAuthenticated: false,  // MUST stay false until readFromStorage() completes
+            token: null,
+            user: null
+        };
         this.users = {};
         this.logger = window.SafeLogger || console;
         this.eventBus = window.EventBus;
+        this.storageKeys = {
+            token: 'ignite.auth.token',
+            user: 'ignite.user',
+            prefs: 'ignite.prefs',
+            currentUser: 'ignitefitness_current_user',
+            users: 'ignitefitness_users'
+        };
         
-        this.loadUsers();
-        this.loadCurrentUser();
+        // DO NOT auto-load on construction - wait for explicit readFromStorage() call
     }
 
     /**
-     * Load users from localStorage
+     * Get current auth state (single source of truth)
+     * @returns {Object} { isAuthenticated, token, user }
      */
-    loadUsers() {
+    getAuthState() {
+        return { ...this.authState };
+    }
+
+    /**
+     * Read auth state from storage with strict validation
+     * @returns {Promise<void>}
+     */
+    async readFromStorage() {
         try {
-            const savedUsers = localStorage.getItem('ignitefitness_users');
+            // Load users first
+            const savedUsers = localStorage.getItem(this.storageKeys.users);
             if (savedUsers) {
-                this.users = JSON.parse(savedUsers);
-                this.logger.info('Users loaded from storage', { count: 'loaded' });
+                try {
+                    this.users = JSON.parse(savedUsers);
+                    this.logger.info('Users loaded from storage');
+                } catch (error) {
+                    this.logger.error('Failed to parse users from storage', error);
+                    this.users = {};
+                }
             }
+
+            // Check for token
+            const tokenStr = localStorage.getItem(this.storageKeys.token);
+            const currentUserStr = localStorage.getItem(this.storageKeys.currentUser);
+            
+            // Validate token if present
+            if (tokenStr) {
+                try {
+                    const tokenData = JSON.parse(tokenStr);
+                    
+                    // Cheap parse/shape check
+                    if (!tokenData || typeof tokenData !== 'object') {
+                        throw new Error('Invalid token format');
+                    }
+                    
+                    // Check if token has metadata and validate expiry (if stored)
+                    if (tokenData.created_at) {
+                        const created = new Date(tokenData.created_at);
+                        const now = new Date();
+                        const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+                        
+                        if (isNaN(created.getTime()) || (now.getTime() - created.getTime()) > thirtyDays) {
+                            this.logger.info('Token expired (>30 days), clearing storage');
+                            this.clearStorage();
+                            return;
+                        }
+                    }
+                    
+                    // Token passes validation
+                    if (currentUserStr && this.users[currentUserStr]) {
+                        this.authState = {
+                            isAuthenticated: true,
+                            token: tokenData.value || tokenStr,
+                            user: this.users[currentUserStr]
+                        };
+                        this.logger.info('Auth state loaded from storage', { user: currentUserStr });
+                        return;
+                    }
+                } catch (error) {
+                    this.logger.warn('Invalid token in storage, clearing', error);
+                    this.clearStorage();
+                    return;
+                }
+            }
+            
+            // No valid token or user - ensure logged out state
+            this.authState = {
+                isAuthenticated: false,
+                token: null,
+                user: null
+            };
+            this.logger.info('No valid auth state found, logged out');
+            
         } catch (error) {
-            this.logger.error('Failed to load users from storage', error);
-            this.users = {};
+            this.logger.error('Failed to read from storage', error);
+            this.clearStorage();
         }
     }
 
     /**
-     * Load current user from localStorage
+     * Write auth state to storage
+     * @param {Object} state - { token, user }
      */
-    loadCurrentUser() {
+    writeToStorage(state) {
         try {
-            const savedUser = localStorage.getItem('ignitefitness_current_user');
-            if (savedUser && this.users[savedUser]) {
-                this.currentUser = savedUser;
-                this.loggedInStatus = true;
-                this.logger.info('Current user loaded', { user: savedUser });
+            const { token, user } = state;
+            
+            if (!user || !user.username) {
+                throw new Error('Invalid user data');
             }
+            
+            // Store token with metadata
+            const tokenData = {
+                value: token || `session_${Date.now()}`,
+                created_at: new Date().toISOString(),
+                username: user.username
+            };
+            localStorage.setItem(this.storageKeys.token, JSON.stringify(tokenData));
+            
+            // Store current user
+            localStorage.setItem(this.storageKeys.currentUser, user.username);
+            
+            // Ensure user is in users object
+            if (!this.users[user.username]) {
+                this.users[user.username] = user;
+            }
+            localStorage.setItem(this.storageKeys.users, JSON.stringify(this.users));
+            
+            // Update in-memory state
+            this.authState = {
+                isAuthenticated: true,
+                token: tokenData.value,
+                user: this.users[user.username]
+            };
+            
+            this.logger.info('Auth state written to storage', { user: user.username });
         } catch (error) {
-            this.logger.error('Failed to load current user', error);
+            this.logger.error('Failed to write to storage', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Clear all auth-related storage
+     */
+    clearStorage() {
+        try {
+            localStorage.removeItem(this.storageKeys.token);
+            localStorage.removeItem(this.storageKeys.user);
+            localStorage.removeItem(this.storageKeys.prefs);
+            localStorage.removeItem(this.storageKeys.currentUser);
+            
+            // Reset auth state
+            this.authState = {
+                isAuthenticated: false,
+                token: null,
+                user: null
+            };
+            
+            this.logger.info('Auth storage cleared');
+        } catch (error) {
+            this.logger.error('Failed to clear storage', error);
         }
     }
 
@@ -78,17 +205,22 @@ class AuthManager {
             if (this.users[username] && this.users[username].passwordHash) {
                 const passwordHash = this.simpleHash(password);
                 if (this.users[username].passwordHash === passwordHash) {
-                    this.currentUser = username;
-                    this.loggedInStatus = true;
+                    // Use writeToStorage to persist auth state
+                    const userData = {
+                        ...this.users[username],
+                        username: username,
+                        lastLogin: Date.now()
+                    };
                     
-                    // Save to localStorage
-                    localStorage.setItem('ignitefitness_current_user', username);
-                    localStorage.setItem('ignitefitness_login_time', Date.now().toString());
+                    this.writeToStorage({
+                        token: `session_${Date.now()}_${username}`,
+                        user: userData
+                    });
                     
                     this.logger.audit('USER_LOGIN', { username });
                     this.eventBus?.emit('user:login', { username });
                     
-                    return { success: true, user: this.users[username] };
+                    return { success: true, user: this.authState.user };
                 } else {
                     this.logger.security('INVALID_LOGIN_ATTEMPT', { username });
                     return { success: false, error: 'Invalid username or password' };
@@ -148,12 +280,23 @@ class AuthManager {
             };
 
             // Save users
-            localStorage.setItem('ignitefitness_users', JSON.stringify(this.users));
+            localStorage.setItem(this.storageKeys.users, JSON.stringify(this.users));
+            
+            // Auto-login after registration
+            const userData = {
+                ...this.users[username],
+                username: username
+            };
+            
+            this.writeToStorage({
+                token: `session_${Date.now()}_${username}`,
+                user: userData
+            });
             
             this.logger.audit('USER_REGISTRATION', { username, athleteName });
             this.eventBus?.emit('user:registered', { username, athleteName });
             
-            return { success: true, user: this.users[username] };
+            return { success: true, user: this.authState.user };
         } catch (error) {
             this.logger.error('Registration failed', error);
             return { success: false, error: 'Registration failed. Please try again.' };
@@ -210,14 +353,13 @@ class AuthManager {
      */
     logout() {
         try {
-            if (this.currentUser) {
-                this.logger.audit('USER_LOGOUT', { username: this.currentUser });
-                this.eventBus?.emit('user:logout', { username: this.currentUser });
+            const username = this.authState.user?.username;
+            if (username) {
+                this.logger.audit('USER_LOGOUT', { username });
+                this.eventBus?.emit('user:logout', { username });
             }
 
-            this.currentUser = null;
-            this.loggedInStatus = false;
-            localStorage.removeItem('ignitefitness_current_user');
+            this.clearStorage();
             
             return { success: true };
         } catch (error) {
@@ -231,7 +373,7 @@ class AuthManager {
      * @returns {Object|null} Current user data
      */
     getCurrentUser() {
-        return this.currentUser ? this.users[this.currentUser] : null;
+        return this.authState.user;
     }
 
     /**
@@ -239,7 +381,7 @@ class AuthManager {
      * @returns {boolean} Login status
      */
     isUserLoggedIn() {
-        return this.loggedInStatus && this.currentUser !== null;
+        return this.authState.isAuthenticated;
     }
 
     /**
@@ -255,7 +397,7 @@ class AuthManager {
      * @returns {string|null} Current username
      */
     getCurrentUsername() {
-        return this.currentUser;
+        return this.authState.user?.username || null;
     }
 
     /**
@@ -265,33 +407,39 @@ class AuthManager {
      */
     updateUserData(data) {
         try {
-            if (!this.currentUser) {
+            const username = this.authState.user?.username;
+            if (!username) {
                 return { success: false, error: 'No user logged in' };
             }
 
-            if (!this.users[this.currentUser]) {
-                this.users[this.currentUser] = {
+            if (!this.users[username]) {
+                this.users[username] = {
                     version: '2.0',
-                    username: this.currentUser,
+                    username: username,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 };
             }
 
             // Merge new data with existing user data
-            this.users[this.currentUser] = {
-                ...this.users[this.currentUser],
+            this.users[username] = {
+                ...this.users[username],
                 ...data,
                 updatedAt: new Date().toISOString()
             };
 
+            // Update auth state if this is the current user
+            if (this.authState.user && this.authState.user.username === username) {
+                this.authState.user = this.users[username];
+            }
+
             // Save to localStorage
-            localStorage.setItem('ignitefitness_users', JSON.stringify(this.users));
+            localStorage.setItem(this.storageKeys.users, JSON.stringify(this.users));
             
-            this.logger.audit('USER_DATA_UPDATED', { username: this.currentUser });
-            this.eventBus?.emit('user:dataUpdated', { username: this.currentUser, data });
+            this.logger.audit('USER_DATA_UPDATED', { username });
+            this.eventBus?.emit('user:dataUpdated', { username, data });
             
-            return { success: true, user: this.users[this.currentUser] };
+            return { success: true, user: this.users[username] };
         } catch (error) {
             this.logger.error('Failed to update user data', error);
             return { success: false, error: 'Failed to update user data' };

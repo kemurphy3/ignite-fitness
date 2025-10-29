@@ -3005,6 +3005,7 @@
     <script src="js/modules/debug/DebugManager.js"></script>
     
     <!-- UI Modules -->
+    <script src="js/modules/ui/SimpleModeManager.js"></script>
     <script src="js/modules/ui/Router.js"></script>
     <script src="js/modules/ui/BottomNavigation.js"></script>
     <script src="js/modules/ui/MobileOptimizer.js"></script>
@@ -3173,6 +3174,12 @@
     <script src="js/ai/pattern-detector.js"></script>
     <script src="js/ai/context-aware-ai.js"></script>
     <script src="js/training/seasonal-training.js"></script>
+    
+    <!-- Boot Sequence (load before app-modular) -->
+    <script src="js/boot-sequence.js"></script>
+    
+    <!-- Auth Debug Panel (development only) -->
+    <script src="js/modules/debug/AuthDebugPanel.js"></script>
     
     <!-- Main Application -->
     <script src="js/app-modular.js"></script>

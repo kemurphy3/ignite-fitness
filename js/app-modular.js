@@ -90,32 +90,27 @@ ${error.stack || error.message || error}
 }
 
 // Initialize when DOM is loaded with error handling
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     try {
         console.log('Ignite Fitness App Starting...');
         
-        // Initialize core systems
-        initializeApp();
-    
-        // Check if user is already logged in
-        if (window.AuthManager?.isUserLoggedIn()) {
-            currentUser = window.AuthManager.getCurrentUsername();
-            isLoggedIn = true;
-            
-            // Check if user needs onboarding
-            if (window.OnboardingManager?.needsOnboarding()) {
-                showOnboarding();
-            } else {
-                showUserDashboard();
-                loadUserData();
-                updateSeasonalPhaseDisplay();
-                checkStravaConnection();
-                updateSyncStatus();
-                loadRecentWorkouts();
-            }
+        // Deterministic boot sequence
+        if (window.BootSequence) {
+            await window.BootSequence.boot();
         } else {
-            showLoginForm();
+            // Fallback if BootSequence not available
+            console.warn('BootSequence not available, using fallback');
+            if (window.AuthManager) {
+                await window.AuthManager.readFromStorage();
+                const authState = window.AuthManager.getAuthState();
+                if (window.Router) {
+                    window.Router.init(authState);
+                }
+            }
         }
+        
+        // Initialize other app systems (non-blocking)
+        initializeApp();
         
         // Handle Enter key in AI chat input
         const aiInput = document.getElementById('aiChatInput');

@@ -4,16 +4,23 @@
  */
 
 // Version from package.json or fallback
+// Increment CACHE_VERSION to bust caches
+const CACHE_VERSION = 2; // Increment this to bust caches
 const APP_VERSION = '1.0.0'; // This should be updated from package.json in build
-const CACHE_NAME = `ignite-fitness-v${APP_VERSION}`;
-const STATIC_CACHE = `ignite-fitness-static-v${APP_VERSION}`;
-const API_CACHE = `ignite-fitness-api-v${APP_VERSION}`;
-const WORKOUT_CACHE = `ignite-fitness-workout-v${APP_VERSION}`;
+const CACHE_NAME = `ignite-fitness-v${CACHE_VERSION}`;
+const STATIC_CACHE = `ignite-fitness-static-v${CACHE_VERSION}`;
+const API_CACHE = `ignite-fitness-api-v${CACHE_VERSION}`;
+const WORKOUT_CACHE = `ignite-fitness-workout-v${CACHE_VERSION}`;
 
-// Expose version to main thread
+// Expose version to main thread and handle update requests
 self.addEventListener('message', event => {
     if (event.data && event.data.type === 'GET_VERSION') {
-        event.ports[0].postMessage({ version: APP_VERSION });
+        event.ports[0].postMessage({ version: APP_VERSION, cacheVersion: CACHE_VERSION });
+    }
+    
+    // Handle SKIP_WAITING request from app
+    if (event.data && event.data.type === 'SKIP_WAITING') {
+        self.skipWaiting();
     }
 });
 
@@ -109,6 +116,14 @@ self.addEventListener('activate', event => {
             .then(() => {
                 console.log('Service Worker activated');
                 return self.clients.claim();
+            })
+            .then(() => {
+                // Notify all clients about activation
+                return self.clients.matchAll().then(clients => {
+                    clients.forEach(client => {
+                        client.postMessage({ type: 'SW_ACTIVATED', cacheVersion: CACHE_VERSION });
+                    });
+                });
             })
             .catch(error => {
                 console.error('Failed to activate service worker:', error);

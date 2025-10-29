@@ -181,10 +181,13 @@
                         </p>
                         <div class="error-boundary-actions">
                             <button onclick="window.location.reload()" class="error-boundary-btn error-boundary-btn-primary">
-                                Reload Page
+                                Retry
                             </button>
-                            <button onclick="document.getElementById('error-boundary-ui').remove()" class="error-boundary-btn error-boundary-btn-secondary">
-                                Dismiss
+                            <button onclick="window.handleErrorBoundarySignOut()" class="error-boundary-btn error-boundary-btn-secondary">
+                                Sign out and retry
+                            </button>
+                            <button onclick="window.Router?.navigate('#/login')" class="error-boundary-btn error-boundary-btn-link">
+                                Back to Sign In
                             </button>
                         </div>
                         <details class="error-boundary-details">
@@ -281,6 +284,17 @@
                     
                     .error-boundary-btn-secondary:hover {
                         background: #cbd5e0;
+                    }
+                    
+                    .error-boundary-btn-link {
+                        background: transparent;
+                        color: #4299e1;
+                        text-decoration: underline;
+                        border: none;
+                    }
+                    
+                    .error-boundary-btn-link:hover {
+                        color: #3182ce;
                     }
                     
                     .error-boundary-details {
@@ -395,5 +409,17 @@
 
     // Expose globally
     window.ErrorBoundary = errorBoundary;
+    
+    // Handle sign out from error boundary
+    window.handleErrorBoundarySignOut = function() {
+        if (window.AuthManager) {
+            window.AuthManager.clearStorage();
+        }
+        if (window.Router) {
+            window.Router.navigate('#/login', { replace: true });
+        } else {
+            window.location.reload();
+        }
+    };
 
 })();
