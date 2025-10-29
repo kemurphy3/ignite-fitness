@@ -541,13 +541,20 @@ class ExpertCoordinator {
             });
         }
 
+        // Track original sets before any modifications to prevent compound scaling issues
+        plan.mainSets = plan.mainSets.map(main => ({
+            ...main,
+            _originalSets: main.sets || 3 // Store original for compound reduction tracking
+        }));
+
         // Check for low readiness
         if (context.readiness <= 4) {
             // Reduce volume across the board
             plan.mainSets = plan.mainSets.map(main => ({
                 ...main,
-                sets: Math.max(2, Math.floor((main.sets || 3) * 0.7)),
-                load: main.load ? main.load * 0.7 : main.load
+                sets: Math.max(2, Math.floor((main._originalSets || main.sets || 3) * 0.7)),
+                load: main.load ? main.load * 0.7 : main.load,
+                _readinessReduced: true // Track that readiness reduction was applied
             }));
             
             plan.notes.push({
@@ -557,21 +564,58 @@ class ExpertCoordinator {
         }
 
         // Apply load-based volume adjustments
+        // CRITICAL FIX: Prevent compound scaling that creates 1-set workouts
         if (context.volumeScale && context.volumeScale < 1.0) {
             const volumeMultiplier = context.volumeScale;
             
-            // Reduce sets and reps across all exercises
-            plan.mainSets = plan.mainSets.map(main => ({
-                ...main,
-                sets: Math.max(1, Math.floor((main.sets || 3) * volumeMultiplier)),
-                reps: this.adjustRepsForVolume(main.reps, volumeMultiplier)
-            }));
+            // Calculate maximum allowed reduction (cap at 60% total reduction = 40% minimum)
+            const maxTotalReduction = 0.6; // Maximum 60% reduction
+            const minEffectiveVolume = 1.0 - maxTotalReduction; // At least 40% of original
             
-            plan.accessories = plan.accessories.map(accessory => ({
-                ...accessory,
-                sets: Math.max(1, Math.floor((accessory.sets || 3) * volumeMultiplier)),
-                reps: this.adjustRepsForVolume(accessory.reps, volumeMultiplier)
-            }));
+            // Reduce sets and reps across all exercises
+            plan.mainSets = plan.mainSets.map(main => {
+                // Use original sets if available, otherwise current sets
+                const baseSets = main._originalSets || main.sets || 3;
+                
+                // If readiness reduction was already applied, calculate cumulative effect
+                let effectiveSets;
+                if (main._readinessReduced) {
+                    // Apply volumeScale to the already-reduced sets, but track from original
+                    const readinessReducedSets = Math.floor(baseSets * 0.7);
+                    const afterVolumeScale = Math.floor(readinessReducedSets * volumeMultiplier);
+                    // Ensure we never go below 40% of original (60% max reduction)
+                    const minSetsFromOriginal = Math.max(2, Math.floor(baseSets * minEffectiveVolume));
+                    effectiveSets = Math.max(minSetsFromOriginal, afterVolumeScale);
+                } else {
+                    // Only volumeScale reduction, ensure at least 2 sets and respect max reduction
+                    const afterVolumeScale = Math.floor(baseSets * volumeMultiplier);
+                    const minSetsFromOriginal = Math.max(2, Math.floor(baseSets * minEffectiveVolume));
+                    effectiveSets = Math.max(minSetsFromOriginal, afterVolumeScale);
+                }
+                
+                // Final safety guard: Always ensure at least 2 sets
+                effectiveSets = Math.max(2, effectiveSets);
+                
+                return {
+                    ...main,
+                    sets: effectiveSets,
+                    reps: this.adjustRepsForVolume(main.reps, volumeMultiplier)
+                };
+            });
+            
+            // Apply same protection to accessories (allow more flexibility, but still cap at 60% reduction)
+            plan.accessories = plan.accessories.map(accessory => {
+                const baseSets = accessory.sets || 3;
+                const afterVolumeScale = Math.floor(baseSets * volumeMultiplier);
+                const minSetsFromOriginal = Math.max(1, Math.floor(baseSets * minEffectiveVolume));
+                const effectiveSets = Math.max(minSetsFromOriginal, afterVolumeScale);
+                
+                return {
+                    ...accessory,
+                    sets: effectiveSets,
+                    reps: this.adjustRepsForVolume(accessory.reps, volumeMultiplier)
+                };
+            });
             
             plan.notes.push({
                 source: 'load',
@@ -635,6 +679,12 @@ class ExpertCoordinator {
                 text: `Time-crunched plan (${timeLimit} min). Superset main work for efficiency.`
             });
         }
+
+        // Clean up internal tracking fields before returning plan
+        plan.mainSets = plan.mainSets.map(main => {
+            const { _originalSets, _readinessReduced, ...cleanMain } = main;
+            return cleanMain;
+        });
 
         return plan;
     }
