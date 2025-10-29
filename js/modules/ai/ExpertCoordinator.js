@@ -508,15 +508,19 @@ class ExpertCoordinator {
         ) || context.constraints?.flags?.includes('knee_pain');
         
         if (kneePain) {
-            // Get safe alternatives from ExerciseAdapter
-            // CRITICAL FIX: Check for ExerciseAdapter availability before use
+            // CRITICAL FIX: Check for ExerciseAdapter availability BEFORE instantiation
+            // Prevents app crash if dependency is missing - graceful degradation pattern
             if (!window.ExerciseAdapter) {
-                // ExerciseAdapter not available - skip substitution, log warning
+                // Early return pattern: skip substitution if dependency missing
+                // This prevents crash while maintaining workout plan integrity
                 this.logger.warn('ExerciseAdapter not available, skipping exercise substitution for knee pain');
+                plan.notes = plan.notes || [];
                 plan.notes.push({
                     source: 'system',
                     text: 'Knee pain detected, but exercise substitution unavailable. Please modify exercises manually if needed.'
                 });
+                // Early exit - plan.mainSets remain unchanged (safe fallback)
+                // Flow continues with original exercises rather than crashing
             } else {
                 const exerciseAdapter = new window.ExerciseAdapter();
                 
