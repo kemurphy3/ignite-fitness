@@ -51,6 +51,8 @@
     <link rel="stylesheet" href="styles/recovery-dashboard.css">
     <link rel="stylesheet" href="styles/nutrition-card.css">
     <link rel="stylesheet" href="styles/why-this.css">
+    <link rel="stylesheet" href="styles/first-time-user.css">
+    <link rel="stylesheet" href="styles/simple-mode.css">
     <link rel="stylesheet" href="styles/why-panel.css">
     <link rel="stylesheet" href="styles/charts.css">
     <link rel="stylesheet" href="styles/strava-import.css">
@@ -3181,6 +3183,16 @@
     <!-- Auth Debug Panel (development only) -->
     <script src="js/modules/debug/AuthDebugPanel.js"></script>
     
+    <!-- First-Time User Experience Components -->
+    <script src="js/modules/ui/LandingView.js"></script>
+    <script src="js/modules/ui/FirstWorkoutExperience.js"></script>
+    
+    <!-- Adaptive UI Components -->
+    <script src="js/modules/ui/AdaptiveComponent.js"></script>
+    <script src="js/modules/ui/AdaptiveDashboard.js"></script>
+    <script src="js/modules/ui/SimpleModeToggle.js"></script>
+    <script src="js/modules/ui/ContextualHelp.js"></script>
+    
     <!-- Main Application -->
     <script src="js/app-modular.js"></script>
     
@@ -4094,64 +4106,28 @@ This structured approach helps prevent overtraining and ensures you're at your b
         
         // Initialize height unit toggle and ACL injury monitoring
         
-        // Ensure login form is shown by default
-        function initializeApp() {
-            console.log('🚀 Initializing Ignite Fitness app...');
-            
-            // Always show login form first
-            initializeApp();
-            
-            // Then check for auto-login
-            checkAutoLogin();
-        }
+        // Legacy initialization functions removed - BootSequence now handles initialization
+        // See js/app-modular.js and js/boot-sequence.js for current initialization flow
         
-        function checkAutoLogin() {
-            const lastUser = localStorage.getItem('ignitefitness_last_user');
-            const loginTime = localStorage.getItem('ignitefitness_login_time');
-            
-            if (lastUser && loginTime) {
-                const timeDiff = Date.now() - parseInt(loginTime);
-                const hoursDiff = timeDiff / (1000 * 60 * 60);
-                
-                if (hoursDiff < 24) {
-                    // Valid session - but give user 2 seconds to see login form first
-                    setTimeout(() => {
-                        currentUser = lastUser;
-                        isLoggedIn = true;
-                        showUserDashboard();
-                        hideLoginForm();
-                        loadUserData();
-                        console.log('✅ Auto-login successful for:', lastUser);
-                    }, 2000);
-                }
-            }
-        }
-        
+        // Single DOMContentLoaded handler for non-auth UI initialization
+        // Note: Core app boot is handled by js/app-modular.js via BootSequence
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize height unit selector (form-specific, non-blocking)
             const heightUnitSelect = document.getElementById('heightUnit');
             if (heightUnitSelect) {
                 heightUnitSelect.addEventListener('change', toggleHeightUnit);
             }
             
-            // Add event listeners for ACL injury history
+            // Add event listeners for ACL injury history (form-specific, non-blocking)
             const injuryCheckboxes = document.querySelectorAll('input[name="previousInjuries"]');
             injuryCheckboxes.forEach(checkbox => {
                 checkbox.addEventListener('change', checkACLHistory);
             });
             
-            // Load saved seasonal phase on page load
-            const personalInfo = JSON.parse(localStorage.getItem('ignitefitness_personal_info') || '{}');
-            if (personalInfo.seasonPhase) {
-                updateSeasonalPhaseDisplay(personalInfo.seasonPhase);
-            }
-            
-            // Load all saved data
-            loadPersonalInfo();
-            loadGoals();
-            loadWorkoutCalendar();
-            
-            // Debug: Log when loading
-            console.log('Page loaded, attempting to load saved data...');
+            // Note: Personal info, goals, and workout calendar loading
+            // should be handled through proper modules after authentication
+            // Keeping this for backward compatibility with forms, but it will
+            // be re-initialized properly after BootSequence completes
         });
         
         // Show seasonal phase modal
@@ -4368,47 +4344,11 @@ This structured approach helps prevent overtraining and ensures you're at your b
             checkStravaConnection();
         });
         
-        // Initialize SPA
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize mobile optimizer
-            if (window.MobileOptimizer) {
-                console.log('Mobile optimizer initialized');
-            }
-            
-            // Initialize season phase
-            if (window.SeasonPhase) {
-                console.log('Season phase initialized');
-                // Ensure phase badge is visible
-                window.SeasonPhase.updateUIDisplay();
-            }
-            
-            // Initialize persistent header
-            if (window.PersistentHeader) {
-                console.log('Persistent header initialized');
-            }
-            
-            // Initialize router
-            if (window.Router) {
-                console.log('Router initialized');
-            }
-            
-            // Initialize bottom navigation
-            if (window.BottomNavigation) {
-                console.log('Bottom navigation initialized');
-            }
-            
-            // Initialize dashboard hero
-            if (window.DashboardHero) {
-                console.log('Dashboard hero initialized');
-            }
-            
-            // Check if user needs onboarding
-            if (window.OnboardingManager && window.OnboardingManager.needsOnboarding()) {
-                window.Router.navigate('#/onboarding');
-            } else {
-                window.Router.navigate('#/');
-            }
-        });
+        // Legacy SPA initialization removed - BootSequence now handles:
+        // - Router initialization (via Router.init() in BootSequence.boot())
+        // - Onboarding checks (via Router.resolveInitialRoute())
+        // - UI component initialization (via BootSequence.initUIShell())
+        // All coordination happens in js/app-modular.js and js/boot-sequence.js
     </script>
 
     <!-- Expert Coordinator Tests (for manual QA in browser console) -->

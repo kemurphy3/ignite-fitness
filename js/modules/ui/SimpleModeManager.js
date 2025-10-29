@@ -10,6 +10,53 @@ class SimpleModeManager {
         this.logger = window.SafeLogger || console;
         this.eventBus = window.EventBus;
         this.simpleMode = null; // Will be loaded from storage
+        this.setupAuthListener(); // Setup auth state listener
+    }
+
+    /**
+     * Setup listener for auth state changes
+     */
+    setupAuthListener() {
+        // Wait for AuthManager to be available
+        if (window.AuthManager) {
+            window.AuthManager.onAuthStateChange((authState) => {
+                if (authState.type === 'login') {
+                    // New user gets Simple Mode by default
+                    if (this.isNewUser(authState.user)) {
+                        this.logger.info('New user detected, enabling Simple Mode');
+                        this.setEnabled(true);
+                    }
+                } else if (authState.type === 'logout') {
+                    // Reset to default for next user
+                    this.logger.info('User logged out, resetting Simple Mode');
+                    this.reset();
+                }
+            });
+        } else {
+            // Retry after a delay if AuthManager not yet loaded
+            setTimeout(() => this.setupAuthListener(), 500);
+        }
+    }
+
+    /**
+     * Check if user is new (hasn't completed onboarding)
+     * @param {Object} user - User object
+     * @returns {boolean} True if new user
+     */
+    isNewUser(user) {
+        if (!user) return true;
+        
+        // Check if user has completed onboarding
+        const hasCompletedOnboarding = localStorage.getItem('ignite.user.hasCompletedOnboarding') === 'true';
+        
+        // Check if user has any workout data
+        const hasWorkoutData = user.data && (
+            (user.data.workouts && user.data.workouts.length > 0) ||
+            (user.data.soccerSessions && user.data.soccerSessions.length > 0)
+        );
+        
+        // New user = no onboarding completion AND no workout data
+        return !hasCompletedOnboarding && !hasWorkoutData;
     }
 
     /**

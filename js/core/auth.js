@@ -2,7 +2,7 @@
 // Handles user login, registration, password reset, and session management
 
 // Access global variables
-let currentUser, isLoggedIn, users, showUserDashboard, hideLoginForm, loadUserData, showSuccess, showError;
+let currentUser, isLoggedIn, users, showUserDashboard, loadUserData, showSuccess, showError;
 
 // Initialize with global references
 function initAuth(globals) {
@@ -10,7 +10,7 @@ function initAuth(globals) {
     isLoggedIn = globals.isLoggedIn;
     users = globals.users;
     showUserDashboard = globals.showUserDashboard;
-    hideLoginForm = globals.hideLoginForm;
+    // hideLoginForm is defined as a function below, not from globals
     loadUserData = globals.loadUserData;
     showSuccess = globals.showSuccess;
     showError = globals.showError;

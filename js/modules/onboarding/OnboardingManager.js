@@ -352,18 +352,109 @@ class OnboardingManager {
     }
 
     /**
-     * Finish onboarding and redirect to dashboard
+     * Finish onboarding and show first workout experience
      */
     finishOnboarding() {
         // Save onboarding data
         this.saveOnboardingData();
         
-        // Navigate to dashboard
-        if (window.Router) {
-            window.Router.navigate('#/');
+        // Generate first workout
+        const firstWorkout = this.generateFirstWorkout();
+        
+        // Show first workout experience instead of going straight to dashboard
+        if (window.FirstWorkoutExperience) {
+            const container = document.getElementById('app-content') || document.getElementById('main-content');
+            if (container) {
+                const firstWorkoutView = new window.FirstWorkoutExperience();
+                container.innerHTML = firstWorkoutView.showWorkoutIntro(firstWorkout);
+            }
+        } else {
+            // Fallback: Navigate to dashboard
+            if (window.Router) {
+                window.Router.navigate('#/');
+            }
         }
         
         this.logger.audit('ONBOARDING_FINISHED', { data: this.onboardingData });
+    }
+
+    /**
+     * Generate first workout based on onboarding data
+     * @returns {Object} First workout data
+     */
+    generateFirstWorkout() {
+        // Use existing workout generator if available
+        if (window.WorkoutGenerator || window.ExpertCoordinator) {
+            // This would call the actual workout generator
+            // For now, return a default personalized workout
+            return {
+                name: 'Your First Workout',
+                duration: this.onboardingData.preferences?.session_length || 30,
+                difficulty: this.getDifficultyLevel(),
+                exercises: this.getDefaultExercises()
+            };
+        }
+        
+        return {
+            name: 'Welcome Workout',
+            duration: 30,
+            difficulty: 'Beginner Friendly',
+            exercises: [
+                { name: 'Warm-up', sets: 1, reps: '5 min' },
+                { name: 'Bodyweight Squats', sets: 3, reps: 10 },
+                { name: 'Push-ups', sets: 3, reps: 8 },
+                { name: 'Plank', sets: 3, reps: '30 sec' },
+                { name: 'Cool-down Stretch', sets: 1, reps: '5 min' }
+            ]
+        };
+    }
+
+    /**
+     * Get difficulty level from onboarding data
+     * @returns {string} Difficulty level
+     */
+    getDifficultyLevel() {
+        const experience = this.onboardingData.profile?.experience || 'beginner';
+        const levels = {
+            'beginner': 'Beginner Friendly',
+            'intermediate': 'Moderate',
+            'advanced': 'Challenging',
+            'expert': 'Elite'
+        };
+        return levels[experience] || 'Beginner Friendly';
+    }
+
+    /**
+     * Get default exercises based on goals
+     * @returns {Array} Exercise list
+     */
+    getDefaultExercises() {
+        const goals = this.onboardingData.goals || ['general_fitness'];
+        const exercises = [];
+        
+        // Add warm-up
+        exercises.push({ name: 'Warm-up', sets: 1, reps: '5 min' });
+        
+        // Add exercises based on goals
+        if (goals.includes('strength') || goals.includes('build_muscle')) {
+            exercises.push({ name: 'Bodyweight Squats', sets: 3, reps: 10 });
+            exercises.push({ name: 'Push-ups', sets: 3, reps: 8 });
+            exercises.push({ name: 'Plank', sets: 3, reps: '30 sec' });
+        } else if (goals.includes('endurance') || goals.includes('cardio')) {
+            exercises.push({ name: 'Light Jogging', sets: 1, reps: '10 min' });
+            exercises.push({ name: 'Bodyweight Squats', sets: 2, reps: 15 });
+            exercises.push({ name: 'Jumping Jacks', sets: 3, reps: 20 });
+        } else {
+            // General fitness
+            exercises.push({ name: 'Bodyweight Squats', sets: 3, reps: 10 });
+            exercises.push({ name: 'Push-ups', sets: 3, reps: 8 });
+            exercises.push({ name: 'Plank', sets: 2, reps: '30 sec' });
+        }
+        
+        // Add cool-down
+        exercises.push({ name: 'Cool-down Stretch', sets: 1, reps: '5 min' });
+        
+        return exercises;
     }
 
     /**

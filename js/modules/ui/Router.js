@@ -133,8 +133,18 @@ class Router {
      * @param {Object} authState - Auth state from AuthManager
      */
     resolveInitialRoute(authState) {
-        const { isAuthenticated } = authState || {};
+        const { isAuthenticated, token } = authState || {};
         const hash = window.location.hash;
+        
+        // Check token expiration even on initial route
+        if (isAuthenticated && this.isTokenExpired(token)) {
+            this.logger.warn('Token expired on initial route resolution');
+            this.authManager?.logout();
+            this.lastRedirectReason = 'guard: token expired → /login';
+            this.logger.info(this.lastRedirectReason);
+            this.navigate('#/login', { replace: true });
+            return;
+        }
         
         // Prevent infinite loops - if already on login, stay there
         if (hash === '#/login') {
@@ -143,12 +153,37 @@ class Router {
             return;
         }
         
-        // If authenticated, route to last known route or dashboard
+        // If authenticated, check if onboarding needed
         if (isAuthenticated) {
+            const needsOnboarding = window.OnboardingManager?.needsOnboarding() ?? false;
+            if (needsOnboarding) {
+                this.lastRedirectReason = 'guard: authed but needs onboarding';
+                this.logger.info(this.lastRedirectReason);
+                this.navigate('#/onboarding', { replace: true });
+                return;
+            }
+            
             const targetRoute = this.lastKnownRoute || '#/dashboard' || '#/';
             this.lastRedirectReason = 'guard: authed → dashboard';
             this.logger.info(this.lastRedirectReason);
             this.navigate(targetRoute, { replace: true });
+            return;
+        }
+        
+        // Not authenticated - check if this is first visit (no users in storage)
+        const hasUsers = localStorage.getItem('ignitefitness_users');
+        if (!hasUsers && !hash) {
+            // First-time visitor - show landing page
+            this.lastRedirectReason = 'guard: first visit → landing';
+            this.logger.info(this.lastRedirectReason);
+            if (window.LandingView) {
+                const container = document.getElementById('main-content') || document.getElementById('app-content');
+                if (container) {
+                    container.innerHTML = new window.LandingView().render();
+                }
+            } else {
+                this.navigate('#/register', { replace: true });
+            }
             return;
         }
         
@@ -173,69 +208,162 @@ class Router {
      */
     navigate(route, options = {}) {
         const { replace = false, silent = false } = options;
+        let navigationTimeout = null;
         
-        // Prevent loops: if trying to navigate to login while already on login, do nothing
-        if (route === '#/login' && this.currentRoute === '#/login') {
-            this.logger.debug('Already on login route, skipping navigation');
-            return;
-        }
-        
-        if (!this.routes.has(route)) {
-            this.logger.warn('Route not found:', route);
-            // Route to safe default based on auth state
-            const authState = this.authManager?.getAuthState() || { isAuthenticated: false };
-            const safeRoute = authState.isAuthenticated ? '#/dashboard' : '#/login';
-            this.logger.info(`guard: unknown route → ${safeRoute}`);
-            this.navigate(safeRoute, { replace: true });
-            return;
-        }
-
-        const routeConfig = this.routes.get(route);
-        
-        // Check authentication requirements with guards
-        if (routeConfig.requiresAuth) {
-            const authState = this.authManager?.getAuthState() || { isAuthenticated: false };
-            
-            if (!authState.isAuthenticated) {
-                // Store intended route for redirect after login
-                if (route !== '#/login') {
-                    this.lastKnownRoute = route;
-                }
-                this.lastRedirectReason = 'guard: protected route requires auth → /login';
-                this.logger.info(this.lastRedirectReason);
-                this.navigate('#/login', { replace: true });
+        try {
+            // Prevent loops: if trying to navigate to login while already on login, do nothing
+            if (route === '#/login' && this.currentRoute === '#/login') {
+                this.logger.debug('Already on login route, skipping navigation');
                 return;
             }
+            
+            if (!this.routes.has(route)) {
+                this.logger.warn('Route not found:', route);
+                // Route to safe default based on auth state
+                const authState = this.authManager?.getAuthState() || { isAuthenticated: false };
+                const safeRoute = authState.isAuthenticated ? '#/dashboard' : '#/login';
+                this.logger.info(`guard: unknown route → ${safeRoute}`);
+                this.navigate(safeRoute, { replace: true });
+                return;
+            }
+
+            const routeConfig = this.routes.get(route);
+            
+            // Check authentication requirements with guards
+            if (routeConfig.requiresAuth) {
+                const authState = this.authManager?.getAuthState() || { isAuthenticated: false };
+                
+                // Validate token expiration
+                if (authState.isAuthenticated && this.isTokenExpired(authState.token)) {
+                    this.logger.warn('Token expired during navigation');
+                    this.authManager?.logout();
+                    this.handleNavigationError(route, 'token_expired');
+                    return;
+                }
+                
+                if (!authState.isAuthenticated) {
+                    // Store intended route for redirect after login
+                    if (route !== '#/login') {
+                        this.lastKnownRoute = route;
+                    }
+                    this.lastRedirectReason = 'guard: protected route requires auth → /login';
+                    this.logger.info(this.lastRedirectReason);
+                    this.navigate('#/login', { replace: true });
+                    return;
+                }
+            }
+
+            // Add timeout protection (5 seconds)
+            navigationTimeout = setTimeout(() => {
+                this.logger.warn('Navigation timeout:', route);
+                this.handleNavigationError(route, 'timeout');
+            }, 5000);
+
+            // Skip if already on this route
+            if (this.currentRoute === route) {
+                if (navigationTimeout) {
+                    clearTimeout(navigationTimeout);
+                }
+                return;
+            }
+
+            // Add to history if not replacing
+            if (!replace && !silent) {
+                this.addToHistory(this.currentRoute);
+            }
+
+            // Update current route
+            this.currentRoute = route;
+
+            // Update URL hash
+            if (!silent) {
+                window.location.hash = route;
+            }
+
+            // Load route component
+            this.loadRouteComponent(routeConfig);
+
+            // Update navigation state
+            this.updateNavigationState(routeConfig);
+
+            // Clear timeout on successful navigation
+            if (navigationTimeout) {
+                clearTimeout(navigationTimeout);
+            }
+
+            // Emit route change event
+            this.emitRouteChange(routeConfig);
+
+            this.logger.debug('Navigated to:', route, routeConfig.title);
+            
+        } catch (error) {
+            // Clear timeout on error
+            if (navigationTimeout) {
+                clearTimeout(navigationTimeout);
+            }
+            this.handleNavigationError(route, error);
         }
+    }
 
-        // Skip if already on this route
-        if (this.currentRoute === route) {
-            return;
+    /**
+     * Handle navigation errors with fallback
+     * @param {string} path - Route path that failed
+     * @param {Error|string} error - Error information
+     */
+    handleNavigationError(path, error) {
+        this.logger.error('Navigation error:', { path, error });
+        
+        // Fallback navigation based on auth state
+        const authState = this.authManager?.getAuthState() || { isAuthenticated: false };
+        const fallbackPath = authState.isAuthenticated ? '#/dashboard' : '#/login';
+        
+        // Prevent infinite loops
+        if (path !== fallbackPath && this.currentRoute !== fallbackPath) {
+            this.logger.info('Falling back to:', fallbackPath);
+            this.navigate(fallbackPath, { replace: true });
         }
+    }
 
-        // Add to history if not replacing
-        if (!replace && !silent) {
-            this.addToHistory(this.currentRoute);
+    /**
+     * Check if token is expired
+     * @param {string|Object} token - Token value or token object
+     * @returns {boolean} True if expired
+     */
+    isTokenExpired(token) {
+        if (!token) return true;
+        
+        // Handle string tokens (legacy) - consider expired
+        if (typeof token === 'string') {
+            // Try to find token data in localStorage
+            try {
+                const tokenStr = localStorage.getItem('ignite.auth.token');
+                if (tokenStr) {
+                    const tokenData = JSON.parse(tokenStr);
+                    if (tokenData.created_at) {
+                        return this.isTokenExpired(tokenData);
+                    }
+                }
+            } catch (e) {
+                // If we can't parse, assume expired
+                return true;
+            }
+            return true;
         }
-
-        // Update current route
-        this.currentRoute = route;
-
-        // Update URL hash
-        if (!silent) {
-            window.location.hash = route;
+        
+        // Handle token object with created_at
+        if (token && typeof token === 'object' && token.created_at) {
+            const now = Date.now();
+            const created = new Date(token.created_at).getTime();
+            const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+            
+            if (isNaN(created)) return true;
+            
+            const tokenAge = now - created;
+            return tokenAge > maxAge;
         }
-
-        // Load route component
-        this.loadRouteComponent(routeConfig);
-
-        // Update navigation state
-        this.updateNavigationState(routeConfig);
-
-        // Emit route change event
-        this.emitRouteChange(routeConfig);
-
-        this.logger.debug('Navigated to:', route, routeConfig.title);
+        
+        // Unknown format - assume expired for safety
+        return true;
     }
 
     /**
@@ -320,7 +448,8 @@ class Router {
             'ProfileView': () => this.getProfileHTML(),
             'OnboardingView': () => this.getOnboardingHTML(),
             'LoginView': () => this.getLoginHTML(),
-            'RegisterView': () => this.getRegisterHTML()
+            'RegisterView': () => this.getRegisterHTML(),
+            'LandingView': () => window.LandingView ? new window.LandingView().render() : this.getRegisterHTML()
         };
 
         const componentRenderer = components[componentName];
@@ -439,7 +568,15 @@ class Router {
         // Check Simple Mode
         const simpleMode = window.SimpleModeManager?.isEnabled() ?? true;
         
-        // Use DashboardHero component if available
+        // Use AdaptiveDashboard if available for better Simple Mode integration
+        if (window.AdaptiveDashboard) {
+            const container = document.createElement('div');
+            const adaptiveDashboard = new window.AdaptiveDashboard(container);
+            adaptiveDashboard.render();
+            return `<div data-component="DashboardView" class="dashboard-view">${container.innerHTML}</div>`;
+        }
+        
+        // Fallback: Use DashboardHero component if available
         if (window.DashboardHero) {
             const hero = window.DashboardHero.render();
             
@@ -595,50 +732,25 @@ class Router {
                     <h1>Profile</h1>
                 </div>
                 <div class="profile-content" style="padding: 1.5rem;">
-                    <!-- Simple Mode Toggle -->
-                    <div class="profile-setting-card" style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <h3 style="margin: 0 0 0.5rem 0; color: #2d3748; font-size: 1.125rem;">Simple Mode</h3>
-                                <p style="margin: 0; color: #718096; font-size: 0.875rem;">Recommended for beta - simplified interface with core features only</p>
-                            </div>
-                            <label style="position: relative; display: inline-block; width: 52px; height: 28px;">
-                                <input type="checkbox" 
-                                       id="simpleModeToggle" 
-                                       ${simpleMode ? 'checked' : ''}
-                                       onchange="window.handleSimpleModeToggle(event)"
-                                       style="opacity: 0; width: 0; height: 0;">
-                                <span class="toggle-slider" style="
-                                    position: absolute;
-                                    cursor: pointer;
-                                    top: 0;
-                                    left: 0;
-                                    right: 0;
-                                    bottom: 0;
-                                    background-color: ${simpleMode ? '#4299e1' : '#cbd5e0'};
-                                    transition: 0.3s;
-                                    border-radius: 28px;
-                                ">
-                                    <span style="
-                                        position: absolute;
-                                        content: '';
-                                        height: 22px;
-                                        width: 22px;
-                                        left: 3px;
-                                        bottom: 3px;
-                                        background-color: white;
-                                        transition: 0.3s;
-                                        border-radius: 50%;
-                                        transform: ${simpleMode ? 'translateX(24px)' : 'translateX(0)'};
-                                    "></span>
-                                </span>
-                            </label>
-                        </div>
+                    <!-- Simple Mode Toggle (Enhanced) -->
+                    <div class="profile-setting-card" style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem;">
+                        <h3 style="margin-top: 0; margin-bottom: 1rem; color: #2d3748;">Interface Mode</h3>
+                        <p style="margin: 0 0 1rem 0; color: #718096; font-size: 0.875rem;">Choose the experience that works best for you</p>
+                        <div id="simple-mode-toggle-container"></div>
+                        <script>
+                            (function() {
+                                if (window.SimpleModeToggle && document.getElementById('simple-mode-toggle-container')) {
+                                    setTimeout(function() {
+                                        window.createSimpleModeToggle('simple-mode-toggle-container');
+                                    }, 100);
+                                }
+                            })();
+                        </script>
                     </div>
                     
                     <!-- Other profile settings -->
                     <div class="profile-setting-card" style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.5rem;">
-                        <p style="color: #718096;">Profile settings will be loaded here</p>
+                        <p style="color: #718096;">Additional profile settings will be loaded here</p>
                     </div>
                 </div>
             </div>
@@ -659,6 +771,11 @@ class Router {
     }
 
     getOnboardingHTML() {
+        // Use OnboardingManager to render onboarding
+        if (window.OnboardingManager) {
+            return window.OnboardingManager.render();
+        }
+        
         return `
             <div data-component="OnboardingView" class="onboarding-view">
                 <div class="onboarding-content">
@@ -763,10 +880,130 @@ class Router {
 
     getRegisterHTML() {
         return `
-            <div data-component="RegisterView" class="register-view">
-                <div class="auth-container">
-                    <h1>Sign Up</h1>
-                    <p>Registration form will be loaded here</p>
+            <div data-component="RegisterView" class="register-view auth-view">
+                <div class="quick-auth-container" style="max-width: 400px; margin: 2rem auto; padding: 2rem;">
+                    <div class="auth-header" style="text-align: center; margin-bottom: 2rem;">
+                        <h2 style="color: #2d3748; margin-bottom: 0.5rem;">Join IgniteFitness</h2>
+                        <p style="color: #718096;">Get your personalized workout plan in 60 seconds</p>
+                    </div>
+                    
+                    <form id="quick-signup-form" class="quick-form" onsubmit="window.handleQuickSignup(event); return false;">
+                        <div class="form-group">
+                            <label for="signup-username">Username</label>
+                            <input type="text" 
+                                   id="signup-username" 
+                                   name="username"
+                                   placeholder="Choose a username"
+                                   autocomplete="username"
+                                   aria-required="true"
+                                   required
+                                   class="form-input">
+                            <div class="field-hint" style="font-size: 0.875rem; color: #718096; margin-top: 0.25rem;">
+                                This is how you'll log in
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="signup-password">Password</label>
+                            <input type="password" 
+                                   id="signup-password" 
+                                   name="password"
+                                   placeholder="Create a password"
+                                   autocomplete="new-password"
+                                   aria-required="true"
+                                   required
+                                   minlength="6"
+                                   class="form-input">
+                            <div class="field-hint" style="font-size: 0.875rem; color: #718096; margin-top: 0.25rem;">
+                                At least 6 characters
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="signup-athlete-name">Your Name</label>
+                            <input type="text" 
+                                   id="signup-athlete-name" 
+                                   name="athleteName"
+                                   placeholder="Enter your name"
+                                   autocomplete="name"
+                                   aria-required="true"
+                                   required
+                                   class="form-input">
+                        </div>
+                        
+                        <div id="signupError" style="display: none; color: #ef4444; margin-top: 1rem; text-align: center; font-size: 0.875rem;"></div>
+                        
+                        <button type="submit" class="btn" style="width: 100%; margin-top: 1.5rem;">
+                            Create Account & Continue
+                        </button>
+                    </form>
+                    
+                    <div class="auth-footer" style="margin-top: 1.5rem; text-align: center;">
+                        <p style="color: #718096; font-size: 0.875rem;">
+                            Already have an account? 
+                            <a href="#/login" onclick="window.Router?.navigate('#/login'); return false;" style="color: #4299e1; text-decoration: underline;">
+                                Sign in
+                            </a>
+                        </p>
+                    </div>
+                    
+                    <script>
+                        window.handleQuickSignup = async function(event) {
+                            event.preventDefault();
+                            const username = document.getElementById('signup-username').value;
+                            const password = document.getElementById('signup-password').value;
+                            const athleteName = document.getElementById('signup-athlete-name').value;
+                            const errorDiv = document.getElementById('signupError');
+                            
+                            if (!window.AuthManager) {
+                                errorDiv.textContent = 'Auth system not ready. Please reload.';
+                                errorDiv.style.display = 'block';
+                                return;
+                            }
+                            
+                            // Show loading state
+                            const submitBtn = event.target.querySelector('button[type="submit"]');
+                            const originalText = submitBtn.textContent;
+                            submitBtn.textContent = 'Creating account...';
+                            submitBtn.disabled = true;
+                            
+                            try {
+                                const result = window.AuthManager.register({
+                                    username,
+                                    password,
+                                    confirmPassword: password,
+                                    athleteName
+                                });
+                                
+                                if (result.success) {
+                                    errorDiv.style.display = 'none';
+                                    // Auto-login after registration, proceed to onboarding
+                                    const authState = window.AuthManager.getAuthState();
+                                    if (authState.isAuthenticated) {
+                                        // Check if user needs onboarding
+                                        const needsOnboarding = window.OnboardingManager?.needsOnboarding() ?? true;
+                                        if (needsOnboarding && window.OnboardingManager) {
+                                            window.OnboardingManager.startOnboarding(authState.user?.username);
+                                        } else {
+                                            window.Router?.navigate('#/dashboard');
+                                        }
+                                    } else {
+                                        window.Router?.navigate('#/onboarding');
+                                    }
+                                } else {
+                                    errorDiv.textContent = result.error || 'Account creation failed';
+                                    errorDiv.style.display = 'block';
+                                    submitBtn.textContent = originalText;
+                                    submitBtn.disabled = false;
+                                }
+                            } catch (error) {
+                                errorDiv.textContent = 'Account creation failed. Please try again.';
+                                errorDiv.style.display = 'block';
+                                submitBtn.textContent = originalText;
+                                submitBtn.disabled = false;
+                            }
+                        };
+                    </script>
                 </div>
             </div>
         `;

@@ -19,14 +19,16 @@ class BottomNavigation {
      * Initialize bottom navigation
      */
     initializeNavigation() {
-        this.tabs = [
+        // Base tabs available in both modes
+        const allTabs = [
             {
                 id: 'dashboard',
                 label: 'Home',
                 icon: '🏠',
                 route: '#/',
                 requiresAuth: true,
-                shortLabel: 'Home'
+                shortLabel: 'Home',
+                availableInSimple: true
             },
             {
                 id: 'training',
@@ -34,7 +36,8 @@ class BottomNavigation {
                 icon: '💪',
                 route: '#/training',
                 requiresAuth: true,
-                shortLabel: 'Train'
+                shortLabel: 'Train',
+                availableInSimple: true
             },
             {
                 id: 'progress',
@@ -42,7 +45,8 @@ class BottomNavigation {
                 icon: '📊',
                 route: '#/progress',
                 requiresAuth: true,
-                shortLabel: 'Stats'
+                shortLabel: 'Stats',
+                availableInSimple: true
             },
             {
                 id: 'sport',
@@ -50,7 +54,35 @@ class BottomNavigation {
                 icon: '⚽',
                 route: '#/sport',
                 requiresAuth: true,
-                shortLabel: 'Sport'
+                shortLabel: 'Sport',
+                availableInSimple: false
+            },
+            {
+                id: 'analytics',
+                label: 'Analytics',
+                icon: '📈',
+                route: '#/analytics',
+                requiresAuth: true,
+                shortLabel: 'Analytics',
+                availableInSimple: false
+            },
+            {
+                id: 'coach',
+                label: 'AI Coach',
+                icon: '🤖',
+                route: '#/coach',
+                requiresAuth: true,
+                shortLabel: 'Coach',
+                availableInSimple: false
+            },
+            {
+                id: 'integrations',
+                label: 'Integrations',
+                icon: '🔗',
+                route: '#/integrations',
+                requiresAuth: true,
+                shortLabel: 'Connect',
+                availableInSimple: false
             },
             {
                 id: 'profile',
@@ -58,12 +90,30 @@ class BottomNavigation {
                 icon: '👤',
                 route: '#/profile',
                 requiresAuth: true,
-                shortLabel: 'Me'
+                shortLabel: 'Me',
+                availableInSimple: true
             }
         ];
 
+        // Filter tabs based on Simple Mode
+        const simpleMode = window.SimpleModeManager?.isEnabled() ?? true;
+        if (simpleMode) {
+            // Simple Mode: Only show 3-4 main tabs
+            this.tabs = allTabs.filter(tab => tab.availableInSimple).slice(0, 4);
+        } else {
+            // Advanced Mode: Show all tabs
+            this.tabs = allTabs;
+        }
+
         this.createNavigationElement();
         this.updateVisibility();
+        
+        // Listen for Simple Mode changes
+        if (window.EventBus) {
+            window.EventBus.on('simpleMode:changed', () => {
+                this.initializeNavigation();
+            });
+        }
     }
 
     /**

@@ -12,6 +12,7 @@ class AuthManager {
         this.users = {};
         this.logger = window.SafeLogger || console;
         this.eventBus = window.EventBus;
+        this.authStateCallbacks = new Set(); // Event system for auth state changes
         this.storageKeys = {
             token: 'ignite.auth.token',
             user: 'ignite.user',
@@ -21,6 +22,53 @@ class AuthManager {
         };
         
         // DO NOT auto-load on construction - wait for explicit readFromStorage() call
+    }
+
+    /**
+     * Subscribe to auth state changes
+     * @param {Function} callback - Callback function (authState) => {}
+     * @returns {Function} Unsubscribe function
+     */
+    onAuthStateChange(callback) {
+        this.authStateCallbacks.add(callback);
+        // Immediately call with current state
+        const currentState = this.getAuthState();
+        try {
+            callback({ type: 'init', ...currentState });
+        } catch (error) {
+            this.logger.error('Auth state callback error', error);
+        }
+        
+        // Return unsubscribe function
+        return () => {
+            this.authStateCallbacks.delete(callback);
+        };
+    }
+
+    /**
+     * Emit auth state change event
+     * @private
+     * @param {string} type - Event type (login, logout, login_failed, etc.)
+     * @param {Object} data - Event data
+     */
+    emitAuthChange(type, data) {
+        const eventData = { type, ...data };
+        
+        // Notify all callbacks
+        this.authStateCallbacks.forEach(callback => {
+            try {
+                callback(eventData);
+            } catch (error) {
+                this.logger.error('Auth state callback error', error);
+            }
+        });
+
+        // Emit to global event bus if available
+        if (this.eventBus) {
+            this.eventBus.emit('auth:stateChange', eventData);
+        }
+        
+        this.logger.debug('Auth state change emitted', { type, hasUser: !!data.user });
     }
 
     /**
@@ -220,17 +268,23 @@ class AuthManager {
                     this.logger.audit('USER_LOGIN', { username });
                     this.eventBus?.emit('user:login', { username });
                     
+                    // Emit auth change event
+                    this.emitAuthChange('login', this.getAuthState());
+                    
                     return { success: true, user: this.authState.user };
                 } else {
                     this.logger.security('INVALID_LOGIN_ATTEMPT', { username });
+                    this.emitAuthChange('login_failed', { error: 'Invalid username or password', username });
                     return { success: false, error: 'Invalid username or password' };
                 }
             } else {
                 this.logger.security('LOGIN_USER_NOT_FOUND', { username });
+                this.emitAuthChange('login_failed', { error: 'User not found', username });
                 return { success: false, error: 'User not found. Please register first.' };
             }
         } catch (error) {
             this.logger.error('Login failed', error);
+            this.emitAuthChange('login_failed', { error: error.message || 'Login failed' });
             return { success: false, error: 'Login failed. Please try again.' };
         }
     }
@@ -296,6 +350,9 @@ class AuthManager {
             this.logger.audit('USER_REGISTRATION', { username, athleteName });
             this.eventBus?.emit('user:registered', { username, athleteName });
             
+            // Emit auth change event (registration = auto-login)
+            this.emitAuthChange('login', this.getAuthState());
+            
             return { success: true, user: this.authState.user };
         } catch (error) {
             this.logger.error('Registration failed', error);
@@ -359,7 +416,34 @@ class AuthManager {
                 this.eventBus?.emit('user:logout', { username });
             }
 
-            this.clearStorage();
+            // Clear ALL auth-related storage
+            const keysToRemove = [
+                this.storageKeys.token,
+                this.storageKeys.user,
+                this.storageKeys.prefs,
+                this.storageKeys.currentUser,
+                'ignite.ui.simpleMode',  // Reset simple mode on logout
+                'ignite_login_time',     // Clear login timestamp
+                'ignitefitness_last_user' // Clear legacy last user
+            ];
+
+            keysToRemove.forEach(key => {
+                try {
+                    localStorage.removeItem(key);
+                } catch (e) {
+                    this.logger.warn(`Failed to remove ${key}:`, e);
+                }
+            });
+
+            // Reset internal state
+            this.authState = {
+                isAuthenticated: false,
+                token: null,
+                user: null
+            };
+
+            // Emit logout event
+            this.emitAuthChange('logout', this.authState);
             
             return { success: true };
         } catch (error) {

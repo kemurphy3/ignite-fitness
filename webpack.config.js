@@ -18,8 +18,8 @@ module.exports = (env, argv) => {
         mode: isProduction ? 'production' : 'development',
         
         entry: {
-            main: './js/app.js',
-            admin: './js/bundles/admin.js'
+            main: './js/app.js'
+            // admin: './js/bundles/admin.js' // Disabled - admin files not yet implemented
         },
         
         output: {
@@ -116,8 +116,8 @@ module.exports = (env, argv) => {
                             ],
                             plugins: [
                                 '@babel/plugin-syntax-dynamic-import',
-                                '@babel/plugin-proposal-optional-chaining',
-                                '@babel/plugin-proposal-nullish-coalescing-operator'
+                                '@babel/plugin-transform-optional-chaining',
+                                '@babel/plugin-transform-nullish-coalescing-operator'
                             ]
                         }
                     }
