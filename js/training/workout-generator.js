@@ -265,7 +265,7 @@ class WorkoutGenerator {
         // Select primary exercises
         for (const muscleGroup of muscleGroups) {
             const muscleExercises = this.getExercisesForMuscleGroup(muscleGroup);
-            const selectedExercise = this.selectBestExercise(muscleExercises, userProfile);
+            const selectedExercise = this.selectBestExercise(muscleExercises, userProfile, muscleGroup);
             
             if (selectedExercise) {
                 exercises.push(this.createExerciseEntry(selectedExercise, template, userProfile));
@@ -274,7 +274,7 @@ class WorkoutGenerator {
         
         // Add core exercises
         if (!sessionType.includes('Core')) {
-            const coreExercise = this.selectBestExercise(this.exerciseDatabase.core, userProfile);
+            const coreExercise = this.selectBestExercise(this.exerciseDatabase.core, userProfile, 'core');
             if (coreExercise) {
                 exercises.push(this.createExerciseEntry(coreExercise, template, userProfile, true));
             }
@@ -282,7 +282,7 @@ class WorkoutGenerator {
         
         // Add sport-specific exercises if applicable
         if (sessionType.includes('Soccer') || userProfile.goals?.secondary === 'athletic_performance') {
-            const sportExercise = this.selectBestExercise(this.exerciseDatabase.soccer, userProfile);
+            const sportExercise = this.selectBestExercise(this.exerciseDatabase.soccer, userProfile, 'sport-specific');
             if (sportExercise) {
                 exercises.push(this.createExerciseEntry(sportExercise, template, userProfile, true));
             }
@@ -327,8 +327,8 @@ class WorkoutGenerator {
         return [];
     }
 
-    // Select best exercise based on user profile
-    selectBestExercise(exercises, userProfile) {
+    // Select best exercise based on user profile and muscle group rotation
+    selectBestExercise(exercises, userProfile, targetMuscleGroup = null) {
         if (exercises.length === 0) return null;
         
         // Filter by experience level
@@ -348,11 +348,94 @@ class WorkoutGenerator {
             this.isEquipmentAvailable(ex.equipment, userProfile)
         );
         
-        if (availableExercises.length > 0) {
-            return availableExercises[Math.floor(Math.random() * availableExercises.length)];
+        if (availableExercises.length === 0) {
+            return filteredExercises[0]; // Fallback to first filtered exercise
         }
         
-        return filteredExercises[Math.floor(Math.random() * filteredExercises.length)];
+        // Apply muscle group rotation logic
+        return this.selectExerciseWithRotation(availableExercises, userProfile, targetMuscleGroup);
+    }
+
+    // Select exercise with muscle group rotation logic
+    selectExerciseWithRotation(exercises, userProfile, targetMuscleGroup) {
+        if (exercises.length === 0) return null;
+        
+        // Get last workout's muscle groups
+        const lastWorkoutMuscleGroups = this.getLastWorkoutMuscleGroups(userProfile);
+        
+        // If no last workout, use deterministic selection based on user profile
+        if (!lastWorkoutMuscleGroups || lastWorkoutMuscleGroups.length === 0) {
+            return this.selectExerciseDeterministically(exercises, userProfile);
+        }
+        
+        // Find exercises that target different muscle groups than last workout
+        const differentMuscleGroupExercises = exercises.filter(exercise => {
+            return !exercise.muscleGroups.some(muscleGroup => 
+                lastWorkoutMuscleGroups.includes(muscleGroup)
+            );
+        });
+        
+        // If we have exercises targeting different muscle groups, use them
+        if (differentMuscleGroupExercises.length > 0) {
+            return this.selectExerciseDeterministically(differentMuscleGroupExercises, userProfile);
+        }
+        
+        // Fallback to deterministic selection from all available exercises
+        return this.selectExerciseDeterministically(exercises, userProfile);
+    }
+    
+    // Get muscle groups from last workout
+    getLastWorkoutMuscleGroups(userProfile) {
+        if (!userProfile.recentWorkouts || userProfile.recentWorkouts.length === 0) {
+            return [];
+        }
+        
+        const lastWorkout = userProfile.recentWorkouts[0];
+        if (!lastWorkout.exercises) {
+            return [];
+        }
+        
+        // Collect all muscle groups from last workout
+        const muscleGroups = new Set();
+        lastWorkout.exercises.forEach(exercise => {
+            if (exercise.muscleGroups) {
+                exercise.muscleGroups.forEach(muscleGroup => {
+                    muscleGroups.add(muscleGroup);
+                });
+            }
+        });
+        
+        return Array.from(muscleGroups);
+    }
+    
+    // Select exercise deterministically based on user profile
+    selectExerciseDeterministically(exercises, userProfile) {
+        if (exercises.length === 0) return null;
+        
+        // Create a deterministic seed based on user profile
+        const seed = this.createDeterministicSeed(userProfile);
+        
+        // Use seed to select exercise (same seed = same selection)
+        const index = seed % exercises.length;
+        return exercises[index];
+    }
+    
+    // Create deterministic seed based on user profile
+    createDeterministicSeed(userProfile) {
+        // Combine user ID, experience level, and current date for deterministic but varied selection
+        const userId = userProfile.id || userProfile.username || 'default';
+        const experience = userProfile.experience || 'beginner';
+        const currentDate = new Date().toDateString(); // Same day = same seed
+        
+        // Create hash-like value
+        let seed = 0;
+        const combinedString = `${userId}-${experience}-${currentDate}`;
+        
+        for (let i = 0; i < combinedString.length; i++) {
+            seed = ((seed << 5) - seed + combinedString.charCodeAt(i)) & 0xffffffff;
+        }
+        
+        return Math.abs(seed);
     }
 
     // Check if equipment is available
@@ -681,7 +764,7 @@ class WorkoutGenerator {
         exerciseCategories.forEach(category => {
             const categoryExercises = this.getExercisesByCategory(category);
             if (categoryExercises.length > 0) {
-                const selectedExercise = this.selectExerciseForUser(categoryExercises, userProfile);
+                const selectedExercise = this.selectExerciseForUser(categoryExercises, userProfile, category);
                 if (selectedExercise) {
                     exercises.push(selectedExercise);
                 }
@@ -692,7 +775,7 @@ class WorkoutGenerator {
         if (sessionType !== 'Core') {
             const coreExercises = this.getExercisesByCategory('core');
             if (coreExercises.length > 0) {
-                const selectedCore = this.selectExerciseForUser(coreExercises, userProfile);
+                const selectedCore = this.selectExerciseForUser(coreExercises, userProfile, 'core');
                 if (selectedCore) {
                     exercises.push(selectedCore);
                 }
@@ -769,7 +852,7 @@ class WorkoutGenerator {
         );
     }
 
-    selectExerciseForUser(exercises, userProfile) {
+    selectExerciseForUser(exercises, userProfile, targetMuscleGroup = null) {
         if (exercises.length === 0) return null;
         
         // Filter by user experience level
@@ -784,9 +867,8 @@ class WorkoutGenerator {
             return exercises[0]; // Fallback to first exercise
         }
 
-        // Random selection from suitable exercises
-        const randomIndex = Math.floor(Math.random() * suitableExercises.length);
-        return suitableExercises[randomIndex];
+        // Use muscle group rotation logic instead of random selection
+        return this.selectExerciseWithRotation(suitableExercises, userProfile, targetMuscleGroup);
     }
 
     assignExerciseParameters(exercises, userProfile) {

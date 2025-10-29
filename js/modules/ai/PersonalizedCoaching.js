@@ -99,10 +99,10 @@ class PersonalizedCoaching {
     }
 
     /**
-     * Generate personalized coaching response
+     * Generate personalized coaching response with transparency indicators
      * @param {string} userMessage - User's message
      * @param {Object} context - User context data
-     * @returns {Object} Coaching response
+     * @returns {Object} Coaching response with transparency data
      */
     generateResponse(userMessage, context = null) {
         try {
@@ -124,15 +124,22 @@ class PersonalizedCoaching {
             // Apply safety guardrails
             const safeResponse = this.applyGuardrails(personalizedResponse, messageAnalysis);
             
+            // Determine response type and confidence
+            const transparencyData = this.analyzeResponseTransparency(scenario, userContext, messageAnalysis);
+            
             this.logger.debug('Coaching response generated', {
                 scenario,
                 context: userContext,
-                response: safeResponse
+                response: safeResponse,
+                transparency: transparencyData
             });
             
             return {
                 success: true,
                 response: safeResponse,
+                responseType: transparencyData.responseType,
+                confidence: transparencyData.confidence,
+                rationale: transparencyData.rationale,
                 scenario,
                 context: userContext,
                 timestamp: new Date().toISOString()
@@ -142,9 +149,152 @@ class PersonalizedCoaching {
             return {
                 success: false,
                 response: "I'm having trouble processing that right now. Can you try rephrasing your question?",
+                responseType: "template",
+                confidence: 0,
+                rationale: "System error - using fallback template",
                 error: error.message
             };
         }
+    }
+
+    /**
+     * Get coaching message with transparency indicators (legacy method for backward compatibility)
+     * @param {string} userMessage - User's message
+     * @param {Object} context - User context data
+     * @returns {Object} Coaching response with transparency data
+     */
+    getCoachingMessage(userMessage, context = null) {
+        return this.generateResponse(userMessage, context);
+    }
+
+    /**
+     * Analyze response transparency to determine type, confidence, and rationale
+     * @param {string} scenario - Coaching scenario
+     * @param {Object} context - User context
+     * @param {Object} messageAnalysis - Message analysis
+     * @returns {Object} Transparency data
+     */
+    analyzeResponseTransparency(scenario, context, messageAnalysis) {
+        // Determine response type based on scenario and data quality
+        let responseType = "template";
+        let confidence = 0;
+        let rationale = "";
+
+        // Check data quality for confidence scoring
+        const dataQuality = this.assessDataQuality(context);
+        
+        switch (scenario) {
+            case 'injury':
+                responseType = "rule-based";
+                confidence = Math.min(95, 60 + dataQuality);
+                rationale = "Based on safety protocols and injury prevention guidelines";
+                break;
+                
+            case 'return':
+                responseType = "rule-based";
+                confidence = Math.min(90, 70 + dataQuality);
+                rationale = `Based on ${context.missedWorkouts} missed workouts and return-to-training protocols`;
+                break;
+                
+            case 'recovery':
+                responseType = "rule-based";
+                confidence = Math.min(85, 65 + dataQuality);
+                rationale = `Based on readiness score (${context.readinessScore}/10) and recovery indicators`;
+                break;
+                
+            case 'plateau':
+                responseType = "rule-based";
+                confidence = Math.min(80, 60 + dataQuality);
+                rationale = `Based on progression rate (${(context.progressionRate * 100).toFixed(1)}%) and workout streak (${context.workoutStreak} weeks)`;
+                break;
+                
+            case 'seasonal':
+                responseType = "rule-based";
+                confidence = Math.min(90, 75 + dataQuality);
+                rationale = `Based on ${context.sport} season phase (${context.seasonPhase}) and training periodization`;
+                break;
+                
+            case 'performance':
+                responseType = "rule-based";
+                confidence = Math.min(85, 70 + dataQuality);
+                rationale = `Based on average RPE (${context.averageRPE.toFixed(1)}) and performance metrics`;
+                break;
+                
+            case 'motivation':
+                responseType = "template";
+                confidence = Math.min(75, 50 + dataQuality);
+                rationale = "Based on motivational templates and user engagement patterns";
+                break;
+                
+            default:
+                responseType = "template";
+                confidence = Math.min(60, 40 + dataQuality);
+                rationale = "Based on general coaching templates and limited user data";
+        }
+
+        // Adjust confidence based on data availability
+        if (dataQuality < 30) {
+            responseType = "template";
+            confidence = Math.max(20, confidence - 20);
+            rationale += " (Limited user data available)";
+        }
+
+        return {
+            responseType,
+            confidence: Math.round(confidence),
+            rationale
+        };
+    }
+
+    /**
+     * Assess data quality for confidence scoring
+     * @param {Object} context - User context
+     * @returns {number} Data quality score (0-100)
+     */
+    assessDataQuality(context) {
+        let qualityScore = 0;
+        
+        // Check for recent workout data
+        if (context.recentWorkouts && context.recentWorkouts.length > 0) {
+            qualityScore += 20;
+        }
+        
+        // Check for progression data
+        if (context.progressionData && Object.keys(context.progressionData).length > 0) {
+            qualityScore += 15;
+        }
+        
+        // Check for daily check-in data
+        if (context.readinessScore !== 5 || context.energyLevel !== 5 || context.stressLevel !== 5) {
+            qualityScore += 15;
+        }
+        
+        // Check for training history
+        if (context.trainingHistory && context.trainingHistory.length > 0) {
+            qualityScore += 10;
+        }
+        
+        // Check for user preferences
+        if (context.preferences && Object.keys(context.preferences).length > 0) {
+            qualityScore += 10;
+        }
+        
+        // Check for workout streak data
+        if (context.workoutStreak > 0) {
+            qualityScore += 10;
+        }
+        
+        // Check for sport-specific data
+        if (context.sport && context.sport !== 'general_fitness') {
+            qualityScore += 10;
+        }
+        
+        // Check for goal-specific data
+        if (context.primaryGoal && context.primaryGoal !== 'general_fitness') {
+            qualityScore += 10;
+        }
+        
+        return Math.min(100, qualityScore);
     }
 
     /**
@@ -280,7 +430,10 @@ class PersonalizedCoaching {
         const commonTerms = [
             'workout', 'exercise', 'weight', 'strength', 'cardio', 'recovery',
             'sleep', 'energy', 'stress', 'nutrition', 'form', 'technique',
-            'plateau', 'progress', 'motivation', 'consistency', 'injury'
+            'plateau', 'progress', 'motivation', 'consistency', 'injury',
+            'away', 'back', 'tired', 'exhausted', 'stuck', 'same', 'season',
+            'basketball', 'football', 'soccer', 'hard', 'difficult', 'intense',
+            'motivate', 'hurt', 'pain', 'knee', 'shoulder', 'back'
         ];
         
         commonTerms.forEach(term => {
@@ -339,29 +492,50 @@ class PersonalizedCoaching {
             return 'injury';
         }
         
-        // Check for missed workouts
-        if (context.missedWorkouts > 2) {
+        // Check for missed workouts based on message content
+        if (messageAnalysis.intent === 'return' || 
+            messageAnalysis.keywords.includes('away') || 
+            messageAnalysis.keywords.includes('back')) {
             return 'return';
         }
         
-        // Check for high stress/energy issues
-        if (context.stressLevel > 7 || context.energyLevel < 4) {
+        // Check for high stress/energy issues based on message content
+        if (messageAnalysis.intent === 'fatigue' || 
+            messageAnalysis.intent === 'stress' ||
+            messageAnalysis.keywords.includes('tired') ||
+            messageAnalysis.keywords.includes('exhausted') ||
+            messageAnalysis.keywords.includes('stress')) {
             return 'recovery';
         }
         
-        // Check for plateau
-        if (context.progressionRate < 0.05 && context.workoutStreak > 4) {
+        // Check for plateau based on message content
+        if (messageAnalysis.intent === 'plateau' || 
+            messageAnalysis.keywords.includes('plateau') ||
+            messageAnalysis.keywords.includes('stuck') ||
+            messageAnalysis.keywords.includes('same')) {
             return 'plateau';
         }
         
-        // Check for seasonal training
-        if (context.seasonPhase !== 'offseason') {
+        // Check for seasonal training based on message content
+        if (messageAnalysis.keywords.includes('season') ||
+            messageAnalysis.keywords.includes('basketball') ||
+            messageAnalysis.keywords.includes('football') ||
+            messageAnalysis.keywords.includes('soccer')) {
             return 'seasonal';
         }
         
-        // Check for high RPE
-        if (context.averageRPE > 8.5) {
+        // Check for high RPE based on message content
+        if (messageAnalysis.keywords.includes('hard') ||
+            messageAnalysis.keywords.includes('difficult') ||
+            messageAnalysis.keywords.includes('intense')) {
             return 'performance';
+        }
+        
+        // Check for motivation requests
+        if (messageAnalysis.intent === 'motivation' ||
+            messageAnalysis.keywords.includes('motivation') ||
+            messageAnalysis.keywords.includes('motivate')) {
+            return 'motivation';
         }
         
         // Default to general coaching

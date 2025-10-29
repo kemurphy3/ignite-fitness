@@ -596,6 +596,201 @@ class LoadCalculator {
     }
 
     /**
+     * Get current load status for workout planning
+     * @returns {Object} Current load status with workout recommendations
+     */
+    getCurrentLoadStatus() {
+        try {
+            const sessions = this.getRecentSessions(7);
+            const activities = this.stravaProcessor?.getRecentActivities(7) || [];
+            
+            // Calculate current week's load
+            const weeklyLoad = this.calculateWeeklyLoad(sessions);
+            const externalLoad = this.calculateExternalLoad(activities);
+            const totalCurrentLoad = weeklyLoad.totalLoad + externalLoad.totalLoad;
+            
+            // Calculate 7-day average for comparison
+            const sevenDayAverage = this.calculateSevenDayAverage(sessions, activities);
+            
+            // Detect load spikes
+            const loadSpike = this.detectLoadSpike(totalCurrentLoad, sevenDayAverage);
+            
+            // Generate workout intensity recommendations
+            const workoutRecommendations = this.generateWorkoutIntensityRecommendations(
+                totalCurrentLoad, 
+                sevenDayAverage, 
+                loadSpike
+            );
+            
+            return {
+                currentLoad: totalCurrentLoad,
+                sevenDayAverage: sevenDayAverage,
+                loadSpike: loadSpike,
+                recommendations: workoutRecommendations,
+                weeklyBreakdown: weeklyLoad,
+                externalBreakdown: externalLoad
+            };
+        } catch (error) {
+            this.logger.error('Failed to get current load status', error);
+            return { 
+                currentLoad: 0, 
+                sevenDayAverage: 0, 
+                loadSpike: false, 
+                recommendations: { intensity: 1.0, volume: 1.0, message: 'Unable to calculate load' }
+            };
+        }
+    }
+
+    /**
+     * Calculate 7-day average load
+     * @param {Array} sessions - Training sessions
+     * @param {Array} activities - External activities
+     * @returns {number} 7-day average load
+     */
+    calculateSevenDayAverage(sessions, activities) {
+        try {
+            // Get last 7 days of data
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            
+            // Filter sessions from last 7 days
+            const recentSessions = sessions.filter(session => {
+                const sessionDate = new Date(session.date || session.start_at);
+                return sessionDate >= sevenDaysAgo;
+            });
+            
+            // Filter activities from last 7 days
+            const recentActivities = activities.filter(activity => {
+                const activityDate = new Date(activity.start_time);
+                return activityDate >= sevenDaysAgo;
+            });
+            
+            // Calculate total load for the period
+            const sessionLoad = this.calculateWeeklyLoad(recentSessions).totalLoad;
+            const activityLoad = this.calculateExternalLoad(recentActivities).totalLoad;
+            
+            return sessionLoad + activityLoad;
+        } catch (error) {
+            this.logger.error('Failed to calculate 7-day average', error);
+            return 0;
+        }
+    }
+
+    /**
+     * Detect load spikes
+     * @param {number} currentLoad - Current load
+     * @param {number} sevenDayAverage - 7-day average load
+     * @returns {Object} Load spike detection
+     */
+    detectLoadSpike(currentLoad, sevenDayAverage) {
+        if (sevenDayAverage === 0) {
+            return { isSpike: false, ratio: 1.0, severity: 'none' };
+        }
+        
+        const ratio = currentLoad / sevenDayAverage;
+        
+        let severity = 'none';
+        if (ratio > 1.5) {
+            severity = 'high';
+        } else if (ratio > 1.3) {
+            severity = 'medium';
+        } else if (ratio > 1.1) {
+            severity = 'low';
+        }
+        
+        return {
+            isSpike: ratio > 1.1,
+            ratio: ratio,
+            severity: severity,
+            message: this.getLoadSpikeMessage(ratio, severity)
+        };
+    }
+
+    /**
+     * Get load spike message
+     * @param {number} ratio - Load ratio
+     * @param {string} severity - Spike severity
+     * @returns {string} Load spike message
+     */
+    getLoadSpikeMessage(ratio, severity) {
+        const messages = {
+            high: `High load spike detected (${(ratio * 100).toFixed(0)}% of average) - recovery day recommended`,
+            medium: `Moderate load spike detected (${(ratio * 100).toFixed(0)}% of average) - consider reducing intensity`,
+            low: `Slight load increase (${(ratio * 100).toFixed(0)}% of average) - monitor recovery`,
+            none: 'Load within normal range'
+        };
+        
+        return messages[severity] || messages.none;
+    }
+
+    /**
+     * Generate workout intensity recommendations based on load
+     * @param {number} currentLoad - Current load
+     * @param {number} sevenDayAverage - 7-day average load
+     * @param {Object} loadSpike - Load spike detection
+     * @returns {Object} Workout intensity recommendations
+     */
+    generateWorkoutIntensityRecommendations(currentLoad, sevenDayAverage, loadSpike) {
+        const userLevel = this.getUserTrainingLevel();
+        const thresholds = this.loadThresholds[userLevel];
+        
+        // Calculate load ratio
+        const loadRatio = sevenDayAverage > 0 ? currentLoad / sevenDayAverage : 1.0;
+        
+        // Base recommendations
+        let intensity = 1.0;
+        let volume = 1.0;
+        let message = 'Normal training load';
+        let recoveryRecommended = false;
+        
+        // High weekly load (>7 day average) reduces volume by 20%
+        if (loadRatio > 1.0) {
+            volume = 0.8; // 20% reduction
+            message = 'Reduced volume due to high training load';
+            
+            // More aggressive reduction for higher loads
+            if (loadRatio > 1.3) {
+                volume = 0.6; // 40% reduction
+                intensity = 0.8; // 20% intensity reduction
+                message = 'Significantly reduced volume and intensity due to high training load';
+            }
+        }
+        
+        // Load spike detection triggers recovery day recommendation
+        if (loadSpike.isSpike) {
+            if (loadSpike.severity === 'high') {
+                recoveryRecommended = true;
+                intensity = 0.5;
+                volume = 0.3;
+                message = 'Recovery day recommended due to load spike';
+            } else if (loadSpike.severity === 'medium') {
+                intensity = 0.7;
+                volume = 0.6;
+                message = 'Reduced intensity due to load spike';
+            }
+        }
+        
+        // Additional adjustments based on absolute load
+        if (currentLoad > thresholds.weeklyLoad * 1.2) {
+            intensity *= 0.8;
+            volume *= 0.7;
+            message = 'High absolute load - reduced intensity and volume';
+        }
+        
+        return {
+            intensity: Math.max(0.3, Math.min(1.0, intensity)),
+            volume: Math.max(0.3, Math.min(1.0, volume)),
+            message: message,
+            recoveryRecommended: recoveryRecommended,
+            loadRatio: loadRatio,
+            adjustments: {
+                intensityReduction: Math.round((1 - intensity) * 100),
+                volumeReduction: Math.round((1 - volume) * 100)
+            }
+        };
+    }
+
+    /**
      * Get recent training sessions
      * @param {number} days - Number of days to look back
      * @returns {Array} Recent sessions

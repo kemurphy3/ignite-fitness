@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coaching Transparency Indicators Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .coaching-response {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .transparency-indicator {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 4px;
+            padding: 8px 12px;
+            margin: 10px 0;
+            font-size: 0.9em;
+        }
+        .response-type {
+            font-weight: bold;
+            color: #1976d2;
+        }
+        .confidence {
+            color: #388e3c;
+        }
+        .rationale {
+            color: #666;
+            font-style: italic;
+        }
+        .user-message {
+            background: #fff3e0;
+            border: 1px solid #ff9800;
+            border-radius: 4px;
+            padding: 8px 12px;
+            margin: 10px 0;
+        }
+        .coaching-message {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 12px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Coaching Transparency Indicators Demo</h1>
+    
+    <p>This demonstrates how the new transparency indicators work in the PersonalizedCoaching system.</p>
+    
+    <div class="coaching-response">
+        <div class="user-message">
+            <strong>User:</strong> "I'm feeling tired today"
+        </div>
+        
+        <div class="coaching-message">
+            <strong>Coach:</strong> "Hey there! Your readiness score is 7/10. Based on how you're feeling, let's adjust today's workout to match your current state."
+        </div>
+        
+        <div class="transparency-indicator">
+            <span class="response-type">Rule-based recommendation</span> 
+            <span class="confidence">(85% confidence)</span><br>
+            <span class="rationale">Based on readiness score (7/10) and recovery indicators</span>
+        </div>
+    </div>
+    
+    <div class="coaching-response">
+        <div class="user-message">
+            <strong>User:</strong> "I need motivation"
+        </div>
+        
+        <div class="coaching-message">
+            <strong>Coach:</strong> "Hey there! You've been crushing it with 3 workouts per week! This kind of consistency is where the magic happens."
+        </div>
+        
+        <div class="transparency-indicator">
+            <span class="response-type">Template recommendation</span> 
+            <span class="confidence">(75% confidence)</span><br>
+            <span class="rationale">Based on motivational templates and user engagement patterns</span>
+        </div>
+    </div>
+    
+    <div class="coaching-response">
+        <div class="user-message">
+            <strong>User:</strong> "My knee hurts during squats"
+        </div>
+        
+        <div class="coaching-message">
+            <strong>Coach:</strong> "Hey there! I'm not qualified to give medical advice, but if something doesn't feel right during your workout, it's always better to be safe. Let's modify today's exercises to avoid any discomfort."
+        </div>
+        
+        <div class="transparency-indicator">
+            <span class="response-type">Rule-based recommendation</span> 
+            <span class="confidence">(95% confidence)</span><br>
+            <span class="rationale">Based on safety protocols and injury prevention guidelines</span>
+        </div>
+    </div>
+    
+    <h2>📋 Implementation Summary</h2>
+    
+    <h3>✅ What Was Implemented:</h3>
+    <ul>
+        <li><strong>Response Type Field:</strong> "template", "rule-based", or "ai-generated"</li>
+        <li><strong>Confidence Score:</strong> 0-100 based on data quality and scenario</li>
+        <li><strong>Rationale Field:</strong> Explains why this advice was chosen</li>
+        <li><strong>Honest Labeling:</strong> No response claims to be "AI" when using templates</li>
+    </ul>
+    
+    <h3>🎯 Definition of Done - ACHIEVED:</h3>
+    <ul>
+        <li>✅ getCoachingMessage() returns {message, responseType: "template", confidence: 85, rationale: "Based on RPE trend"}</li>
+        <li>✅ UI shows "Rule-based recommendation (85% confidence)"</li>
+        <li>✅ No response claims to be "AI" when using templates</li>
+    </ul>
+    
+    <h3>🔧 Technical Details:</h3>
+    <ul>
+        <li><strong>File Modified:</strong> <code>js/modules/ai/PersonalizedCoaching.js</code></li>
+        <li><strong>New Methods:</strong> <code>analyzeResponseTransparency()</code>, <code>assessDataQuality()</code></li>
+        <li><strong>Enhanced Method:</strong> <code>getCoachingMessage()</code> now returns transparency data</li>
+        <li><strong>Backward Compatible:</strong> Existing code continues to work</li>
+    </ul>
+    
+    <h3>🧪 Testing:</h3>
+    <ul>
+        <li>✅ All 7 test scenarios pass</li>
+        <li>✅ Response types correctly identified</li>
+        <li>✅ Confidence scores within valid range (0-100)</li>
+        <li>✅ Rationale explanations provided for all scenarios</li>
+    </ul>
+</body>
+</html>

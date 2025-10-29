@@ -481,6 +481,362 @@ class ExerciseAdapter {
     }
 
     /**
+     * Select exercise for user based on progression data
+     * @param {Array} availableExercises - Available exercises to choose from
+     * @param {Object} userProfile - User profile with progression data
+     * @param {string} targetMuscleGroup - Target muscle group (optional)
+     * @returns {Object} Selected exercise with rationale
+     */
+    selectExerciseForUser(availableExercises, userProfile, targetMuscleGroup = null) {
+        try {
+            if (!availableExercises || availableExercises.length === 0) {
+                return {
+                    exercise: null,
+                    rationale: "No exercises available for selection"
+                };
+            }
+
+            // Get user's progression data
+            const progressionData = this.getUserProgressionData(userProfile);
+            
+            // Filter exercises by target muscle group if specified
+            let candidateExercises = availableExercises;
+            if (targetMuscleGroup) {
+                candidateExercises = availableExercises.filter(exercise => 
+                    this.exerciseTargetsMuscleGroup(exercise, targetMuscleGroup)
+                );
+            }
+
+            // If no exercises match target muscle group, use all available
+            if (candidateExercises.length === 0) {
+                candidateExercises = availableExercises;
+            }
+
+            // Score exercises based on progression criteria
+            const scoredExercises = candidateExercises.map(exercise => {
+                const score = this.calculateProgressionScore(exercise, progressionData, userProfile);
+                return {
+                    exercise: exercise,
+                    score: score,
+                    rationale: this.generateSelectionRationale(exercise, score, progressionData)
+                };
+            });
+
+            // Sort by score (highest first) and select top exercise
+            scoredExercises.sort((a, b) => b.score - a.score);
+            const selected = scoredExercises[0];
+
+            return {
+                exercise: selected.exercise,
+                rationale: selected.rationale,
+                selectionMetadata: {
+                    totalCandidates: candidateExercises.length,
+                    selectedScore: selected.score,
+                    scoreRange: {
+                        min: Math.min(...scoredExercises.map(s => s.score)),
+                        max: Math.max(...scoredExercises.map(s => s.score))
+                    },
+                    progressionFactors: this.getProgressionFactors(selected.exercise, progressionData)
+                }
+            };
+        } catch (error) {
+            this.logger.error('Failed to select exercise for user', error);
+            return {
+                exercise: availableExercises[0] || null,
+                rationale: "Fallback selection due to error"
+            };
+        }
+    }
+
+    /**
+     * Get user's progression data from profile
+     * @param {Object} userProfile - User profile
+     * @returns {Object} Progression data
+     */
+    getUserProgressionData(userProfile) {
+        const sessions = userProfile.data?.sessions || [];
+        const progressionData = {
+            exerciseProgress: {},
+            plateauExercises: [],
+            progressingExercises: [],
+            recentPRs: [],
+            averageRPE: 0,
+            trainingFrequency: 0
+        };
+
+        // Analyze last 30 days of training
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        
+        const recentSessions = sessions.filter(session => 
+            new Date(session.start_at) >= thirtyDaysAgo
+        );
+
+        progressionData.trainingFrequency = recentSessions.length / 4; // weeks
+
+        // Analyze exercise progression
+        recentSessions.forEach(session => {
+            if (session.exercises) {
+                session.exercises.forEach(exercise => {
+                    const exerciseName = exercise.name.toLowerCase();
+                    
+                    if (!progressionData.exerciseProgress[exerciseName]) {
+                        progressionData.exerciseProgress[exerciseName] = {
+                            weights: [],
+                            reps: [],
+                            rpe: [],
+                            dates: []
+                        };
+                    }
+
+                    progressionData.exerciseProgress[exerciseName].weights.push(exercise.weight || 0);
+                    progressionData.exerciseProgress[exerciseName].reps.push(exercise.reps || 0);
+                    progressionData.exerciseProgress[exerciseName].rpe.push(exercise.rpe || 0);
+                    progressionData.exerciseProgress[exerciseName].dates.push(session.start_at);
+                });
+            }
+        });
+
+        // Calculate progression trends
+        Object.keys(progressionData.exerciseProgress).forEach(exerciseName => {
+            const data = progressionData.exerciseProgress[exerciseName];
+            const trend = this.calculateProgressionTrend(data);
+            
+            if (trend.status === 'plateau') {
+                progressionData.plateauExercises.push(exerciseName);
+            } else if (trend.status === 'progressing') {
+                progressionData.progressingExercises.push(exerciseName);
+            }
+        });
+
+        // Calculate average RPE
+        const allRPEs = recentSessions.flatMap(session => 
+            session.exercises?.map(ex => ex.rpe).filter(rpe => rpe > 0) || []
+        );
+        progressionData.averageRPE = allRPEs.length > 0 
+            ? allRPEs.reduce((sum, rpe) => sum + rpe, 0) / allRPEs.length 
+            : 7;
+
+        return progressionData;
+    }
+
+    /**
+     * Calculate progression trend for an exercise
+     * @param {Object} exerciseData - Exercise performance data
+     * @returns {Object} Progression trend
+     */
+    calculateProgressionTrend(exerciseData) {
+        const { weights, dates } = exerciseData;
+        
+        if (weights.length < 3) {
+            return { status: 'insufficient_data', trend: 0 };
+        }
+
+        // Calculate weight progression over time
+        const recentWeights = weights.slice(-5); // Last 5 sessions
+        const olderWeights = weights.slice(-10, -5); // Previous 5 sessions
+        
+        if (recentWeights.length < 3 || olderWeights.length < 3) {
+            return { status: 'insufficient_data', trend: 0 };
+        }
+
+        const recentAvg = recentWeights.reduce((sum, w) => sum + w, 0) / recentWeights.length;
+        const olderAvg = olderWeights.reduce((sum, w) => sum + w, 0) / olderWeights.length;
+        
+        const trend = (recentAvg - olderAvg) / olderAvg;
+        
+        if (trend > 0.05) { // 5% improvement
+            return { status: 'progressing', trend: trend };
+        } else if (trend < -0.05) { // 5% decline
+            return { status: 'regressing', trend: trend };
+        } else {
+            return { status: 'plateau', trend: trend };
+        }
+    }
+
+    /**
+     * Calculate progression score for an exercise
+     * @param {Object} exercise - Exercise to score
+     * @param {Object} progressionData - User's progression data
+     * @param {Object} userProfile - User profile
+     * @returns {number} Progression score (0-100)
+     */
+    calculateProgressionScore(exercise, progressionData, userProfile) {
+        let score = 50; // Base score
+        const exerciseName = exercise.name.toLowerCase();
+
+        // Factor 1: Progression status (40% weight)
+        const progressionStatus = progressionData.exerciseProgress[exerciseName];
+        if (progressionStatus) {
+            const trend = this.calculateProgressionTrend(progressionStatus);
+            if (trend.status === 'progressing') {
+                score += 20; // Prioritize progressing exercises
+            } else if (trend.status === 'plateau') {
+                score -= 10; // Slightly penalize plateau exercises
+            } else if (trend.status === 'regressing') {
+                score -= 15; // More penalty for regressing exercises
+            }
+        } else {
+            score += 10; // Bonus for new exercises
+        }
+
+        // Factor 2: Plateau assistance (30% weight)
+        const plateauAssistance = this.getPlateauAssistance(exerciseName, progressionData.plateauExercises);
+        if (plateauAssistance > 0) {
+            score += plateauAssistance * 15; // Up to 15 points for assistance
+        }
+
+        // Factor 3: User experience level (20% weight)
+        const experienceLevel = userProfile.personalData?.experience || 'intermediate';
+        const complexityScore = this.getExerciseComplexityScore(exercise);
+        
+        if (experienceLevel === 'beginner' && complexityScore > 7) {
+            score -= 15; // Penalize complex exercises for beginners
+        } else if (experienceLevel === 'advanced' && complexityScore < 4) {
+            score -= 10; // Penalize simple exercises for advanced users
+        }
+
+        // Factor 4: Recent performance (10% weight)
+        if (progressionStatus && progressionStatus.rpe.length > 0) {
+            const recentRPE = progressionStatus.rpe.slice(-3);
+            const avgRPE = recentRPE.reduce((sum, rpe) => sum + rpe, 0) / recentRPE.length;
+            
+            if (avgRPE > 8) {
+                score -= 5; // Slightly penalize if recently very hard
+            } else if (avgRPE < 6) {
+                score += 5; // Bonus if recently easy
+            }
+        }
+
+        return Math.max(0, Math.min(100, score));
+    }
+
+    /**
+     * Get plateau assistance score for an exercise
+     * @param {string} exerciseName - Exercise name
+     * @param {Array} plateauExercises - List of plateau exercises
+     * @returns {number} Assistance score (0-1)
+     */
+    getPlateauAssistance(exerciseName, plateauExercises) {
+        const assistanceMap = {
+            'bench press': ['dumbbell press', 'incline press', 'close grip press', 'dips'],
+            'squat': ['front squat', 'bulgarian split squat', 'paused squat', 'box squat'],
+            'deadlift': ['romanian deadlift', 'trap bar deadlift', 'sumo deadlift', 'rack pull'],
+            'overhead press': ['dumbbell press', 'landmine press', 'arnold press', 'push press']
+        };
+
+        const exerciseNameLower = exerciseName.toLowerCase();
+        
+        // Check if this exercise can assist with any plateaued exercise
+        for (const [plateauExercise, assistanceExercises] of Object.entries(assistanceMap)) {
+            if (plateauExercises.includes(plateauExercise)) {
+                if (assistanceExercises.some(assist => exerciseNameLower.includes(assist))) {
+                    return 1.0; // Full assistance score
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+     * Get exercise complexity score
+     * @param {Object} exercise - Exercise object
+     * @returns {number} Complexity score (1-10)
+     */
+    getExerciseComplexityScore(exercise) {
+        const complexityMap = {
+            'squat': 8,
+            'deadlift': 9,
+            'bench press': 7,
+            'overhead press': 6,
+            'clean': 10,
+            'snatch': 10,
+            'dumbbell': 4,
+            'machine': 3,
+            'cable': 4,
+            'bodyweight': 5
+        };
+
+        const exerciseName = exercise.name.toLowerCase();
+        let complexity = 5; // Default
+
+        for (const [pattern, score] of Object.entries(complexityMap)) {
+            if (exerciseName.includes(pattern)) {
+                complexity = Math.max(complexity, score);
+            }
+        }
+
+        return complexity;
+    }
+
+    /**
+     * Check if exercise targets specific muscle group
+     * @param {Object} exercise - Exercise object
+     * @param {string} muscleGroup - Target muscle group
+     * @returns {boolean} Whether exercise targets muscle group
+     */
+    exerciseTargetsMuscleGroup(exercise, muscleGroup) {
+        const muscleGroupMap = {
+            'chest': ['bench', 'press', 'fly', 'push-up', 'dip'],
+            'back': ['row', 'pull', 'lat', 'deadlift', 'pull-up'],
+            'shoulders': ['press', 'raise', 'lateral', 'rear delt'],
+            'legs': ['squat', 'lunge', 'leg press', 'deadlift', 'hip thrust'],
+            'arms': ['curl', 'extension', 'tricep', 'bicep'],
+            'core': ['plank', 'crunch', 'sit-up', 'ab', 'core']
+        };
+
+        const targetPatterns = muscleGroupMap[muscleGroup.toLowerCase()] || [];
+        const exerciseName = exercise.name.toLowerCase();
+
+        return targetPatterns.some(pattern => exerciseName.includes(pattern));
+    }
+
+    /**
+     * Generate selection rationale
+     * @param {Object} exercise - Selected exercise
+     * @param {number} score - Selection score
+     * @param {Object} progressionData - Progression data
+     * @returns {string} Selection rationale
+     */
+    generateSelectionRationale(exercise, score, progressionData) {
+        const exerciseName = exercise.name.toLowerCase();
+        
+        if (score >= 80) {
+            return `Prioritized due to recent progress and optimal difficulty level`;
+        } else if (score >= 70) {
+            return `Selected based on progression data and user experience level`;
+        } else if (progressionData.plateauExercises.includes(exerciseName)) {
+            return `Recommended as assistance exercise for plateaued movement pattern`;
+        } else if (progressionData.exerciseProgress[exerciseName]) {
+            return `Selected based on training history and progression trends`;
+        } else {
+            return `New exercise introduction based on user goals and experience`;
+        }
+    }
+
+    /**
+     * Get progression factors for selected exercise
+     * @param {Object} exercise - Selected exercise
+     * @param {Object} progressionData - Progression data
+     * @returns {Object} Progression factors
+     */
+    getProgressionFactors(exercise, progressionData) {
+        const exerciseName = exercise.name.toLowerCase();
+        const progressionStatus = progressionData.exerciseProgress[exerciseName];
+        
+        return {
+            isNewExercise: !progressionStatus,
+            isProgressing: progressionData.progressingExercises.includes(exerciseName),
+            isPlateaued: progressionData.plateauExercises.includes(exerciseName),
+            recentSessions: progressionStatus ? progressionStatus.dates.length : 0,
+            averageRPE: progressionStatus && progressionStatus.rpe.length > 0 
+                ? progressionStatus.rpe.reduce((sum, rpe) => sum + rpe, 0) / progressionStatus.rpe.length 
+                : null
+        };
+    }
+
+    /**
      * Get current split information
      * @returns {Object} Split info
      */

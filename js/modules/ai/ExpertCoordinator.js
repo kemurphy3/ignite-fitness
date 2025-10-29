@@ -556,6 +556,53 @@ class ExpertCoordinator {
             });
         }
 
+        // Apply load-based volume adjustments
+        if (context.volumeScale && context.volumeScale < 1.0) {
+            const volumeMultiplier = context.volumeScale;
+            
+            // Reduce sets and reps across all exercises
+            plan.mainSets = plan.mainSets.map(main => ({
+                ...main,
+                sets: Math.max(1, Math.floor((main.sets || 3) * volumeMultiplier)),
+                reps: this.adjustRepsForVolume(main.reps, volumeMultiplier)
+            }));
+            
+            plan.accessories = plan.accessories.map(accessory => ({
+                ...accessory,
+                sets: Math.max(1, Math.floor((accessory.sets || 3) * volumeMultiplier)),
+                reps: this.adjustRepsForVolume(accessory.reps, volumeMultiplier)
+            }));
+            
+            plan.notes.push({
+                source: 'load',
+                text: `Reduced volume due to high training load (${Math.round((1 - volumeMultiplier) * 100)}% reduction)`
+            });
+        }
+
+        // Apply recovery day recommendations
+        if (context.recommendRecoveryDay) {
+            // Replace main sets with recovery exercises
+            plan.mainSets = [{
+                exercise: 'Light Mobility Work',
+                sets: 1,
+                reps: '10-15',
+                rationale: 'Recovery day due to high training load'
+            }];
+            
+            plan.accessories = [];
+            plan.finishers = [{
+                exercise: 'Gentle Stretching',
+                sets: 1,
+                reps: '5-10',
+                rationale: 'Promote recovery and mobility'
+            }];
+            
+            plan.notes.push({
+                source: 'load',
+                text: 'Recovery day recommended due to load spike - focus on mobility and light movement'
+            });
+        }
+
         // Simple mode: limit to 1-2 blocks
         const isSimpleMode = context.preferences?.trainingMode === 'simple';
         if (isSimpleMode) {
@@ -876,6 +923,13 @@ class ExpertCoordinator {
         // Track adjustments for why panel
         context.loadAdjustments = [];
 
+        // Get current load status from LoadCalculator
+        const loadCalculator = window.LoadCalculator;
+        if (loadCalculator) {
+            const loadStatus = loadCalculator.getCurrentLoadStatus();
+            this.applyLoadBasedWorkoutAdjustments(context, loadStatus);
+        }
+
         // High-intensity yesterday (Z4/Z5) → cap lower-body volume today
         if (yesterday.z4_min >= 20 || yesterday.z5_min >= 10) {
             context.suppressHeavyLower = true;
@@ -904,6 +958,80 @@ class ExpertCoordinator {
             context.loadAdjustments.push(`Limited HR data this week (confidence ${(dataConfidence.recent7days * 100).toFixed(0)}%) → conservative recommendation.`);
             this.logger.info('Using conservative mode due to low data confidence', { confidence: dataConfidence.recent7days });
         }
+    }
+
+    /**
+     * Apply load-based workout adjustments
+     * @param {Object} context - User context
+     * @param {Object} loadStatus - Load status from LoadCalculator
+     */
+    applyLoadBasedWorkoutAdjustments(context, loadStatus) {
+        const recommendations = loadStatus.recommendations;
+        
+        // Apply intensity and volume adjustments
+        if (recommendations.intensity < 1.0) {
+            context.intensityScale *= recommendations.intensity;
+            context.loadAdjustments.push(`Load-based intensity reduction: ${recommendations.adjustments.intensityReduction}%`);
+        }
+        
+        if (recommendations.volume < 1.0) {
+            context.volumeScale = recommendations.volume;
+            context.loadAdjustments.push(`Load-based volume reduction: ${recommendations.adjustments.volumeReduction}%`);
+        }
+        
+        // Add load rationale to context
+        if (recommendations.message) {
+            context.loadAdjustments.push(recommendations.message);
+        }
+        
+        // Set recovery recommendation flag
+        if (recommendations.recoveryRecommended) {
+            context.recommendRecoveryDay = true;
+            context.loadAdjustments.push('Recovery day recommended due to load spike');
+        }
+        
+        // Store load status for use in workout generation
+        context.loadStatus = loadStatus;
+        
+        this.logger.info('Applied load-based workout adjustments', {
+            intensity: recommendations.intensity,
+            volume: recommendations.volume,
+            loadRatio: recommendations.loadRatio,
+            recoveryRecommended: recommendations.recoveryRecommended
+        });
+    }
+
+    /**
+     * Adjust reps for volume scaling
+     * @param {string|number} reps - Original reps
+     * @param {number} volumeMultiplier - Volume multiplier
+     * @returns {string|number} Adjusted reps
+     */
+    adjustRepsForVolume(reps, volumeMultiplier) {
+        if (typeof reps === 'string') {
+            // Handle range strings like "8-12"
+            const match = reps.match(/(\d+)-(\d+)/);
+            if (match) {
+                const min = Math.max(1, Math.floor(parseInt(match[1]) * volumeMultiplier));
+                const max = Math.max(1, Math.floor(parseInt(match[2]) * volumeMultiplier));
+                return `${min}-${max}`;
+            }
+            
+            // Handle single number strings
+            const numMatch = reps.match(/(\d+)/);
+            if (numMatch) {
+                const adjusted = Math.max(1, Math.floor(parseInt(numMatch[1]) * volumeMultiplier));
+                return adjusted.toString();
+            }
+            
+            return reps; // Return as-is if no numbers found
+        }
+        
+        if (typeof reps === 'number') {
+            return Math.max(1, Math.floor(reps * volumeMultiplier));
+        }
+        
+        return reps;
     }
 
     /**

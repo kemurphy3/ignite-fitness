@@ -156,12 +156,15 @@ class ContextAwareAI {
     
     // Categorize response type
     categorizeResponse(response) {
-        if (response.includes('workout') || response.includes('exercise')) return 'workout_advice';
-        if (response.includes('nutrition') || response.includes('diet')) return 'nutrition_advice';
-        if (response.includes('injury') || response.includes('pain')) return 'injury_advice';
-        if (response.includes('schedule') || response.includes('time')) return 'scheduling_advice';
-        if (response.includes('goal') || response.includes('progress')) return 'goal_advice';
-        return 'general_advice';
+        const lowerResponse = response.toLowerCase();
+        
+        if (lowerResponse.includes('workout') || lowerResponse.includes('exercise') || lowerResponse.includes('training') || lowerResponse.includes('gym')) return 'workout';
+        if (lowerResponse.includes('nutrition') || lowerResponse.includes('diet') || lowerResponse.includes('eat') || lowerResponse.includes('food') || lowerResponse.includes('protein') || lowerResponse.includes('calories')) return 'nutrition';
+        if (lowerResponse.includes('injury') || lowerResponse.includes('pain') || lowerResponse.includes('hurt') || lowerResponse.includes('ache') || lowerResponse.includes('rehabilitation')) return 'injury';
+        if (lowerResponse.includes('schedule') || lowerResponse.includes('time') || lowerResponse.includes('when') || lowerResponse.includes('planning')) return 'schedule';
+        if (lowerResponse.includes('goal') || lowerResponse.includes('progress') || lowerResponse.includes('achieve') || lowerResponse.includes('target')) return 'goal';
+        
+        return 'workout'; // Default to workout category
     }
     
     // Get contextual context for AI
@@ -332,15 +335,17 @@ class ContextAwareAI {
                 return data.choices?.[0]?.message?.content || 'I apologize, but I couldn\'t generate a response at this time.';
             } else {
                 console.warn('AI API call failed, using fallback response');
-                return this.getFallbackResponse(userInput);
+                const fallbackResult = this.getFallbackResponse(userInput);
+                return fallbackResult.message || fallbackResult;
             }
         } catch (error) {
             console.warn('AI API call error, using fallback response:', error);
-            return this.getFallbackResponse(userInput);
+            const fallbackResult = this.getFallbackResponse(userInput);
+            return fallbackResult.message || fallbackResult;
         }
     }
     
-    // Fallback response system
+    // Fallback response system with deterministic selection
     getFallbackResponse(userInput) {
         const responses = {
             'workout': [
@@ -374,8 +379,93 @@ class ContextAwareAI {
         const category = this.categorizeResponse(userInput);
         const categoryResponses = responses[category] || responses['workout'];
         
-        // Return a random response from the category
-        return categoryResponses[Math.floor(Math.random() * categoryResponses.length)];
+        // Get user context for deterministic selection
+        const userContext = this.getUserContextForFallback();
+        
+        // Deterministic selection based on user context
+        const selectedIndex = this.selectDeterministicResponse(categoryResponses, userContext);
+        
+        // Return selected response with metadata
+        return {
+            message: categoryResponses[selectedIndex],
+            responseMetadata: {
+                selectionCriteria: userContext,
+                category: category,
+                selectedIndex: selectedIndex,
+                totalOptions: categoryResponses.length,
+                selectionMethod: 'deterministic_context_based'
+            }
+        };
+    }
+
+    // Get user context for deterministic fallback selection
+    getUserContextForFallback() {
+        const userProfile = this.getUserProfile();
+        const recentWorkouts = this.getRecentWorkouts();
+        const currentGoals = this.getCurrentGoals();
+        
+        return {
+            goals: currentGoals.primary || 'general_fitness',
+            lastWorkoutType: recentWorkouts.length > 0 ? recentWorkouts[0].type : 'none',
+            readinessScore: this.calculateReadinessScore(),
+            experienceLevel: userProfile.personalData?.experience || 'intermediate',
+            trainingFrequency: this.calculateTrainingFrequency(),
+            currentPhase: this.getCurrentTrainingPhase()
+        };
+    }
+
+    // Calculate readiness score based on recent activity
+    calculateReadinessScore() {
+        const recentWorkouts = this.getRecentWorkouts();
+        if (recentWorkouts.length === 0) return 0.8; // Default moderate readiness
+        
+        const lastWorkout = recentWorkouts[0];
+        const daysSinceLastWorkout = (Date.now() - new Date(lastWorkout.start_at).getTime()) / (1000 * 60 * 60 * 24);
+        
+        // Simple readiness calculation based on time since last workout
+        if (daysSinceLastWorkout >= 3) return 0.9; // High readiness
+        if (daysSinceLastWorkout >= 1) return 0.7; // Moderate readiness
+        return 0.4; // Low readiness (same day)
+    }
+
+    // Calculate training frequency (workouts per week)
+    calculateTrainingFrequency() {
+        const recentWorkouts = this.getRecentWorkouts(14); // Last 2 weeks
+        return recentWorkouts.length / 2; // workouts per week
+    }
+
+    // Deterministic response selection based on context
+    selectDeterministicResponse(categoryResponses, userContext) {
+        // Create a deterministic seed based on user context
+        const seed = this.createDeterministicSeed(userContext);
+        
+        // Use seed to select response index
+        const selectedIndex = seed % categoryResponses.length;
+        
+        return selectedIndex;
+    }
+
+    // Create deterministic seed from user context
+    createDeterministicSeed(userContext) {
+        // Combine multiple context factors into a deterministic seed
+        const contextString = [
+            userContext.goals,
+            userContext.lastWorkoutType,
+            userContext.experienceLevel,
+            userContext.currentPhase,
+            Math.floor(userContext.readinessScore * 10), // Convert to integer
+            Math.floor(userContext.trainingFrequency * 10) // Convert to integer
+        ].join('_');
+        
+        // Simple hash function to convert string to number
+        let hash = 0;
+        for (let i = 0; i < contextString.length; i++) {
+            const char = contextString.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32-bit integer
+        }
+        
+        return Math.abs(hash);
     }
     
     // Helper methods
