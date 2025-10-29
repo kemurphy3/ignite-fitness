@@ -332,19 +332,28 @@ class Router {
     isTokenExpired(token) {
         if (!token) return true;
         
-        // Handle string tokens (legacy) - consider expired
+        // CRITICAL FIX: Use AuthManager's loginTimestamp for consistent comparison
+        // This prevents inconsistent Date comparisons causing random logouts
+        if (window.AuthManager && window.AuthManager.loginTimestamp) {
+            const tokenAge = Date.now() - window.AuthManager.loginTimestamp;
+            return tokenAge >= 86400000; // 24 hours (86400000 milliseconds)
+        }
+        
+        // Fallback: Check token metadata if AuthManager timestamp not available
         if (typeof token === 'string') {
-            // Try to find token data in localStorage
             try {
                 const tokenStr = localStorage.getItem('ignite.auth.token');
                 if (tokenStr) {
                     const tokenData = JSON.parse(tokenStr);
                     if (tokenData.created_at) {
-                        return this.isTokenExpired(tokenData);
+                        const createdTimestamp = new Date(tokenData.created_at).getTime();
+                        if (!isNaN(createdTimestamp)) {
+                            const tokenAge = Date.now() - createdTimestamp;
+                            return tokenAge >= 86400000; // 24 hours
+                        }
                     }
                 }
             } catch (e) {
-                // If we can't parse, assume expired
                 return true;
             }
             return true;
@@ -352,14 +361,11 @@ class Router {
         
         // Handle token object with created_at
         if (token && typeof token === 'object' && token.created_at) {
-            const now = Date.now();
-            const created = new Date(token.created_at).getTime();
-            const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-            
-            if (isNaN(created)) return true;
-            
-            const tokenAge = now - created;
-            return tokenAge > maxAge;
+            const createdTimestamp = new Date(token.created_at).getTime();
+            if (!isNaN(createdTimestamp)) {
+                const tokenAge = Date.now() - createdTimestamp;
+                return tokenAge >= 86400000; // 24 hours (86400000 milliseconds)
+            }
         }
         
         // Unknown format - assume expired for safety

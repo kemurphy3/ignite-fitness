@@ -13,6 +13,7 @@ class AuthManager {
         this.logger = window.SafeLogger || console;
         this.eventBus = window.EventBus;
         this.authStateCallbacks = new Set(); // Event system for auth state changes
+        this.loginTimestamp = null; // Track login time for consistent token age calculation
         this.storageKeys = {
             token: 'ignite.auth.token',
             user: 'ignite.user',
@@ -111,16 +112,39 @@ class AuthManager {
                         throw new Error('Invalid token format');
                     }
                     
-                    // Check if token has metadata and validate expiry (if stored)
+                    // CRITICAL FIX: Use consistent Date.now() comparison instead of Date objects
+                    // This prevents inconsistent Date comparisons causing random logouts
                     if (tokenData.created_at) {
-                        const created = new Date(tokenData.created_at);
-                        const now = new Date();
-                        const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-                        
-                        if (isNaN(created.getTime()) || (now.getTime() - created.getTime()) > thirtyDays) {
-                            this.logger.info('Token expired (>30 days), clearing storage');
+                        // Try to restore loginTimestamp from token creation time
+                        const createdTimestamp = new Date(tokenData.created_at).getTime();
+                        if (!isNaN(createdTimestamp)) {
+                            this.loginTimestamp = createdTimestamp;
+                        }
+                    }
+                    
+                    // Check token age using consistent Date.now() - loginTimestamp
+                    // 86400000 = 24 hours in milliseconds
+                    if (this.loginTimestamp) {
+                        const tokenAge = Date.now() - this.loginTimestamp;
+                        if (tokenAge >= 86400000) {
+                            this.logger.info('Token expired (24 hours), clearing storage');
                             this.clearStorage();
                             return;
+                        }
+                    } else {
+                        // No loginTimestamp - check created_at as fallback
+                        if (tokenData.created_at) {
+                            const createdTimestamp = new Date(tokenData.created_at).getTime();
+                            if (!isNaN(createdTimestamp)) {
+                                const tokenAge = Date.now() - createdTimestamp;
+                                if (tokenAge >= 86400000) {
+                                    this.logger.info('Token expired (24 hours), clearing storage');
+                                    this.clearStorage();
+                                    return;
+                                }
+                                // Restore loginTimestamp for future checks
+                                this.loginTimestamp = createdTimestamp;
+                            }
                         }
                     }
                     
@@ -253,15 +277,18 @@ class AuthManager {
             if (this.users[username] && this.users[username].passwordHash) {
                 const passwordHash = this.simpleHash(password);
                 if (this.users[username].passwordHash === passwordHash) {
+                    // CRITICAL FIX: Set loginTimestamp for consistent token age calculation
+                    this.loginTimestamp = Date.now();
+                    
                     // Use writeToStorage to persist auth state
                     const userData = {
                         ...this.users[username],
                         username: username,
-                        lastLogin: Date.now()
+                        lastLogin: this.loginTimestamp
                     };
                     
                     this.writeToStorage({
-                        token: `session_${Date.now()}_${username}`,
+                        token: `session_${this.loginTimestamp}_${username}`,
                         user: userData
                     });
                     
@@ -342,8 +369,11 @@ class AuthManager {
                 username: username
             };
             
+            // CRITICAL FIX: Set loginTimestamp for consistent token age calculation
+            this.loginTimestamp = Date.now();
+            
             this.writeToStorage({
-                token: `session_${Date.now()}_${username}`,
+                token: `session_${this.loginTimestamp}_${username}`,
                 user: userData
             });
             
@@ -441,6 +471,9 @@ class AuthManager {
                 token: null,
                 user: null
             };
+            
+            // CRITICAL FIX: Clear loginTimestamp on logout
+            this.loginTimestamp = null;
 
             // Emit logout event
             this.emitAuthChange('logout', this.authState);

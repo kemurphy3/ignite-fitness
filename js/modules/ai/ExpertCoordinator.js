@@ -475,58 +475,77 @@ class ExpertCoordinator {
      * @returns {Object} Resolved plan
      */
     resolveConflicts(plan, proposals, context) {
-        // Check for knee pain or knee flags
+        // Track original sets before any modifications to prevent compound scaling issues
+        plan.mainSets = plan.mainSets.map(main => ({
+            ...main,
+            _originalSets: main.sets || 3 // Store original for compound reduction tracking
+        }));
+
+        // SAFETY PRIORITY: Check for knee pain or knee flags FIRST (before performance concerns)
+        // This ensures safety constraints override game-day performance concerns
         const kneePain = proposals.physio?.blocks?.find(b => 
             b.exercise?.rationale?.toLowerCase().includes('knee')
         ) || context.constraints?.flags?.includes('knee_pain');
         
         if (kneePain) {
             // Get safe alternatives from ExerciseAdapter
-            const exerciseAdapter = new ExerciseAdapter();
-            
-            plan.mainSets = plan.mainSets.map(main => {
-                const exerciseName = main.exercise || main.name;
+            // CRITICAL FIX: Check for ExerciseAdapter availability before use
+            if (!window.ExerciseAdapter) {
+                // ExerciseAdapter not available - skip substitution, log warning
+                this.logger.warn('ExerciseAdapter not available, skipping exercise substitution for knee pain');
+                plan.notes.push({
+                    source: 'system',
+                    text: 'Knee pain detected, but exercise substitution unavailable. Please modify exercises manually if needed.'
+                });
+            } else {
+                const exerciseAdapter = new window.ExerciseAdapter();
                 
-                // Check for Bulgarian Split Squats specifically
-                if (exerciseName && exerciseName.toLowerCase().includes('bulgarian split squat')) {
-                    const alternates = exerciseAdapter.getAlternates(exerciseName);
-                    if (alternates.length > 0) {
-                        return {
-                            ...main,
-                            exercise: alternates[0].name,
-                            name: alternates[0].name,
-                            rationale: alternates[0].rationale,
-                            constraintSource: 'physio'
-                        };
+                plan.mainSets = plan.mainSets.map(main => {
+                    const exerciseName = main.exercise || main.name;
+                    
+                    // Check for Bulgarian Split Squats specifically
+                    if (exerciseName && exerciseName.toLowerCase().includes('bulgarian split squat')) {
+                        const alternates = exerciseAdapter.getAlternates(exerciseName);
+                        if (alternates.length > 0) {
+                            return {
+                                ...main,
+                                exercise: alternates[0].name,
+                                name: alternates[0].name,
+                                rationale: alternates[0].rationale,
+                                constraintSource: 'physio'
+                            };
+                        }
                     }
-                }
-                
-                // Check for other squat variations
-                if (exerciseName && exerciseName.includes('squat') && !exerciseName.includes('goblet')) {
-                    const alternates = exerciseAdapter.getAlternates(exerciseName);
-                    if (alternates.length > 0) {
-                        return {
-                            ...main,
-                            exercise: alternates[0].name,
-                            name: alternates[0].name,
-                            rationale: alternates[0].rationale,
-                            constraintSource: 'physio'
-                        };
+                    
+                    // Check for other squat variations
+                    if (exerciseName && exerciseName.includes('squat') && !exerciseName.includes('goblet')) {
+                        const alternates = exerciseAdapter.getAlternates(exerciseName);
+                        if (alternates.length > 0) {
+                            return {
+                                ...main,
+                                exercise: alternates[0].name,
+                                name: alternates[0].name,
+                                rationale: alternates[0].rationale,
+                                constraintSource: 'physio'
+                            };
+                        }
                     }
-                }
+                    
+                    return main;
+                });
                 
-                return main;
-            });
-            
-            // Add warning note
-            plan.notes = plan.notes || [];
-            plan.notes.push({
-                source: 'physio',
-                text: 'Exercises modified due to knee concerns. Safe alternatives provided.'
-            });
+                // Add note about substitutions if any were made
+                plan.notes = plan.notes || [];
+                plan.notes.push({
+                    source: 'physio',
+                    text: 'Exercises modified due to knee concerns. Safe alternatives provided.'
+                });
+            }
         }
 
-        // Check for game -1 day conflicts
+        // Check for game -1 day conflicts (PERFORMANCE - applied after safety)
+        // Note: Safety constraints (knee pain) already handled above, so game-day adjustments
+        // will work with already-substituted safe exercises
         const gameDayConstraint = proposals.sports?.constraints?.find(c => c.type === 'game_day_safety');
         if (gameDayConstraint?.daysUntilGame <= 1) {
             // Remove heavy leg work
@@ -540,12 +559,6 @@ class ExpertCoordinator {
                 reason: 'Game tomorrow - upper body maintenance only'
             });
         }
-
-        // Track original sets before any modifications to prevent compound scaling issues
-        plan.mainSets = plan.mainSets.map(main => ({
-            ...main,
-            _originalSets: main.sets || 3 // Store original for compound reduction tracking
-        }));
 
         // Check for low readiness
         if (context.readiness <= 4) {
