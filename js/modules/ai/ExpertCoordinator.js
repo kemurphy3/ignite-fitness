@@ -1,6 +1,7 @@
 /**
  * ExpertCoordinator - Central engine that reconciles expert recommendations
  * Merges Strength, Sports, Physio, Nutrition, and Aesthetics coaches into unified session
+ * Uses MemoizedCoordinator for performance optimization
  */
 class ExpertCoordinator {
     constructor() {
@@ -9,6 +10,11 @@ class ExpertCoordinator {
         this.readinessInference = window.ReadinessInference;
         this.seasonalPrograms = window.SeasonalPrograms;
         this.coordinatorContext = window.CoordinatorContext;
+        this.dataValidator = window.AIDataValidator;
+        this.errorAlert = window.ErrorAlert;
+        
+        // Initialize memoized coordinator for performance
+        this.memoizedCoordinator = new MemoizedCoordinator();
         
         this.experts = {
             strength: new StrengthCoach(),
@@ -17,6 +23,50 @@ class ExpertCoordinator {
             nutrition: new NutritionCoach(),
             aesthetics: new AestheticsCoach()
         };
+        
+        // Register experts with memoized coordinator
+        this.registerExperts();
+    }
+    
+    /**
+     * Register experts with memoized coordinator
+     */
+    registerExperts() {
+        Object.entries(this.experts).forEach(([name, expert]) => {
+            this.memoizedCoordinator.registerExpert(name, expert);
+        });
+    }
+    
+    /**
+     * Create cache key for context
+     * @param {Object} context - User context
+     * @returns {string} Cache key
+     */
+    createCacheKey(context) {
+        const keyData = {
+            userId: context.user?.id,
+            readiness: context.readiness,
+            goals: context.goals,
+            preferences: context.preferences,
+            timestamp: Math.floor(Date.now() / (5 * 60 * 1000)) // 5-minute buckets
+        };
+        
+        return JSON.stringify(keyData, Object.keys(keyData).sort());
+    }
+    
+    /**
+     * Get performance statistics
+     * @returns {Object} Performance stats
+     */
+    getPerformanceStats() {
+        return this.memoizedCoordinator.getStats();
+    }
+    
+    /**
+     * Clear memoization cache
+     */
+    clearCache() {
+        this.memoizedCoordinator.clearCaches();
     }
 
     /**
@@ -25,7 +75,45 @@ class ExpertCoordinator {
      * @returns {Promise<Object>} Complete workout plan
      */
     async planToday(context) {
+        const startTime = performance.now();
+        
         try {
+            // Use memoized coordinator for performance
+            const plan = await this.memoizedCoordinator.planToday(context, {
+                useMemoization: true,
+                cacheKey: this.createCacheKey(context)
+            });
+            
+            const responseTime = performance.now() - startTime;
+            this.logger.info(`Plan generated in ${responseTime.toFixed(2)}ms`);
+            
+            return plan;
+            
+        } catch (error) {
+            this.logger.error('Plan generation failed:', error);
+            
+            // Fallback to non-memoized approach
+            return await this.planTodayFallback(context);
+        }
+    }
+    
+    /**
+     * Fallback plan generation without memoization
+     * @param {Object} context - User context
+     * @returns {Promise<Object>} Complete workout plan
+     */
+    async planTodayFallback(context) {
+        try {
+            // Validate and sanitize context data with conservative fallbacks
+            if (this.dataValidator) {
+                context = this.dataValidator.validateContext(context);
+                this.logger.info('Context validated with conservative fallbacks', {
+                    readiness: context.readinessScore,
+                    atl7: context.atl7,
+                    dataConfidence: context.dataConfidence
+                });
+            }
+            
             // Build enhanced context with load metrics and confidence
             if (this.coordinatorContext) {
                 const enhancedContext = await this.coordinatorContext.buildContext(context);
@@ -135,6 +223,20 @@ class ExpertCoordinator {
                 }
             }
             
+            // Apply conservative scaling based on data confidence
+            if (this.dataValidator && context.dataConfidence) {
+                const originalIntensity = structuredPlan.targetRPE || 7;
+                const scaledIntensity = this.dataValidator.applyConservativeScaling(
+                    originalIntensity, 
+                    context.dataConfidence.recent7days || 0.5
+                );
+                
+                if (scaledIntensity < originalIntensity) {
+                    structuredPlan.intensityScale *= (scaledIntensity / originalIntensity);
+                    structuredPlan.why.push(`Intensity scaled down due to low data confidence (${Math.round(context.dataConfidence.recent7days * 100)}%)`);
+                }
+            }
+            
             // Apply intensity scaling for inferred readiness
             if (isInferred && readiness < 7) {
                 structuredPlan.intensityScale *= 0.85; // Scale down 15% for safety
@@ -191,6 +293,7 @@ class ExpertCoordinator {
      */
     gatherProposals(context) {
         const proposals = {};
+        const failedExperts = [];
         
         for (const [name, expert] of Object.entries(this.experts)) {
             try {
@@ -198,10 +301,84 @@ class ExpertCoordinator {
             } catch (error) {
                 this.logger.warn(`Expert ${name} failed to propose`, error);
                 proposals[name] = { blocks: [], constraints: [], priorities: [] };
+                failedExperts.push({ name, error: error.message });
+                
+                // Show error alert for expert failure
+                if (this.errorAlert) {
+                    const userFriendlyMessage = this.getUserFriendlyErrorMessage(error, name);
+                    this.errorAlert.showExpertFailureAlert({
+                        expertType: name,
+                        errorMessage: userFriendlyMessage,
+                        fallbackMessage: `Using conservative fallback plan for ${this.getExpertDisplayName(name)}`,
+                        severity: this.getExpertSeverity(name),
+                        duration: 15000
+                    });
+                }
             }
         }
         
+        // Log summary of failed experts
+        if (failedExperts.length > 0) {
+            this.logger.error('Expert system failures', {
+                failedCount: failedExperts.length,
+                failedExperts: failedExperts.map(f => f.name),
+                totalExperts: Object.keys(this.experts).length
+            });
+        }
+        
         return proposals;
+    }
+
+    /**
+     * Get expert display name
+     * @param {string} expertName - Expert name
+     * @returns {string} Display name
+     */
+    getExpertDisplayName(expertName) {
+        const names = {
+            strength: 'Strength',
+            sports: 'Sports',
+            physio: 'Physio',
+            nutrition: 'Nutrition',
+            aesthetics: 'Aesthetics'
+        };
+        return names[expertName] || expertName;
+    }
+
+    /**
+     * Get user-friendly error message
+     * @param {Error} error - Technical error
+     * @param {string} expertName - Expert name
+     * @returns {string} User-friendly message
+     */
+    getUserFriendlyErrorMessage(error, expertName) {
+        const expertDisplayName = this.getExpertDisplayName(expertName);
+        
+        // Map common technical errors to user-friendly messages
+        const errorMessage = error.message || error.toString();
+        
+        if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+            return `${expertDisplayName} expert is temporarily unavailable due to connection issues`;
+        }
+        
+        if (errorMessage.includes('timeout')) {
+            return `${expertDisplayName} expert is taking longer than expected to respond`;
+        }
+        
+        if (errorMessage.includes('validation') || errorMessage.includes('invalid')) {
+            return `${expertDisplayName} expert needs more information to make recommendations`;
+        }
+        
+        if (errorMessage.includes('memory') || errorMessage.includes('allocation')) {
+            return `${expertDisplayName} expert is experiencing high load, using simplified recommendations`;
+        }
+        
+        if (errorMessage.includes('permission') || errorMessage.includes('unauthorized')) {
+            return `${expertDisplayName} expert access is temporarily restricted`;
+        }
+        
+        // Default user-friendly message
+        return `${expertDisplayName} expert is temporarily unavailable`;
     }
 
     /**
@@ -571,6 +748,62 @@ class ExpertCoordinator {
      * @returns {Object} Fallback plan
      */
     getFallbackPlanStructured(context) {
+        // Show error alert for fallback plan usage
+        if (this.errorAlert) {
+            this.errorAlert.showErrorAlert({
+                errorMessage: 'AI planning system is temporarily unavailable',
+                fallbackMessage: 'Using a safe, conservative workout plan to ensure your safety',
+                duration: 20000
+            });
+        }
+
+        // Use conservative recommendations if data validator is available
+        if (this.dataValidator) {
+            const conservativeRecs = this.dataValidator.generateConservativeRecommendations(context);
+            const safetyFlags = this.dataValidator.generateSafetyFlags(context);
+            
+            return {
+                blocks: [
+                    {
+                        name: 'Warm-up',
+                        items: [
+                            {
+                                name: 'General Mobility',
+                                sets: 1,
+                                reps: '5-10',
+                                targetRPE: 5,
+                                notes: 'Conservative warm-up due to limited data',
+                                category: 'warmup'
+                            }
+                        ],
+                        durationMin: 10
+                    },
+                    {
+                        name: 'Main',
+                        items: [
+                            {
+                                name: 'Bodyweight Circuit',
+                                sets: conservativeRecs.volume === 'low' ? 2 : 3,
+                                reps: '10-15',
+                                targetRPE: conservativeRecs.intensity === 'light' ? 6 : 7,
+                                notes: `Conservative ${conservativeRecs.intensity} intensity session`,
+                                category: 'circuit'
+                            }
+                        ],
+                        durationMin: conservativeRecs.duration || 30
+                    }
+                ],
+                intensityScale: conservativeRecs.intensity === 'light' ? 0.7 : 0.8,
+                why: [
+                    'Using conservative recommendations due to limited data availability',
+                    'Focusing on safety and basic movement patterns',
+                    'This plan ensures you can still train effectively'
+                ],
+                warnings: safetyFlags.length > 0 ? safetyFlags : ['Using a safe, simplified workout plan']
+            };
+        }
+        
+        // Original fallback if no data validator
         return {
             blocks: [
                 {
@@ -620,13 +853,13 @@ class ExpertCoordinator {
                 exercise: 'bodyweight_circuit',
                 sets: 3,
                 reps: '10-15',
-                rationale: 'Fallback session due to planning error'
+                rationale: 'Safe fallback session while system recovers'
             }],
             accessories: [],
             finishers: [],
             substitutions: [],
-            rationale: ['Simplified session due to technical issue'],
-            sessionNotes: 'Error generating custom plan - using fallback protocol',
+            rationale: ['Simplified session due to temporary system issue'],
+            sessionNotes: 'Using a safe fallback plan while the system recovers',
             isFallback: true
         };
     }

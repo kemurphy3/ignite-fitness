@@ -1,96 +1,495 @@
 # Security Documentation
 
-## Environment Variables
+## Overview
 
-The following environment variables must be set in your Netlify dashboard for secure operation:
+This document provides comprehensive security guidance for the Ignite Fitness application, including security architecture, incident response procedures, compliance requirements, and team training materials.
 
-### Required Variables
+## 🔒 Security Architecture
 
-1. **DATABASE_URL** - Your Neon PostgreSQL connection string
-2. **STRAVA_CLIENT_ID** - Your Strava application client ID
-3. **STRAVA_CLIENT_SECRET** - Your Strava application client secret
-4. **ADMIN_KEY** - Secret key for admin functions (default: ignitefitness_admin_2024)
+### 1. Defense in Depth
 
-### Optional Variables
+Our security architecture implements multiple layers of protection:
 
-1. **OPENAI_API_KEY** - Your OpenAI API key for AI features
-2. **NODE_ENV** - Set to "production" for production deployments
-
-## Security Features Implemented
-
-### 1. API Key Protection
-- All API keys are stored as environment variables
-- Client-side code never exposes sensitive credentials
-- API calls are routed through secure Netlify functions
-
-### 2. Secure API Proxies
-- **ai-proxy.js** - Handles OpenAI API calls securely
-- **strava-proxy.js** - Handles Strava API calls securely
-- Both proxies validate requests and hide API keys
-
-### 3. User Data Protection
-- User-specific tokens (access/refresh) are stored in user profiles
-- No sensitive data is exposed in client-side code
-- All API calls require proper authentication
-
-### 4. CORS Configuration
-- Proper CORS headers are set for all API endpoints
-- Preflight requests are handled correctly
-
-## Setting Up Environment Variables
-
-### In Netlify Dashboard:
-1. Go to your site's settings
-2. Navigate to "Environment variables"
-3. Add each variable with its corresponding value
-
-### For Local Development:
-Create a `.env` file in your project root:
 ```
-DATABASE_URL=your-neon-connection-string
-STRAVA_CLIENT_ID=your-strava-client-id
-STRAVA_CLIENT_SECRET=your-strava-client-secret
-OPENAI_API_KEY=your-openai-api-key
-ADMIN_KEY=your-secure-admin-key
+┌─────────────────────────────────────────────────────────────┐
+│                    User Interface Layer                    │
+├─────────────────────────────────────────────────────────────┤
+│  Input Validation  │  XSS Protection  │  CSRF Protection   │
+├─────────────────────────────────────────────────────────────┤
+│                    Application Layer                       │
+├─────────────────────────────────────────────────────────────┤
+│  Authentication   │  Authorization   │  Session Management  │
+├─────────────────────────────────────────────────────────────┤
+│                    API Gateway Layer                       │
+├─────────────────────────────────────────────────────────────┤
+│  Rate Limiting    │  Input Sanitization │  Security Headers │
+├─────────────────────────────────────────────────────────────┤
+│                    Data Layer                              │
+├─────────────────────────────────────────────────────────────┤
+│  Encryption      │  Access Control   │  Audit Logging      │
+├─────────────────────────────────────────────────────────────┤
+│                    Infrastructure Layer                     │
+├─────────────────────────────────────────────────────────────┤
+│  HTTPS Only      │  Security Headers │  Vulnerability Scan │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## Security Best Practices
+### 2. Security Components
 
-1. **Never commit API keys to version control**
-2. **Use different keys for development and production**
-3. **Regularly rotate API keys**
-4. **Monitor API usage for unusual activity**
-5. **Use HTTPS in production**
+**Authentication & Authorization**:
+- JWT-based authentication with secure secrets
+- Role-based access control (RBAC)
+- Multi-factor authentication support
+- Session management with sliding windows
 
-## API Endpoints
+**Data Protection**:
+- Encryption at rest and in transit
+- Data retention policies
+- GDPR-compliant data handling
+- Secure data export and deletion
 
-### Secure Endpoints
-- `/.netlify/functions/ai-proxy` - AI API calls
-- `/.netlify/functions/strava-proxy` - Strava API calls
-- `/.netlify/functions/sessions-create` - Create workout sessions
-- `/.netlify/functions/sessions-list` - List user sessions
-- `/.netlify/functions/get-user-data` - Get user data
-- `/.netlify/functions/save-user-data` - Save user data
-- `/.netlify/functions/admin-get-all-users` - Admin function (requires admin key)
+**Input Security**:
+- Input validation and sanitization
+- XSS prevention with DOMPurify
+- SQL injection protection
+- LDAP injection prevention
 
-### Authentication
-- Admin functions require the `adminKey` parameter
-- User data is filtered by `user_id` to prevent cross-user access
-- All API calls validate user authentication
+**Network Security**:
+- HTTPS enforcement
+- Security headers (CSP, HSTS, etc.)
+- Rate limiting and DDoS protection
+- CORS configuration
 
-## Monitoring
+**Monitoring & Logging**:
+- Security event logging
+- Anomaly detection
+- Audit trails
+- Incident response
 
-Monitor the following for security issues:
-- Unusual API usage patterns
-- Failed authentication attempts
-- Cross-user data access attempts
-- API key exposure in logs
+### 3. Security Controls
 
-## Incident Response
+**Preventive Controls**:
+- Input validation and sanitization
+- Authentication and authorization
+- Encryption and secure communication
+- Security headers and CSP
 
-If you suspect a security breach:
-1. Immediately rotate all API keys
-2. Check logs for unusual activity
-3. Review user data access patterns
-4. Update environment variables
-5. Deploy updated code if necessary
+**Detective Controls**:
+- Security monitoring and logging
+- Anomaly detection
+- Vulnerability scanning
+- Audit trails
+
+**Corrective Controls**:
+- Incident response procedures
+- Security updates and patches
+- Data breach response
+- Recovery procedures
+
+## 🚨 Incident Response
+
+### 1. Incident Classification
+
+**Severity Levels**:
+- **Critical**: Data breach, system compromise, service outage
+- **High**: Security vulnerability, unauthorized access, data exposure
+- **Medium**: Suspicious activity, policy violation, security warning
+- **Low**: Security information, minor policy violation, false positive
+
+### 2. Incident Response Team
+
+**Team Roles**:
+- **Incident Commander**: Overall incident coordination
+- **Security Analyst**: Technical analysis and investigation
+- **Communications Lead**: Internal and external communications
+- **Legal Counsel**: Legal and compliance guidance
+- **IT Operations**: Technical remediation and recovery
+
+### 3. Incident Response Process
+
+**Phase 1: Detection and Analysis**
+1. Incident detection through monitoring systems
+2. Initial assessment and classification
+3. Incident team activation
+4. Evidence collection and preservation
+
+**Phase 2: Containment**
+1. Immediate containment measures
+2. System isolation if necessary
+3. Evidence preservation
+4. Communication with stakeholders
+
+**Phase 3: Eradication and Recovery**
+1. Root cause analysis
+2. Vulnerability remediation
+3. System recovery and testing
+4. Security validation
+
+**Phase 4: Post-Incident Activities**
+1. Incident documentation
+2. Lessons learned analysis
+3. Process improvement
+4. Training updates
+
+### 4. Incident Response Procedures
+
+**Data Breach Response**:
+1. Immediate containment and isolation
+2. Assessment of scope and impact
+3. Notification to authorities (72 hours)
+4. User notification and communication
+5. Forensic investigation
+6. Remediation and recovery
+
+**Security Vulnerability Response**:
+1. Vulnerability assessment
+2. Risk evaluation
+3. Patch development and testing
+4. Emergency deployment
+5. Monitoring and validation
+
+**Malware/Attack Response**:
+1. Immediate system isolation
+2. Threat analysis and identification
+3. Malware removal and cleanup
+4. System hardening
+5. Monitoring and prevention
+
+## 📋 Compliance Procedures
+
+### 1. GDPR Compliance
+
+**Data Protection Principles**:
+- Lawfulness, fairness, and transparency
+- Purpose limitation
+- Data minimization
+- Accuracy
+- Storage limitation
+- Integrity and confidentiality
+
+**User Rights**:
+- Right to access
+- Right to rectification
+- Right to erasure
+- Right to restrict processing
+- Right to data portability
+- Right to object
+
+**Implementation**:
+- Privacy by design
+- Data protection impact assessments
+- Consent management
+- Data retention policies
+- Breach notification procedures
+
+### 2. Security Compliance
+
+**Security Standards**:
+- OWASP Top 10 compliance
+- NIST Cybersecurity Framework
+- ISO 27001 alignment
+- SOC 2 Type II requirements
+
+**Compliance Monitoring**:
+- Regular security assessments
+- Vulnerability scanning
+- Penetration testing
+- Compliance audits
+- Security training
+
+### 3. Audit Procedures
+
+**Internal Audits**:
+- Monthly security reviews
+- Quarterly compliance assessments
+- Annual security audits
+- Continuous monitoring
+
+**External Audits**:
+- Third-party security assessments
+- Penetration testing
+- Compliance certifications
+- Regulatory audits
+
+## 🛡️ Security Controls
+
+### 1. Access Control
+
+**Authentication**:
+- Strong password requirements
+- Multi-factor authentication
+- Session management
+- Account lockout policies
+
+**Authorization**:
+- Role-based access control
+- Principle of least privilege
+- Regular access reviews
+- Privileged access management
+
+### 2. Data Protection
+
+**Encryption**:
+- Data encryption at rest
+- Data encryption in transit
+- Key management
+- Certificate management
+
+**Data Handling**:
+- Data classification
+- Data retention policies
+- Secure data disposal
+- Data loss prevention
+
+### 3. Network Security
+
+**Network Controls**:
+- Firewall configuration
+- Network segmentation
+- Intrusion detection
+- DDoS protection
+
+**Communication Security**:
+- HTTPS enforcement
+- Secure protocols
+- Certificate validation
+- Secure configurations
+
+### 4. Application Security
+
+**Secure Development**:
+- Secure coding practices
+- Code reviews
+- Static analysis
+- Dynamic testing
+
+**Runtime Protection**:
+- Input validation
+- Output encoding
+- Error handling
+- Security monitoring
+
+## 📊 Security Monitoring
+
+### 1. Security Metrics
+
+**Key Performance Indicators**:
+- Mean Time to Detection (MTTD)
+- Mean Time to Response (MTTR)
+- Security incident frequency
+- Vulnerability remediation time
+- Security training completion
+
+**Security Dashboards**:
+- Real-time security events
+- Threat intelligence feeds
+- Vulnerability status
+- Compliance metrics
+- Incident trends
+
+### 2. Threat Intelligence
+
+**Threat Sources**:
+- Commercial threat feeds
+- Open source intelligence
+- Government advisories
+- Industry reports
+- Internal threat analysis
+
+**Threat Analysis**:
+- Threat actor profiling
+- Attack pattern analysis
+- Vulnerability correlation
+- Risk assessment
+- Mitigation strategies
+
+### 3. Security Operations
+
+**Security Operations Center (SOC)**:
+- 24/7 monitoring
+- Incident detection
+- Threat analysis
+- Response coordination
+- Continuous improvement
+
+**Security Tools**:
+- SIEM (Security Information and Event Management)
+- Vulnerability scanners
+- Penetration testing tools
+- Forensic tools
+- Threat intelligence platforms
+
+## 🎓 Team Training
+
+### 1. Security Awareness Training
+
+**General Security Awareness**:
+- Security policies and procedures
+- Common attack vectors
+- Social engineering awareness
+- Password security
+- Incident reporting
+
+**Role-Specific Training**:
+- Developer security training
+- Administrator security training
+- User security training
+- Management security training
+
+### 2. Security Training Program
+
+**Training Modules**:
+- Security fundamentals
+- Secure coding practices
+- Incident response
+- Compliance requirements
+- Threat awareness
+
+**Training Delivery**:
+- Online training modules
+- Instructor-led training
+- Hands-on exercises
+- Security simulations
+- Regular updates
+
+### 3. Security Certification
+
+**Certification Requirements**:
+- Security awareness certification
+- Role-specific certifications
+- Compliance training
+- Incident response training
+- Regular recertification
+
+## 🔧 Security Tools
+
+### 1. Development Tools
+
+**Static Analysis**:
+- ESLint security rules
+- Semgrep SAST
+- CodeQL analysis
+- SonarQube security
+
+**Dynamic Testing**:
+- OWASP ZAP
+- Burp Suite
+- Nessus
+- OpenVAS
+
+### 2. Monitoring Tools
+
+**Security Monitoring**:
+- SIEM platform
+- Log aggregation
+- Threat detection
+- Anomaly detection
+- Incident response
+
+**Vulnerability Management**:
+- Snyk dependency scanning
+- Trivy container scanning
+- OWASP dependency check
+- Vulnerability databases
+
+### 3. Compliance Tools
+
+**Compliance Monitoring**:
+- Policy management
+- Compliance reporting
+- Audit trail management
+- Risk assessment
+- Regulatory reporting
+
+## 📞 Emergency Contacts
+
+### 1. Internal Contacts
+
+**Security Team**:
+- Security Manager: security@ignite-fitness.com
+- Incident Response: incident@ignite-fitness.com
+- Security Operations: soc@ignite-fitness.com
+
+**Management**:
+- CTO: cto@ignite-fitness.com
+- Legal Counsel: legal@ignite-fitness.com
+- Privacy Officer: privacy@ignite-fitness.com
+
+### 2. External Contacts
+
+**Security Vendors**:
+- Snyk Support: support@snyk.io
+- OWASP ZAP: zap@owasp.org
+- Security Consultants: security-consultant@example.com
+
+**Regulatory Bodies**:
+- Data Protection Authority: dpa@example.gov
+- Cybersecurity Agency: csa@example.gov
+- Law Enforcement: cybercrime@example.gov
+
+## 📚 Additional Resources
+
+### 1. Security Standards
+
+- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
+- [NIST Cybersecurity Framework](https://www.nist.gov/cyberframework)
+- [ISO 27001](https://www.iso.org/isoiec-27001-information-security.html)
+- [SOC 2](https://www.aicpa.org/interestareas/frc/assuranceadvisoryservices/aicpasoc2report)
+
+### 2. Security Tools
+
+- [OWASP ZAP](https://www.zaproxy.org/)
+- [Snyk](https://snyk.io/)
+- [Semgrep](https://semgrep.dev/)
+- [Trivy](https://trivy.dev/)
+
+### 3. Training Resources
+
+- [OWASP Security Training](https://owasp.org/www-project-security-training/)
+- [SANS Security Training](https://www.sans.org/)
+- [CISSP Training](https://www.isc2.org/cissp)
+- [Security Awareness Training](https://www.knowbe4.com/)
+
+## 🔄 Security Review Process
+
+### 1. Regular Reviews
+
+**Monthly Reviews**:
+- Security metrics analysis
+- Threat intelligence updates
+- Vulnerability assessment
+- Incident review
+
+**Quarterly Reviews**:
+- Security policy updates
+- Risk assessment
+- Compliance review
+- Training updates
+
+**Annual Reviews**:
+- Security strategy review
+- Architecture assessment
+- Tool evaluation
+- Process improvement
+
+### 2. Continuous Improvement
+
+**Process Improvement**:
+- Lessons learned analysis
+- Best practice adoption
+- Tool optimization
+- Training enhancement
+
+**Security Enhancement**:
+- New threat mitigation
+- Technology updates
+- Process automation
+- Capability development
+
+---
+
+**Last Updated**: December 2024  
+**Security Version**: 1.0  
+**Next Review**: March 2025  
+**Document Owner**: Security Team  
+**Approval**: CTO

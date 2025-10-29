@@ -226,15 +226,136 @@
 /* High Contrast Mode Support */
 @media (prefers-contrast: high) {
     :root {
-        --shadow-base: 0 2px 4px rgba(0, 0, 0, 0.3);
-        --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.3);
-        --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.3);
+        /* High contrast colors */
+        --theme-primary: #0000ff;
+        --theme-secondary: #000000;
+        --theme-accent: #0000ff;
+        --theme-background: #ffffff;
+        --theme-surface: #ffffff;
+        --theme-error: #000000;
         
+        /* High contrast text */
+        --text-color: #000000;
+        --text-color-secondary: #000000;
+        --text-color-muted: #000000;
+        
+        /* High contrast borders */
         --input-border: #000000;
         --input-border-focus: #000000;
+        --card-border: #000000;
         
+        /* High contrast shadows */
+        --shadow-base: 0 2px 4px rgba(0, 0, 0, 0.5);
+        --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.5);
+        --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
+        
+        /* High contrast focus indicators */
+        --focus-outline: 3px solid #ffff00;
+        --focus-outline-offset: 2px;
+        
+        /* High contrast borders */
+        --border-width: 2px;
+        --border-radius: 0px;
+        
+        /* High contrast opacity */
+        --opacity-disabled: 1;
+        --opacity-hover: 1;
+        --opacity-pressed: 1;
+        
+        /* Larger touch targets */
         --button-height: 52px;
         --tab-height: 64px;
+        --input-height: 52px;
+    }
+}
+
+/* Forced Colors Mode Support (Windows High Contrast) */
+@media (forced-colors: active) {
+    :root {
+        /* Use system colors in forced colors mode */
+        --theme-primary: Highlight;
+        --theme-secondary: CanvasText;
+        --theme-accent: Highlight;
+        --theme-background: Canvas;
+        --theme-surface: Canvas;
+        --theme-error: CanvasText;
+        
+        /* Use system text colors */
+        --text-color: CanvasText;
+        --text-color-secondary: CanvasText;
+        --text-color-muted: CanvasText;
+        
+        /* Use system borders */
+        --input-border: CanvasText;
+        --input-border-focus: Highlight;
+        --card-border: CanvasText;
+        
+        /* Remove custom shadows */
+        --shadow-base: none;
+        --shadow-md: none;
+        --shadow-lg: none;
+        
+        /* Use system focus indicators */
+        --focus-outline: 2px solid Highlight;
+        --focus-outline-offset: 1px;
+        
+        /* Remove custom borders and radius */
+        --border-width: 1px;
+        --border-radius: 0px;
+        
+        /* Maintain visibility */
+        --opacity-disabled: 1;
+        --opacity-hover: 1;
+        --opacity-pressed: 1;
+    }
+    
+    /* Ensure all interactive elements are visible */
+    button, input, select, textarea, a, [tabindex] {
+        border: 1px solid CanvasText !important;
+        background-color: Canvas !important;
+        color: CanvasText !important;
+    }
+    
+    button:hover, input:hover, select:hover, textarea:hover, a:hover {
+        background-color: Highlight !important;
+        color: HighlightText !important;
+    }
+    
+    button:focus, input:focus, select:focus, textarea:focus, a:focus {
+        outline: 2px solid Highlight !important;
+        outline-offset: 1px !important;
+    }
+    
+    /* Ensure text is always visible */
+    h1, h2, h3, h4, h5, h6, p, span, div {
+        color: CanvasText !important;
+    }
+    
+    /* Ensure backgrounds are always visible */
+    .card, .modal, .overlay, .container {
+        background-color: Canvas !important;
+        border: 1px solid CanvasText !important;
+    }
+    
+    /* Ensure status colors are visible */
+    .status-success, .success {
+        color: CanvasText !important;
+        background-color: Canvas !important;
+    }
+    
+    .status-warning, .warning {
+        color: CanvasText !important;
+        background-color: Canvas !important;
+    }
+    
+    .status-error, .error {
+        color: CanvasText !important;
+        background-color: Canvas !important;
+    }
+    
+    .status-info, .info {
+        color: CanvasText !important;
+        background-color: Canvas !important;
     }
 }
 

@@ -1,8 +1,12 @@
 const fetch = require('node-fetch');
-const { createLogger } = require('./utils/safe-logging');
+const SafeLogger = require('./utils/safe-logging');
 
 // Create safe logger for this context
-const logger = createLogger('strava-oauth');
+const logger = SafeLogger.create({
+    enableMasking: true,
+    visibleChars: 4,
+    maskChar: '*'
+});
 
 const okJson = (data) => ({
     statusCode: 200,
@@ -103,6 +107,14 @@ exports.handler = async (event) => {
         }
 
         const tokenData = await tokenResponse.json();
+        
+        // Log token data safely (tokens will be masked)
+        logger.info('Strava token exchange successful', {
+            access_token: tokenData.access_token,
+            refresh_token: tokenData.refresh_token,
+            expires_at: tokenData.expires_at,
+            athlete_id: tokenData.athlete?.id
+        });
         
         // Get athlete details
         const athleteResponse = await fetch('https://www.strava.com/api/v3/athlete', {

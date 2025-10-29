@@ -8,6 +8,27 @@ class CoordinatorContext {
         this.logger = window.SafeLogger || console;
         this.storageManager = window.StorageManager;
         this.authManager = window.AuthManager;
+        this.dbClient = null;
+        this.initializeDatabase();
+    }
+
+    /**
+     * Initialize database client
+     */
+    async initializeDatabase() {
+        try {
+            // Try to load the database client
+            if (typeof window !== 'undefined' && window.AIContextDatabase) {
+                this.dbClient = new window.AIContextDatabase();
+            } else if (typeof require !== 'undefined') {
+                const AIContextDatabase = require('../../netlify/functions/utils/ai-context-database.js');
+                this.dbClient = new AIContextDatabase();
+            }
+            
+            this.logger.info('Database client initialized for CoordinatorContext');
+        } catch (error) {
+            this.logger.warn('Failed to initialize database client, using fallback mode:', error.message);
+        }
     }
 
     /**
@@ -52,16 +73,26 @@ class CoordinatorContext {
      */
     async buildLoadMetrics(userId) {
         try {
-            // In a real implementation, this would query daily_aggregates table
-            // For now, return default values with logic to fetch from storage
-            const metrics = {
-                atl7: 0,
-                ctl28: 0,
-                monotony: 1.0,
-                strain: 0
-            };
+            // Use real database queries if available
+            if (this.dbClient) {
+                const metrics = await this.dbClient.getLoadMetrics(userId);
+                
+                // Cache the results
+                if (this.storageManager) {
+                    await this.storageManager.setItem(`user_${userId}_load_metrics`, metrics);
+                }
+                
+                this.logger.debug('Load metrics fetched from database', {
+                    userId,
+                    atl7: metrics.atl7,
+                    ctl28: metrics.ctl28,
+                    dataPoints: metrics.dataPoints
+                });
+                
+                return metrics;
+            }
 
-            // Try to get from StorageManager if available
+            // Fallback: Try to get from StorageManager
             if (this.storageManager) {
                 try {
                     const cachedMetrics = await this.storageManager.getItem(`user_${userId}_load_metrics`);
@@ -73,19 +104,13 @@ class CoordinatorContext {
                 }
             }
 
-            // Fetch from database if available (placeholder)
-            // const { data } = await supabase
-            //     .from('daily_aggregates')
-            //     .select('*')
-            //     .eq('user_id', userId)
-            //     .order('date', { ascending: false })
-            //     .limit(28);
-
-            return metrics;
+            // Final fallback: return default values
+            this.logger.warn('Using fallback load metrics - no database connection');
+            return { atl7: 0, ctl28: 0, monotony: 1.0, strain: 0, dataPoints: 0 };
 
         } catch (error) {
             this.logger.error('Error building load metrics:', error);
-            return { atl7: 0, ctl28: 0, monotony: 1.0, strain: 0 };
+            return { atl7: 0, ctl28: 0, monotony: 1.0, strain: 0, dataPoints: 0 };
         }
     }
 
@@ -96,26 +121,30 @@ class CoordinatorContext {
      */
     async getYesterdayActivity(userId) {
         try {
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            yesterday.setHours(0, 0, 0, 0);
+            // Use real database queries if available
+            if (this.dbClient) {
+                const yesterdayActivity = await this.dbClient.getYesterdayActivity(userId);
+                
+                // Cache the results
+                if (this.storageManager) {
+                    const yesterdayStr = this.getYesterdayDateStr();
+                    await this.storageManager.setItem(`user_${userId}_yesterday_${yesterdayStr}`, yesterdayActivity);
+                }
+                
+                this.logger.debug('Yesterday activity fetched from database', {
+                    userId,
+                    activities: yesterdayActivity.activities,
+                    duration: yesterdayActivity.duration_s,
+                    type: yesterdayActivity.type
+                });
+                
+                return yesterdayActivity;
+            }
 
-            const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-            // In a real implementation, query activities for yesterday
-            // For now, return default
-            const yesterdayActivity = {
-                type: null,
-                duration_s: 0,
-                avg_hr: null,
-                z4_min: 0,
-                z5_min: 0,
-                activities: []
-            };
-
-            // Try to get from StorageManager
+            // Fallback: Try to get from StorageManager
             if (this.storageManager) {
                 try {
+                    const yesterdayStr = this.getYesterdayDateStr();
                     const cached = await this.storageManager.getItem(`user_${userId}_yesterday_${yesterdayStr}`);
                     if (cached) {
                         return cached;
@@ -125,75 +154,14 @@ class CoordinatorContext {
                 }
             }
 
-            // Query database for yesterday's activities
-            // const { data } = await supabase
-            //     .from('activities')
-            //     .select('*')
-            //     .eq('user_id', userId)
-            //     .gte('start_ts', yesterday.toISOString())
-            //     .lt('start_ts', new Date(yesterday.getTime() + 24 * 60 * 60 * 1000).toISOString());
-
-            // if (data && data.length > 0) {
-            //     return this.aggregateYesterdayActivity(data);
-            // }
-
-            return yesterdayActivity;
+            // Final fallback: return default values
+            this.logger.warn('Using fallback yesterday activity - no database connection');
+            return { type: null, duration_s: 0, avg_hr: null, z4_min: 0, z5_min: 0, activities: 0 };
 
         } catch (error) {
             this.logger.error('Error getting yesterday activity:', error);
-            return { type: null, duration_s: 0, avg_hr: null, z4_min: 0, z5_min: 0, activities: [] };
+            return { type: null, duration_s: 0, avg_hr: null, z4_min: 0, z5_min: 0, activities: 0 };
         }
-    }
-
-    /**
-     * Aggregate yesterday's activities into summary
-     * @param {Array} activities - Array of activities
-     * @returns {Object} Aggregated activity data
-     */
-    aggregateYesterdayActivity(activities) {
-        const aggregated = {
-            type: null,
-            duration_s: 0,
-            avg_hr: null,
-            z4_min: 0,
-            z5_min: 0,
-            activities: []
-        };
-
-        for (const activity of activities) {
-            aggregated.duration_s += activity.duration_s || 0;
-            
-            if (activity.avg_hr && aggregated.avg_hr) {
-                aggregated.avg_hr = (aggregated.avg_hr + activity.avg_hr) / 2;
-            } else if (activity.avg_hr) {
-                aggregated.avg_hr = activity.avg_hr;
-            }
-
-            // Get zone minutes from daily aggregates if available
-            // This would typically come from the daily_aggregates table
-            // For now, estimate based on activity
-            if (activity.avg_hr && activity.max_hr) {
-                const hrReserve = (activity.avg_hr - 60) / (activity.max_hr - 60);
-                if (hrReserve > 0.8) {
-                    aggregated.z4_min += (activity.duration_s / 60) * 0.5;
-                    aggregated.z5_min += (activity.duration_s / 60) * 0.3;
-                }
-            }
-        }
-
-        // Determine primary activity type
-        const typeCounts = {};
-        for (const activity of activities) {
-            typeCounts[activity.type] = (typeCounts[activity.type] || 0) + (activity.duration_s || 0);
-        }
-        
-        const primaryType = Object.keys(typeCounts).reduce((a, b) => 
-            typeCounts[a] > typeCounts[b] ? a : b, 
-            null
-        );
-        aggregated.type = primaryType;
-
-        return aggregated;
     }
 
     /**
@@ -203,54 +171,27 @@ class CoordinatorContext {
      */
     async calculateDataConfidence(userId) {
         try {
-            const confidence = {
-                recent7days: 0,
-                sessionDetail: 0,
-                trend: 'flat'
-            };
-
-            // Calculate recent7days: share of days with HR data
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-            sevenDaysAgo.setHours(0, 0, 0, 0);
-
-            // Query last 7 days of activities
-            // const { data } = await supabase
-            //     .from('activities')
-            //     .select('has_hr, avg_hr, source_set')
-            //     .eq('user_id', userId)
-            //     .gte('start_ts', sevenDaysAgo.toISOString());
-
-            // if (data && data.length > 0) {
-            //     const daysWithHR = new Set();
-            //     let totalRichness = 0;
+            // Use real database queries if available
+            if (this.dbClient) {
+                const confidence = await this.dbClient.calculateDataConfidence(userId);
                 
-            //     for (const activity of data) {
-            //         const date = new Date(activity.start_ts).toISOString().split('T')[0];
-            //         if (activity.has_hr || activity.avg_hr) {
-            //             daysWithHR.add(date);
-            //         }
-            //         
-            //         // Calculate richness from source_set
-            //         if (activity.source_set && Object.keys(activity.source_set).length > 0) {
-            //             const sources = Object.values(activity.source_set);
-            //             const avgRichness = sources.reduce((sum, s) => sum + (s.richness || 0), 0) / sources.length;
-            //             totalRichness += avgRichness;
-            //         }
-            //     }
+                this.logger.debug('Data confidence calculated from database', {
+                    userId,
+                    recent7days: confidence.recent7days,
+                    sessionDetail: confidence.sessionDetail,
+                    dataPoints: confidence.dataPoints
+                });
                 
-            //     confidence.recent7days = daysWithHR.size / 7;
-            //     confidence.sessionDetail = totalRichness / data.length;
-            // }
+                return confidence;
+            }
 
-            // Determine trend (placeholder - would analyze metrics over time)
-            confidence.trend = 'flat';
-
-            return confidence;
+            // Fallback: return default confidence
+            this.logger.warn('Using fallback data confidence - no database connection');
+            return { recent7days: 0, sessionDetail: 0, trend: 'flat', dataPoints: 0 };
 
         } catch (error) {
             this.logger.error('Error calculating data confidence:', error);
-            return { recent7days: 0, sessionDetail: 0, trend: 'flat' };
+            return { recent7days: 0, sessionDetail: 0, trend: 'flat', dataPoints: 0 };
         }
     }
 

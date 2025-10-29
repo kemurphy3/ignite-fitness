@@ -5,9 +5,19 @@ const STRAVA_TOKENS = {
 };
 const jwt = require('jsonwebtoken');
 const { createLogger } = require('./utils/safe-logging');
+const RateLimiter = require('./utils/rate-limiter');
 
 // Create safe logger for this context
 const logger = createLogger('strava-proxy');
+
+// Initialize rate limiter for Strava API
+const rateLimiter = new RateLimiter({
+    maxRequests: 600, // Strava limit: 600 requests per 15 minutes
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    maxRetries: 3,
+    baseDelayMs: 1000,
+    logger: logger
+});
 
 // Security headers for all responses
 const securityHeaders = {
@@ -144,17 +154,19 @@ exports.handler = async (event, context) => {
                     };
                 }
                 
-                response = await fetch('https://www.strava.com/oauth/token', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    body: new URLSearchParams({
-                        client_id: STRAVA_TOKENS.clientId,
-                        client_secret: STRAVA_TOKENS.clientSecret,
-                        refresh_token: refreshToken,
-                        grant_type: 'refresh_token'
-                    })
+                response = await rateLimiter.executeRequest(async () => {
+                    return await fetch('https://www.strava.com/oauth/token', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: new URLSearchParams({
+                            client_id: STRAVA_TOKENS.clientId,
+                            client_secret: STRAVA_TOKENS.clientSecret,
+                            refresh_token: refreshToken,
+                            grant_type: 'refresh_token'
+                        })
+                    });
                 });
                 break;
 
@@ -174,11 +186,13 @@ exports.handler = async (event, context) => {
                 const page = data?.page || 1;
                 const perPage = data?.per_page || 30;
                 
-                response = await fetch(`https://www.strava.com/api/v3/athlete/activities?page=${page}&per_page=${perPage}`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`
-                    }
+                response = await rateLimiter.executeRequest(async () => {
+                    return await fetch(`https://www.strava.com/api/v3/athlete/activities?page=${page}&per_page=${perPage}`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`
+                        }
+                    });
                 });
                 break;
 
@@ -195,11 +209,13 @@ exports.handler = async (event, context) => {
                     };
                 }
                 
-                response = await fetch(`https://www.strava.com/api/v3/activities/${data.activityId}`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`
-                    }
+                response = await rateLimiter.executeRequest(async () => {
+                    return await fetch(`https://www.strava.com/api/v3/activities/${data.activityId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`
+                        }
+                    });
                 });
                 break;
 
@@ -216,13 +232,27 @@ exports.handler = async (event, context) => {
                     };
                 }
                 
-                response = await fetch('https://www.strava.com/api/v3/athlete', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`
-                    }
+                response = await rateLimiter.executeRequest(async () => {
+                    return await fetch('https://www.strava.com/api/v3/athlete', {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`
+                        }
+                    });
                 });
                 break;
+
+            case 'get_rate_limit_status':
+                // Return current rate limiter status
+                const status = rateLimiter.getStatus();
+                return {
+                    statusCode: 200,
+                    headers: securityHeaders,
+                    body: JSON.stringify({
+                        success: true,
+                        rateLimitStatus: status
+                    })
+                };
 
             default:
                 return {
@@ -245,10 +275,35 @@ exports.handler = async (event, context) => {
         };
 
     } catch (error) {
+        // Handle rate limiting errors specifically
+        if (error.message.includes('Rate limit exceeded') || 
+            error.message.includes('Circuit breaker')) {
+            logger.warn('Rate limit error', {
+                error_message: error.message,
+                user_id: authResult.userId
+            });
+            
+            return {
+                statusCode: 429,
+                headers: {
+                    ...securityHeaders,
+                    'Retry-After': '60' // Suggest retry after 60 seconds
+                },
+                body: JSON.stringify({
+                    error: 'RATE_LIMIT_EXCEEDED',
+                    message: error.message,
+                    code: 'RATE_LIMITED',
+                    retryAfter: 60
+                })
+            };
+        }
+        
         logger.error('Strava proxy failed', {
             error_type: error.name,
-            error_message: error.message
+            error_message: error.message,
+            user_id: authResult.userId
         });
+        
         return {
             statusCode: 500,
             headers: securityHeaders,

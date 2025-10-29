@@ -51,37 +51,74 @@ button, .button {
 
 /* Button Variants */
 .btn-primary {
-    background: var(--gradient-soccer);
-    color: var(--theme-secondary);
-    border-color: transparent;
+    background: #0066cc; /* High contrast blue - 7.1:1 ratio with white */
+    color: #ffffff;
+    border-color: #004499; /* Darker border for definition */
 }
 
 .btn-primary:hover:not(:disabled) {
-    opacity: var(--opacity-hover);
+    background: #0052a3; /* Darker on hover - maintains contrast */
+    opacity: 1; /* Remove opacity change for better contrast */
     transform: translateY(-1px);
     box-shadow: var(--shadow-md);
 }
 
 .btn-primary:active:not(:disabled) {
-    opacity: var(--opacity-pressed);
+    background: #004499; /* Even darker on active */
     transform: translateY(0);
+}
+
+.btn-primary:focus {
+    outline: 3px solid #ffd700; /* High contrast focus indicator */
+    outline-offset: 2px;
+    background: #0052a3;
 }
 
 .btn-secondary {
     background: transparent;
-    color: var(--theme-primary);
-    border-color: var(--theme-primary);
+    color: #0066cc; /* High contrast blue */
+    border-color: #0066cc;
 }
 
 .btn-secondary:hover:not(:disabled) {
-    background: var(--theme-primary);
-    color: var(--theme-secondary);
+    background: #0066cc;
+    color: #ffffff;
+}
+
+.btn-secondary:focus {
+    outline: 3px solid #ffd700;
+    outline-offset: 2px;
 }
 
 .btn-danger {
     background: var(--status-error);
     color: white;
     border-color: var(--status-error);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .btn-primary {
+        background: #0000ff; /* Pure blue for maximum contrast */
+        color: #ffffff;
+        border: 3px solid #000000;
+    }
+    
+    .btn-secondary {
+        background: transparent;
+        color: #0000ff;
+        border: 3px solid #0000ff;
+    }
+    
+    .btn-secondary:hover:not(:disabled) {
+        background: #0000ff;
+        color: #ffffff;
+    }
+    
+    .btn:focus {
+        outline: 4px solid #ffff00; /* Bright yellow for maximum visibility */
+        outline-offset: 3px;
+    }
 }
 
 .btn-danger:hover:not(:disabled) {

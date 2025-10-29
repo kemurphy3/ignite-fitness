@@ -21,6 +21,18 @@
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json">
     
+    <!-- Critical Resource Preloading -->
+    <link rel="preload" href="/styles/main.css" as="style" crossorigin="anonymous">
+    <link rel="preload" href="/styles/mobile-first.css" as="style" crossorigin="anonymous">
+    <link rel="preload" href="/js/app.js" as="script" crossorigin="anonymous">
+    <link rel="preload" href="/js/modules/ui/VirtualList.js" as="script" crossorigin="anonymous">
+    <link rel="preload" href="/js/modules/cache/LRUCache.js" as="script" crossorigin="anonymous">
+    <link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+    
+    <!-- DNS Prefetch for External Resources -->
+    <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
+    <link rel="dns-prefetch" href="//fonts.googleapis.com">
+    
     <!-- Icons -->
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
@@ -1911,18 +1923,101 @@
         .skip-link:focus {
             top: 6px;
         }
+        
+        /* Skip Links */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 6px;
+            background: #000000;
+            color: #ffffff;
+            padding: 8px;
+            text-decoration: none;
+            border-radius: 4px;
+            z-index: 1000;
+            font-weight: bold;
+        }
+        
+        .skip-link:focus {
+            top: 6px;
+        }
+        
+        /* Semantic HTML Structure */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        .app-header {
+            order: 1;
+        }
+        
+        .app-content {
+            order: 2;
+            flex: 1;
+        }
+        
+        .bottom-navigation {
+            order: 3;
+        }
+        
+        .app-footer {
+            order: 4;
+        }
+        
+        /* Ensure proper heading hierarchy */
+        h1, h2, h3, h4, h5, h6 {
+            margin-top: 0;
+            margin-bottom: 0.5em;
+        }
+        
+        /* Screen reader only content */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
     </style>
 </head>
 <body>
+    <!-- Skip Links for Accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <a href="#navigation" class="skip-link">Skip to navigation</a>
+    
     <!-- Main App Container for SPA -->
     <div class="app-container">
-        <div id="app-content" class="app-content">
+        <!-- Header with Navigation -->
+        <header id="app-header" class="app-header" role="banner">
+            <nav id="navigation" class="main-navigation" role="navigation" aria-label="Main navigation">
+                <!-- Navigation content will be loaded here -->
+            </nav>
+        </header>
+        
+        <!-- Main Content Area -->
+        <main id="main-content" class="app-content" role="main">
             <!-- Dynamic content will be loaded here by Router -->
             <div class="loading-state">
-                <div class="loading-spinner"></div>
+                <div class="loading-spinner" aria-hidden="true"></div>
                 <p>Loading IgniteFitness...</p>
             </div>
-        </div>
+        </main>
+        
+        <!-- Bottom Navigation -->
+        <nav id="bottom-navigation" class="bottom-navigation" role="navigation" aria-label="Bottom navigation">
+            <!-- Bottom navigation will be loaded here -->
+        </nav>
+        
+        <!-- Footer -->
+        <footer id="app-footer" class="app-footer" role="contentinfo">
+            <!-- Footer content will be loaded here -->
+        </footer>
     </div>
 
     <!-- Legacy content (to be migrated) -->
@@ -2901,6 +2996,7 @@
 
     <!-- Load modular JavaScript architecture -->
     <!-- Core Modules -->
+    <script src="js/modules/core/ErrorBoundary.js"></script>
     <script src="js/modules/core/EventBus.js"></script>
     <script src="js/modules/core/SafeLogger.js"></script>
     <script src="js/modules/core/LegalCopy.js"></script>
@@ -2924,6 +3020,7 @@
     <script src="js/modules/ui/PeriodizationView.js"></script>
     <script src="js/modules/ui/WhyThis.js"></script>
     <script src="js/modules/ui/UpgradeNudge.js"></script>
+    <script src="js/modules/ui/components/ErrorAlert.js"></script>
     <script src="js/modules/ui/components/WhyPanel.js"></script>
     <script src="js/modules/ui/charts/Trends.js"></script>
     <script src="js/modules/ui/StravaImportUI.js"></script>
@@ -3010,6 +3107,9 @@
     <script src="js/modules/habits/HabitTracker.js"></script>
     
     <!-- AI Expert Coordination Brain -->
+    <script src="js/modules/ai/AIDataValidator.js"></script>
+    <script src="netlify/functions/utils/ai-context-database.js"></script>
+    <script src="js/modules/ai/context/CoordinatorContext.js"></script>
     <script src="js/modules/ai/experts/StrengthCoach.js"></script>
     <script src="js/modules/ai/experts/SportsCoach.js"></script>
     <script src="js/modules/ai/experts/PhysioCoach.js"></script>

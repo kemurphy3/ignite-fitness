@@ -1,10 +1,12 @@
 /**
  * WorkoutTimer - Provides session and rest countdown timers
  * Handles overall session timer + per-set rest periods
+ * Extends BaseComponent for automatic cleanup
  */
-class WorkoutTimer {
+class WorkoutTimer extends BaseComponent {
     constructor() {
-        this.logger = window.SafeLogger || console;
+        super();
+        
         this.storageManager = window.StorageManager;
         
         this.sessionTimer = null;
@@ -89,7 +91,7 @@ class WorkoutTimer {
      */
     stopSession() {
         if (this.sessionTimer) {
-            clearInterval(this.sessionTimer);
+            this.removeTimer(this.sessionTimer);
             this.sessionTimer = null;
         }
 
@@ -105,10 +107,10 @@ class WorkoutTimer {
      */
     updateSessionTimer() {
         if (this.sessionTimer) {
-            clearInterval(this.sessionTimer);
+            this.removeTimer(this.sessionTimer);
         }
 
-        this.sessionTimer = setInterval(() => {
+        this.sessionTimer = this.addTimer(() => {
             if (!this.isSessionActive || this.isPaused) {
                 return;
             }
@@ -142,7 +144,7 @@ class WorkoutTimer {
      */
     startRest(duration, callback = null) {
         if (this.restTimer) {
-            clearInterval(this.restTimer);
+            this.removeTimer(this.restTimer);
         }
 
         this.restDuration = duration;
@@ -164,12 +166,12 @@ class WorkoutTimer {
      */
     updateRestTimer() {
         if (this.restTimer) {
-            clearInterval(this.restTimer);
+            this.removeTimer(this.restTimer);
         }
 
-        this.restTimer = setInterval(() => {
+        this.restTimer = this.addTimer(() => {
             if (!this.isRestActive) {
-                clearInterval(this.restTimer);
+                this.removeTimer(this.restTimer);
                 return;
             }
 
@@ -224,7 +226,7 @@ class WorkoutTimer {
      */
     stopRest() {
         if (this.restTimer) {
-            clearInterval(this.restTimer);
+            this.removeTimer(this.restTimer);
             this.restTimer = null;
         }
 

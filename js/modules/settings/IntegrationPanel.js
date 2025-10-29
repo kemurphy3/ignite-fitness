@@ -1,443 +1,454 @@
 /**
- * IntegrationPanel - Data export and OAuth integrations
- * Provides CSV/JSON/PDF export and OAuth sync with external services
+ * IntegrationPanel - Settings panel for managing external integrations
+ * Provides secure disconnect functionality for Strava and other services
  */
-class IntegrationPanel {
-    constructor() {
-        this.logger = window.SafeLogger || console;
-        this.storageManager = window.StorageManager;
-        this.authManager = window.AuthManager;
-        this.eventBus = window.EventBus;
-        
-        this.integrations = {
-            strava: { enabled: false, connected: false },
-            googleFit: { enabled: false, connected: false }
-        };
-        
-        this.loadIntegrations();
-    }
 
+class IntegrationPanel extends BaseComponent {
+    constructor(options = {}) {
+        super(options);
+        
+        this.container = options.container;
+        this.userId = options.userId;
+        this.integrations = new Map();
+        
+        this.logger = window.SafeLogger || console;
+        
+        this.init();
+    }
+    
+    /**
+     * Initialize integration panel
+     */
+    init() {
+        this.loadIntegrations();
+        this.render();
+        this.bindEvents();
+        
+        this.logger.info('IntegrationPanel initialized');
+    }
+    
+    /**
+     * Load user integrations
+     */
+    async loadIntegrations() {
+        try {
+            const response = await fetch('/.netlify/functions/get-integrations', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${this.getAuthToken()}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                this.integrations = new Map(data.integrations.map(integration => [
+                    integration.provider,
+                    integration
+                ]));
+            }
+            
+        } catch (error) {
+            this.logger.error('Failed to load integrations:', error);
+        }
+    }
+    
     /**
      * Render integration panel
-     * @returns {HTMLElement} Panel element
      */
     render() {
-        const panel = document.createElement('div');
-        panel.className = 'integration-panel';
-        panel.innerHTML = `
-            <div class="panel-header">
-                <h2>📤 Data & Integrations</h2>
-                <button class="btn-secondary" onclick="window.IntegrationPanel.showPrivacyScreen()">
-                    🔒 Privacy Settings
-                </button>
-            </div>
-            
-            <!-- Export Options -->
-            <div class="export-section">
-                <h3>Export Your Data</h3>
-                <div class="export-options">
-                    <button class="btn-primary" onclick="window.IntegrationPanel.exportCSV()">
-                        📄 Export CSV
-                    </button>
-                    <button class="btn-primary" onclick="window.IntegrationPanel.exportJSON()">
-                        📦 Export JSON
-                    </button>
-                    <button class="btn-primary" onclick="window.IntegrationPanel.exportPDF()">
-                        📊 Weekly Summary PDF
-                    </button>
+        this.container.innerHTML = `
+            <div class="integration-panel">
+                <div class="panel-header">
+                    <h3>Connected Services</h3>
+                    <p>Manage your external fitness data integrations</p>
+                </div>
+                
+                <div class="integrations-list">
+                    ${this.renderIntegrationList()}
+                </div>
+                
+                <div class="integration-help">
+                    <h4>About Integrations</h4>
+                    <p>Connect your fitness apps to automatically import workout data and get personalized recommendations.</p>
+                    <ul>
+                        <li>Data is encrypted and stored securely</li>
+                        <li>You can disconnect at any time</li>
+                        <li>Disconnecting will remove all imported data</li>
+                    </ul>
                 </div>
             </div>
-            
-            <!-- OAuth Integrations -->
-            <div class="integrations-section">
-                <h3>Connect External Services</h3>
-                ${this.renderStravaIntegration()}
-                ${this.renderGoogleFitIntegration()}
-            </div>
         `;
-        
-        return panel;
     }
-
+    
     /**
-     * Render Strava integration
-     * @returns {string} Strava HTML
+     * Render integration list
+     * @returns {string} HTML for integration list
      */
-    renderStravaIntegration() {
-        const strava = this.integrations.strava;
+    renderIntegrationList() {
+        const integrations = [
+            {
+                provider: 'strava',
+                name: 'Strava',
+                description: 'Import your running and cycling activities',
+                icon: '🏃',
+                connected: this.integrations.has('strava'),
+                data: this.integrations.get('strava')
+            }
+        ];
+        
+        return integrations.map(integration => `
+            <div class="integration-item ${integration.connected ? 'connected' : 'disconnected'}">
+                <div class="integration-info">
+                    <div class="integration-icon">${integration.icon}</div>
+                    <div class="integration-details">
+                        <h4>${integration.name}</h4>
+                        <p>${integration.description}</p>
+                        ${integration.connected ? this.renderConnectionDetails(integration.data) : ''}
+                    </div>
+                </div>
+                
+                <div class="integration-actions">
+                    ${integration.connected ? 
+                        this.renderDisconnectButton(integration) : 
+                        this.renderConnectButton(integration)
+                    }
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    /**
+     * Render connection details
+     * @param {Object} data - Integration data
+     * @returns {string} HTML for connection details
+     */
+    renderConnectionDetails(data) {
+        const connectedDate = new Date(data.created_at).toLocaleDateString();
+        const lastSync = data.last_sync ? new Date(data.last_sync).toLocaleDateString() : 'Never';
         
         return `
-            <div class="integration-item">
-                <div class="integration-header">
-                    <div class="integration-info">
-                        <span class="integration-icon">🚴</span>
-                        <div>
-                            <h4>Strava</h4>
-                            <p>Sync workouts and activities</p>
-                        </div>
-                    </div>
-                    <div class="integration-status">
-                        ${strava.connected ? 
-                            '<span class="status-badge connected">Connected</span>' : 
-                            '<span class="status-badge disconnected">Not Connected</span>'
-                        }
-                    </div>
+            <div class="connection-details">
+                <div class="detail-item">
+                    <span class="detail-label">Connected:</span>
+                    <span class="detail-value">${connectedDate}</span>
                 </div>
-                <div class="integration-controls">
-                    <label class="consent-toggle">
-                        <input type="checkbox" ${strava.enabled ? 'checked' : ''} 
-                               onchange="window.IntegrationPanel.toggleIntegration('strava', this.checked)">
-                        <span>Enable Strava sync</span>
-                    </label>
-                    ${!strava.connected && strava.enabled ? `
-                        <button class="btn-primary small" onclick="window.IntegrationPanel.connectStrava()">
-                            Connect Strava
-                        </button>
-                    ` : strava.connected ? `
-                        <button class="btn-secondary small" onclick="window.IntegrationPanel.disconnectStrava()">
-                            Disconnect
-                        </button>
-                    ` : ''}
+                <div class="detail-item">
+                    <span class="detail-label">Last Sync:</span>
+                    <span class="detail-value">${lastSync}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Activities:</span>
+                    <span class="detail-value">${data.activity_count || 0}</span>
                 </div>
             </div>
         `;
     }
-
+    
     /**
-     * Render Google Fit integration
-     * @returns {string} Google Fit HTML
+     * Render connect button
+     * @param {Object} integration - Integration data
+     * @returns {string} HTML for connect button
      */
-    renderGoogleFitIntegration() {
-        const googleFit = this.integrations.googleFit;
-        
+    renderConnectButton(integration) {
         return `
-            <div class="integration-item">
-                <div class="integration-header">
-                    <div class="integration-info">
-                        <span class="integration-icon">🏃</span>
-                        <div>
-                            <h4>Google Fit</h4>
-                            <p>Sync health and activity data</p>
-                        </div>
-                    </div>
-                    <div class="integration-status">
-                        ${googleFit.connected ? 
-                            '<span class="status-badge connected">Connected</span>' : 
-                            '<span class="status-badge disconnected">Not Connected</span>'
-                        }
-                    </div>
-                </div>
-                <div class="integration-controls">
-                    <label class="consent-toggle">
-                        <input type="checkbox" ${googleFit.enabled ? 'checked' : ''} 
-                               onchange="window.IntegrationPanel.toggleIntegration('googleFit', this.checked)">
-                        <span>Enable Google Fit sync</span>
-                    </label>
-                    ${!googleFit.connected && googleFit.enabled ? `
-                        <button class="btn-primary small" onclick="window.IntegrationPanel.connectGoogleFit()">
-                            Connect Google Fit
-                        </button>
-                    ` : googleFit.connected ? `
-                        <button class="btn-secondary small" onclick="window.IntegrationPanel.disconnectGoogleFit()">
-                            Disconnect
-                        </button>
-                    ` : ''}
-                </div>
-            </div>
+            <button class="btn btn-primary connect-btn" data-provider="${integration.provider}">
+                Connect ${integration.name}
+            </button>
         `;
     }
-
+    
     /**
-     * Export data to CSV
+     * Render disconnect button
+     * @param {Object} integration - Integration data
+     * @returns {string} HTML for disconnect button
      */
-    async exportCSV() {
-        try {
-            const userId = this.authManager?.getCurrentUsername();
-            if (!userId) {
-                alert('Please log in to export data');
-                return;
-            }
-            
-            this.logger.debug('Exporting CSV for user:', userId);
-            
-            // Call export API
-            const response = await this.callExportAPI(userId, 'csv');
-            
-            // Download file
-            this.downloadFile(response, 'ignitefitness-export.csv', 'text/csv');
-            
-            this.logger.audit('DATA_EXPORTED', { format: 'csv', userId });
-        } catch (error) {
-            this.logger.error('Failed to export CSV', error);
-            alert('Failed to export data. Please try again.');
-        }
+    renderDisconnectButton(integration) {
+        return `
+            <button class="btn btn-danger disconnect-btn" data-provider="${integration.provider}">
+                Disconnect
+            </button>
+        `;
     }
-
+    
     /**
-     * Export data to JSON
+     * Bind event listeners
      */
-    async exportJSON() {
-        try {
-            const userId = this.authManager?.getCurrentUsername();
-            if (!userId) {
-                alert('Please log in to export data');
-                return;
-            }
-            
-            this.logger.debug('Exporting JSON for user:', userId);
-            
-            const response = await this.callExportAPI(userId, 'json');
-            
-            this.downloadFile(response, 'ignitefitness-export.json', 'application/json');
-            
-            this.logger.audit('DATA_EXPORTED', { format: 'json', userId });
-        } catch (error) {
-            this.logger.error('Failed to export JSON', error);
-            alert('Failed to export data. Please try again.');
-        }
-    }
-
-    /**
-     * Export PDF weekly summary
-     */
-    async exportPDF() {
-        try {
-            const userId = this.authManager?.getCurrentUsername();
-            if (!userId) {
-                alert('Please log in to export data');
-                return;
-            }
-            
-            this.logger.debug('Exporting PDF for user:', userId);
-            
-            // Generate PDF summary
-            const pdfData = this.generatePDFSummary(userId);
-            
-            this.downloadFile(pdfData, 'ignitefitness-weekly-summary.pdf', 'application/pdf');
-            
-            this.logger.audit('DATA_EXPORTED', { format: 'pdf', userId });
-        } catch (error) {
-            this.logger.error('Failed to export PDF', error);
-            alert('Failed to export PDF. Please try again.');
-        }
-    }
-
-    /**
-     * Call export API
-     * @param {string} userId - User ID
-     * @param {string} format - Format
-     * @returns {Promise<string>} Export data
-     */
-    async callExportAPI(userId, format) {
-        // For now, use localStorage data
-        const allData = this.getAllUserData(userId);
-        
-        if (format === 'csv') {
-            return this.convertToCSV(allData);
-        } else if (format === 'json') {
-            return JSON.stringify(allData, null, 2);
-        }
-        
-        return allData;
-    }
-
-    /**
-     * Get all user data
-     * @param {string} userId - User ID
-     * @returns {Object} All user data
-     */
-    getAllUserData(userId) {
-        return {
-            userId,
-            exportedAt: new Date().toISOString(),
-            profile: this.storageManager.getUserProfile(userId),
-            readinessLogs: this.storageManager.getReadinessLogs(),
-            sessionLogs: this.storageManager.getSessionLogs(),
-            progressionEvents: this.storageManager.getProgressionEvents(),
-            injuryFlags: this.storageManager.getInjuryFlags(),
-            preferences: this.storageManager.getPreferences(userId)
-        };
-    }
-
-    /**
-     * Convert data to CSV
-     * @param {Object} data - Data object
-     * @returns {string} CSV string
-     */
-    convertToCSV(data) {
-        const lines = ['Type,Date,Data'];
-        
-        if (data.readinessLogs) {
-            Object.values(data.readinessLogs).forEach(log => {
-                lines.push(`Readiness,${log.date},Score: ${log.readinessScore}`);
+    bindEvents() {
+        // Connect buttons
+        this.container.querySelectorAll('.connect-btn').forEach(btn => {
+            this.addEventListener(btn, 'click', (event) => {
+                const provider = event.target.dataset.provider;
+                this.handleConnect(provider);
             });
-        }
+        });
         
-        if (data.sessionLogs) {
-            Object.values(data.sessionLogs).forEach(log => {
-                lines.push(`Session,${log.date},Workout: ${log.workout_id}`);
+        // Disconnect buttons
+        this.container.querySelectorAll('.disconnect-btn').forEach(btn => {
+            this.addEventListener(btn, 'click', (event) => {
+                const provider = event.target.dataset.provider;
+                this.handleDisconnect(provider);
             });
+        });
+    }
+    
+    /**
+     * Handle connect action
+     * @param {string} provider - Integration provider
+     */
+    async handleConnect(provider) {
+        try {
+            if (provider === 'strava') {
+                await this.connectStrava();
+            }
+        } catch (error) {
+            this.logger.error('Connect failed:', error);
+            this.showError('Failed to connect to ' + provider);
         }
-        
-        return lines.join('\n');
     }
-
+    
     /**
-     * Generate PDF summary
-     * @param {string} userId - User ID
-     * @returns {string} PDF data
+     * Handle disconnect action
+     * @param {string} provider - Integration provider
      */
-    generatePDFSummary(userId) {
-        // For now, return HTML that can be printed to PDF
-        const data = this.getAllUserData(userId);
-        
-        return `
-            <html>
-                <head>
-                    <title>IgniteFitness Weekly Summary</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; padding: 20px; }
-                        h1 { color: #00a651; }
-                        table { width: 100%; border-collapse: collapse; }
-                        th, td { padding: 8px; text-align: left; border: 1px solid #ddd; }
-                        th { background: #f8f9fa; }
-                    </style>
-                </head>
-                <body>
-                    <h1>Weekly Summary</h1>
-                    <p>Exported: ${new Date().toLocaleDateString()}</p>
-                    <h2>Recent Workouts</h2>
-                    <!-- Summary data here -->
-                </body>
-            </html>
-        `;
+    async handleDisconnect(provider) {
+        try {
+            // Show confirmation dialog
+            const confirmed = await this.showDisconnectConfirmation(provider);
+            if (!confirmed) return;
+            
+            if (provider === 'strava') {
+                await this.disconnectStrava();
+            }
+            
+            // Reload integrations
+            await this.loadIntegrations();
+            this.render();
+            this.bindEvents();
+            
+        } catch (error) {
+            this.logger.error('Disconnect failed:', error);
+            this.showError('Failed to disconnect from ' + provider);
+        }
     }
-
+    
     /**
-     * Download file
-     * @param {string} content - File content
-     * @param {string} filename - Filename
-     * @param {string} mimeType - MIME type
-     */
-    downloadFile(content, filename, mimeType) {
-        const blob = new Blob([content], { type: mimeType });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
-
-    /**
-     * Connect Strava
+     * Connect to Strava
      */
     async connectStrava() {
-        try {
-            // OAuth flow for Strava
-            const clientId = process.env.STRAVA_CLIENT_ID || 'your_client_id';
-            const redirectUri = window.location.origin + '/callback.html';
-            
-            const authUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=activity:read_all`;
-            
-            window.location.href = authUrl;
-        } catch (error) {
-            this.logger.error('Failed to connect Strava', error);
-        }
-    }
-
-    /**
-     * Connect Google Fit
-     */
-    async connectGoogleFit() {
-        try {
-            // OAuth flow for Google Fit
-            // Implementation similar to Strava
-            this.logger.debug('Connecting Google Fit');
-        } catch (error) {
-            this.logger.error('Failed to connect Google Fit', error);
-        }
-    }
-
-    /**
-     * Disconnect Strava
-     */
-    disconnectStrava() {
-        this.integrations.strava.connected = false;
-        this.saveIntegrations();
-        this.logger.debug('Strava disconnected');
-    }
-
-    /**
-     * Disconnect Google Fit
-     */
-    disconnectGoogleFit() {
-        this.integrations.googleFit.connected = false;
-        this.saveIntegrations();
-        this.logger.debug('Google Fit disconnected');
-    }
-
-    /**
-     * Toggle integration
-     * @param {string} integration - Integration name
-     * @param {boolean} enabled - Enabled state
-     */
-    toggleIntegration(integration, enabled) {
-        this.integrations[integration].enabled = enabled;
-        this.saveIntegrations();
-    }
-
-    /**
-     * Load integrations
-     */
-    loadIntegrations() {
-        try {
-            const stored = localStorage.getItem('ignitefitness_integrations');
-            if (stored) {
-                this.integrations = { ...this.integrations, ...JSON.parse(stored) };
+        const stravaAuthUrl = this.buildStravaAuthUrl();
+        window.open(stravaAuthUrl, '_blank', 'width=600,height=700');
+        
+        // Listen for auth completion
+        this.addEventListener(window, 'message', (event) => {
+            if (event.data.type === 'strava_auth_complete') {
+                this.handleStravaAuthComplete(event.data);
             }
-        } catch (error) {
-            this.logger.error('Failed to load integrations', error);
-        }
+        });
     }
-
+    
     /**
-     * Save integrations
+     * Build Strava authorization URL
+     * @returns {string} Authorization URL
      */
-    saveIntegrations() {
+    buildStravaAuthUrl() {
+        const clientId = process.env.STRAVA_CLIENT_ID || 'your_client_id';
+        const redirectUri = encodeURIComponent(window.location.origin + '/auth/strava/callback');
+        const scope = 'read,activity:read';
+        const state = this.generateState();
+        
+        return `https://www.strava.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=${state}`;
+    }
+    
+    /**
+     * Handle Strava auth completion
+     * @param {Object} data - Auth data
+     */
+    async handleStravaAuthComplete(data) {
         try {
-            localStorage.setItem('ignitefitness_integrations', JSON.stringify(this.integrations));
+            const response = await fetch('/.netlify/functions/strava-oauth', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    code: data.code,
+                    state: data.state
+                })
+            });
+            
+            if (response.ok) {
+                this.showSuccess('Successfully connected to Strava!');
+                await this.loadIntegrations();
+                this.render();
+                this.bindEvents();
+            } else {
+                throw new Error('Auth failed');
+            }
+            
         } catch (error) {
-            this.logger.error('Failed to save integrations', error);
+            this.logger.error('Strava auth completion failed:', error);
+            this.showError('Failed to complete Strava connection');
         }
     }
-
+    
     /**
-     * Show privacy screen
+     * Disconnect from Strava
      */
-    showPrivacyScreen() {
-        alert('Privacy settings: You can export or delete all your data. Coming soon!');
-    }
-
-    /**
-     * Delete all data
-     */
-    async deleteAllData() {
-        if (confirm('Are you sure you want to delete all your data? This cannot be undone.')) {
-            await this.storageManager.clearAllData();
-            this.logger.audit('DATA_DELETED', { userId: this.authManager?.getCurrentUsername() });
-            alert('All data deleted. You will be logged out.');
-            window.location.reload();
+    async disconnectStrava() {
+        const integration = this.integrations.get('strava');
+        if (!integration) {
+            throw new Error('Strava integration not found');
         }
+        
+        const response = await fetch('/.netlify/functions/strava-revoke-token', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${this.getAuthToken()}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                access_token: integration.access_token,
+                refresh_token: integration.refresh_token,
+                user_id: this.userId
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Token revocation failed');
+        }
+        
+        this.showSuccess('Successfully disconnected from Strava');
+    }
+    
+    /**
+     * Show disconnect confirmation
+     * @param {string} provider - Provider name
+     * @returns {Promise<boolean>} Confirmation result
+     */
+    async showDisconnectConfirmation(provider) {
+        return new Promise((resolve) => {
+            const modal = document.createElement('div');
+            modal.className = 'disconnect-modal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+            
+            modal.innerHTML = `
+                <div style="
+                    background: var(--color-surface);
+                    border-radius: 12px;
+                    padding: 24px;
+                    max-width: 400px;
+                    width: 90%;
+                    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+                ">
+                    <h3 style="margin: 0 0 16px 0; color: var(--color-text);">Disconnect ${provider}?</h3>
+                    <p style="margin: 0 0 20px 0; color: var(--color-text-secondary);">
+                        This will remove all imported data from ${provider} and revoke access to your account.
+                    </p>
+                    <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                        <button class="btn btn-secondary cancel-btn">Cancel</button>
+                        <button class="btn btn-danger confirm-btn">Disconnect</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Handle button clicks
+            modal.querySelector('.cancel-btn').addEventListener('click', () => {
+                document.body.removeChild(modal);
+                resolve(false);
+            });
+            
+            modal.querySelector('.confirm-btn').addEventListener('click', () => {
+                document.body.removeChild(modal);
+                resolve(true);
+            });
+            
+            // Close on backdrop click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                    resolve(false);
+                }
+            });
+        });
+    }
+    
+    /**
+     * Show success message
+     * @param {string} message - Success message
+     */
+    showSuccess(message) {
+        this.showNotification(message, 'success');
+    }
+    
+    /**
+     * Show error message
+     * @param {string} message - Error message
+     */
+    showError(message) {
+        this.showNotification(message, 'error');
+    }
+    
+    /**
+     * Show notification
+     * @param {string} message - Message
+     * @param {string} type - Notification type
+     */
+    showNotification(message, type) {
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'success' ? '#10b981' : '#ef4444'};
+            color: white;
+            padding: 16px 20px;
+            border-radius: 8px;
+            z-index: 10001;
+            max-width: 300px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        `;
+        
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+    
+    /**
+     * Generate state parameter
+     * @returns {string} State parameter
+     */
+    generateState() {
+        return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    }
+    
+    /**
+     * Get auth token
+     * @returns {string} Auth token
+     */
+    getAuthToken() {
+        return localStorage.getItem('auth_token') || '';
     }
 }
 
-// Create global instance
-window.IntegrationPanel = new IntegrationPanel();
-
-// Export for module systems
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = IntegrationPanel;
-}
+// Export for use in other modules
+window.IntegrationPanel = IntegrationPanel;

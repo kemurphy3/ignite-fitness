@@ -1,749 +1,597 @@
 /**
- * DataInspector - Admin/Debug view for verifying dedup + merges
- * Dev-only route: /#/admin/ingest
+ * DataInspector - Admin tool for inspecting and managing application data
+ * Provides deep insights into user data, cache performance, and system state
  */
-
 class DataInspector {
     constructor() {
         this.logger = window.SafeLogger || console;
-        this.storageManager = window.StorageManager;
-        this.eventBus = window.EventBus;
-        this.coordinator = window.ExpertCoordinator;
-        this.planCache = window.PlanCache;
+        this.isOpen = false;
+        this.currentView = 'overview';
+        this.data = {
+            users: [],
+            activities: [],
+            workouts: [],
+            cache: {},
+            system: {}
+        };
         
-        this.currentUserId = 1; // Mock user for admin view
-        this.activities = [];
-        this.isVisible = false;
+        this.init();
     }
-
+    
     /**
-     * Initialize the admin inspector
+     * Initialize data inspector
      */
     init() {
-        this.logger.info('Initializing DataInspector');
-        this.setupRoute();
-        this.setupUI();
+        this.logger.debug('DataInspector initialized');
     }
-
+    
     /**
-     * Setup admin route handling
+     * Open data inspector
      */
-    setupRoute() {
-        // Listen for hash changes
-        window.addEventListener('hashchange', () => {
-            this.handleRouteChange();
+    open() {
+        if (this.isOpen) return;
+        
+        this.createInspectorUI();
+        this.loadData();
+        this.isOpen = true;
+        
+        this.logger.info('DataInspector opened');
+    }
+    
+    /**
+     * Close data inspector
+     */
+    close() {
+        if (!this.isOpen) return;
+        
+        const inspector = document.getElementById('data-inspector');
+        if (inspector) {
+            inspector.remove();
+        }
+        
+        this.isOpen = false;
+        this.logger.info('DataInspector closed');
+    }
+    
+    /**
+     * Create inspector UI
+     */
+    createInspectorUI() {
+        const inspector = document.createElement('div');
+        inspector.id = 'data-inspector';
+        inspector.className = 'data-inspector';
+        inspector.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 10001;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
+        
+        const modal = document.createElement('div');
+        modal.className = 'data-inspector-modal';
+        modal.style.cssText = `
+            background: var(--color-surface);
+            border-radius: 12px;
+            width: 90%;
+            height: 90%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        `;
+        
+        // Header
+        const header = this.createHeader();
+        modal.appendChild(header);
+        
+        // Content
+        const content = this.createContent();
+        modal.appendChild(content);
+        
+        inspector.appendChild(modal);
+        document.body.appendChild(inspector);
+        
+        // Close on backdrop click
+        inspector.addEventListener('click', (e) => {
+            if (e.target === inspector) {
+                this.close();
+            }
         });
-
-        // Check initial route
-        this.handleRouteChange();
     }
-
+    
     /**
-     * Handle route changes
+     * Create header
+     * @returns {HTMLElement} Header element
      */
-    handleRouteChange() {
-        const hash = window.location.hash;
+    createHeader() {
+        const header = document.createElement('div');
+        header.className = 'data-inspector-header';
+        header.style.cssText = `
+            padding: 20px;
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        `;
         
-        if (hash === '#/admin/ingest') {
-            this.show();
-        } else if (this.isVisible) {
-            this.hide();
-        }
+        const title = document.createElement('h2');
+        title.textContent = 'Data Inspector';
+        title.style.cssText = `
+            margin: 0;
+            color: var(--color-text);
+            font-size: 24px;
+            font-weight: 600;
+        `;
+        
+        const closeButton = document.createElement('button');
+        closeButton.innerHTML = '✕';
+        closeButton.style.cssText = `
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--color-text-secondary);
+            padding: 8px;
+            border-radius: 4px;
+        `;
+        closeButton.addEventListener('click', () => this.close());
+        
+        header.appendChild(title);
+        header.appendChild(closeButton);
+        
+        return header;
     }
-
+    
     /**
-     * Show the admin inspector
+     * Create content
+     * @returns {HTMLElement} Content element
      */
-    async show() {
-        this.logger.info('Showing DataInspector');
-        this.isVisible = true;
+    createContent() {
+        const content = document.createElement('div');
+        content.className = 'data-inspector-content';
+        content.style.cssText = `
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        `;
         
-        // Create container if it doesn't exist
-        this.createContainer();
+        // Sidebar
+        const sidebar = this.createSidebar();
+        content.appendChild(sidebar);
         
-        // Load and display activities
-        await this.loadActivities();
-        this.renderActivities();
+        // Main content
+        const main = this.createMainContent();
+        content.appendChild(main);
         
-        // Show the container
-        const container = document.getElementById('data-inspector');
-        if (container) {
-            container.style.display = 'block';
-        }
+        return content;
     }
-
+    
     /**
-     * Hide the admin inspector
+     * Create sidebar
+     * @returns {HTMLElement} Sidebar element
      */
-    hide() {
-        this.logger.info('Hiding DataInspector');
-        this.isVisible = false;
+    createSidebar() {
+        const sidebar = document.createElement('div');
+        sidebar.className = 'data-inspector-sidebar';
+        sidebar.style.cssText = `
+            width: 250px;
+            background: var(--color-surface-secondary);
+            border-right: 1px solid var(--color-border);
+            padding: 20px;
+            overflow-y: auto;
+        `;
         
-        const container = document.getElementById('data-inspector');
-        if (container) {
-            container.style.display = 'none';
-        }
-    }
-
-    /**
-     * Create the admin container
-     */
-    createContainer() {
-        let container = document.getElementById('data-inspector');
+        const navItems = [
+            { id: 'overview', label: 'Overview', icon: '📊' },
+            { id: 'users', label: 'Users', icon: '👥' },
+            { id: 'activities', label: 'Activities', icon: '🏃' },
+            { id: 'workouts', label: 'Workouts', icon: '💪' },
+            { id: 'cache', label: 'Cache', icon: '🗄️' },
+            { id: 'system', label: 'System', icon: '⚙️' }
+        ];
         
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'data-inspector';
-            container.className = 'admin-inspector';
+        navItems.forEach(item => {
+            const navItem = document.createElement('div');
+            navItem.className = 'nav-item';
+            navItem.dataset.view = item.id;
+            navItem.style.cssText = `
+                padding: 12px 16px;
+                margin-bottom: 4px;
+                border-radius: 8px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                transition: background-color 0.2s ease;
+            `;
             
-            // Add to body
-            document.body.appendChild(container);
+            navItem.innerHTML = `
+                <span style="font-size: 18px;">${item.icon}</span>
+                <span style="font-weight: 500;">${item.label}</span>
+            `;
+            
+            navItem.addEventListener('click', () => {
+                this.switchView(item.id);
+            });
+            
+            sidebar.appendChild(navItem);
+        });
+        
+        return sidebar;
+    }
+    
+    /**
+     * Create main content
+     * @returns {HTMLElement} Main content element
+     */
+    createMainContent() {
+        const main = document.createElement('div');
+        main.className = 'data-inspector-main';
+        main.style.cssText = `
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        `;
+        
+        // Overview content
+        const overview = this.createOverviewContent();
+        main.appendChild(overview);
+        
+        return main;
+    }
+    
+    /**
+     * Create overview content
+     * @returns {HTMLElement} Overview content
+     */
+    createOverviewContent() {
+        const overview = document.createElement('div');
+        overview.id = 'overview-content';
+        overview.className = 'view-content';
+        overview.style.cssText = `
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        `;
+        
+        // Stats cards
+        const statsCards = [
+            { title: 'Total Users', value: '0', icon: '👥', color: '#3b82f6' },
+            { title: 'Active Sessions', value: '0', icon: '🟢', color: '#10b981' },
+            { title: 'Cache Hit Rate', value: '0%', icon: '🎯', color: '#f59e0b' },
+            { title: 'System Load', value: '0%', icon: '⚡', color: '#ef4444' }
+        ];
+        
+        statsCards.forEach(card => {
+            const cardElement = this.createStatsCard(card);
+            overview.appendChild(cardElement);
+        });
+        
+        return overview;
+    }
+    
+    /**
+     * Create stats card
+     * @param {Object} card - Card data
+     * @returns {HTMLElement} Stats card
+     */
+    createStatsCard(card) {
+        const cardElement = document.createElement('div');
+        cardElement.className = 'stats-card';
+        cardElement.style.cssText = `
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        `;
+        
+        const icon = document.createElement('div');
+        icon.style.cssText = `
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: ${card.color}20;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        `;
+        icon.textContent = card.icon;
+        
+        const content = document.createElement('div');
+        content.style.cssText = `
+            flex: 1;
+        `;
+        
+        const title = document.createElement('div');
+        title.textContent = card.title;
+        title.style.cssText = `
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            margin-bottom: 4px;
+        `;
+        
+        const value = document.createElement('div');
+        value.textContent = card.value;
+        value.style.cssText = `
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--color-text);
+        `;
+        
+        content.appendChild(title);
+        content.appendChild(value);
+        
+        cardElement.appendChild(icon);
+        cardElement.appendChild(content);
+        
+        return cardElement;
+    }
+    
+    /**
+     * Switch view
+     * @param {string} viewId - View ID
+     */
+    switchView(viewId) {
+        this.currentView = viewId;
+        
+        // Update sidebar selection
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.style.backgroundColor = item.dataset.view === viewId ? 
+                'var(--color-primary-light)' : 'transparent';
+        });
+        
+        // Update main content
+        const main = document.querySelector('.data-inspector-main');
+        main.innerHTML = '';
+        
+        let content;
+        switch (viewId) {
+            case 'overview':
+                content = this.createOverviewContent();
+                break;
+            case 'users':
+                content = this.createUsersContent();
+                break;
+            case 'activities':
+                content = this.createActivitiesContent();
+                break;
+            case 'workouts':
+                content = this.createWorkoutsContent();
+                break;
+            case 'cache':
+                content = this.createCacheContent();
+                break;
+            case 'system':
+                content = this.createSystemContent();
+                break;
         }
-
-        // Set up container styles
-        container.innerHTML = `
-            <div class="admin-header">
-                <h2>Data Inspector - Activity Dedup & Merge Verification</h2>
-                <div class="admin-actions">
-                    <button id="recompute-today" class="btn btn-primary">Recompute Today</button>
-                    <button id="why-tomorrow" class="btn btn-secondary">Open Why for Tomorrow</button>
-                    <button id="refresh-activities" class="btn btn-outline">Refresh Activities</button>
+        
+        main.appendChild(content);
+    }
+    
+    /**
+     * Create users content
+     * @returns {HTMLElement} Users content
+     */
+    createUsersContent() {
+        const content = document.createElement('div');
+        content.id = 'users-content';
+        content.className = 'view-content';
+        content.innerHTML = `
+            <div style="margin-bottom: 20px;">
+                <h3 style="margin: 0 0 16px 0; color: var(--color-text);">User Management</h3>
+                <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+                    <button class="btn btn-primary">Add User</button>
+                    <button class="btn btn-secondary">Export Users</button>
+                    <button class="btn btn-secondary">Import Users</button>
                 </div>
             </div>
-            <div class="admin-content">
-                <div class="activity-filters">
-                    <input type="date" id="date-filter" placeholder="Filter by date">
-                    <select id="source-filter">
-                        <option value="">All Sources</option>
-                        <option value="manual">Manual</option>
-                        <option value="strava">Strava</option>
-                        <option value="garmin">Garmin</option>
-                    </select>
-                    <input type="text" id="type-filter" placeholder="Filter by type">
-                </div>
-                <div class="activities-table-container">
-                    <table class="activities-table">
-                        <thead>
-                            <tr>
-                                <th>Start Time</th>
-                                <th>Type</th>
-                                <th>Duration</th>
-                                <th>Canonical Source</th>
-                                <th>Richness</th>
-                                <th>Source Set</th>
-                                <th>Excluded</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="activities-tbody">
-                        </tbody>
-                    </table>
-                </div>
-                <div class="admin-stats">
-                    <div class="stat-card">
-                        <h3>Total Activities</h3>
-                        <span id="total-activities">0</span>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Manual</h3>
-                        <span id="manual-count">0</span>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Strava</h3>
-                        <span id="strava-count">0</span>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Merged</h3>
-                        <span id="merged-count">0</span>
-                    </div>
-                </div>
+            <div id="users-table" style="background: var(--color-surface); border-radius: 8px; overflow: hidden;">
+                <!-- Users table will be populated here -->
             </div>
         `;
-
-        // Add styles
-        this.addStyles();
         
-        // Setup event listeners
-        this.setupEventListeners();
+        return content;
     }
-
+    
     /**
-     * Add CSS styles for the admin inspector
+     * Create activities content
+     * @returns {HTMLElement} Activities content
      */
-    addStyles() {
-        const styleId = 'data-inspector-styles';
+    createActivitiesContent() {
+        const content = document.createElement('div');
+        content.id = 'activities-content';
+        content.className = 'view-content';
+        content.innerHTML = `
+            <div style="margin-bottom: 20px;">
+                <h3 style="margin: 0 0 16px 0; color: var(--color-text);">Activity Data</h3>
+                <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+                    <button class="btn btn-primary">Refresh Data</button>
+                    <button class="btn btn-secondary">Export Activities</button>
+                    <button class="btn btn-secondary">Clear Cache</button>
+                </div>
+            </div>
+            <div id="activities-table" style="background: var(--color-surface); border-radius: 8px; overflow: hidden;">
+                <!-- Activities table will be populated here -->
+            </div>
+        `;
         
-        if (!document.getElementById(styleId)) {
-            const style = document.createElement('style');
-            style.id = styleId;
-            style.textContent = `
-                .admin-inspector {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background: rgba(0, 0, 0, 0.9);
-                    z-index: 10000;
-                    color: white;
-                    font-family: monospace;
-                    overflow-y: auto;
-                    display: none;
-                }
-
-                .admin-header {
-                    padding: 20px;
-                    border-bottom: 1px solid #333;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
-
-                .admin-header h2 {
-                    margin: 0;
-                    color: #00ff00;
-                }
-
-                .admin-actions {
-                    display: flex;
-                    gap: 10px;
-                }
-
-                .admin-actions .btn {
-                    padding: 8px 16px;
-                    border: none;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-size: 14px;
-                }
-
-                .btn-primary {
-                    background: #007bff;
-                    color: white;
-                }
-
-                .btn-secondary {
-                    background: #6c757d;
-                    color: white;
-                }
-
-                .btn-outline {
-                    background: transparent;
-                    color: #00ff00;
-                    border: 1px solid #00ff00;
-                }
-
-                .admin-content {
-                    padding: 20px;
-                }
-
-                .activity-filters {
-                    display: flex;
-                    gap: 10px;
-                    margin-bottom: 20px;
-                    flex-wrap: wrap;
-                }
-
-                .activity-filters input,
-                .activity-filters select {
-                    padding: 8px;
-                    border: 1px solid #333;
-                    background: #222;
-                    color: white;
-                    border-radius: 4px;
-                }
-
-                .activities-table-container {
-                    overflow-x: auto;
-                    margin-bottom: 20px;
-                }
-
-                .activities-table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    background: #111;
-                }
-
-                .activities-table th,
-                .activities-table td {
-                    padding: 8px 12px;
-                    text-align: left;
-                    border: 1px solid #333;
-                }
-
-                .activities-table th {
-                    background: #333;
-                    color: #00ff00;
-                    font-weight: bold;
-                }
-
-                .activities-table tr:nth-child(even) {
-                    background: #1a1a1a;
-                }
-
-                .activities-table tr:hover {
-                    background: #2a2a2a;
-                }
-
-                .source-badge {
-                    display: inline-block;
-                    padding: 2px 6px;
-                    border-radius: 3px;
-                    font-size: 12px;
-                    margin: 1px;
-                }
-
-                .source-manual {
-                    background: #ffc107;
-                    color: #000;
-                }
-
-                .source-strava {
-                    background: #fc4c02;
-                    color: white;
-                }
-
-                .source-garmin {
-                    background: #007cc3;
-                    color: white;
-                }
-
-                .richness-score {
-                    font-weight: bold;
-                }
-
-                .richness-high {
-                    color: #00ff00;
-                }
-
-                .richness-medium {
-                    color: #ffaa00;
-                }
-
-                .richness-low {
-                    color: #ff6666;
-                }
-
-                .admin-stats {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                    gap: 20px;
-                }
-
-                .stat-card {
-                    background: #222;
-                    padding: 20px;
-                    border-radius: 8px;
-                    text-align: center;
-                }
-
-                .stat-card h3 {
-                    margin: 0 0 10px 0;
-                    color: #00ff00;
-                }
-
-                .stat-card span {
-                    font-size: 24px;
-                    font-weight: bold;
-                    color: white;
-                }
-
-                .excluded-badge {
-                    background: #dc3545;
-                    color: white;
-                    padding: 2px 6px;
-                    border-radius: 3px;
-                    font-size: 12px;
-                }
-
-                .action-btn {
-                    padding: 4px 8px;
-                    border: none;
-                    border-radius: 3px;
-                    cursor: pointer;
-                    font-size: 12px;
-                    margin: 1px;
-                }
-
-                .action-view {
-                    background: #17a2b8;
-                    color: white;
-                }
-
-                .action-exclude {
-                    background: #dc3545;
-                    color: white;
-                }
-
-                .action-include {
-                    background: #28a745;
-                    color: white;
-                }
-            `;
-            document.head.appendChild(style);
+        return content;
+    }
+    
+    /**
+     * Create workouts content
+     * @returns {HTMLElement} Workouts content
+     */
+    createWorkoutsContent() {
+        const content = document.createElement('div');
+        content.id = 'workouts-content';
+        content.className = 'view-content';
+        content.innerHTML = `
+            <div style="margin-bottom: 20px;">
+                <h3 style="margin: 0 0 16px 0; color: var(--color-text);">Workout Plans</h3>
+                <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+                    <button class="btn btn-primary">Generate Plan</button>
+                    <button class="btn btn-secondary">Export Plans</button>
+                    <button class="btn btn-secondary">Clear Cache</button>
+                </div>
+            </div>
+            <div id="workouts-table" style="background: var(--color-surface); border-radius: 8px; overflow: hidden;">
+                <!-- Workouts table will be populated here -->
+            </div>
+        `;
+        
+        return content;
+    }
+    
+    /**
+     * Create cache content
+     * @returns {HTMLElement} Cache content
+     */
+    createCacheContent() {
+        const content = document.createElement('div');
+        content.id = 'cache-content';
+        content.className = 'view-content';
+        content.innerHTML = `
+            <div style="margin-bottom: 20px;">
+                <h3 style="margin: 0 0 16px 0; color: var(--color-text);">Cache Management</h3>
+                <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+                    <button class="btn btn-primary">Clear All Cache</button>
+                    <button class="btn btn-secondary">Export Cache</button>
+                    <button class="btn btn-secondary">Import Cache</button>
+                </div>
+            </div>
+            <div id="cache-table" style="background: var(--color-surface); border-radius: 8px; overflow: hidden;">
+                <!-- Cache table will be populated here -->
+            </div>
+        `;
+        
+        return content;
+    }
+    
+    /**
+     * Create system content
+     * @returns {HTMLElement} System content
+     */
+    createSystemContent() {
+        const content = document.createElement('div');
+        content.id = 'system-content';
+        content.className = 'view-content';
+        content.innerHTML = `
+            <div style="margin-bottom: 20px;">
+                <h3 style="margin: 0 0 16px 0; color: var(--color-text);">System Information</h3>
+                <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+                    <button class="btn btn-primary">Refresh Metrics</button>
+                    <button class="btn btn-secondary">Export Logs</button>
+                    <button class="btn btn-secondary">System Health</button>
+                </div>
+            </div>
+            <div id="system-table" style="background: var(--color-surface); border-radius: 8px; overflow: hidden;">
+                <!-- System table will be populated here -->
+            </div>
+        `;
+        
+        return content;
+    }
+    
+    /**
+     * Load data
+     */
+    async loadData() {
+        try {
+            // Load users
+            this.data.users = await this.loadUsers();
+            
+            // Load activities
+            this.data.activities = await this.loadActivities();
+            
+            // Load workouts
+            this.data.workouts = await this.loadWorkouts();
+            
+            // Load cache data
+            this.data.cache = await this.loadCacheData();
+            
+            // Load system data
+            this.data.system = await this.loadSystemData();
+            
+            this.logger.info('Data loaded successfully');
+            
+        } catch (error) {
+            this.logger.error('Failed to load data:', error);
         }
     }
-
+    
     /**
-     * Setup event listeners
+     * Load users
+     * @returns {Promise<Array>} Users data
      */
-    setupEventListeners() {
-        // Recompute today button
-        document.getElementById('recompute-today')?.addEventListener('click', () => {
-            this.recomputeToday();
-        });
-
-        // Why tomorrow button
-        document.getElementById('why-tomorrow')?.addEventListener('click', () => {
-            this.showWhyTomorrow();
-        });
-
-        // Refresh activities button
-        document.getElementById('refresh-activities')?.addEventListener('click', () => {
-            this.loadActivities().then(() => this.renderActivities());
-        });
-
-        // Filter inputs
-        document.getElementById('date-filter')?.addEventListener('change', () => {
-            this.renderActivities();
-        });
-
-        document.getElementById('source-filter')?.addEventListener('change', () => {
-            this.renderActivities();
-        });
-
-        document.getElementById('type-filter')?.addEventListener('input', () => {
-            this.renderActivities();
-        });
+    async loadUsers() {
+        // This would typically fetch from an API
+        return [];
     }
-
+    
     /**
-     * Load activities from storage/mock data
+     * Load activities
+     * @returns {Promise<Array>} Activities data
      */
     async loadActivities() {
-        try {
-            // In a real implementation, this would fetch from the database
-            // For now, we'll use mock data that demonstrates dedup/merge scenarios
-            this.activities = this.generateMockActivities();
-            
-            this.logger.info('Loaded activities for inspection', { count: this.activities.length });
-            
-        } catch (error) {
-            this.logger.error('Error loading activities:', error);
-            this.activities = [];
-        }
+        // This would typically fetch from an API
+        return [];
     }
-
-    /**
-     * Generate mock activities for demonstration
-     */
-    generateMockActivities() {
-        const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        
-        return [
-            {
-                id: 1,
-                start_ts: new Date(today.getTime() + 8 * 60 * 60 * 1000).toISOString(), // 8 AM
-                type: 'Run',
-                duration_s: 1800, // 30 minutes
-                canonical_source: 'strava',
-                canonical_external_id: 'strava_123',
-                richness: 0.85,
-                source_set: {
-                    strava: { id: 'strava_123', richness: 0.85 },
-                    manual: { id: 'manual_1', richness: 0.3 }
-                },
-                is_excluded: false,
-                name: 'Morning Run'
-            },
-            {
-                id: 2,
-                start_ts: new Date(today.getTime() + 10 * 60 * 60 * 1000).toISOString(), // 10 AM
-                type: 'Strength',
-                duration_s: 3600, // 60 minutes
-                canonical_source: 'manual',
-                canonical_external_id: null,
-                richness: 0.4,
-                source_set: {
-                    manual: { id: 'manual_2', richness: 0.4 }
-                },
-                is_excluded: false,
-                name: 'Gym Session'
-            },
-            {
-                id: 3,
-                start_ts: new Date(today.getTime() + 14 * 60 * 60 * 1000).toISOString(), // 2 PM
-                type: 'Ride',
-                duration_s: 5400, // 90 minutes
-                canonical_source: 'strava',
-                canonical_external_id: 'strava_456',
-                richness: 0.92,
-                source_set: {
-                    strava: { id: 'strava_456', richness: 0.92 },
-                    garmin: { id: 'garmin_789', richness: 0.88 }
-                },
-                is_excluded: false,
-                name: 'Afternoon Ride'
-            },
-            {
-                id: 4,
-                start_ts: new Date(today.getTime() + 16 * 60 * 60 * 1000).toISOString(), // 4 PM
-                type: 'Run',
-                duration_s: 1200, // 20 minutes
-                canonical_source: 'manual',
-                canonical_external_id: null,
-                richness: 0.25,
-                source_set: {
-                    manual: { id: 'manual_3', richness: 0.25 }
-                },
-                is_excluded: true,
-                name: 'Quick Run (Excluded)'
-            }
-        ];
-    }
-
-    /**
-     * Render activities table
-     */
-    renderActivities() {
-        const tbody = document.getElementById('activities-tbody');
-        if (!tbody) return;
-
-        // Get filter values
-        const dateFilter = document.getElementById('date-filter')?.value;
-        const sourceFilter = document.getElementById('source-filter')?.value;
-        const typeFilter = document.getElementById('type-filter')?.value.toLowerCase();
-
-        // Filter activities
-        let filteredActivities = this.activities.filter(activity => {
-            if (dateFilter) {
-                const activityDate = new Date(activity.start_ts).toISOString().split('T')[0];
-                if (activityDate !== dateFilter) return false;
-            }
-            
-            if (sourceFilter && activity.canonical_source !== sourceFilter) {
-                return false;
-            }
-            
-            if (typeFilter && !activity.type.toLowerCase().includes(typeFilter)) {
-                return false;
-            }
-            
-            return true;
-        });
-
-        // Render table rows
-        tbody.innerHTML = filteredActivities.map(activity => {
-            const startTime = new Date(activity.start_ts).toLocaleString();
-            const duration = this.formatDuration(activity.duration_s);
-            const richnessClass = this.getRichnessClass(activity.richness);
-            const sourceSetHtml = this.renderSourceSet(activity.source_set);
-            
-            return `
-                <tr>
-                    <td>${startTime}</td>
-                    <td>${activity.type}</td>
-                    <td>${duration}</td>
-                    <td><span class="source-badge source-${activity.canonical_source}">${activity.canonical_source}</span></td>
-                    <td><span class="richness-score ${richnessClass}">${activity.richness.toFixed(2)}</span></td>
-                    <td>${sourceSetHtml}</td>
-                    <td>${activity.is_excluded ? '<span class="excluded-badge">Excluded</span>' : 'No'}</td>
-                    <td>
-                        <button class="action-btn action-view" onclick="dataInspector.viewActivity(${activity.id})">View</button>
-                        ${activity.is_excluded ? 
-                            `<button class="action-btn action-include" onclick="dataInspector.includeActivity(${activity.id})">Include</button>` :
-                            `<button class="action-btn action-exclude" onclick="dataInspector.excludeActivity(${activity.id})">Exclude</button>`
-                        }
-                    </td>
-                </tr>
-            `;
-        }).join('');
-
-        // Update stats
-        this.updateStats(filteredActivities);
-    }
-
-    /**
-     * Render source set as badges
-     */
-    renderSourceSet(sourceSet) {
-        if (!sourceSet) return '';
-        
-        return Object.entries(sourceSet).map(([source, data]) => {
-            return `<span class="source-badge source-${source}">${source} (${data.richness.toFixed(2)})</span>`;
-        }).join(' ');
-    }
-
-    /**
-     * Get richness CSS class
-     */
-    getRichnessClass(richness) {
-        if (richness >= 0.7) return 'richness-high';
-        if (richness >= 0.4) return 'richness-medium';
-        return 'richness-low';
-    }
-
-    /**
-     * Format duration in human readable format
-     */
-    formatDuration(seconds) {
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        
-        if (hours > 0) {
-            return `${hours}h ${minutes}m`;
-        }
-        return `${minutes}m`;
-    }
-
-    /**
-     * Update statistics
-     */
-    updateStats(activities) {
-        const total = activities.length;
-        const manual = activities.filter(a => a.canonical_source === 'manual').length;
-        const strava = activities.filter(a => a.canonical_source === 'strava').length;
-        const merged = activities.filter(a => Object.keys(a.source_set || {}).length > 1).length;
-
-        document.getElementById('total-activities').textContent = total;
-        document.getElementById('manual-count').textContent = manual;
-        document.getElementById('strava-count').textContent = strava;
-        document.getElementById('merged-count').textContent = merged;
-    }
-
-    /**
-     * Recompute today's aggregates
-     */
-    async recomputeToday() {
-        try {
-            this.logger.info('Recomputing today\'s aggregates');
-            
-            // In a real implementation, this would call the recompute job
-            // For now, we'll simulate the action
-            const today = new Date().toISOString().split('T')[0];
-            
-            // Show loading state
-            const btn = document.getElementById('recompute-today');
-            const originalText = btn.textContent;
-            btn.textContent = 'Recomputing...';
-            btn.disabled = true;
-            
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            // Show success
-            btn.textContent = 'Recomputed!';
-            btn.style.background = '#28a745';
-            
-            setTimeout(() => {
-                btn.textContent = originalText;
-                btn.disabled = false;
-                btn.style.background = '';
-            }, 2000);
-            
-            this.logger.info('Recompute completed for today');
-            
-        } catch (error) {
-            this.logger.error('Error recomputing today:', error);
-        }
-    }
-
-    /**
-     * Show why panel for tomorrow
-     */
-    async showWhyTomorrow() {
-        try {
-            this.logger.info('Opening why panel for tomorrow');
-            
-            // In a real implementation, this would generate tomorrow's plan
-            // and show the why panel
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            
-            // Simulate plan generation
-            const mockPlan = {
-                why: [
-                    'High-intensity run yesterday → reducing lower-body volume',
-                    'Weekly strain suggests deload week → adding mobility focus',
-                    'Rolling load indicates good readiness → maintaining intensity',
-                    'Plan updated after new data sync.'
-                ]
-            };
-            
-            // Show why panel (in a real implementation, this would open the actual panel)
-            alert(`Tomorrow's Plan Rationale:\n\n${mockPlan.why.join('\n')}`);
-            
-        } catch (error) {
-            this.logger.error('Error showing why tomorrow:', error);
-        }
-    }
-
-    /**
-     * View activity details
-     */
-    viewActivity(activityId) {
-        const activity = this.activities.find(a => a.id === activityId);
-        if (activity) {
-            const details = `
-Activity Details:
-- ID: ${activity.id}
-- Name: ${activity.name}
-- Start: ${new Date(activity.start_ts).toLocaleString()}
-- Type: ${activity.type}
-- Duration: ${this.formatDuration(activity.duration_s)}
-- Canonical Source: ${activity.canonical_source}
-- Richness: ${activity.richness}
-- Source Set: ${JSON.stringify(activity.source_set, null, 2)}
-- Excluded: ${activity.is_excluded}
-            `;
-            alert(details);
-        }
-    }
-
-    /**
-     * Exclude activity
-     */
-    async excludeActivity(activityId) {
-        const activity = this.activities.find(a => a.id === activityId);
-        if (activity) {
-            activity.is_excluded = true;
-            this.renderActivities();
-            this.logger.info('Activity excluded', { activityId });
-        }
-    }
-
-    /**
-     * Include activity
-     */
-    async includeActivity(activityId) {
-        const activity = this.activities.find(a => a.id === activityId);
-        if (activity) {
-            activity.is_excluded = false;
-            this.renderActivities();
-            this.logger.info('Activity included', { activityId });
-        }
-    }
-}
-
-// Export for browser
-if (typeof window !== 'undefined') {
-    window.DataInspector = DataInspector;
     
-    // Create global instance
-    window.dataInspector = new DataInspector();
+    /**
+     * Load workouts
+     * @returns {Promise<Array>} Workouts data
+     */
+    async loadWorkouts() {
+        // This would typically fetch from an API
+        return [];
+    }
     
-    // Auto-initialize when DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            window.dataInspector.init();
-        });
-    } else {
-        window.dataInspector.init();
+    /**
+     * Load cache data
+     * @returns {Promise<Object>} Cache data
+     */
+    async loadCacheData() {
+        // This would typically fetch from cache
+        return {};
+    }
+    
+    /**
+     * Load system data
+     * @returns {Promise<Object>} System data
+     */
+    async loadSystemData() {
+        // This would typically fetch from system
+        return {};
+    }
+    
+    /**
+     * Get inspector data
+     * @returns {Object} Inspector data
+     */
+    getData() {
+        return this.data;
+    }
+    
+    /**
+     * Destroy data inspector
+     */
+    destroy() {
+        this.close();
+        this.logger.info('DataInspector destroyed');
     }
 }
 
-// Export for Node.js
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = DataInspector;
-}
+// Export for use in other modules
+window.DataInspector = DataInspector;

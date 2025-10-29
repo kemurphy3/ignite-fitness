@@ -1,0 +1,342 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 2 * * 1' # Weekly on Monday at 2 AM
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --json-file-output=snyk-results.json
+
+      - name: Upload Snyk results to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: snyk-results.json
+
+      - name: Comment PR with Snyk results
+        uses: snyk/actions/node@master
+        if: github.event_name == 'pull_request'
+        env:
+          SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
+        with:
+          args: --pr-comment
+
+  static-analysis:
+    name: Static Application Security Testing (SAST)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint security rules
+        run: |
+          npm install --save-dev eslint-plugin-security
+          npx eslint . --ext .js,.jsx,.ts,.tsx --config .eslintrc.security.js --format json --output-file eslint-security-results.json
+        continue-on-error: true
+
+      - name: Run Semgrep SAST
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/javascript
+            p/typescript
+            p/owasp-top-ten
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          languages: javascript
+
+  dynamic-scan:
+    name: Dynamic Application Security Testing (DAST)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application
+        run: |
+          npm start &
+          sleep 30
+        env:
+          NODE_ENV: production
+          PORT: 3000
+
+      - name: Run OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.7.0
+        with:
+          target: 'http://localhost:3000'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'
+
+      - name: Run OWASP ZAP Full Scan
+        if: github.ref == 'refs/heads/main'
+        uses: zaproxy/action-full-scan@v0.4.0
+        with:
+          target: 'http://localhost:3000'
+          rules_file_name: '.zap/rules.tsv'
+
+      - name: Upload ZAP results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-results
+          path: |
+            zap-results.json
+            zap-report.html
+
+  container-scan:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t ignite-fitness:${{ github.sha }} .
+          docker tag ignite-fitness:${{ github.sha }} ignite-fitness:latest
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'ignite-fitness:latest'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run Snyk container scan
+        uses: snyk/actions/docker@master
+        env:
+          SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
+        with:
+          image: 'ignite-fitness:latest'
+          args: --severity-threshold=high
+
+  secrets-scan:
+    name: Secrets Detection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run TruffleHog OSS
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+          extra_args: --debug --only-verified
+
+      - name: Run GitLeaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+  security-gate:
+    name: Security Gate
+    runs-on: ubuntu-latest
+    needs: [dependency-scan, static-analysis, dynamic-scan, container-scan, secrets-scan]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Run security gate checks
+        run: |
+          echo "Running security gate checks..."
+          
+          # Check if any critical vulnerabilities were found
+          if [ -f "snyk-results.json" ]; then
+            CRITICAL_VULNS=$(jq '.vulnerabilities[] | select(.severity == "critical") | .id' snyk-results.json | wc -l)
+            if [ "$CRITICAL_VULNS" -gt 0 ]; then
+              echo "❌ Critical vulnerabilities found: $CRITICAL_VULNS"
+              exit 1
+            fi
+          fi
+          
+          # Check if any high severity vulnerabilities were found
+          if [ -f "snyk-results.json" ]; then
+            HIGH_VULNS=$(jq '.vulnerabilities[] | select(.severity == "high") | .id' snyk-results.json | wc -l)
+            if [ "$HIGH_VULNS" -gt 5 ]; then
+              echo "❌ Too many high severity vulnerabilities found: $HIGH_VULNS"
+              exit 1
+            fi
+          fi
+          
+          # Check ESLint security issues
+          if [ -f "eslint-security-results.json" ]; then
+            ESLINT_ERRORS=$(jq '.length' eslint-security-results.json)
+            if [ "$ESLINT_ERRORS" -gt 0 ]; then
+              echo "❌ ESLint security issues found: $ESLINT_ERRORS"
+              exit 1
+            fi
+          fi
+          
+          # Check ZAP scan results
+          if [ -f "zap-results.json" ]; then
+            ZAP_HIGH=$(jq '.High' zap-results.json)
+            ZAP_MEDIUM=$(jq '.Medium' zap-results.json)
+            if [ "$ZAP_HIGH" -gt 0 ]; then
+              echo "❌ ZAP high severity issues found: $ZAP_HIGH"
+              exit 1
+            fi
+            if [ "$ZAP_MEDIUM" -gt 10 ]; then
+              echo "❌ Too many ZAP medium severity issues found: $ZAP_MEDIUM"
+              exit 1
+            fi
+          fi
+          
+          echo "✅ Security gate passed"
+
+      - name: Generate security report
+        run: |
+          echo "# Security Scan Report" > security-report.md
+          echo "Generated: $(date)" >> security-report.md
+          echo "" >> security-report.md
+          
+          echo "## Dependency Vulnerabilities" >> security-report.md
+          if [ -f "snyk-results.json" ]; then
+            echo "- Critical: $(jq '.vulnerabilities[] | select(.severity == "critical") | .id' snyk-results.json | wc -l)" >> security-report.md
+            echo "- High: $(jq '.vulnerabilities[] | select(.severity == "high") | .id' snyk-results.json | wc -l)" >> security-report.md
+            echo "- Medium: $(jq '.vulnerabilities[] | select(.severity == "medium") | .id' snyk-results.json | wc -l)" >> security-report.md
+            echo "- Low: $(jq '.vulnerabilities[] | select(.severity == "low") | .id' snyk-results.json | wc -l)" >> security-report.md
+          fi
+          
+          echo "" >> security-report.md
+          echo "## Static Analysis" >> security-report.md
+          if [ -f "eslint-security-results.json" ]; then
+            echo "- ESLint Security Issues: $(jq '.length' eslint-security-results.json)" >> security-report.md
+          fi
+          
+          echo "" >> security-report.md
+          echo "## Dynamic Analysis" >> security-report.md
+          if [ -f "zap-results.json" ]; then
+            echo "- ZAP High: $(jq '.High' zap-results.json)" >> security-report.md
+            echo "- ZAP Medium: $(jq '.Medium' zap-results.json)" >> security-report.md
+            echo "- ZAP Low: $(jq '.Low' zap-results.json)" >> security-report.md
+          fi
+          
+          echo "" >> security-report.md
+          echo "## Container Security" >> security-report.md
+          if [ -f "trivy-results.sarif" ]; then
+            echo "- Container vulnerabilities detected" >> security-report.md
+          fi
+
+      - name: Upload security report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report
+          path: security-report.md
+
+      - name: Comment PR with security report
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('security-report.md', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });
+
+  notify-security-team:
+    name: Notify Security Team
+    runs-on: ubuntu-latest
+    needs: [security-gate]
+    if: failure()
+    steps:
+      - name: Notify security team
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          text: 'Security scan failed for ${{ github.repository }}'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        if: always()
+
+      - name: Create security issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Security Scan Failure - ${{ github.sha }}',
+              body: 'Security scan failed. Please review the results and fix any critical vulnerabilities.',
+              labels: ['security', 'bug', 'high-priority']
+            });

@@ -1,323 +1,611 @@
 /**
- * SessionManager - Handles user sessions and persistence
- * Manages session state, timeout, and cleanup
+ * SessionManager - Secure session management with sliding windows
+ * Implements automatic logout on inactivity with session renewal
  */
-class SessionManager {
-    constructor() {
-        this.sessionTimeout = 24 * 60 * 60 * 1000; // 24 hours
-        this.checkInterval = 5 * 60 * 1000; // 5 minutes
-        this.logger = window.SafeLogger || console;
-        this.eventBus = window.EventBus;
-        this.sessionCheckTimer = null;
+
+class SessionManager extends BaseComponent {
+    constructor(options = {}) {
+        super(options);
         
-        this.startSessionMonitoring();
+        this.config = {
+            sessionTimeout: options.sessionTimeout || 2 * 60 * 60 * 1000, // 2 hours
+            warningTime: options.warningTime || 5 * 60 * 1000, // 5 minutes before timeout
+            renewalThreshold: options.renewalThreshold || 30 * 60 * 1000, // 30 minutes
+            maxRenewals: options.maxRenewals || 3,
+            activityTracking: options.activityTracking !== false,
+            secureLogout: options.secureLogout !== false,
+            ...options
+        };
+        
+        this.sessionData = {
+            startTime: null,
+            lastActivity: null,
+            renewalCount: 0,
+            isActive: false,
+            warningShown: false,
+            logoutTimer: null,
+            warningTimer: null,
+            renewalTimer: null
+        };
+        
+        this.activityEvents = [
+            'mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'
+        ];
+        
+        this.logger = window.SafeLogger || console;
+        
+        this.init();
     }
-
+    
     /**
-     * Start session monitoring
+     * Initialize session manager
      */
-    startSessionMonitoring() {
-        // Check session validity every 5 minutes
-        this.sessionCheckTimer = setInterval(() => {
-            this.checkSessionValidity();
-        }, this.checkInterval);
-
-        // Listen for visibility changes
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                this.pauseSession();
-            } else {
-                this.resumeSession();
-            }
-        });
-
-        // Listen for page unload
-        window.addEventListener('beforeunload', () => {
-            this.cleanupSession();
+    init() {
+        this.loadSessionData();
+        this.startSession();
+        this.bindActivityEvents();
+        this.bindVisibilityEvents();
+        
+        this.logger.info('SessionManager initialized', {
+            session_timeout: this.config.sessionTimeout,
+            warning_time: this.config.warningTime
         });
     }
-
+    
     /**
-     * Check if current session is valid
-     * @returns {boolean} Session validity
+     * Load session data from storage
      */
-    checkSessionValidity() {
+    loadSessionData() {
         try {
-            const loginTime = localStorage.getItem('ignitefitness_login_time');
-            if (!loginTime) {
-                this.logger.info('No login time found, session invalid');
-                return false;
+            const stored = localStorage.getItem('session_data');
+            if (stored) {
+                const data = JSON.parse(stored);
+                
+                // Check if session is still valid
+                if (data.lastActivity && 
+                    (Date.now() - data.lastActivity) < this.config.sessionTimeout) {
+                    this.sessionData = { ...this.sessionData, ...data };
+                } else {
+                    // Session expired, clear storage
+                    this.clearSessionData();
+                }
             }
-
-            const loginTimestamp = parseInt(loginTime);
-            const now = Date.now();
-            const sessionAge = now - loginTimestamp;
-
-            if (sessionAge > this.sessionTimeout) {
-                this.logger.info('Session expired', { 
-                    sessionAge: sessionAge,
-                    timeout: this.sessionTimeout 
-                });
-                this.eventBus?.emit('session:expired');
-                return false;
-            }
-
-            return true;
         } catch (error) {
-            this.logger.error('Session validity check failed', error);
-            return false;
+            this.logger.error('Failed to load session data:', error);
+            this.clearSessionData();
         }
     }
-
+    
     /**
-     * Create new session
-     * @param {string} username - Username
-     * @returns {Object} Session creation result
+     * Save session data to storage
      */
-    createSession(username) {
+    saveSessionData() {
         try {
-            const sessionData = {
-                username,
-                loginTime: Date.now(),
-                lastActivity: Date.now(),
-                sessionId: this.generateSessionId()
+            const dataToSave = {
+                startTime: this.sessionData.startTime,
+                lastActivity: this.sessionData.lastActivity,
+                renewalCount: this.sessionData.renewalCount,
+                isActive: this.sessionData.isActive
             };
-
-            localStorage.setItem('ignitefitness_current_user', username);
-            localStorage.setItem('ignitefitness_login_time', sessionData.loginTime.toString());
-            localStorage.setItem('ignitefitness_session_data', JSON.stringify(sessionData));
-
-            this.logger.audit('SESSION_CREATED', { username, sessionId: sessionData.sessionId });
-            this.eventBus?.emit('session:created', sessionData);
-
-            return { success: true, session: sessionData };
-        } catch (error) {
-            this.logger.error('Failed to create session', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    /**
-     * Update session activity
-     * @returns {Object} Update result
-     */
-    updateSessionActivity() {
-        try {
-            const sessionData = this.getSessionData();
-            if (!sessionData) {
-                return { success: false, error: 'No active session' };
-            }
-
-            sessionData.lastActivity = Date.now();
-            localStorage.setItem('ignitefitness_session_data', JSON.stringify(sessionData));
-
-            return { success: true, session: sessionData };
-        } catch (error) {
-            this.logger.error('Failed to update session activity', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    /**
-     * Get current session data
-     * @returns {Object|null} Session data
-     */
-    getSessionData() {
-        try {
-            const sessionData = localStorage.getItem('ignitefitness_session_data');
-            return sessionData ? JSON.parse(sessionData) : null;
-        } catch (error) {
-            this.logger.error('Failed to get session data', error);
-            return null;
-        }
-    }
-
-    /**
-     * Pause session (when tab becomes hidden)
-     */
-    pauseSession() {
-        try {
-            const sessionData = this.getSessionData();
-            if (sessionData) {
-                sessionData.pausedAt = Date.now();
-                localStorage.setItem('ignitefitness_session_data', JSON.stringify(sessionData));
-                this.logger.debug('Session paused');
-            }
-        } catch (error) {
-            this.logger.error('Failed to pause session', error);
-        }
-    }
-
-    /**
-     * Resume session (when tab becomes visible)
-     */
-    resumeSession() {
-        try {
-            const sessionData = this.getSessionData();
-            if (sessionData) {
-                sessionData.resumedAt = Date.now();
-                sessionData.lastActivity = Date.now();
-                localStorage.setItem('ignitefitness_session_data', JSON.stringify(sessionData));
-                this.logger.debug('Session resumed');
-            }
-        } catch (error) {
-            this.logger.error('Failed to resume session', error);
-        }
-    }
-
-    /**
-     * End current session
-     * @returns {Object} Session end result
-     */
-    endSession() {
-        try {
-            const sessionData = this.getSessionData();
-            if (sessionData) {
-                this.logger.audit('SESSION_ENDED', { 
-                    username: sessionData.username,
-                    sessionId: sessionData.sessionId,
-                    duration: Date.now() - sessionData.loginTime
-                });
-                this.eventBus?.emit('session:ended', sessionData);
-            }
-
-            // Clear session data
-            localStorage.removeItem('ignitefitness_current_user');
-            localStorage.removeItem('ignitefitness_login_time');
-            localStorage.removeItem('ignitefitness_session_data');
-
-            return { success: true };
-        } catch (error) {
-            this.logger.error('Failed to end session', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    /**
-     * Cleanup session on page unload
-     */
-    cleanupSession() {
-        try {
-            // Update last activity before cleanup
-            this.updateSessionActivity();
             
-            // Clear any temporary session data
-            const tempKeys = Object.keys(localStorage).filter(key => 
-                key.startsWith('ignitefitness_temp_')
-            );
+            localStorage.setItem('session_data', JSON.stringify(dataToSave));
+        } catch (error) {
+            this.logger.error('Failed to save session data:', error);
+        }
+    }
+    
+    /**
+     * Clear session data from storage
+     */
+    clearSessionData() {
+        try {
+            localStorage.removeItem('session_data');
+            localStorage.removeItem('auth_token');
+            sessionStorage.clear();
+        } catch (error) {
+            this.logger.error('Failed to clear session data:', error);
+        }
+    }
+    
+    /**
+     * Start a new session
+     */
+    startSession() {
+        const now = Date.now();
+        
+        this.sessionData = {
+            startTime: now,
+            lastActivity: now,
+            renewalCount: 0,
+            isActive: true,
+            warningShown: false,
+            logoutTimer: null,
+            warningTimer: null,
+            renewalTimer: null
+        };
+        
+        this.saveSessionData();
+        this.scheduleSessionTimeout();
+        this.scheduleRenewalCheck();
+        
+        this.logger.info('Session started', {
+            start_time: new Date(now).toISOString(),
+            timeout: this.config.sessionTimeout
+        });
+        
+        // Emit session started event
+        this.emit('sessionStarted', {
+            startTime: now,
+            timeout: this.config.sessionTimeout
+        });
+    }
+    
+    /**
+     * Update activity timestamp
+     */
+    updateActivity() {
+        if (!this.sessionData.isActive) return;
+        
+        const now = Date.now();
+        const timeSinceLastActivity = now - this.sessionData.lastActivity;
+        
+        // Only update if significant activity (avoid spam)
+        if (timeSinceLastActivity > 1000) { // 1 second minimum
+            this.sessionData.lastActivity = now;
+            this.saveSessionData();
             
-            tempKeys.forEach(key => {
-                localStorage.removeItem(key);
+            // Reset warning if it was shown
+            if (this.sessionData.warningShown) {
+                this.hideSessionWarning();
+                this.sessionData.warningShown = false;
+            }
+            
+            // Reschedule timeout
+            this.scheduleSessionTimeout();
+            
+            this.logger.debug('Activity updated', {
+                last_activity: new Date(now).toISOString()
             });
-
-            this.logger.debug('Session cleanup completed');
-        } catch (error) {
-            this.logger.error('Session cleanup failed', error);
         }
     }
-
+    
     /**
-     * Generate unique session ID
-     * @returns {string} Session ID
+     * Schedule session timeout
      */
-    generateSessionId() {
-        return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    scheduleSessionTimeout() {
+        // Clear existing timers
+        if (this.sessionData.logoutTimer) {
+            clearTimeout(this.sessionData.logoutTimer);
+        }
+        if (this.sessionData.warningTimer) {
+            clearTimeout(this.sessionData.warningTimer);
+        }
+        
+        const now = Date.now();
+        const timeUntilTimeout = this.config.sessionTimeout;
+        const timeUntilWarning = timeUntilTimeout - this.config.warningTime;
+        
+        // Schedule warning
+        this.sessionData.warningTimer = setTimeout(() => {
+            this.showSessionWarning();
+        }, timeUntilWarning);
+        
+        // Schedule logout
+        this.sessionData.logoutTimer = setTimeout(() => {
+            this.logout('timeout');
+        }, timeUntilTimeout);
+        
+        this.logger.debug('Session timeout scheduled', {
+            timeout_in: timeUntilTimeout,
+            warning_in: timeUntilWarning
+        });
     }
-
+    
     /**
-     * Get session duration
-     * @returns {number} Session duration in milliseconds
+     * Schedule renewal check
      */
-    getSessionDuration() {
-        try {
-            const sessionData = this.getSessionData();
-            if (!sessionData) return 0;
+    scheduleRenewalCheck() {
+        if (this.sessionData.renewalTimer) {
+            clearTimeout(this.sessionData.renewalTimer);
+        }
+        
+        this.sessionData.renewalTimer = setTimeout(() => {
+            this.checkForRenewal();
+        }, this.config.renewalThreshold);
+    }
+    
+    /**
+     * Check if session should be renewed
+     */
+    async checkForRenewal() {
+        if (!this.sessionData.isActive) return;
+        
+        const now = Date.now();
+        const timeSinceLastActivity = now - this.sessionData.lastActivity;
+        
+        // Check if user is active and session is close to expiring
+        if (timeSinceLastActivity < this.config.renewalThreshold &&
+            this.sessionData.renewalCount < this.config.maxRenewals) {
             
-            return Date.now() - sessionData.loginTime;
-        } catch (error) {
-            this.logger.error('Failed to get session duration', error);
-            return 0;
+            try {
+                await this.renewSession();
+            } catch (error) {
+                this.logger.error('Session renewal failed:', error);
+                this.logout('renewal_failed');
+            }
         }
+        
+        // Schedule next check
+        this.scheduleRenewalCheck();
     }
-
+    
     /**
-     * Get time since last activity
-     * @returns {number} Time since last activity in milliseconds
+     * Renew session
      */
-    getTimeSinceLastActivity() {
+    async renewSession() {
         try {
-            const sessionData = this.getSessionData();
-            if (!sessionData) return 0;
+            const response = await fetch('/.netlify/functions/renew-session', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.getAuthToken()}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    renewal_count: this.sessionData.renewalCount
+                })
+            });
             
-            return Date.now() - sessionData.lastActivity;
+            if (response.ok) {
+                const data = await response.json();
+                
+                // Update session data
+                this.sessionData.renewalCount++;
+                this.sessionData.lastActivity = Date.now();
+                this.saveSessionData();
+                
+                // Update auth token if provided
+                if (data.new_token) {
+                    localStorage.setItem('auth_token', data.new_token);
+                }
+                
+                this.logger.info('Session renewed', {
+                    renewal_count: this.sessionData.renewalCount,
+                    max_renewals: this.config.maxRenewals
+                });
+                
+                // Emit renewal event
+                this.emit('sessionRenewed', {
+                    renewalCount: this.sessionData.renewalCount,
+                    maxRenewals: this.config.maxRenewals
+                });
+                
+                return true;
+            } else {
+                throw new Error('Session renewal failed');
+            }
+            
         } catch (error) {
-            this.logger.error('Failed to get time since last activity', error);
-            return 0;
+            this.logger.error('Session renewal error:', error);
+            throw error;
         }
     }
-
+    
     /**
-     * Check if session is about to expire
-     * @param {number} warningTime - Warning time in milliseconds (default: 5 minutes)
-     * @returns {boolean} Is session about to expire
+     * Show session warning
      */
-    isSessionAboutToExpire(warningTime = 5 * 60 * 1000) {
-        try {
-            const sessionData = this.getSessionData();
-            if (!sessionData) return false;
-            
-            const timeUntilExpiry = this.sessionTimeout - (Date.now() - sessionData.loginTime);
-            return timeUntilExpiry <= warningTime;
-        } catch (error) {
-            this.logger.error('Failed to check session expiry', error);
-            return false;
+    showSessionWarning() {
+        if (this.sessionData.warningShown) return;
+        
+        this.sessionData.warningShown = true;
+        
+        const warning = document.createElement('div');
+        warning.className = 'session-warning';
+        warning.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--color-warning);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 8px;
+            z-index: 10001;
+            max-width: 300px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s ease-out;
+        `;
+        
+        const remainingTime = Math.ceil(this.config.warningTime / 1000 / 60);
+        
+        warning.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="font-size: 20px;">⚠️</div>
+                <div>
+                    <div style="font-weight: bold; margin-bottom: 4px;">Session Expiring Soon</div>
+                    <div style="font-size: 14px;">Your session will expire in ${remainingTime} minutes due to inactivity.</div>
+                </div>
+            </div>
+            <div style="margin-top: 12px; display: flex; gap: 8px;">
+                <button class="btn btn-primary extend-session-btn" style="padding: 8px 16px; font-size: 14px;">
+                    Extend Session
+                </button>
+                <button class="btn btn-secondary logout-now-btn" style="padding: 8px 16px; font-size: 14px;">
+                    Logout Now
+                </button>
+            </div>
+        `;
+        
+        // Add CSS animation
+        if (!document.querySelector('#session-warning-styles')) {
+            const style = document.createElement('style');
+            style.id = 'session-warning-styles';
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(warning);
+        
+        // Bind events
+        warning.querySelector('.extend-session-btn').addEventListener('click', () => {
+            this.extendSession();
+            warning.remove();
+        });
+        
+        warning.querySelector('.logout-now-btn').addEventListener('click', () => {
+            this.logout('user_requested');
+            warning.remove();
+        });
+        
+        // Auto-hide after warning time
+        setTimeout(() => {
+            if (warning.parentElement) {
+                warning.remove();
+            }
+        }, this.config.warningTime);
+        
+        this.logger.info('Session warning shown', {
+            remaining_time: remainingTime
+        });
+        
+        // Emit warning event
+        this.emit('sessionWarning', {
+            remainingTime: remainingTime
+        });
+    }
+    
+    /**
+     * Hide session warning
+     */
+    hideSessionWarning() {
+        const warning = document.querySelector('.session-warning');
+        if (warning) {
+            warning.remove();
         }
     }
-
+    
     /**
      * Extend session
-     * @returns {Object} Extension result
      */
-    extendSession() {
+    async extendSession() {
         try {
-            const sessionData = this.getSessionData();
-            if (!sessionData) {
-                return { success: false, error: 'No active session' };
-            }
-
-            sessionData.loginTime = Date.now();
-            sessionData.lastActivity = Date.now();
-            localStorage.setItem('ignitefitness_session_data', JSON.stringify(sessionData));
-            localStorage.setItem('ignitefitness_login_time', sessionData.loginTime.toString());
-
-            this.logger.audit('SESSION_EXTENDED', { 
-                username: sessionData.username,
-                sessionId: sessionData.sessionId 
+            this.sessionData.lastActivity = Date.now();
+            this.sessionData.warningShown = false;
+            this.saveSessionData();
+            
+            // Reschedule timeout
+            this.scheduleSessionTimeout();
+            
+            this.logger.info('Session extended', {
+                extended_at: new Date().toISOString()
             });
-            this.eventBus?.emit('session:extended', sessionData);
-
-            return { success: true, session: sessionData };
+            
+            // Emit extension event
+            this.emit('sessionExtended', {
+                extendedAt: Date.now()
+            });
+            
         } catch (error) {
-            this.logger.error('Failed to extend session', error);
-            return { success: false, error: error.message };
+            this.logger.error('Failed to extend session:', error);
         }
     }
-
+    
     /**
-     * Stop session monitoring
+     * Logout user
+     * @param {string} reason - Logout reason
      */
-    stopSessionMonitoring() {
-        if (this.sessionCheckTimer) {
-            clearInterval(this.sessionCheckTimer);
-            this.sessionCheckTimer = null;
+    async logout(reason = 'user_requested') {
+        try {
+            // Clear timers
+            this.clearTimers();
+            
+            // Mark session as inactive
+            this.sessionData.isActive = false;
+            this.saveSessionData();
+            
+            // Call logout endpoint
+            try {
+                await fetch('/.netlify/functions/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${this.getAuthToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        reason: reason,
+                        session_duration: Date.now() - this.sessionData.startTime
+                    })
+                });
+            } catch (error) {
+                this.logger.warn('Logout endpoint failed:', error);
+            }
+            
+            // Clear all session data
+            this.clearSessionData();
+            
+            this.logger.info('User logged out', {
+                reason: reason,
+                session_duration: Date.now() - this.sessionData.startTime
+            });
+            
+            // Emit logout event
+            this.emit('sessionLogout', {
+                reason: reason,
+                sessionDuration: Date.now() - this.sessionData.startTime
+            });
+            
+            // Redirect to login page
+            if (this.config.secureLogout) {
+                window.location.href = '/login?reason=' + encodeURIComponent(reason);
+            }
+            
+        } catch (error) {
+            this.logger.error('Logout failed:', error);
+            
+            // Force redirect even if logout fails
+            window.location.href = '/login?reason=logout_failed';
         }
+    }
+    
+    /**
+     * Clear all timers
+     */
+    clearTimers() {
+        if (this.sessionData.logoutTimer) {
+            clearTimeout(this.sessionData.logoutTimer);
+            this.sessionData.logoutTimer = null;
+        }
+        
+        if (this.sessionData.warningTimer) {
+            clearTimeout(this.sessionData.warningTimer);
+            this.sessionData.warningTimer = null;
+        }
+        
+        if (this.sessionData.renewalTimer) {
+            clearTimeout(this.sessionData.renewalTimer);
+            this.sessionData.renewalTimer = null;
+        }
+    }
+    
+    /**
+     * Bind activity events
+     */
+    bindActivityEvents() {
+        if (!this.config.activityTracking) return;
+        
+        this.activityEvents.forEach(eventType => {
+            document.addEventListener(eventType, () => {
+                this.updateActivity();
+            }, { passive: true });
+        });
+    }
+    
+    /**
+     * Bind visibility events
+     */
+    bindVisibilityEvents() {
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                this.logger.debug('Page hidden, pausing session tracking');
+            } else {
+                this.logger.debug('Page visible, resuming session tracking');
+                this.updateActivity();
+            }
+        });
+        
+        window.addEventListener('beforeunload', () => {
+            this.logger.debug('Page unloading, cleaning up session');
+            this.clearTimers();
+        });
+    }
+    
+    /**
+     * Get session status
+     * @returns {Object} Session status
+     */
+    getSessionStatus() {
+        const now = Date.now();
+        const timeSinceLastActivity = now - this.sessionData.lastActivity;
+        const timeUntilTimeout = this.config.sessionTimeout - timeSinceLastActivity;
+        
+        return {
+            isActive: this.sessionData.isActive,
+            startTime: this.sessionData.startTime,
+            lastActivity: this.sessionData.lastActivity,
+            renewalCount: this.sessionData.renewalCount,
+            maxRenewals: this.config.maxRenewals,
+            timeSinceLastActivity: timeSinceLastActivity,
+            timeUntilTimeout: Math.max(0, timeUntilTimeout),
+            warningShown: this.sessionData.warningShown,
+            canRenew: this.sessionData.renewalCount < this.config.maxRenewals
+        };
+    }
+    
+    /**
+     * Get session statistics
+     * @returns {Object} Session statistics
+     */
+    getSessionStats() {
+        const now = Date.now();
+        const sessionDuration = now - this.sessionData.startTime;
+        
+        return {
+            sessionDuration: sessionDuration,
+            renewalCount: this.sessionData.renewalCount,
+            maxRenewals: this.config.maxRenewals,
+            renewalRate: this.sessionData.renewalCount / (sessionDuration / (60 * 60 * 1000)), // renewals per hour
+            isActive: this.sessionData.isActive,
+            config: this.config
+        };
+    }
+    
+    /**
+     * Update session configuration
+     * @param {Object} newConfig - New configuration
+     */
+    updateConfig(newConfig) {
+        this.config = { ...this.config, ...newConfig };
+        
+        // Reschedule timeout with new configuration
+        if (this.sessionData.isActive) {
+            this.scheduleSessionTimeout();
+        }
+        
+        this.logger.info('Session configuration updated', {
+            new_config: newConfig
+        });
+    }
+    
+    /**
+     * Get auth token
+     * @returns {string} Auth token
+     */
+    getAuthToken() {
+        return localStorage.getItem('auth_token') || '';
+    }
+    
+    /**
+     * Destroy session manager
+     */
+    destroy() {
+        this.clearTimers();
+        this.unbindActivityEvents();
+        
+        this.logger.info('SessionManager destroyed');
+    }
+    
+    /**
+     * Unbind activity events
+     */
+    unbindActivityEvents() {
+        this.activityEvents.forEach(eventType => {
+            document.removeEventListener(eventType, this.updateActivity);
+        });
     }
 }
 
-// Create global instance
-window.SessionManager = new SessionManager();
-
-// Export for module systems
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = SessionManager;
-}
+// Export for use in other modules
+window.SessionManager = SessionManager;

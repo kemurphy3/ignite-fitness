@@ -230,6 +230,9 @@ class DashboardRenderer {
     generateNextWorkoutSection(config, isCoach) {
         const simple = config.simple;
         
+        // Get today's workout plan
+        const todaysPlan = this.getTodaysWorkoutPlan();
+        
         return `
             <div class="dashboard-card next-workout">
                 <h3>${isCoach ? 'Next Training Session' : 'Next Workout'}</h3>
@@ -237,12 +240,180 @@ class DashboardRenderer {
                     '<p>Ready for your next session? Let\'s get started!</p>' :
                     '<p>Your next workout is scheduled. Review the plan and prepare for success.</p>'
                 }
+                
+                ${todaysPlan ? this.generateWorkoutPreview(todaysPlan, simple) : ''}
+                
                 <div class="workout-actions">
                     <button class="btn primary" onclick="startWorkout()">Start Workout</button>
                     ${!simple ? '<button class="btn secondary" onclick="viewWorkoutPlan()">View Plan</button>' : ''}
                 </div>
             </div>
         `;
+    }
+
+    /**
+     * Generate workout preview card
+     * @param {Object} plan - Workout plan
+     * @param {boolean} simple - Simple mode
+     * @returns {string} HTML preview
+     */
+    generateWorkoutPreview(plan, simple) {
+        const duration = this.calculateWorkoutDuration(plan);
+        const exerciseCount = this.countExercises(plan);
+        const focus = this.getWorkoutFocus(plan);
+        const equipment = this.getRequiredEquipment(plan);
+        
+        return `
+            <div class="workout-preview">
+                <div class="preview-header">
+                    <h4>Today's Workout</h4>
+                </div>
+                <div class="preview-details">
+                    <div class="preview-item">
+                        <span class="preview-icon">⏱</span>
+                        <span class="preview-label">Duration:</span>
+                        <span class="preview-value">${duration} min</span>
+                    </div>
+                    <div class="preview-item">
+                        <span class="preview-icon">💪</span>
+                        <span class="preview-label">Exercises:</span>
+                        <span class="preview-value">${exerciseCount}</span>
+                    </div>
+                    <div class="preview-item">
+                        <span class="preview-icon">🎯</span>
+                        <span class="preview-label">Focus:</span>
+                        <span class="preview-value">${focus}</span>
+                    </div>
+                    ${equipment.length > 0 ? `
+                        <div class="preview-item">
+                            <span class="preview-icon">🏋️</span>
+                            <span class="preview-label">Equipment:</span>
+                            <span class="preview-value">${equipment.join(', ')}</span>
+                        </div>
+                    ` : ''}
+                </div>
+                ${!simple ? `
+                    <div class="preview-summary">
+                        <p>${this.getWorkoutSummary(plan)}</p>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    /**
+     * Get today's workout plan
+     * @returns {Object|null} Workout plan
+     */
+    getTodaysWorkoutPlan() {
+        // This would integrate with the actual workout planning system
+        // For now, return a sample plan
+        return {
+            blocks: [
+                {
+                    name: 'Warm-up',
+                    items: [
+                        { name: 'Dynamic Warm-up', sets: 1, reps: '5-10 min' }
+                    ]
+                },
+                {
+                    name: 'Main Work',
+                    items: [
+                        { name: 'Squats', sets: 3, reps: '8-12' },
+                        { name: 'Bench Press', sets: 3, reps: '8-12' },
+                        { name: 'Rows', sets: 3, reps: '8-12' }
+                    ]
+                },
+                {
+                    name: 'Accessories',
+                    items: [
+                        { name: 'Planks', sets: 3, reps: '30-60s' },
+                        { name: 'Lunges', sets: 2, reps: '10 each' }
+                    ]
+                }
+            ],
+            focus: 'Upper body strength',
+            equipment: ['Barbell', 'Bench', 'Plates']
+        };
+    }
+
+    /**
+     * Calculate workout duration
+     * @param {Object} plan - Workout plan
+     * @returns {number} Duration in minutes
+     */
+    calculateWorkoutDuration(plan) {
+        if (!plan || !plan.blocks) return 35;
+        
+        let totalMinutes = 0;
+        plan.blocks.forEach(block => {
+            if (block.items) {
+                totalMinutes += block.items.length * 8; // ~8 min per exercise
+            }
+        });
+        
+        return Math.max(30, totalMinutes);
+    }
+
+    /**
+     * Count exercises in plan
+     * @param {Object} plan - Workout plan
+     * @returns {number} Exercise count
+     */
+    countExercises(plan) {
+        if (!plan || !plan.blocks) return 6;
+        
+        let count = 0;
+        plan.blocks.forEach(block => {
+            if (block.items) {
+                count += block.items.length;
+            }
+        });
+        
+        return count;
+    }
+
+    /**
+     * Get workout focus
+     * @param {Object} plan - Workout plan
+     * @returns {string} Focus description
+     */
+    getWorkoutFocus(plan) {
+        return plan?.focus || 'Full body strength';
+    }
+
+    /**
+     * Get required equipment
+     * @param {Object} plan - Workout plan
+     * @returns {Array} Equipment list
+     */
+    getRequiredEquipment(plan) {
+        return plan?.equipment || ['Barbell', 'Dumbbells'];
+    }
+
+    /**
+     * Get workout summary
+     * @param {Object} plan - Workout plan
+     * @returns {string} Summary text
+     */
+    getWorkoutSummary(plan) {
+        if (!plan || !plan.blocks) {
+            return 'A balanced workout focusing on strength and conditioning.';
+        }
+        
+        const hasStrength = plan.blocks.some(block => 
+            block.items?.some(item => 
+                ['squat', 'deadlift', 'press', 'row'].some(movement => 
+                    item.name.toLowerCase().includes(movement)
+                )
+            )
+        );
+        
+        if (hasStrength) {
+            return 'Strength-focused session with compound movements and accessories.';
+        }
+        
+        return 'Balanced workout combining strength, conditioning, and mobility.';
     }
 
     /**

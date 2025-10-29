@@ -255,6 +255,44 @@
     transform: scale(0.98);
 }
 
+/* Timer Controls */
+.timer-controls {
+    display: flex;
+    gap: var(--space-2, 8px);
+    justify-content: center;
+    margin-top: var(--space-3, 12px);
+}
+
+.timer-control-btn {
+    background: var(--theme-primary, #00a651);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md, 8px);
+    padding: var(--space-2, 8px) var(--space-3, 12px);
+    font-size: var(--text-sm, 0.875rem);
+    cursor: pointer;
+    min-height: 44px;
+    min-width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.timer-control-btn:hover {
+    background: var(--theme-primary-dark, #008a44);
+    transform: translateY(-1px);
+}
+
+.timer-control-btn:focus {
+    outline: 3px solid #ffd700;
+    outline-offset: 2px;
+}
+
+.timer-control-btn:active {
+    transform: translateY(0);
+}
+
 /* Workout Flow Buttons */
 .workout-controls {
     display: flex;

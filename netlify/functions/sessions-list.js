@@ -24,7 +24,7 @@ async function getTotalCount(sql, whereClause, params) {
       FROM sessions 
       WHERE ${whereClause}
     `;
-    const countResult = await sql.unsafe(countQuery, params);
+    const countResult = await sql(countQuery, params);
     return parseInt(countResult[0].total);
   } catch (error) {
     console.error('Error getting total count:', error);
@@ -152,7 +152,7 @@ exports.handler = async (event) => {
     
     queryParams.push(Math.min(pagination.limit + 1, 101)); // Get one extra to check if there are more, but cap at 101
 
-    const sessions = await sql.unsafe(sessionsQuery, queryParams);
+    const sessions = await sql(sessionsQuery, queryParams);
 
     // Create paginated response
     const paginatedResponse = createPaginatedResponse(

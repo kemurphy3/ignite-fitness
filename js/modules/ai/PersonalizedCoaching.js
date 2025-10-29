@@ -10,6 +10,7 @@ class PersonalizedCoaching {
         this.storageManager = window.StorageManager;
         this.progressionEngine = window.ProgressionEngine;
         this.dailyCheckIn = window.DailyCheckIn;
+        this.dataValidator = window.AIDataValidator;
         
         this.coachingTemplates = this.initializeCoachingTemplates();
         this.contextCache = null;
@@ -195,6 +196,14 @@ class PersonalizedCoaching {
                 energyTrend: this.getEnergyTrend(7),
                 stressTrend: this.getStressTrend(7)
             };
+            
+            // Validate context with conservative fallbacks
+            if (this.dataValidator) {
+                const validatedContext = this.dataValidator.validateContext(context);
+                this.contextCache = validatedContext;
+                this.contextCache.timestamp = Date.now();
+                return validatedContext;
+            }
             
             // Cache context for performance
             this.contextCache = context;

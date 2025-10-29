@@ -1,16 +1,55 @@
 /**
  * Strava Normalizer
- * Normalizes Strava activity data to internal format
+ * Normalizes Strava activity data to internal format with async yielding
  */
 
 class StravaNormalizer {
+    constructor() {
+        this.asyncYielder = new AsyncYielder({
+            maxBlockTime: 50,
+            yieldInterval: 16
+        });
+    }
+    
+    /**
+     * Normalize multiple Strava activities with yielding
+     * @param {Array} stravaActivities - Raw Strava activities
+     * @param {number} userId - User ID
+     * @param {Object} options - Processing options
+     * @returns {Promise<Array>} Normalized activities
+     */
+    async normalizeActivities(stravaActivities, userId, options = {}) {
+        const {
+            onProgress = null,
+            onError = null,
+            batchSize = 10
+        } = options;
+        
+        this.logger = window.SafeLogger || console;
+        this.logger.info(`Normalizing ${stravaActivities.length} Strava activities`);
+        
+        // Process activities with yielding
+        const result = await this.asyncYielder.processArray(
+            stravaActivities,
+            (activity) => this.normalizeActivity(activity, userId),
+            {
+                batchSize,
+                onProgress,
+                onError
+            }
+        );
+        
+        this.logger.info(`Normalized ${result.results.length} activities`);
+        return result.results;
+    }
+    
     /**
      * Normalize Strava activity to internal format
      * @param {Object} stravaActivity - Raw Strava activity data
      * @param {number} userId - User ID
      * @returns {Object} Normalized activity
      */
-    static normalizeActivity(stravaActivity, userId) {
+    normalizeActivity(stravaActivity, userId) {
         const normalized = {
             userId: userId,
             canonicalSource: 'strava',

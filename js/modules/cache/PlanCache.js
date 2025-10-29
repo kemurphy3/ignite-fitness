@@ -1,17 +1,229 @@
 /**
- * PlanCache - Manages cached workout plans and refreshes them when stale
- * Handles cache invalidation and warm-up after data changes
+ * PlanCache - Manages cached workout plans with LRU eviction and memory limits
+ * Handles cache invalidation, warm-up after data changes, and memory-bounded storage
  */
 
 class PlanCache {
-    constructor() {
+    constructor(options = {}) {
         this.logger = window.SafeLogger || console;
         this.storageManager = window.StorageManager;
         this.coordinator = window.ExpertCoordinator;
         this.eventBus = window.EventBus;
         
-        this.cache = new Map();
+        // LRU Cache configuration
+        this.maxMemoryMB = options.maxMemoryMB || 50;
+        this.maxEntries = options.maxEntries || 100;
+        this.entryTTL = options.entryTTL || 5 * 60 * 1000; // 5 minutes
+        
+        // Initialize LRU Cache
+        this.cache = new LRUCache({
+            maxSize: this.maxEntries,
+            maxMemory: this.maxMemoryMB * 1024 * 1024, // Convert MB to bytes
+            ttl: this.entryTTL,
+            cleanupInterval: 2 * 60 * 1000 // 2 minutes
+        });
+        
+        // Legacy compatibility
         this.lastRefresh = new Map();
+        
+        this.logger.info('PlanCache initialized with LRU cache', {
+            maxMemoryMB: this.maxMemoryMB,
+            maxEntries: this.maxEntries,
+            entryTTL: this.entryTTL
+        });
+    }
+
+    /**
+     * Calculate approximate memory usage of an object
+     * @param {Object} obj - Object to measure
+     * @returns {number} Estimated size in bytes
+     */
+    estimateObjectSize(obj) {
+        try {
+            const jsonString = JSON.stringify(obj);
+            return new Blob([jsonString]).size;
+        } catch (error) {
+            // Fallback estimation
+            return JSON.stringify(obj).length * 2; // Rough estimate
+        }
+    }
+
+    /**
+     * Update access order for LRU tracking
+     * @param {string} key - Cache key
+     */
+    updateAccessOrder(key) {
+        const now = Date.now();
+        this.accessOrder.set(key, now);
+    }
+
+    /**
+     * Get least recently used key
+     * @returns {string|null} LRU key or null
+     */
+    getLRUKey() {
+        if (this.accessOrder.size === 0) return null;
+        
+        let oldestKey = null;
+        let oldestTime = Infinity;
+        
+        for (const [key, time] of this.accessOrder) {
+            if (time < oldestTime) {
+                oldestTime = time;
+                oldestKey = key;
+            }
+        }
+        
+        return oldestKey;
+    }
+
+    /**
+     * Evict entries to make room for new data
+     * @param {number} requiredBytes - Bytes needed for new entry
+     */
+    evictLRUEntries(requiredBytes = 0) {
+        const maxMemoryBytes = this.maxMemoryMB * 1024 * 1024;
+        
+        while ((this.currentMemoryBytes + requiredBytes > maxMemoryBytes || 
+                this.cache.size >= this.maxEntries) && this.cache.size > 0) {
+            
+            const lruKey = this.getLRUKey();
+            if (!lruKey) break;
+            
+            this.evictEntry(lruKey);
+        }
+    }
+
+    /**
+     * Evict a specific entry from cache
+     * @param {string} key - Cache key to evict
+     */
+    evictEntry(key) {
+        const entrySize = this.entrySizes.get(key) || 0;
+        
+        this.cache.delete(key);
+        this.accessOrder.delete(key);
+        this.entrySizes.delete(key);
+        this.currentMemoryBytes -= entrySize;
+        
+        this.logger.debug('Cache entry evicted', {
+            key,
+            size: entrySize,
+            remainingMemory: this.currentMemoryBytes
+        });
+    }
+
+    /**
+     * Set entry in cache with LRU management
+     * @param {string} key - Cache key
+     * @param {Object} value - Cache value
+     * @param {number} ttl - Time to live in milliseconds
+     */
+    setCacheEntry(key, value, ttl = this.entryTTL) {
+        const entrySize = this.estimateObjectSize(value);
+        
+        // Evict entries if needed
+        this.evictLRUEntries(entrySize);
+        
+        // Remove existing entry if it exists
+        if (this.cache.has(key)) {
+            this.evictEntry(key);
+        }
+        
+        // Add new entry
+        const now = Date.now();
+        this.cache.set(key, {
+            value,
+            timestamp: now,
+            ttl,
+            expiresAt: now + ttl
+        });
+        
+        this.accessOrder.set(key, now);
+        this.entrySizes.set(key, entrySize);
+        this.currentMemoryBytes += entrySize;
+        
+        this.logger.debug('Cache entry added', {
+            key,
+            size: entrySize,
+            totalMemory: this.currentMemoryBytes,
+            totalEntries: this.cache.size
+        });
+    }
+
+    /**
+     * Get entry from cache with LRU update
+     * @param {string} key - Cache key
+     * @returns {Object|null} Cached value or null
+     */
+    getCacheEntry(key) {
+        return this.cache.get(key);
+    }
+    
+    /**
+     * Set entry in cache with LRU management
+     * @param {string} key - Cache key
+     * @param {Object} value - Value to cache
+     * @param {number} ttl - Time to live in milliseconds (optional)
+     * @returns {boolean} Success status
+     */
+    setCacheEntry(key, value, ttl = null) {
+        return this.cache.set(key, value, ttl);
+    }
+
+    /**
+     * Get cache statistics
+     * @returns {Object} Cache statistics
+     */
+    getCacheStats() {
+        const lruStats = this.cache.getStats();
+        return {
+            ...lruStats,
+            lastRefreshCount: this.lastRefresh.size,
+            maxMemoryMB: this.maxMemoryMB,
+            maxEntries: this.maxEntries,
+            entryTTL: this.entryTTL
+        };
+    }
+    
+    /**
+     * Clean up expired entries
+     */
+    cleanupExpiredEntries() {
+        const now = Date.now();
+        const expiredKeys = [];
+        
+        for (const [key, entry] of this.cache) {
+            if (now > entry.expiresAt) {
+                expiredKeys.push(key);
+            }
+        }
+        
+        for (const key of expiredKeys) {
+            this.evictEntry(key);
+        }
+        
+        if (expiredKeys.length > 0) {
+            this.logger.info('Expired entries cleaned up', {
+                count: expiredKeys.length,
+                remainingEntries: this.cache.size
+            });
+        }
+    }
+
+    /**
+     * Get cache statistics
+     * @returns {Object} Cache statistics
+     */
+    getCacheStats() {
+        return {
+            totalEntries: this.cache.size,
+            memoryUsageMB: Math.round(this.currentMemoryBytes / (1024 * 1024) * 100) / 100,
+            maxMemoryMB: this.maxMemoryMB,
+            maxEntries: this.maxEntries,
+            memoryUtilization: Math.round((this.currentMemoryBytes / (this.maxMemoryMB * 1024 * 1024)) * 100),
+            entryUtilization: Math.round((this.cache.size / this.maxEntries) * 100)
+        };
     }
 
     /**
@@ -28,14 +240,10 @@ class PlanCache {
 
             for (const date of dates) {
                 const cacheKey = `${userId}_${date}`;
-                const lastRefreshTime = this.lastRefresh.get(cacheKey);
-                const cacheEntry = this.cache.get(cacheKey);
+                const cachedPlan = this.getCacheEntry(cacheKey);
 
-                // Consider cache stale if older than 5 minutes or doesn't exist
-                const isStale = !cacheEntry || !lastRefreshTime || 
-                    (Date.now() - lastRefreshTime) > 5 * 60 * 1000;
-
-                if (isStale) {
+                // Consider cache stale if doesn't exist or expired
+                if (!cachedPlan) {
                     datesToRefresh.push(date);
                 }
             }
@@ -77,7 +285,7 @@ class PlanCache {
                     }
 
                     // Cache the plan
-                    this.cache.set(cacheKey, plan);
+                    this.setCacheEntry(cacheKey, plan);
                     this.lastRefresh.set(cacheKey, Date.now());
 
                     this.logger.info('Cache warmed for date', { userId, date, cacheKey });
@@ -143,8 +351,8 @@ class PlanCache {
         try {
             const cacheKey = `${userId}_${date}`;
             
-            // Check in-memory cache
-            const cachedPlan = this.cache.get(cacheKey);
+            // Check in-memory cache with LRU
+            const cachedPlan = this.getCacheEntry(cacheKey);
             if (cachedPlan) {
                 this.logger.info('Plan retrieved from cache', { userId, date });
                 return cachedPlan;
@@ -154,8 +362,8 @@ class PlanCache {
             if (this.storageManager) {
                 const storedPlan = await this.storageManager.getItem(`plan_${userId}_${date}`);
                 if (storedPlan) {
-                    // Restore to in-memory cache
-                    this.cache.set(cacheKey, storedPlan);
+                    // Restore to in-memory cache with LRU
+                    this.setCacheEntry(cacheKey, storedPlan);
                     this.lastRefresh.set(cacheKey, Date.now());
                     
                     this.logger.info('Plan retrieved from storage', { userId, date });
@@ -198,8 +406,8 @@ class PlanCache {
             for (const date of dates) {
                 const cacheKey = `${userId}_${date}`;
                 
-                // Clear in-memory cache
-                this.cache.delete(cacheKey);
+                // Clear in-memory cache using LRU eviction
+                this.evictEntry(cacheKey);
                 this.lastRefresh.delete(cacheKey);
 
                 // Clear persistent storage
@@ -317,6 +525,33 @@ class PlanCache {
      */
     async getReadiness(userId, date) {
         return 7;
+    }
+
+    /**
+     * Start periodic cleanup of expired entries
+     * @param {number} intervalMs - Cleanup interval in milliseconds
+     */
+    startPeriodicCleanup(intervalMs = 60000) { // Default 1 minute
+        if (this.cleanupInterval) {
+            clearInterval(this.cleanupInterval);
+        }
+        
+        this.cleanupInterval = setInterval(() => {
+            this.cleanupExpiredEntries();
+        }, intervalMs);
+        
+        this.logger.info('Periodic cleanup started', { intervalMs });
+    }
+
+    /**
+     * Stop periodic cleanup
+     */
+    stopPeriodicCleanup() {
+        if (this.cleanupInterval) {
+            clearInterval(this.cleanupInterval);
+            this.cleanupInterval = null;
+            this.logger.info('Periodic cleanup stopped');
+        }
     }
 }
 

@@ -9,9 +9,240 @@ class SoccerExercises {
     }
 
     /**
-     * Initialize comprehensive soccer exercise library
-     * @returns {Object} Soccer exercises organized by category
+     * Render exercise list with virtual scrolling
+     * @param {HTMLElement} container - Container element
+     * @param {Object} options - Rendering options
      */
+    renderExerciseList(container, options = {}) {
+        const {
+            category = null,
+            position = null,
+            difficulty = null,
+            equipment = null,
+            searchTerm = '',
+            onSelect = null
+        } = options;
+        
+        // Filter exercises
+        let filteredExercises = this.getAllExercises();
+        
+        if (category) {
+            filteredExercises = filteredExercises.filter(ex => ex.category === category);
+        }
+        
+        if (position) {
+            filteredExercises = filteredExercises.filter(ex => 
+                ex.positions && ex.positions.includes(position)
+            );
+        }
+        
+        if (difficulty) {
+            filteredExercises = filteredExercises.filter(ex => ex.difficulty === difficulty);
+        }
+        
+        if (equipment) {
+            filteredExercises = filteredExercises.filter(ex => 
+                ex.equipment && ex.equipment.includes(equipment)
+            );
+        }
+        
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            filteredExercises = filteredExercises.filter(ex => 
+                ex.name.toLowerCase().includes(term) ||
+                ex.description.toLowerCase().includes(term) ||
+                (ex.instructions && ex.instructions.some(inst => 
+                    inst.toLowerCase().includes(term)
+                ))
+            );
+        }
+        
+        this.logger.debug(`Rendering ${filteredExercises.length} exercises with virtual scrolling`);
+        
+        // Create virtual list
+        const virtualList = new VirtualList({
+            container,
+            items: filteredExercises,
+            itemHeight: 80,
+            overscan: 5,
+            renderItem: (exercise, index) => this.renderExerciseItem(exercise, index, onSelect)
+        });
+        
+        // Store reference for cleanup
+        container._virtualList = virtualList;
+        
+        return virtualList;
+    }
+    
+    /**
+     * Render individual exercise item
+     * @param {Object} exercise - Exercise data
+     * @param {number} index - Item index
+     * @param {Function} onSelect - Selection callback
+     * @returns {HTMLElement} Exercise item element
+     */
+    renderExerciseItem(exercise, index, onSelect) {
+        const item = document.createElement('div');
+        item.className = 'exercise-item';
+        item.style.cssText = `
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--color-border);
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        `;
+        
+        // Exercise icon
+        const icon = document.createElement('div');
+        icon.className = 'exercise-icon';
+        icon.style.cssText = `
+            width: 48px;
+            height: 48px;
+            background: var(--color-primary-light);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            font-size: 20px;
+        `;
+        icon.textContent = this.getExerciseIcon(exercise.category);
+        
+        // Exercise content
+        const content = document.createElement('div');
+        content.style.cssText = `
+            flex: 1;
+            min-width: 0;
+        `;
+        
+        // Exercise name
+        const name = document.createElement('div');
+        name.className = 'exercise-name';
+        name.style.cssText = `
+            font-weight: 600;
+            font-size: 16px;
+            color: var(--color-text);
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        `;
+        name.textContent = exercise.name;
+        
+        // Exercise details
+        const details = document.createElement('div');
+        details.className = 'exercise-details';
+        details.style.cssText = `
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        `;
+        
+        // Difficulty badge
+        const difficulty = document.createElement('span');
+        difficulty.className = 'difficulty-badge';
+        difficulty.style.cssText = `
+            background: ${this.getDifficultyColor(exercise.difficulty)};
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        `;
+        difficulty.textContent = exercise.difficulty;
+        
+        // Duration
+        const duration = document.createElement('span');
+        duration.textContent = exercise.duration || 'N/A';
+        
+        // Equipment
+        const equipment = document.createElement('span');
+        equipment.textContent = exercise.equipment ? exercise.equipment.join(', ') : 'No equipment';
+        
+        details.appendChild(difficulty);
+        details.appendChild(duration);
+        details.appendChild(equipment);
+        
+        content.appendChild(name);
+        content.appendChild(details);
+        
+        // Add to item
+        item.appendChild(icon);
+        item.appendChild(content);
+        
+        // Add click handler
+        item.addEventListener('click', () => {
+            if (onSelect) {
+                onSelect(exercise);
+            }
+        });
+        
+        // Add hover effects
+        item.addEventListener('mouseenter', () => {
+            item.style.backgroundColor = 'var(--color-surface-hover)';
+        });
+        
+        item.addEventListener('mouseleave', () => {
+            item.style.backgroundColor = '';
+        });
+        
+        return item;
+    }
+    
+    /**
+     * Get exercise icon based on category
+     * @param {string} category - Exercise category
+     * @returns {string} Icon character
+     */
+    getExerciseIcon(category) {
+        const icons = {
+            agility: '🏃',
+            strength: '💪',
+            endurance: '❤️',
+            speed: '⚡',
+            coordination: '🎯',
+            flexibility: '🤸',
+            balance: '⚖️',
+            power: '💥',
+            technical: '⚽',
+            tactical: '🧠'
+        };
+        
+        return icons[category] || '🏃';
+    }
+    
+    /**
+     * Get difficulty color
+     * @param {string} difficulty - Difficulty level
+     * @returns {string} Color value
+     */
+    getDifficultyColor(difficulty) {
+        const colors = {
+            beginner: '#10b981',
+            intermediate: '#f59e0b',
+            advanced: '#ef4444',
+            expert: '#8b5cf6'
+        };
+        
+        return colors[difficulty] || '#6b7280';
+    }
+    
+    /**
+     * Get all exercises as flat array
+     * @returns {Array} All exercises
+     */
+    getAllExercises() {
+        const allExercises = [];
+        
+        Object.values(this.exercises).forEach(categoryExercises => {
+            allExercises.push(...categoryExercises);
+        });
+        
+        return allExercises;
+    }
     initializeSoccerExercises() {
         return {
             agility: [

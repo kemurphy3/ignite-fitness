@@ -1,9 +1,11 @@
 /**
  * Strava Ingest Handler
  * Accepts Strava activity payloads, normalizes, deduplicates, and merges activities
+ * Uses atomic transactions to ensure data consistency
  */
 
 const { createClient } = require('@supabase/supabase-js');
+const { ActivityTransactionManager } = require('./utils/activity-transaction-manager');
 
 // Mock imports for Node.js environment
 let StravaNormalizer, DedupRules, LoadMath;
@@ -17,50 +19,123 @@ try {
 }
 
 /**
+ * Process activities in batches to prevent UI blocking
+ * @param {Array} activities - Activities to process
+ * @param {string} userId - User ID
+ * @param {Object} supabase - Supabase client
+ * @param {Object} transactionManager - Transaction manager
+ * @returns {Promise} Processing results
+ */
+async function processActivitiesInBatches(activities, userId, supabase, transactionManager) {
+    const batchSize = 5;
+    const results = [];
+    const affectedDates = new Set();
+    const activitiesById = new Map();
+    
+    console.log(`Processing ${activities.length} activities in batches of ${batchSize}`);
+    
+    // Process activities in batches
+    for (let i = 0; i < activities.length; i += batchSize) {
+        const batch = activities.slice(i, i + batchSize);
+        const batchNumber = Math.floor(i / batchSize) + 1;
+        const totalBatches = Math.ceil(activities.length / batchSize);
+        
+        console.log(`Processing batch ${batchNumber}/${totalBatches} (${batch.length} activities)`);
+        
+        // Process each activity in the batch
+        for (const rawActivity of batch) {
+            try {
+                const normalized = normalizeStravaActivity(rawActivity, userId);
+                normalized.dedupHash = buildDedupHash(normalized);
+                
+                // Execute deduplication in transaction
+                const result = await transactionManager.executeActivityDedupTransaction(
+                    normalized, 
+                    userId, 
+                    affectedDates
+                );
+                
+                results.push(result);
+                
+                // Store for potential stream attachment
+                if (result.status === 'imported' || result.status === 'updated' || result.status === 'merged') {
+                    activitiesById.set(result.id, result);
+                }
+                
+            } catch (error) {
+                console.error(`Failed to process activity ${rawActivity.id}:`, error);
+                results.push({
+                    id: rawActivity.id,
+                    status: 'error',
+                    error: error.message
+                });
+            }
+        }
+        
+        // Yield to main thread between batches
+        if (i + batchSize < activities.length) {
+            await new Promise(resolve => setTimeout(resolve, 16)); // ~60fps
+        }
+    }
+    
+    // Step 2: Attach streams to activities that need them
+    await attachStreamsToActivities(activitiesById, supabase);
+    
+    // Step 3: Update daily aggregates for affected dates
+    await updateDailyAggregates(Array.from(affectedDates), userId, supabase);
+    
+    // Step 4: Log ingestion completion
+    await logIngestionCompletion(userId, results, supabase);
+    
+    return {
+        processed: results.length,
+        imported: results.filter(r => r.status === 'imported').length,
+        updated: results.filter(r => r.status === 'updated').length,
+        merged: results.filter(r => r.status === 'merged').length,
+        skipped: results.filter(r => r.status === 'skipped').length,
+        errors: results.filter(r => r.status === 'error').length,
+        affectedDates: Array.from(affectedDates),
+        results
+    };
+}
+
+/**
  * Process Strava activities through normalization, deduplication, and merging
+ * Uses atomic transactions to ensure data consistency
  */
 async function ingestStravaActivities(payload, userId, supabase) {
     const results = [];
     const affectedDates = new Set();
     const activitiesById = new Map(); // Track activities by ID for stream attachment
+    const transactionManager = new ActivityTransactionManager(supabase);
 
     console.log(`Processing ${payload.activities?.length || 0} Strava activities for user ${userId}`);
 
-    // Step 1: Normalize all activities
+    // Use batch processing for large datasets
+    if (payload.activities && payload.activities.length > 10) {
+        return await processActivitiesInBatches(payload.activities, userId, supabase, transactionManager);
+    }
     for (const rawActivity of payload.activities || []) {
         try {
             const normalized = normalizeStravaActivity(rawActivity, userId);
-            const dedupHash = buildDedupHash(normalized);
+            normalized.dedupHash = buildDedupHash(normalized);
             
-            // Check for existing activity by dedup hash
-            const existingActivity = await findActivityByDedupHash(dedupHash, userId, supabase);
-            
-            let result;
-            if (existingActivity) {
-                // Activity already exists - check if we should update
-                result = await handleExistingActivity(existingActivity, normalized, userId, supabase, affectedDates);
-            } else {
-                // New activity - check for likely duplicates
-                const likelyDuplicates = await findLikelyDuplicates(normalized, userId, supabase);
-                
-                if (likelyDuplicates.length > 0) {
-                    // Merge with existing activity
-                    result = await handleLikelyDuplicate(likelyDuplicates[0], normalized, userId, supabase, affectedDates);
-                } else {
-                    // Truly new activity - insert
-                    result = await handleNewActivity(normalized, userId, supabase, affectedDates);
-                }
-            }
+            // Execute deduplication in transaction
+            const result = await transactionManager.executeActivityDedupTransaction(
+                normalized, 
+                userId, 
+                affectedDates
+            );
             
             results.push(result);
             
             // Store for potential stream attachment
-            if (result.status === 'imported' || result.status === 'updated') {
+            if (result.status === 'imported' || result.status === 'updated' || result.status === 'merged') {
                 activitiesById.set(result.id, result);
             }
             
         } catch (error) {
-            console.error('Error processing activity:', error);
+            console.error('Error processing activity in transaction:', error);
             results.push({
                 id: rawActivity.id,
                 externalId: rawActivity.id?.toString(),
@@ -70,13 +145,33 @@ async function ingestStravaActivities(payload, userId, supabase) {
         }
     }
 
-    // Step 2: Attach streams if provided
-    if (payload.streams) {
-        await attachStreams(payload.streams, activitiesById, supabase);
+    // Step 2: Attach streams in transaction if provided
+    if (payload.streams && activitiesById.size > 0) {
+        try {
+            await transactionManager.attachStreamsInTransaction(
+                payload.streams, 
+                activitiesById, 
+                'streams_tx'
+            );
+        } catch (error) {
+            console.error('Error attaching streams in transaction:', error);
+            // Mark stream attachment as failed but don't fail the entire ingestion
+        }
     }
 
-    // Step 3: Log ingestion
-    await logIngestion(userId, 'strava', payload, results, supabase);
+    // Step 3: Log ingestion in transaction
+    try {
+        await transactionManager.logIngestionInTransaction(
+            userId, 
+            'strava', 
+            payload, 
+            results, 
+            'log_tx'
+        );
+    } catch (error) {
+        console.error('Error logging ingestion in transaction:', error);
+        // Logging failure shouldn't fail the entire ingestion
+    }
 
     // Step 4: Trigger aggregate recalculation for affected dates
     if (affectedDates.size > 0) {

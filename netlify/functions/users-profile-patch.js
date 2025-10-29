@@ -182,9 +182,10 @@ exports.handler = async (event) => {
             delete sanitizedUpdates.weight;
         }
         
-        // Build dynamic update query
+        // Build parameterized update query
         const updateFields = [];
-        const updateValues = {};
+        const updateValues = [];
+        let paramIndex = 1;
         
         for (const [key, value] of Object.entries(sanitizedUpdates)) {
             // Validate each field individually
@@ -208,8 +209,9 @@ exports.handler = async (event) => {
                 }
             }
             
-            updateFields.push(`${key} = \${${key}}`);
-            updateValues[key] = value;
+            updateFields.push(`${key} = $${paramIndex}`);
+            updateValues.push(value);
+            paramIndex++;
         }
         
         if (updateFields.length === 0) {
@@ -224,30 +226,31 @@ exports.handler = async (event) => {
         }
         
         // Add metadata fields
-        updateFields.push('last_modified_by = ${userId}');
-        updateValues.userId = userId;
+        updateFields.push(`last_modified_by = $${paramIndex}`);
+        updateValues.push(userId);
+        paramIndex++;
         
         // Set request context for trigger
         await sql`SELECT set_config('app.request_id', ${requestId}, false)`;
         
-        // Perform optimistic locking update
+        // Build parameterized query
         let query = `
             UPDATE user_profiles 
             SET ${updateFields.join(', ')}
-            WHERE user_id = \${whereUserId}
+            WHERE user_id = $${paramIndex}
         `;
+        updateValues.push(userId);
+        paramIndex++;
         
         if (expectedVersion) {
-            query += ' AND version = ${expectedVersion}';
-            updateValues.expectedVersion = expectedVersion;
+            query += ` AND version = $${paramIndex}`;
+            updateValues.push(expectedVersion);
         }
         
         query += ' RETURNING *';
         
-        updateValues.whereUserId = userId;
-        
-        // Execute dynamic update
-        const result = await sql.unsafe(query, updateValues);
+        // Execute safe parameterized update
+        const result = await sql(query, updateValues);
         
         if (result.length === 0) {
             if (expectedVersion) {

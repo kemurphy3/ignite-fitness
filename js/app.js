@@ -1,5 +1,5 @@
-// Simplified App.js - All functionality in one file for reliability
-// This ensures everything works without complex module dependencies
+// Performance-Optimized App.js with Code Splitting
+// Heavy modules are loaded dynamically to improve initial load time
 
 // Global variables
 let currentUser = null;
@@ -10,6 +10,118 @@ let seasonalTraining = null;
 let dataStore = null;
 let workoutGenerator = null;
 let patternDetector = null;
+
+// Module loading cache
+const moduleCache = new Map();
+const loadingStates = new Map();
+
+/**
+ * Dynamic module loader with caching and loading states
+ * @param {string} modulePath - Path to the module
+ * @param {string} className - Class name to instantiate
+ * @param {Object} options - Loading options
+ * @returns {Promise} Promise resolving to module instance
+ */
+async function loadModule(modulePath, className, options = {}) {
+    const cacheKey = `${modulePath}:${className}`;
+    
+    // Return cached instance if available
+    if (moduleCache.has(cacheKey)) {
+        return moduleCache.get(cacheKey);
+    }
+    
+    // Check if already loading
+    if (loadingStates.has(cacheKey)) {
+        return loadingStates.get(cacheKey);
+    }
+    
+    // Show loading state if specified
+    if (options.showLoading) {
+        showLoading(options.loadingMessage || `Loading ${className}...`);
+    }
+    
+    try {
+        // Create loading promise
+        const loadingPromise = (async () => {
+            const module = await import(modulePath);
+            const instance = new module[className]();
+            
+            // Cache the instance
+            moduleCache.set(cacheKey, instance);
+            
+            return instance;
+        })();
+        
+        // Store loading promise
+        loadingStates.set(cacheKey, loadingPromise);
+        
+        const instance = await loadingPromise;
+        
+        // Clean up loading state
+        loadingStates.delete(cacheKey);
+        
+        if (options.showLoading) {
+            hideLoading();
+        }
+        
+        return instance;
+        
+    } catch (error) {
+        console.error(`Failed to load module ${modulePath}:`, error);
+        loadingStates.delete(cacheKey);
+        
+        if (options.showLoading) {
+            hideLoading();
+        }
+        
+        throw error;
+    }
+}
+
+/**
+ * Load heavy modules on demand
+ */
+async function loadHeavyModules() {
+    try {
+        // Load soccer exercises only when needed
+        const soccerExercises = await loadModule(
+            './modules/sports/SoccerExercises.js',
+            'SoccerExercises',
+            { showLoading: true, loadingMessage: 'Loading soccer exercises...' }
+        );
+        
+        // Load seasonal programs only when needed
+        const seasonalPrograms = await loadModule(
+            './modules/sports/SeasonalPrograms.js',
+            'SeasonalPrograms',
+            { showLoading: true, loadingMessage: 'Loading seasonal programs...' }
+        );
+        
+        return { soccerExercises, seasonalPrograms };
+        
+    } catch (error) {
+        console.error('Failed to load heavy modules:', error);
+        showError(null, 'Failed to load some features. Please refresh the page.');
+        return null;
+    }
+}
+
+/**
+ * Preload critical modules in background
+ */
+function preloadCriticalModules() {
+    // Preload modules that are likely to be needed soon
+    const criticalModules = [
+        { path: './modules/ai/ExpertCoordinator.js', className: 'ExpertCoordinator' },
+        { path: './modules/ui/DashboardRenderer.js', className: 'DashboardRenderer' },
+        { path: './modules/workout/WorkoutGenerator.js', className: 'WorkoutGenerator' }
+    ];
+    
+    criticalModules.forEach(({ path, className }) => {
+        loadModule(path, className, { showLoading: false })
+            .catch(error => console.warn(`Preload failed for ${className}:`, error));
+    });
+}
 
 // Data migration system
 function migrateUserData() {
@@ -189,20 +301,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Initialize AI system
-    initializeAI();
+    // Initialize core systems with dynamic loading
+    initializeCoreSystems();
     
-    // Initialize seasonal training
-    initializeSeasonalTraining();
-    
-    // Initialize data store
-    initializeDataStore();
-    
-    // Initialize workout generator
-    initializeWorkoutGenerator();
-    
-    // Initialize pattern detector
-    initializePatternDetector();
+    // Preload critical modules in background
+    preloadCriticalModules();
     
     // Add workout styles
     addWorkoutStyles();
@@ -574,12 +677,13 @@ async function saveGoals() {
 }
 
 // Workout Generator Functions
-function initializeWorkoutGenerator() {
-    if (typeof WorkoutGenerator !== 'undefined') {
-        workoutGenerator = new WorkoutGenerator();
+async function initializeWorkoutGenerator() {
+    try {
+        const workoutModule = await loadModule('./modules/workout/WorkoutGenerator.js', 'WorkoutGenerator');
+        workoutGenerator = workoutModule;
         console.log('Workout generator initialized');
-    } else {
-        console.warn('WorkoutGenerator not available');
+    } catch (error) {
+        console.warn('WorkoutGenerator not available:', error);
     }
 }
 
@@ -776,13 +880,50 @@ function addWorkoutStyles() {
     document.head.appendChild(style);
 }
 
+/**
+ * Load soccer exercises when needed
+ */
+async function loadSoccerExercises() {
+    try {
+        const soccerModule = await loadModule(
+            './modules/sports/SoccerExercises.js',
+            'SoccerExercises',
+            { showLoading: true, loadingMessage: 'Loading soccer exercises...' }
+        );
+        return soccerModule;
+    } catch (error) {
+        console.error('Failed to load soccer exercises:', error);
+        showError(null, 'Soccer exercises not available. Please refresh the page.');
+        return null;
+    }
+}
+
+/**
+ * Load seasonal programs when needed
+ */
+async function loadSeasonalPrograms() {
+    try {
+        const seasonalModule = await loadModule(
+            './modules/sports/SeasonalPrograms.js',
+            'SeasonalPrograms',
+            { showLoading: true, loadingMessage: 'Loading seasonal programs...' }
+        );
+        return seasonalModule;
+    } catch (error) {
+        console.error('Failed to load seasonal programs:', error);
+        showError(null, 'Seasonal programs not available. Please refresh the page.');
+        return null;
+    }
+}
+
 // Pattern Detector Functions
-function initializePatternDetector() {
-    if (typeof PatternDetector !== 'undefined') {
-        patternDetector = new PatternDetector();
+async function initializePatternDetector() {
+    try {
+        const patternModule = await loadModule('./modules/ai/PatternDetector.js', 'PatternDetector');
+        patternDetector = patternModule;
         console.log('Pattern detector initialized');
-    } else {
-        console.warn('PatternDetector not available');
+    } catch (error) {
+        console.warn('PatternDetector not available:', error);
     }
 }
 
@@ -1228,24 +1369,51 @@ function showSuccess(message) {
     }, 3000);
 }
 
+/**
+ * Initialize core systems with dynamic loading
+ */
+async function initializeCoreSystems() {
+    try {
+        // Initialize AI system
+        await initializeAI();
+        
+        // Initialize data store
+        await initializeDataStore();
+        
+        // Initialize workout generator
+        await initializeWorkoutGenerator();
+        
+        // Initialize pattern detector
+        await initializePatternDetector();
+        
+        console.log('Core systems initialized successfully');
+        
+    } catch (error) {
+        console.error('Failed to initialize core systems:', error);
+        showError(null, 'Some features may not be available. Please refresh the page.');
+    }
+}
+
 // AI System Functions
-function initializeAI() {
-    if (typeof ContextAwareAI !== 'undefined') {
-        contextAwareAI = new ContextAwareAI();
+async function initializeAI() {
+    try {
+        const aiModule = await loadModule('./modules/ai/ContextAwareAI.js', 'ContextAwareAI');
+        contextAwareAI = aiModule;
         console.log('AI system initialized');
-    } else {
-        console.warn('ContextAwareAI not available');
+    } catch (error) {
+        console.warn('ContextAwareAI not available:', error);
     }
 }
 
 // Seasonal Training Functions
-function initializeSeasonalTraining() {
-    if (typeof SeasonalTrainingSystem !== 'undefined') {
-        seasonalTraining = new SeasonalTrainingSystem();
+async function initializeSeasonalTraining() {
+    try {
+        const seasonalModule = await loadModule('./modules/sports/SeasonalTrainingSystem.js', 'SeasonalTrainingSystem');
+        seasonalTraining = seasonalModule;
         seasonalTraining.initialize();
         console.log('Seasonal training system initialized');
-    } else {
-        console.warn('SeasonalTrainingSystem not available');
+    } catch (error) {
+        console.warn('SeasonalTrainingSystem not available:', error);
     }
 }
 
@@ -1392,13 +1560,14 @@ function addGame() {
 }
 
 // Data Store Functions
-function initializeDataStore() {
-    if (typeof DataStore !== 'undefined') {
-        dataStore = new DataStore();
+async function initializeDataStore() {
+    try {
+        const dataStoreModule = await loadModule('./modules/data/DataStore.js', 'DataStore');
+        dataStore = dataStoreModule;
         dataStore.setCurrentUser(currentUser);
         console.log('Data store initialized');
-    } else {
-        console.warn('DataStore not available');
+    } catch (error) {
+        console.warn('DataStore not available:', error);
     }
 }
 

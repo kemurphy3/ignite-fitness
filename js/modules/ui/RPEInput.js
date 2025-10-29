@@ -27,7 +27,19 @@ class RPEInput {
                 <div class="modal-body rpe-wheel-container">
                     <div class="rpe-wheel">
                         <div class="rpe-value" id="rpe-value">5</div>
-                        <input type="range" id="rpe-slider" min="1" max="10" value="5" step="1">
+                        <input 
+                            type="range" 
+                            id="rpe-slider" 
+                            min="1" 
+                            max="10" 
+                            value="5" 
+                            step="1"
+                            aria-label="Rate of Perceived Exertion slider"
+                            aria-valuemin="1"
+                            aria-valuemax="10"
+                            aria-valuenow="5"
+                            aria-valuetext="Moderate effort"
+                        >
                         <div class="rpe-descriptions">
                             <span class="rpe-low">1-3: Very Easy</span>
                             <span class="rpe-moderate">4-6: Moderate</span>
@@ -94,6 +106,8 @@ class RPEInput {
         this.currentRPE = rpe;
         
         const valueDisplay = document.getElementById('rpe-value');
+        const slider = document.getElementById('rpe-slider');
+        
         if (valueDisplay) {
             valueDisplay.textContent = rpe;
             
@@ -110,11 +124,33 @@ class RPEInput {
             }
         }
         
-        // Update slider
-        const slider = document.getElementById('rpe-slider');
+        // Update slider with accessibility attributes
         if (slider) {
             slider.value = rpe;
+            slider.setAttribute('aria-valuenow', rpe);
+            slider.setAttribute('aria-valuetext', this.getRPEDescription(rpe));
         }
+    }
+
+    /**
+     * Get RPE description for accessibility
+     * @param {number} rpe - RPE value
+     * @returns {string} Description
+     */
+    getRPEDescription(rpe) {
+        const descriptions = {
+            1: 'Very light effort - minimal exertion',
+            2: 'Light effort - easy breathing',
+            3: 'Moderate effort - comfortable pace',
+            4: 'Moderate effort - noticeable breathing',
+            5: 'Moderate effort - steady pace',
+            6: 'Moderate effort - slightly challenging',
+            7: 'Hard effort - difficult but sustainable',
+            8: 'Hard effort - very challenging',
+            9: 'Very hard effort - extremely difficult',
+            10: 'Maximum effort - all-out exertion'
+        };
+        return descriptions[rpe] || 'Moderate effort';
     }
 
     /**

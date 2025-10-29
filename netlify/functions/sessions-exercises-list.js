@@ -142,7 +142,7 @@ const sql = getNeonClient();
         // Build cursor condition for exercises
         const cursorCondition = buildCursorCondition(pagination.cursor, 'created_at ASC, id ASC', 'e');
         
-        // Fetch exercises with stable ordering and pagination
+        // Fetch exercises with stable ordering and pagination using safe parameterized query
         const exercisesQuery = `
             SELECT 
                 id, name, sets, reps, weight, rpe,
@@ -154,7 +154,7 @@ const sql = getNeonClient();
         `;
         
         const queryParams = [sessionId, ...cursorCondition.values, pagination.limit + 1];
-        const exercises = await sql.unsafe(exercisesQuery, queryParams);
+        const exercises = await sql(exercisesQuery, queryParams);
         
         // Create paginated response
         const paginatedResponse = createPaginatedResponse(

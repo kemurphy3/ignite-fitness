@@ -8,6 +8,8 @@ class BottomNavigation {
         this.isVisible = true;
         this.activeTab = null;
         this.tabs = [];
+        this.currentIndex = 0;
+        this.isKeyboardNavigating = false;
         
         this.initializeNavigation();
         this.setupEventListeners();
@@ -91,19 +93,24 @@ class BottomNavigation {
      */
     generateNavigationHTML() {
         return `
-            <div class="nav-container">
+            <div class="nav-container" role="navigation" aria-label="Main navigation">
                 ${this.tabs.map(tab => `
                     <button 
                         class="nav-tab" 
                         data-route="${tab.route}"
                         data-tab="${tab.id}"
+                        aria-label="Navigate to ${tab.label}"
+                        aria-describedby="${tab.id}-description"
                         onclick="bottomNavigation.navigateToTab('${tab.id}')"
-                        ${this.isTabDisabled(tab) ? 'disabled' : ''}
+                        ${this.isTabDisabled(tab) ? 'disabled aria-disabled="true"' : ''}
                     >
-                        <div class="nav-icon">${tab.icon}</div>
+                        <div class="nav-icon" aria-hidden="true">${tab.icon}</div>
                         <div class="nav-label">${tab.label}</div>
-                        ${this.isTabDisabled(tab) ? '<div class="nav-lock">🔒</div>' : ''}
+                        ${this.isTabDisabled(tab) ? '<div class="nav-lock" aria-hidden="true">🔒</div>' : ''}
                     </button>
+                    <div id="${tab.id}-description" class="sr-only">
+                        ${tab.description || `Access the ${tab.label} section`}
+                    </div>
                 `).join('')}
             </div>
         `;
@@ -141,6 +148,9 @@ class BottomNavigation {
         window.addEventListener('resize', () => {
             this.handleResize();
         });
+
+        // Add keyboard navigation support
+        this.setupKeyboardNavigation();
 
         // Handle orientation change
         window.addEventListener('orientationchange', () => {
@@ -347,6 +357,187 @@ class BottomNavigation {
     removeTab(tabId) {
         this.tabs = this.tabs.filter(tab => tab.id !== tabId);
         this.updateNavigation();
+    }
+
+    /**
+     * Setup keyboard navigation for bottom navigation
+     */
+    setupKeyboardNavigation() {
+        document.addEventListener('keydown', (e) => {
+            // Only handle navigation when bottom nav is visible and focused
+            const navContainer = document.querySelector('.nav-container');
+            if (!navContainer || navContainer.classList.contains('hidden')) {
+                return;
+            }
+
+            // Check if we're in the navigation area
+            const activeElement = document.activeElement;
+            const isInNav = navContainer.contains(activeElement) || 
+                           activeElement.classList.contains('nav-tab');
+
+            if (!isInNav && !this.isKeyboardNavigating) {
+                return;
+            }
+
+            switch (e.key) {
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    this.navigateToPreviousTab();
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    this.navigateToNextTab();
+                    break;
+                case 'Home':
+                    e.preventDefault();
+                    this.navigateToFirstTab();
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    this.navigateToLastTab();
+                    break;
+                case 'Enter':
+                case ' ':
+                    e.preventDefault();
+                    this.activateCurrentTab();
+                    break;
+                case 'Escape':
+                    e.preventDefault();
+                    this.exitKeyboardNavigation();
+                    break;
+            }
+        });
+
+        // Handle focus management
+        document.addEventListener('focusin', (e) => {
+            const navContainer = document.querySelector('.nav-container');
+            if (navContainer && navContainer.contains(e.target)) {
+                this.isKeyboardNavigating = true;
+                this.updateKeyboardFocus();
+            }
+        });
+
+        document.addEventListener('focusout', (e) => {
+            const navContainer = document.querySelector('.nav-container');
+            if (navContainer && !navContainer.contains(e.target)) {
+                this.isKeyboardNavigating = false;
+            }
+        });
+    }
+
+    /**
+     * Navigate to previous tab
+     */
+    navigateToPreviousTab() {
+        if (this.currentIndex > 0) {
+            this.currentIndex--;
+            this.updateKeyboardFocus();
+            this.announceTabChange();
+        }
+    }
+
+    /**
+     * Navigate to next tab
+     */
+    navigateToNextTab() {
+        if (this.currentIndex < this.tabs.length - 1) {
+            this.currentIndex++;
+            this.updateKeyboardFocus();
+            this.announceTabChange();
+        }
+    }
+
+    /**
+     * Navigate to first tab
+     */
+    navigateToFirstTab() {
+        this.currentIndex = 0;
+        this.updateKeyboardFocus();
+        this.announceTabChange();
+    }
+
+    /**
+     * Navigate to last tab
+     */
+    navigateToLastTab() {
+        this.currentIndex = this.tabs.length - 1;
+        this.updateKeyboardFocus();
+        this.announceTabChange();
+    }
+
+    /**
+     * Activate current tab
+     */
+    activateCurrentTab() {
+        const currentTab = this.tabs[this.currentIndex];
+        if (currentTab && !this.isTabDisabled(currentTab)) {
+            this.navigateToTab(currentTab.id);
+        }
+    }
+
+    /**
+     * Exit keyboard navigation mode
+     */
+    exitKeyboardNavigation() {
+        this.isKeyboardNavigating = false;
+        const navContainer = document.querySelector('.nav-container');
+        if (navContainer) {
+            navContainer.blur();
+        }
+        this.announceToScreenReader('Exited navigation mode');
+    }
+
+    /**
+     * Update keyboard focus indicator
+     */
+    updateKeyboardFocus() {
+        const navButtons = document.querySelectorAll('.nav-tab');
+        navButtons.forEach((button, index) => {
+            if (index === this.currentIndex) {
+                button.classList.add('keyboard-focus');
+                button.setAttribute('aria-selected', 'true');
+                button.focus();
+            } else {
+                button.classList.remove('keyboard-focus');
+                button.setAttribute('aria-selected', 'false');
+            }
+        });
+    }
+
+    /**
+     * Announce tab change to screen readers
+     */
+    announceTabChange() {
+        const currentTab = this.tabs[this.currentIndex];
+        if (currentTab) {
+            const announcement = `${currentTab.label} tab, ${this.currentIndex + 1} of ${this.tabs.length}`;
+            this.announceToScreenReader(announcement);
+        }
+    }
+
+    /**
+     * Announce text to screen readers
+     * @param {string} text - Text to announce
+     */
+    announceToScreenReader(text) {
+        let liveRegion = document.getElementById('nav-announcements');
+        if (!liveRegion) {
+            liveRegion = document.createElement('div');
+            liveRegion.id = 'nav-announcements';
+            liveRegion.setAttribute('aria-live', 'polite');
+            liveRegion.setAttribute('aria-atomic', 'true');
+            liveRegion.className = 'sr-only';
+            document.body.appendChild(liveRegion);
+        }
+        
+        liveRegion.textContent = text;
+        
+        // Clear announcement after a short delay
+        setTimeout(() => {
+            if (liveRegion) {
+                liveRegion.textContent = '';
+            }
+        }, 1000);
     }
 }
 

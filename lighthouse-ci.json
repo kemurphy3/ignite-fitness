@@ -1,0 +1,92 @@
+{
+  "ci": {
+    "collect": {
+      "url": [
+        "http://localhost:3000",
+        "http://localhost:3000/#/workout",
+        "http://localhost:3000/#/progress",
+        "http://localhost:3000/#/exercises"
+      ],
+      "numberOfRuns": 3,
+      "settings": {
+        "chromeFlags": "--no-sandbox --disable-dev-shm-usage",
+        "emulatedFormFactor": "mobile",
+        "throttling": {
+          "rttMs": 150,
+          "throughputKbps": 1638.4,
+          "cpuSlowdownMultiplier": 4
+        }
+      }
+    },
+    "assert": {
+      "assertions": {
+        "categories:performance": ["error", { "minScore": 0.9 }],
+        "categories:accessibility": ["error", { "minScore": 0.9 }],
+        "categories:best-practices": ["error", { "minScore": 0.9 }],
+        "categories:seo": ["error", { "minScore": 0.9 }],
+        "categories:pwa": ["error", { "minScore": 0.9 }],
+        
+        "first-contentful-paint": ["error", { "maxNumericValue": 2000 }],
+        "largest-contentful-paint": ["error", { "maxNumericValue": 2500 }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1 }],
+        "total-blocking-time": ["error", { "maxNumericValue": 300 }],
+        "speed-index": ["error", { "maxNumericValue": 3800 }],
+        
+        "resource-summary:script:size": ["error", { "maxNumericValue": 500000 }],
+        "resource-summary:stylesheet:size": ["error", { "maxNumericValue": 100000 }],
+        "resource-summary:image:size": ["error", { "maxNumericValue": 200000 }],
+        "resource-summary:total:size": ["error", { "maxNumericValue": 1000000 }],
+        
+        "unused-javascript": ["error", { "maxNumericValue": 100000 }],
+        "unused-css-rules": ["error", { "maxNumericValue": 50000 }],
+        "render-blocking-resources": ["error", { "maxNumericValue": 0 }],
+        "unminified-javascript": ["error", { "maxNumericValue": 0 }],
+        "unminified-css": ["error", { "maxNumericValue": 0 }],
+        
+        "uses-http2": ["error", { "maxNumericValue": 0 }],
+        "uses-text-compression": ["error", { "maxNumericValue": 0 }],
+        "uses-responsive-images": ["error", { "maxNumericValue": 0 }],
+        "uses-webp-images": ["error", { "maxNumericValue": 0 }],
+        "uses-optimized-images": ["error", { "maxNumericValue": 0 }],
+        
+        "efficient-animated-content": ["error", { "maxNumericValue": 0 }],
+        "preload-lcp-image": ["error", { "maxNumericValue": 0 }],
+        "uses-rel-preconnect": ["error", { "maxNumericValue": 0 }],
+        "uses-rel-preload": ["error", { "maxNumericValue": 0 }],
+        
+        "no-unload-listeners": ["error", { "maxNumericValue": 0 }],
+        "no-document-write": ["error", { "maxNumericValue": 0 }],
+        "no-vulnerable-libraries": ["error", { "maxNumericValue": 0 }],
+        "no-mixed-content": ["error", { "maxNumericValue": 0 }],
+        
+        "csp-xss": ["error", { "maxNumericValue": 0 }],
+        "is-on-https": ["error", { "maxNumericValue": 0 }],
+        "uses-https": ["error", { "maxNumericValue": 0 }],
+        
+        "viewport": ["error", { "maxNumericValue": 0 }],
+        "color-contrast": ["error", { "maxNumericValue": 0 }],
+        "image-alt": ["error", { "maxNumericValue": 0 }],
+        "label": ["error", { "maxNumericValue": 0 }],
+        "link-name": ["error", { "maxNumericValue": 0 }],
+        "button-name": ["error", { "maxNumericValue": 0 }],
+        
+        "document-title": ["error", { "maxNumericValue": 0 }],
+        "meta-description": ["error", { "maxNumericValue": 0 }],
+        "link-text": ["error", { "maxNumericValue": 0 }],
+        "crawlable-anchors": ["error", { "maxNumericValue": 0 }],
+        
+        "installable-manifest": ["error", { "maxNumericValue": 0 }],
+        "service-worker": ["error", { "maxNumericValue": 0 }],
+        "splash-screen": ["error", { "maxNumericValue": 0 }],
+        "themed-omnibox": ["error", { "maxNumericValue": 0 }],
+        "content-width": ["error", { "maxNumericValue": 0 }],
+        "apple-touch-icon": ["error", { "maxNumericValue": 0 }]
+      }
+    },
+    "upload": {
+      "target": "filesystem",
+      "outputDir": "./lighthouse-reports",
+      "reportFilenamePattern": "%%PATHNAME%%-%%DATETIME%%-report.%%EXTENSION%%"
+    }
+  }
+}

@@ -1,12 +1,12 @@
 /**
- * Trends - Real chart rendering with lazy loading
- * Replaces chart placeholders with Chart.js visualizations
+ * Trends - Real chart rendering with ChartManager
+ * Uses web worker for chart rendering to prevent main thread blocking
  */
 class Trends {
     constructor() {
         this.logger = window.SafeLogger || console;
         this.storageManager = window.StorageManager;
-        this.chartLibrary = null; // Lazy loaded
+        this.chartManager = null; // ChartManager instance
         this.charts = new Map(); // Active charts
         this.cache = {
             last30Days: null,
@@ -23,6 +23,16 @@ class Trends {
      */
     async init() {
         this.logger.debug('Initializing Trends module');
+        
+        // Initialize ChartManager
+        try {
+            this.chartManager = new ChartManager();
+            await this.chartManager.init();
+            this.logger.debug('ChartManager initialized');
+        } catch (error) {
+            this.logger.error('Failed to initialize ChartManager:', error);
+            return;
+        }
         
         // Set up intersection observer for lazy loading
         if ('IntersectionObserver' in window) {
@@ -66,16 +76,11 @@ class Trends {
             // Show loading skeleton
             this.showSkeleton(element);
 
-            // Load chart library if not already loaded
-            if (!this.chartLibrary) {
-                await this.loadChartLibrary();
-            }
-
             // Get data for chart
             const data = await this.getDataForChart(chartId);
 
-            // Render chart
-            this.renderChart(element, chartId, data);
+            // Render chart using ChartManager
+            await this.renderChart(element, chartId, data);
 
         } catch (error) {
             this.logger.error('Failed to load chart', error);
@@ -338,21 +343,602 @@ class Trends {
      * @param {string} chartId - Chart identifier
      * @param {Object} data - Chart data
      */
-    renderChart(element, chartId, data) {
-        if (!this.chartLibrary) {
-            throw new Error('Chart library not loaded');
+    async renderChart(element, chartId, data) {
+        if (!this.chartManager) {
+            throw new Error('ChartManager not initialized');
         }
 
-        // Determine chart type
+        // Create canvas element
+        const canvas = document.createElement('canvas');
+        canvas.dataset.chartId = chartId;
+        canvas.width = element.offsetWidth || 400;
+        canvas.height = element.offsetHeight || 300;
+        
+        // Clear element and add canvas
+        element.innerHTML = '';
+        element.appendChild(canvas);
+
+        // Determine chart type and get configuration
+        let config;
         if (chartId.includes('strength') || chartId.includes('strengthChart')) {
-            this.renderStrengthChart(element, data);
+            config = this.getStrengthChartConfig(data);
         } else if (chartId.includes('volume') || chartId.includes('volumeChart')) {
-            this.renderVolumeChart(element, data);
+            config = this.getVolumeChartConfig(data);
         } else if (chartId.includes('consistency') || chartId.includes('consistencyChart')) {
-            this.renderConsistencyChart(element, data);
+            config = this.getConsistencyChartConfig(data);
         } else {
             this.logger.warn('Unknown chart type', chartId);
+            return;
         }
+
+        // Create chart using ChartManager
+        try {
+            const chart = await this.chartManager.createChart(chartId, config, canvas);
+            this.charts.set(chartId, chart);
+            
+            // Add accessibility features
+            this.addChartAccessibility(element, chartId, data, config);
+            
+        } catch (error) {
+            this.logger.error('Failed to create chart:', error);
+            throw error;
+        }
+
+    /**
+     * Add accessibility features to chart
+     * @param {HTMLElement} element - Chart container element
+     * @param {string} chartId - Chart identifier
+     * @param {Object} data - Chart data
+     * @param {Object} config - Chart configuration
+     */
+    addChartAccessibility(element, chartId, data, config) {
+        const canvas = element.querySelector('canvas');
+        if (!canvas) return;
+
+        // Add ARIA attributes to canvas
+        const chartDescription = this.generateChartDescription(chartId, data, config);
+        canvas.setAttribute('role', 'img');
+        canvas.setAttribute('aria-label', chartDescription.title);
+        canvas.setAttribute('aria-describedby', `${chartId}-description`);
+
+        // Add description
+        const descriptionDiv = document.createElement('div');
+        descriptionDiv.id = `${chartId}-description`;
+        descriptionDiv.className = 'sr-only';
+        descriptionDiv.innerHTML = chartDescription.full;
+        element.appendChild(descriptionDiv);
+
+        // Add data table for screen readers
+        const dataTable = this.createDataTable(chartId, data, config);
+        if (dataTable) {
+            element.appendChild(dataTable);
+        }
+
+        // Add keyboard navigation
+        this.addKeyboardNavigation(canvas, chartId);
+    }
+
+    /**
+     * Generate chart description for screen readers
+     * @param {string} chartId - Chart identifier
+     * @param {Object} data - Chart data
+     * @param {Object} config - Chart configuration
+     * @returns {Object} Description object
+     */
+    generateChartDescription(chartId, data, config) {
+        const descriptions = {
+            'strength-chart': {
+                title: 'Strength progress chart showing personal records over time',
+                full: this.generateStrengthDescription(data)
+            },
+            'volume-chart': {
+                title: 'Training volume chart showing weekly workout intensity',
+                full: this.generateVolumeDescription(data)
+            },
+            'consistency-chart': {
+                title: 'Workout consistency chart showing training frequency',
+                full: this.generateConsistencyDescription(data)
+            }
+        };
+
+        return descriptions[chartId] || {
+            title: `Chart displaying ${chartId} data`,
+            full: `Data visualization showing ${chartId} information.`
+        };
+    }
+
+    /**
+     * Generate strength chart description
+     * @param {Object} data - Chart data
+     * @returns {string} Description text
+     */
+    generateStrengthDescription(data) {
+        const prs = data.strengthPRs || {};
+        const exercises = Object.keys(prs);
+        
+        if (exercises.length === 0) {
+            return 'No personal records recorded yet. Start tracking your strength progress.';
+        }
+
+        let description = `Strength progress chart showing personal records for ${exercises.length} exercises. `;
+        
+        exercises.forEach(exercise => {
+            const pr = prs[exercise];
+            description += `${exercise}: ${pr.max} pounds on ${pr.date}. `;
+        });
+
+        return description;
+    }
+
+    /**
+     * Generate volume chart description
+     * @param {Object} data - Chart data
+     * @returns {string} Description text
+     */
+    generateVolumeDescription(data) {
+        const volumes = data.weeklyVolumes || [];
+        
+        if (volumes.length === 0) {
+            return 'No training volume data available yet.';
+        }
+
+        const totalVolume = volumes.reduce((sum, week) => sum + week.volume, 0);
+        const averageVolume = Math.round(totalVolume / volumes.length);
+        const peakWeek = volumes.reduce((max, week) => week.volume > max.volume ? week : max, volumes[0]);
+
+        return `Training volume chart showing ${volumes.length} weeks of data. ` +
+               `Average weekly volume: ${averageVolume} pounds. ` +
+               `Peak week: ${peakWeek.volume} pounds on ${peakWeek.week}.`;
+    }
+
+    /**
+     * Generate consistency chart description
+     * @param {Object} data - Chart data
+     * @returns {string} Description text
+     */
+    generateConsistencyDescription(data) {
+        const consistency = data.consistency || {};
+        const weeks = Object.keys(consistency);
+        
+        if (weeks.length === 0) {
+            return 'No consistency data available yet.';
+        }
+
+        const totalWorkouts = Object.values(consistency).reduce((sum, count) => sum + count, 0);
+        const averageWorkouts = Math.round(totalWorkouts / weeks.length);
+
+        return `Workout consistency chart showing ${weeks.length} weeks of training data. ` +
+               `Average workouts per week: ${averageWorkouts}. ` +
+               `Total workouts completed: ${totalWorkouts}.`;
+    }
+
+    /**
+     * Create data table for screen readers
+     * @param {string} chartId - Chart identifier
+     * @param {Object} data - Chart data
+     * @param {Object} config - Chart configuration
+     * @returns {HTMLElement} Data table element
+     */
+    createDataTable(chartId, data, config) {
+        const table = document.createElement('table');
+        table.className = 'sr-only chart-data-table';
+        table.setAttribute('aria-label', `Data table for ${chartId}`);
+
+        // Create table based on chart type
+        if (chartId.includes('strength')) {
+            this.createStrengthDataTable(table, data);
+        } else if (chartId.includes('volume')) {
+            this.createVolumeDataTable(table, data);
+        } else if (chartId.includes('consistency')) {
+            this.createConsistencyDataTable(table, data);
+        } else {
+            return null; // Unknown chart type
+        }
+
+        return table;
+    }
+
+    /**
+     * Create strength data table
+     * @param {HTMLElement} table - Table element
+     * @param {Object} data - Chart data
+     */
+    createStrengthDataTable(table, data) {
+        const prs = data.strengthPRs || {};
+        
+        // Table header
+        const thead = document.createElement('thead');
+        thead.innerHTML = `
+            <tr>
+                <th scope="col">Exercise</th>
+                <th scope="col">Personal Record</th>
+                <th scope="col">Date</th>
+                <th scope="col">Previous PR</th>
+            </tr>
+        `;
+        table.appendChild(thead);
+
+        // Table body
+        const tbody = document.createElement('tbody');
+        Object.entries(prs).forEach(([exercise, pr]) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${exercise}</td>
+                <td>${pr.max} lbs</td>
+                <td>${pr.date}</td>
+                <td>${pr.previous || 'N/A'}</td>
+            `;
+            tbody.appendChild(row);
+        });
+        table.appendChild(tbody);
+    }
+
+    /**
+     * Create volume data table
+     * @param {HTMLElement} table - Table element
+     * @param {Object} data - Chart data
+     */
+    createVolumeDataTable(table, data) {
+        const volumes = data.weeklyVolumes || [];
+        
+        // Table header
+        const thead = document.createElement('thead');
+        thead.innerHTML = `
+            <tr>
+                <th scope="col">Week</th>
+                <th scope="col">Volume (lbs)</th>
+                <th scope="col">Workouts</th>
+                <th scope="col">Average per Workout</th>
+            </tr>
+        `;
+        table.appendChild(thead);
+
+        // Table body
+        const tbody = document.createElement('tbody');
+        volumes.forEach(week => {
+            const row = document.createElement('tr');
+            const avgPerWorkout = Math.round(week.volume / week.workouts);
+            row.innerHTML = `
+                <td>${week.week}</td>
+                <td>${week.volume}</td>
+                <td>${week.workouts}</td>
+                <td>${avgPerWorkout}</td>
+            `;
+            tbody.appendChild(row);
+        });
+        table.appendChild(tbody);
+    }
+
+    /**
+     * Create consistency data table
+     * @param {HTMLElement} table - Table element
+     * @param {Object} data - Chart data
+     */
+    createConsistencyDataTable(table, data) {
+        const consistency = data.consistency || {};
+        
+        // Table header
+        const thead = document.createElement('thead');
+        thead.innerHTML = `
+            <tr>
+                <th scope="col">Week</th>
+                <th scope="col">Workouts</th>
+                <th scope="col">Consistency Score</th>
+            </tr>
+        `;
+        table.appendChild(thead);
+
+        // Table body
+        const tbody = document.createElement('tbody');
+        Object.entries(consistency).forEach(([week, count]) => {
+            const row = document.createElement('tr');
+            const score = count >= 3 ? 'Good' : count >= 2 ? 'Fair' : 'Poor';
+            row.innerHTML = `
+                <td>${week}</td>
+                <td>${count}</td>
+                <td>${score}</td>
+            `;
+            tbody.appendChild(row);
+        });
+        table.appendChild(tbody);
+    }
+
+    /**
+     * Add keyboard navigation to chart
+     * @param {HTMLElement} canvas - Canvas element
+     * @param {string} chartId - Chart identifier
+     */
+    addKeyboardNavigation(canvas, chartId) {
+        canvas.setAttribute('tabindex', '0');
+        canvas.setAttribute('aria-label', `Interactive chart: ${chartId}. Use arrow keys to navigate data points.`);
+        
+        canvas.addEventListener('keydown', (e) => {
+            this.handleChartKeyboardNavigation(e, chartId);
+        });
+    }
+
+    /**
+     * Handle keyboard navigation for charts
+     * @param {KeyboardEvent} e - Keyboard event
+     * @param {string} chartId - Chart identifier
+     */
+    handleChartKeyboardNavigation(e, chartId) {
+        const chart = this.charts.get(chartId);
+        if (!chart) return;
+
+        switch (e.key) {
+            case 'ArrowLeft':
+                e.preventDefault();
+                this.announceChartData(chartId, 'previous');
+                break;
+            case 'ArrowRight':
+                e.preventDefault();
+                this.announceChartData(chartId, 'next');
+                break;
+            case 'Enter':
+            case ' ':
+                e.preventDefault();
+                this.announceChartSummary(chartId);
+                break;
+            case 'Escape':
+                e.preventDefault();
+                this.announceChartExit(chartId);
+                break;
+        }
+    }
+
+    /**
+     * Announce chart data to screen readers
+     * @param {string} chartId - Chart identifier
+     * @param {string} direction - Navigation direction
+     */
+    announceChartData(chartId, direction) {
+        const chart = this.charts.get(chartId);
+        if (!chart) return;
+
+        // This would announce specific data points
+        // Implementation depends on chart data structure
+        const announcement = `Navigating ${direction} in ${chartId} chart`;
+        this.announceToScreenReader(announcement);
+    }
+
+    /**
+     * Announce chart summary to screen readers
+     * @param {string} chartId - Chart identifier
+     */
+    announceChartSummary(chartId) {
+        const chart = this.charts.get(chartId);
+        if (!chart) return;
+
+        const summary = `Chart summary: ${chartId} data visualization`;
+        this.announceToScreenReader(summary);
+    }
+
+    /**
+     * Announce chart exit to screen readers
+     * @param {string} chartId - Chart identifier
+     */
+    announceChartExit(chartId) {
+        const announcement = `Exiting ${chartId} chart navigation`;
+        this.announceToScreenReader(announcement);
+    }
+
+    /**
+     * Announce text to screen readers
+     * @param {string} text - Text to announce
+     */
+    announceToScreenReader(text) {
+        let liveRegion = document.getElementById('chart-announcements');
+        if (!liveRegion) {
+            liveRegion = document.createElement('div');
+            liveRegion.id = 'chart-announcements';
+            liveRegion.setAttribute('aria-live', 'polite');
+            liveRegion.setAttribute('aria-atomic', 'true');
+            liveRegion.className = 'sr-only';
+            document.body.appendChild(liveRegion);
+        }
+        
+        liveRegion.textContent = text;
+        
+        // Clear announcement after a short delay
+        setTimeout(() => {
+            if (liveRegion) {
+                liveRegion.textContent = '';
+            }
+        }, 1000);
+    }
+
+    /**
+     * Get strength chart configuration
+     * @param {Object} data - Chart data
+     * @returns {Object} Chart.js configuration
+     */
+    getStrengthChartConfig(data) {
+        const prs = data.strengthPRs || {};
+        const labels = Object.keys(prs);
+        const maxWeights = Object.values(prs).map(pr => pr.max);
+
+        return {
+            type: 'bar',
+            data: {
+                labels: labels.length > 0 ? labels : ['No PRs yet'],
+                datasets: [{
+                    label: 'Max 1RM',
+                    data: maxWeights.length > 0 ? maxWeights : [0],
+                    backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Strength Progress (Personal Records)'
+                    },
+                    legend: {
+                        display: true
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Weight (lbs)'
+                        }
+                    }
+                }
+            }
+        };
+    }
+
+    /**
+     * Get volume chart configuration
+     * @param {Object} data - Chart data
+     * @returns {Object} Chart.js configuration
+     */
+    getVolumeChartConfig(data) {
+        const volumeData = data.volumeTrend || [];
+        const labels = volumeData.map(d => d.date);
+        const upperData = volumeData.map(d => d.upper);
+        const lowerData = volumeData.map(d => d.lower);
+        const coreData = volumeData.map(d => d.core);
+        const cardioData = volumeData.map(d => d.cardio);
+
+        return {
+            type: 'line',
+            data: {
+                labels: labels.length > 0 ? labels : ['No data'],
+                datasets: [
+                    {
+                        label: 'Upper Body',
+                        data: upperData.length > 0 ? upperData : [0],
+                        borderColor: 'rgba(239, 68, 68, 1)',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Lower Body',
+                        data: lowerData.length > 0 ? lowerData : [0],
+                        borderColor: 'rgba(34, 197, 94, 1)',
+                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Core',
+                        data: coreData.length > 0 ? coreData : [0],
+                        borderColor: 'rgba(168, 85, 247, 1)',
+                        backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Cardio',
+                        data: cardioData.length > 0 ? cardioData : [0],
+                        borderColor: 'rgba(245, 158, 11, 1)',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        tension: 0.1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Training Volume by Category'
+                    },
+                    legend: {
+                        display: true
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Volume'
+                        }
+                    }
+                }
+            }
+        };
+    }
+
+    /**
+     * Get consistency chart configuration
+     * @param {Object} data - Chart data
+     * @returns {Object} Chart.js configuration
+     */
+    getConsistencyChartConfig(data) {
+        const consistencyData = data.consistencyTrend || [];
+        const labels = consistencyData.map(d => d.week);
+        const workoutCounts = consistencyData.map(d => d.workouts);
+        const avgDuration = consistencyData.map(d => d.avgDuration);
+
+        return {
+            type: 'bar',
+            data: {
+                labels: labels.length > 0 ? labels : ['No data'],
+                datasets: [
+                    {
+                        label: 'Workouts per Week',
+                        data: workoutCounts.length > 0 ? workoutCounts : [0],
+                        backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Avg Duration (min)',
+                        data: avgDuration.length > 0 ? avgDuration : [0],
+                        backgroundColor: 'rgba(34, 197, 94, 0.6)',
+                        borderColor: 'rgba(34, 197, 94, 1)',
+                        borderWidth: 1,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Training Consistency'
+                    },
+                    legend: {
+                        display: true
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Workouts per Week'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Avg Duration (min)'
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    }
+                }
+            }
+        };
     }
 
     /**

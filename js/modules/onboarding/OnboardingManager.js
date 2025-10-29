@@ -107,14 +107,17 @@ class OnboardingManager {
             return this.renderError();
         }
 
+        const progress = this.getProgress();
+        const timeEstimate = this.getTimeEstimate();
+
         return `
             <div class="onboarding-container">
                 <div class="onboarding-progress">
                     <div class="progress-bar">
-                        <div class="progress-fill" style="width: ${(this.currentStep + 1) / this.onboardingSteps.length * 100}%"></div>
+                        <div class="progress-fill" style="width: ${progress.progress}%"></div>
                     </div>
                     <div class="progress-text">
-                        Step ${this.currentStep + 1} of ${this.onboardingSteps.length}
+                        Step ${progress.currentStep + 1} of ${progress.totalSteps} • ${timeEstimate}
                     </div>
                 </div>
                 
@@ -156,13 +159,17 @@ class OnboardingManager {
                     <p>${step.description}</p>
                 </div>
                 <div class="step-content">
-                    <p>Step content will be loaded here</p>
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <p>Setting up ${step.title.toLowerCase()}...</p>
+                        <p class="loading-subtitle">This will take just a moment</p>
+                    </div>
                 </div>
                 <div class="step-actions">
-                    <button class="btn-secondary" onclick="onboardingManager.previousStep()">
+                    <button class="btn-secondary" onclick="onboardingManager.previousStep()" aria-label="Go back to previous step">
                         Back
                     </button>
-                    <button class="btn-primary" onclick="onboardingManager.nextStep()">
+                    <button class="btn-primary" onclick="onboardingManager.nextStep()" aria-label="Continue to next step">
                         Continue
                     </button>
                 </div>
@@ -198,7 +205,7 @@ class OnboardingManager {
                     </div>
                     
                     <div class="completion-actions">
-                        <button class="btn-primary" onclick="onboardingManager.finishOnboarding()">
+                        <button class="btn-primary" onclick="onboardingManager.finishOnboarding()" aria-label="Start your personalized training plan">
                             Start Training
                         </button>
                     </div>
@@ -217,10 +224,20 @@ class OnboardingManager {
                 <div class="error-content">
                     <div class="error-icon">⚠️</div>
                     <h1>Something went wrong</h1>
-                    <p>There was an error loading the onboarding step</p>
-                    <button class="btn-primary" onclick="onboardingManager.startOnboarding()">
-                        Try Again
-                    </button>
+                    <p>We couldn't load this step properly. This usually happens when:</p>
+                    <ul style="text-align: left; margin: 16px 0;">
+                        <li>Your internet connection is slow</li>
+                        <li>The page needs to refresh</li>
+                        <li>There's a temporary issue</li>
+                    </ul>
+                    <div class="error-actions">
+                        <button class="btn-secondary" onclick="onboardingManager.previousStep()" aria-label="Go back to previous step">
+                            Go Back
+                        </button>
+                        <button class="btn-primary" onclick="onboardingManager.startOnboarding()" aria-label="Restart onboarding">
+                            Try Again
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
@@ -452,6 +469,34 @@ class OnboardingManager {
             progress: (this.currentStep + 1) / this.onboardingSteps.length * 100,
             isCompleted: this.isCompleted
         };
+    }
+
+    /**
+     * Get time estimate for remaining steps
+     * @returns {string} Time estimate text
+     */
+    getTimeEstimate() {
+        const remainingSteps = this.onboardingSteps.length - this.currentStep - 1;
+        const stepTimeEstimates = {
+            'goals': 1,
+            'sport_soccer': 2,
+            'equipment_time': 2,
+            'preferences': 1
+        };
+
+        let totalMinutes = 0;
+        for (let i = this.currentStep + 1; i < this.onboardingSteps.length; i++) {
+            const step = this.onboardingSteps[i];
+            totalMinutes += stepTimeEstimates[step.id] || 1;
+        }
+
+        if (totalMinutes === 0) {
+            return 'Almost done!';
+        } else if (totalMinutes === 1) {
+            return '~1 min remaining';
+        } else {
+            return `~${totalMinutes} min remaining`;
+        }
     }
 
     /**

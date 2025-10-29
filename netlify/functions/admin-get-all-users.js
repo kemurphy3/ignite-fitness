@@ -1,5 +1,12 @@
 const { neon } = require('@neondatabase/serverless');
-const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const { 
+  verifyAdmin, 
+  auditLog, 
+  errorResponse, 
+  withTimeout,
+  successResponse 
+} = require('./utils/admin-auth');
 
 const { getNeonClient } = require('./utils/connection-pool-simple');
 const { 
@@ -23,143 +30,45 @@ async function getTotalUsersCount(sql) {
 }
 
 // Security headers for all responses
-const securityHeaders = {
-    'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'X-Content-Type-Options': 'nosniff',
-    'X-Frame-Options': 'DENY',
-    'X-XSS-Protection': '1; mode=block'
-};
+// Helper functions removed - now using centralized admin-auth utility
 
-const okJson = (data) => ({
-    statusCode: 200,
-    headers: securityHeaders,
-    body: JSON.stringify(data)
-});
-
-const unauthorized = (message = 'Unauthorized - Valid JWT token required') => ({
-    statusCode: 401,
-    headers: securityHeaders,
-    body: JSON.stringify({ 
-        error: 'UNAUTHORIZED',
-        message,
-        code: 'AUTH_REQUIRED'
-    })
-});
-
-const forbidden = (message = 'Forbidden - Admin role required') => ({
-    statusCode: 403,
-    headers: securityHeaders,
-    body: JSON.stringify({ 
-        error: 'FORBIDDEN',
-        message,
-        code: 'ADMIN_REQUIRED'
-    })
-});
-
-const methodNotAllowed = () => ({
-    statusCode: 405,
-    headers: securityHeaders,
-    body: JSON.stringify({ 
-        error: 'METHOD_NOT_ALLOWED',
-        message: 'Only GET requests are allowed',
-        code: 'INVALID_METHOD'
-    })
-});
-
-const okPreflight = () => ({
-    statusCode: 200,
-    headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS'
-    },
-    body: ''
-});
-
-// JWT verification with admin role check from token claims
-function verifyAdminJWT(headers) {
-    const authHeader = headers['authorization'];
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return { error: 'MISSING_TOKEN', statusCode: 401 };
-    }
-    
-    const token = authHeader.substring(7);
-    
-    try {
-        // Verify JWT with complete options
-        const jwtSecret = process.env.JWT_SECRET || 'your-super-secure-jwt-secret-at-least-32-characters';
-        const decoded = jwt.verify(token, jwtSecret, {
-            algorithms: ['HS256'],
-            maxAge: '24h',
-            clockTolerance: 30 // 30 seconds
-        });
-        
-        // Validate required claims
-        if (!decoded.sub || typeof decoded.sub !== 'string') {
-            return { error: 'INVALID_SUBJECT', statusCode: 401 };
-        }
-        
-        if (!decoded.exp || typeof decoded.exp !== 'number') {
-            return { error: 'INVALID_EXPIRATION', statusCode: 401 };
-        }
-        
-        // Check admin role from JWT claims
-        if (decoded.role !== 'admin') {
-            return { error: 'INSUFFICIENT_PERMISSIONS', statusCode: 403 };
-        }
-        
-        return { 
-            success: true, 
-            userId: decoded.sub, 
-            role: decoded.role 
-        };
-        
-    } catch (error) {
-        if (error.name === 'TokenExpiredError') {
-            return { error: 'TOKEN_EXPIRED', statusCode: 401 };
-        } else if (error.name === 'JsonWebTokenError') {
-            return { error: 'INVALID_TOKEN', statusCode: 401 };
-        } else {
-            console.error('JWT verification error:', {
-                type: error.name,
-                message: error.message,
-                timestamp: new Date().toISOString()
-            });
-            return { error: 'TOKEN_VERIFICATION_FAILED', statusCode: 401 };
-        }
-    }
-}
+// Authentication is now handled by the centralized admin-auth utility
 
 exports.handler = async (event) => {
-    if (event.httpMethod === 'OPTIONS') return okPreflight();
-    if (event.httpMethod !== 'GET') return methodNotAllowed();
-
+    const startTime = Date.now();
+    const requestId = crypto.randomUUID();
+    
     try {
-        // Verify JWT authentication and admin role
-        const authResult = await verifyAdminJWT(event.headers);
-        if (!authResult.success) {
-            if (authResult.statusCode === 403) {
-                return forbidden(authResult.error);
-            }
-            return unauthorized(authResult.error);
+        // Handle preflight requests
+        if (event.httpMethod === 'OPTIONS') {
+            return {
+                statusCode: 200,
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+                },
+                body: ''
+            };
         }
+        
+        if (event.httpMethod !== 'GET') {
+            return errorResponse(405, 'METHOD_NOT_ALLOWED', 'Method not allowed', requestId);
+        }
+
+        // Verify admin authentication
+        const token = event.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return errorResponse(401, 'MISSING_TOKEN', 'Authorization header required', requestId);
+        }
+        
+        const { adminId } = await verifyAdmin(token, requestId);
 
         // Validate pagination parameters
         const queryParams = event.queryStringParameters || {};
         const paginationErrors = validatePaginationInput(queryParams);
         if (paginationErrors.length > 0) {
-            return {
-                statusCode: 400,
-                headers: securityHeaders,
-                body: JSON.stringify({ 
-                    error: 'VALIDATION_ERROR',
-                    message: paginationErrors.join(', '),
-                    code: 'INVALID_PAGINATION'
-                })
-            };
+            return errorResponse(400, 'VALIDATION_ERROR', paginationErrors.join(', '), requestId);
         }
 
         const pagination = validatePaginationParams(queryParams);
@@ -204,7 +113,7 @@ exports.handler = async (event) => {
             `;
             
             const queryParams = [...cursorCondition.values, pagination.limit + 1];
-            const users = await sql.unsafe(usersQuery, queryParams);
+            const users = await sql(usersQuery, queryParams);
 
             const recentActivity = await sql`
                 SELECT 
@@ -271,7 +180,7 @@ exports.handler = async (event) => {
                 statistics: stats[0],
                 generatedAt: new Date().toISOString(),
                 totalUsers: sanitizedUsers.length,
-                requestedBy: authResult.userId
+                requestedBy: adminId
             };
         } catch (dbError) {
             // Database not available - return mock data for testing
@@ -309,30 +218,26 @@ exports.handler = async (event) => {
                 },
                 generatedAt: new Date().toISOString(),
                 totalUsers: 1,
-                requestedBy: authResult.userId,
+                requestedBy: adminId,
                 testMode: true
             };
         }
 
-        return okJson({ 
-            success: true, 
-            data: adminData,
+        // Log admin action
+        await auditLog(adminId, '/api/admin/users/all', 'GET', queryParams, 200, Date.now() - startTime, requestId);
+        
+        return successResponse(adminData, {
+            totalUsers: adminData.totalUsers,
             message: `Retrieved data for ${adminData.totalUsers} users`
-        });
+        }, requestId);
+        
     } catch (error) {
-        console.error('Error getting admin data:', {
-            type: error.name,
-            message: error.message,
+        console.error('Admin endpoint error:', {
+            error: error.message,
+            requestId,
             timestamp: new Date().toISOString()
         });
-        return {
-            statusCode: 500,
-            headers: securityHeaders,
-            body: JSON.stringify({ 
-                error: 'INTERNAL_SERVER_ERROR',
-                message: 'An unexpected error occurred',
-                code: 'SERVER_ERROR'
-            })
-        };
+        
+        return errorResponse(500, 'INTERNAL_SERVER_ERROR', 'An unexpected error occurred', requestId);
     }
 };

@@ -2,11 +2,13 @@
  * WhyPanel - Displays AI rationale for workout plan
  * Expandable panel showing "why" each decision was made
  */
+
 class WhyPanel {
     constructor() {
         this.logger = window.SafeLogger || console;
         this.eventBus = window.EventBus;
         this.isExpanded = false;
+        this.sanitizer = window.HtmlSanitizer;
     }
 
     /**
@@ -22,6 +24,16 @@ class WhyPanel {
         const warningsHtml = plan.warnings && plan.warnings.length > 0
             ? this.renderWarnings(plan.warnings)
             : '';
+
+        const confidenceHtml = plan.confidence !== undefined
+            ? this.renderConfidence(plan.confidence)
+            : '';
+
+        const disclaimerHtml = this.renderMedicalDisclaimer();
+
+        // Create summary and detailed rationale
+        const summaryHtml = this.renderSummary(plan.why);
+        const detailedHtml = this.renderDetailedRationale(plan.why);
 
         return `
             <div class="why-panel" id="why-panel" role="region" aria-label="Workout rationale">
@@ -42,16 +54,114 @@ class WhyPanel {
                     id="why-panel-content"
                     aria-hidden="${!this.isExpanded}"
                 >
+                    ${disclaimerHtml}
+                    ${confidenceHtml}
                     ${warningsHtml}
-                    <ul class="why-list" role="list">
-                        ${plan.why.map((reason, index) => `
-                            <li class="why-item" role="listitem">
-                                <span class="why-marker">${index + 1}.</span>
-                                <span class="why-text">${this.escapeHtml(reason)}</span>
-                            </li>
-                        `).join('')}
-                    </ul>
+                    
+                    <!-- Summary View (always visible when expanded) -->
+                    <div class="why-summary">
+                        <h4>Key Points</h4>
+                        ${summaryHtml}
+                    </div>
+                    
+                    <!-- Detailed View (progressive disclosure) -->
+                    <div class="why-details-section">
+                        <button 
+                            class="why-details-toggle"
+                            id="why-details-toggle"
+                            onclick="window.WhyPanel.toggleDetails()"
+                            aria-expanded="false"
+                            aria-controls="why-details-content"
+                        >
+                            <span class="details-icon">🔍</span>
+                            <span class="details-label">Show technical details</span>
+                            <span class="details-arrow">▼</span>
+                        </button>
+                        
+                        <div 
+                            class="why-details-content" 
+                            id="why-details-content"
+                            aria-hidden="true"
+                        >
+                            <h4>Technical Rationale</h4>
+                            ${detailedHtml}
+                        </div>
+                    </div>
                 </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render medical disclaimer
+     * @returns {string} HTML for medical disclaimer
+     */
+    renderMedicalDisclaimer() {
+        return `
+            <div class="why-medical-disclaimer" role="alert" aria-label="Medical disclaimer">
+                <strong>⚠️ Medical Disclaimer</strong>
+                <p class="disclaimer-text">
+                    This AI-generated workout plan is for informational purposes only and is not intended as medical advice. 
+                    Consult with a healthcare professional before beginning any exercise program, especially if you have any 
+                    medical conditions, injuries, or concerns. Listen to your body and stop if you experience pain or discomfort.
+                </p>
+            </div>
+        `;
+    }
+
+    /**
+     * Render confidence interval
+     * @param {Object|number} confidence - Confidence data or percentage
+     * @returns {string} HTML for confidence display
+     */
+    renderConfidence(confidence) {
+        let confidenceValue = 0;
+        let confidenceLevel = 'low';
+        let confidenceColor = '#ef4444';
+        let confidenceNote = 'Limited data available';
+
+        // Handle different confidence formats
+        if (typeof confidence === 'number') {
+            confidenceValue = Math.round(confidence * 100);
+        } else if (typeof confidence === 'object' && confidence !== null) {
+            confidenceValue = Math.round((confidence.score || 0) * 100);
+            confidenceNote = confidence.note || confidenceNote;
+        }
+
+        // Determine confidence level
+        if (confidenceValue >= 80) {
+            confidenceLevel = 'high';
+            confidenceColor = '#10b981';
+            confidenceNote = 'High confidence recommendation';
+        } else if (confidenceValue >= 60) {
+            confidenceLevel = 'medium';
+            confidenceColor = '#f59e0b';
+            confidenceNote = 'Moderate confidence recommendation';
+        } else {
+            confidenceLevel = 'low';
+            confidenceColor = '#ef4444';
+            confidenceNote = 'Low confidence - consider consulting a professional';
+        }
+
+        return `
+            <div class="why-confidence" role="status" aria-label="AI confidence level">
+                <div class="confidence-header">
+                    <span class="confidence-label">💡 AI Confidence</span>
+                    <span class="confidence-value" style="color: ${confidenceColor}">
+                        ${confidenceValue}%
+                    </span>
+                </div>
+                <div class="confidence-bar">
+                    <div 
+                        class="confidence-fill confidence-${confidenceLevel}" 
+                        style="width: ${confidenceValue}%; background-color: ${confidenceColor};"
+                        role="progressbar"
+                        aria-valuenow="${confidenceValue}"
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                    ></div>
+                </div>
+                <p class="confidence-note">${this.escapeHtml(confidenceNote)}</p>
             </div>
         `;
     }
@@ -75,28 +185,103 @@ class WhyPanel {
     }
 
     /**
-     * Toggle panel expansion
+     * Render summary of rationale (1-2 key points)
+     * @param {Array} rationale - Full rationale array
+     * @returns {string} HTML for summary
      */
-    toggle() {
-        this.isExpanded = !this.isExpanded;
-        const button = document.getElementById('why-panel-toggle');
-        const content = document.getElementById('why-panel-content');
-        const arrow = button?.querySelector('.why-arrow');
+    renderSummary(rationale) {
+        if (!rationale || rationale.length === 0) return '';
+        
+        // Take first 1-2 most important points
+        const summaryPoints = rationale.slice(0, Math.min(2, rationale.length));
+        
+        return `
+            <ul class="why-summary-list" role="list">
+                ${summaryPoints.map((reason, index) => `
+                    <li class="why-summary-item" role="listitem">
+                        <span class="summary-marker">${index + 1}.</span>
+                        <span class="summary-text">${this.escapeHtml(this.simplifyReason(reason))}</span>
+                    </li>
+                `).join('')}
+            </ul>
+        `;
+    }
 
-        if (button) {
-            button.setAttribute('aria-expanded', this.isExpanded);
+    /**
+     * Render detailed rationale (all points)
+     * @param {Array} rationale - Full rationale array
+     * @returns {string} HTML for detailed rationale
+     */
+    renderDetailedRationale(rationale) {
+        if (!rationale || rationale.length === 0) return '';
+        
+        return `
+            <ul class="why-list" role="list">
+                ${rationale.map((reason, index) => `
+                    <li class="why-item" role="listitem">
+                        <span class="why-marker">${index + 1}.</span>
+                        <span class="why-text">${this.escapeHtml(reason)}</span>
+                    </li>
+                `).join('')}
+            </ul>
+        `;
+    }
+
+    /**
+     * Simplify reason text for summary view
+     * @param {string} reason - Full reason text
+     * @returns {string} Simplified reason
+     */
+    simplifyReason(reason) {
+        if (!reason) return '';
+        
+        // Remove technical jargon and focus on user benefits
+        const simplified = reason
+            .replace(/based on (your|the) (recent|current) (training|activity|workout)/gi, 'considering your training')
+            .replace(/to (optimize|maximize|improve) (your|the) (performance|results|progress)/gi, 'to help you improve')
+            .replace(/this (exercise|movement|activity) (targets|focuses on|works)/gi, 'this works')
+            .replace(/ensuring (proper|adequate|sufficient)/gi, 'for proper')
+            .replace(/while (maintaining|keeping|preserving)/gi, 'and')
+            .replace(/in order to/gi, 'to')
+            .replace(/due to/gi, 'because of')
+            .replace(/in accordance with/gi, 'following')
+            .replace(/with respect to/gi, 'for');
+            
+        // Limit length for summary
+        if (simplified.length > 120) {
+            return simplified.substring(0, 117) + '...';
         }
+        
+        return simplified;
+    }
 
-        if (content) {
-            content.setAttribute('aria-hidden', !this.isExpanded);
-            content.classList.toggle('expanded', this.isExpanded);
-        }
+    /**
+     * Toggle details section
+     */
+    toggleDetails() {
+        const button = document.getElementById('why-details-toggle');
+        const content = document.getElementById('why-details-content');
+        const arrow = button?.querySelector('.details-arrow');
+        const label = button?.querySelector('.details-label');
 
+        if (!button || !content) return;
+
+        const isExpanded = content.getAttribute('aria-hidden') === 'false';
+        const newExpanded = !isExpanded;
+
+        button.setAttribute('aria-expanded', newExpanded);
+        content.setAttribute('aria-hidden', !newExpanded);
+        content.classList.toggle('expanded', newExpanded);
+        
         if (arrow) {
-            arrow.classList.toggle('expanded', this.isExpanded);
+            arrow.classList.toggle('expanded', newExpanded);
+        }
+        
+        if (label) {
+            label.textContent = newExpanded ? 'Hide technical details' : 'Show technical details';
         }
 
-        this.logger.debug('Why panel toggled', { expanded: this.isExpanded });
+        this.logger.debug('Why panel details toggled', { expanded: newExpanded });
     }
 
     /**
@@ -421,6 +606,15 @@ class WhyPanel {
      * @returns {string} Escaped text
      */
     escapeHtml(text) {
+        if (!text) return '';
+        if (typeof text !== 'string') return String(text);
+
+        // Use HtmlSanitizer if available, otherwise fall back to basic escaping
+        if (this.sanitizer) {
+            return this.sanitizer.escapeHtml(text);
+        }
+
+        // Basic escape fallback
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
