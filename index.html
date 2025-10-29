@@ -4093,6 +4093,40 @@ This structured approach helps prevent overtraining and ensures you're at your b
         }
         
         // Initialize height unit toggle and ACL injury monitoring
+        
+        // Ensure login form is shown by default
+        function initializeApp() {
+            console.log('🚀 Initializing Ignite Fitness app...');
+            
+            // Always show login form first
+            initializeApp();
+            
+            // Then check for auto-login
+            checkAutoLogin();
+        }
+        
+        function checkAutoLogin() {
+            const lastUser = localStorage.getItem('ignitefitness_last_user');
+            const loginTime = localStorage.getItem('ignitefitness_login_time');
+            
+            if (lastUser && loginTime) {
+                const timeDiff = Date.now() - parseInt(loginTime);
+                const hoursDiff = timeDiff / (1000 * 60 * 60);
+                
+                if (hoursDiff < 24) {
+                    // Valid session - but give user 2 seconds to see login form first
+                    setTimeout(() => {
+                        currentUser = lastUser;
+                        isLoggedIn = true;
+                        showUserDashboard();
+                        hideLoginForm();
+                        loadUserData();
+                        console.log('✅ Auto-login successful for:', lastUser);
+                    }, 2000);
+                }
+            }
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
             const heightUnitSelect = document.getElementById('heightUnit');
             if (heightUnitSelect) {
