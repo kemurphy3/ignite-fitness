@@ -182,6 +182,12 @@ class ExpertCoordinator {
             // Get proposals from all experts
             const proposals = this.gatherProposals(context);
             
+            // CRITICAL FIX: Check for empty proposals and return fallback plan
+            if (proposals._empty || Object.values(proposals).every(p => !p || !p.blocks || p.blocks.length === 0)) {
+                this.logger.warn('All expert proposals are empty - using fallback plan');
+                return this.getFallbackPlanStructured(context);
+            }
+            
             // Merge and resolve
             const mergedPlan = this.mergeProposals(proposals, context);
             const resolvedPlan = this.resolveConflicts(mergedPlan, proposals, context);
@@ -265,6 +271,12 @@ class ExpertCoordinator {
             // Get proposals from all experts
             const proposals = this.gatherProposals(context);
             
+            // CRITICAL FIX: Check for empty proposals and return fallback plan
+            if (proposals._empty || Object.values(proposals).every(p => !p || !p.blocks || p.blocks.length === 0)) {
+                this.logger.warn('All expert proposals are empty - using fallback plan');
+                return this.getFallbackPlan(context);
+            }
+            
             // Merge with priority order
             const mergedPlan = this.mergeProposals(proposals, context);
             
@@ -324,6 +336,14 @@ class ExpertCoordinator {
                 failedExperts: failedExperts.map(f => f.name),
                 totalExperts: Object.keys(this.experts).length
             });
+        }
+        
+        // CRITICAL FIX: Prevent empty workouts by validating proposals
+        // If all expert proposals have no blocks, this will be handled by the calling method
+        // We mark proposals as empty so generateWorkout can detect and use fallback
+        if (Object.values(proposals).every(p => !p.blocks || p.blocks.length === 0)) {
+            this.logger.warn('All expert proposals are empty - empty workout prevented');
+            proposals._empty = true; // Mark as empty for detection by calling method
         }
         
         return proposals;
