@@ -6,8 +6,13 @@
  * ✅ Plate math passes metric and imperial tests
  */
 
-const testPrompts = {
-    // Test exercise substitution
+// Use unique namespace to avoid conflicts
+if (typeof window.testPrompts06 === 'undefined') {
+    window.testPrompts06 = {};
+}
+
+// Test exercise substitution
+Object.assign(window.testPrompts06, {
     testExerciseSubstitution() {
         console.group('🧪 Test Exercise Substitution');
         
@@ -269,14 +274,14 @@ const testPrompts = {
         
         console.groupEnd();
     }
-};
+});
 
 // Run all tests
 console.log('🧪 Running Prompt 6 Tests...\n');
 
-testPrompts.testExerciseSubstitution();
-testPrompts.testPlateMath();
-testPrompts.testMissingPlateFallback();
-testPrompts.testSubstitutionUpdatesPlan();
+window.testPrompts06.testExerciseSubstitution();
+window.testPrompts06.testPlateMath();
+window.testPrompts06.testMissingPlateFallback();
+window.testPrompts06.testSubstitutionUpdatesPlan();
 
 console.log('\n✅ All Prompt 6 Tests Complete!');

@@ -11,7 +11,12 @@
  * ✅ Local purge resets app to onboarding
  */
 
-const testPrompts = {
+// Prevent duplicate declaration
+if (typeof window.testPrompts11 === 'undefined') {
+    window.testPrompts11 = {};
+}
+
+Object.assign(window.testPrompts11, {
     // Test data schema
     testDataSchema() {
         console.group('🧪 Test Data Schema');
@@ -251,17 +256,17 @@ const testPrompts = {
         console.log('✅ Privacy panel has all required UI elements');
         console.groupEnd();
     }
-};
+});
 
 // Run all tests
 console.log('🧪 Running Prompt 11 Tests...\n');
 
-testPrompts.testDataSchema();
-testPrompts.testExportJSON();
-testPrompts.testExportCSV();
-testPrompts.testDeleteAllData();
-testPrompts.testConsentToggles();
-testPrompts.testLocalPurgeResets();
-testPrompts.testPrivacyPanelUI();
+window.testPrompts11.testDataSchema();
+window.testPrompts11.testExportJSON();
+window.testPrompts11.testExportCSV();
+window.testPrompts11.testDeleteAllData();
+window.testPrompts11.testConsentToggles();
+window.testPrompts11.testLocalPurgeResets();
+window.testPrompts11.testPrivacyPanelUI();
 
 console.log('\n✅ All Prompt 11 Tests Complete!');

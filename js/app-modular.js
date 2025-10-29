@@ -8,45 +8,199 @@
 let currentUser = null;
 let isLoggedIn = false;
 
-// Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Ignite Fitness App Starting...');
-    
-    // Initialize core systems
-    initializeApp();
-    
-    // Check if user is already logged in
-    if (window.AuthManager?.isUserLoggedIn()) {
-        currentUser = window.AuthManager.getCurrentUsername();
-        isLoggedIn = true;
+// Boot error handling and cache clearing
+window.IF_clearCachesAndReload = async function() {
+    try {
+        console.log('Clearing all caches and reloading...');
         
-        // Check if user needs onboarding
-        if (window.OnboardingManager?.needsOnboarding()) {
-            showOnboarding();
-        } else {
-            showUserDashboard();
-            loadUserData();
-            updateSeasonalPhaseDisplay();
-            checkStravaConnection();
-            updateSyncStatus();
-            loadRecentWorkouts();
+        // Clear all caches
+        if ('caches' in window) {
+            const cacheNames = await caches.keys();
+            for (const name of cacheNames) {
+                await caches.delete(name);
+                console.log('Deleted cache:', name);
+            }
         }
-    } else {
-        showLoginForm();
+        
+        // Unregister service workers
+        if ('serviceWorker' in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (const registration of registrations) {
+                await registration.unregister();
+                console.log('Unregistered service worker');
+            }
+        }
+        
+        // Clear problematic localStorage items
+        localStorage.removeItem('ignitefitness_user_profile_migration_in_progress');
+        localStorage.removeItem('ignite_user_prefs');
+        
+        // Force reload
+        location.reload(true);
+    } catch (error) {
+        console.error('Failed to clear caches:', error);
+        location.reload(true);
     }
+};
+
+// Boot error display
+function showBootError(error) {
+    const errorHtml = `
+        <div id="boot-error" style="
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: #1a1a1a; color: #fff; padding: 20px;
+            font-family: monospace; z-index: 9999; overflow: auto;
+        ">
+            <h1 style="color: #ff6b6b;">🚨 Boot Error</h1>
+            <p>The app failed to load. This is usually a cache or module loading issue.</p>
+            
+            <h3>Error Details:</h3>
+            <pre style="background: #333; padding: 10px; border-radius: 4px; overflow: auto;">
+${error.stack || error.message || error}
+            </pre>
+            
+            <div style="margin-top: 20px;">
+                <button onclick="window.IF_clearCachesAndReload()" 
+                        style="background: #4CAF50; color: white; border: none; 
+                               padding: 12px 24px; border-radius: 4px; cursor: pointer;
+                               font-size: 16px; margin-right: 10px;">
+                    🔄 Clear Cache & Retry
+                </button>
+                <button onclick="location.reload()" 
+                        style="background: #2196F3; color: white; border: none; 
+                               padding: 12px 24px; border-radius: 4px; cursor: pointer;
+                               font-size: 16px;">
+                    🔄 Reload Page
+                </button>
+            </div>
+            
+            <div style="margin-top: 20px; font-size: 14px; color: #ccc;">
+                <p><strong>If this persists:</strong></p>
+                <ul>
+                    <li>Check browser console for more details</li>
+                    <li>Try incognito/private browsing mode</li>
+                    <li>Clear browser data manually</li>
+                    <li>Check network connectivity</li>
+                </ul>
+            </div>
+        </div>
+    `;
     
-    // Handle Enter key in AI chat input
-    const aiInput = document.getElementById('aiChatInput');
-    if (aiInput) {
-        aiInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                sendToAI();
+    document.body.innerHTML = errorHtml;
+}
+
+// Initialize when DOM is loaded with error handling
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        console.log('Ignite Fitness App Starting...');
+        
+        // Initialize core systems
+        initializeApp();
+    
+        // Check if user is already logged in
+        if (window.AuthManager?.isUserLoggedIn()) {
+            currentUser = window.AuthManager.getCurrentUsername();
+            isLoggedIn = true;
+            
+            // Check if user needs onboarding
+            if (window.OnboardingManager?.needsOnboarding()) {
+                showOnboarding();
+            } else {
+                showUserDashboard();
+                loadUserData();
+                updateSeasonalPhaseDisplay();
+                checkStravaConnection();
+                updateSyncStatus();
+                loadRecentWorkouts();
+            }
+        } else {
+            showLoginForm();
+        }
+        
+        // Handle Enter key in AI chat input
+        const aiInput = document.getElementById('aiChatInput');
+        if (aiInput) {
+            aiInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendToAI();
+                }
+            });
+        }
+        
+        // Mark app as ready
+        window.appReady = true;
+        console.log('Ignite Fitness App Ready!');
+        
+        // Get service worker version and display it
+        getServiceWorkerVersion();
+        
+    } catch (error) {
+        console.error('Boot error:', error);
+        showBootError(error);
+    }
+});
+
+// Global error handler for unhandled errors
+window.addEventListener('error', function(event) {
+    console.error('Unhandled error:', event.error);
+    if (!window.appReady) {
+        showBootError(event.error);
+    }
+});
+
+window.addEventListener('unhandledrejection', function(event) {
+    console.error('Unhandled promise rejection:', event.reason);
+    if (!window.appReady) {
+        showBootError(event.reason);
+    }
+});
+
+/**
+ * Get service worker version and display it
+ */
+function getServiceWorkerVersion() {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(registration => {
+            if (registration.active) {
+                const messageChannel = new MessageChannel();
+                messageChannel.port1.onmessage = function(event) {
+                    if (event.data.version) {
+                        window.IF_swVersion = event.data.version;
+                        displayServiceWorkerVersion(event.data.version);
+                    }
+                };
+                registration.active.postMessage({ type: 'GET_VERSION' }, [messageChannel.port2]);
             }
         });
     }
-    
-    console.log('Ignite Fitness App Ready!');
-});
+}
+
+/**
+ * Display service worker version in footer
+ */
+function displayServiceWorkerVersion(version) {
+    // Create or update version badge
+    let versionBadge = document.getElementById('sw-version-badge');
+    if (!versionBadge) {
+        versionBadge = document.createElement('div');
+        versionBadge.id = 'sw-version-badge';
+        versionBadge.style.cssText = `
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: monospace;
+            z-index: 1000;
+            pointer-events: none;
+        `;
+        document.body.appendChild(versionBadge);
+    }
+    versionBadge.textContent = `SW v${version}`;
+}
 
 /**
  * Initialize application modules
@@ -183,12 +337,17 @@ function migrateWorkoutData() {
 
 // Authentication Functions (delegated to AuthManager)
 function login() {
-    const username = document.getElementById('loginUsername').value;
-    const password = document.getElementById('loginPassword').value;
+    const usernameEl = document.getElementById('loginUsername');
+    const passwordEl = document.getElementById('loginPassword');
     const errorDiv = document.getElementById('loginError');
+    
+    if (!usernameEl || !passwordEl) return; // Form not available
+    
+    const username = usernameEl.value;
+    const password = passwordEl.value;
 
     if (!username || !password) {
-        showError(errorDiv, 'Please enter both username and password');
+        if (errorDiv) showError(errorDiv, 'Please enter both username and password');
         return;
     }
 
@@ -211,11 +370,18 @@ function login() {
 }
 
 function register() {
-    const username = document.getElementById('regUsername').value;
-    const password = document.getElementById('regPassword').value;
-    const confirmPassword = document.getElementById('regConfirmPassword').value;
-    const athleteName = document.getElementById('regAthleteName').value;
+    const usernameEl = document.getElementById('regUsername');
+    const passwordEl = document.getElementById('regPassword');
+    const confirmPasswordEl = document.getElementById('regConfirmPassword');
+    const athleteNameEl = document.getElementById('regAthleteName');
     const errorDiv = document.getElementById('registerError');
+    
+    if (!usernameEl || !passwordEl || !confirmPasswordEl || !athleteNameEl) return; // Form not available
+    
+    const username = usernameEl.value;
+    const password = passwordEl.value;
+    const confirmPassword = confirmPasswordEl.value;
+    const athleteName = athleteNameEl.value;
 
     const result = window.AuthManager?.register({
         username, password, confirmPassword, athleteName
@@ -234,11 +400,18 @@ function register() {
 }
 
 function resetPassword() {
-    const username = document.getElementById('resetUsername').value;
-    const athleteName = document.getElementById('resetAthleteName').value;
-    const newPassword = document.getElementById('newPassword').value;
-    const confirmPassword = document.getElementById('confirmNewPassword').value;
+    const usernameEl = document.getElementById('resetUsername');
+    const athleteNameEl = document.getElementById('resetAthleteName');
+    const newPasswordEl = document.getElementById('newPassword');
+    const confirmPasswordEl = document.getElementById('confirmNewPassword');
     const errorDiv = document.getElementById('resetError');
+    
+    if (!usernameEl || !athleteNameEl || !newPasswordEl || !confirmPasswordEl) return; // Form not available
+    
+    const username = usernameEl.value;
+    const athleteName = athleteNameEl.value;
+    const newPassword = newPasswordEl.value;
+    const confirmPassword = confirmPasswordEl.value;
 
     const result = window.AuthManager?.resetPassword({
         username, athleteName, newPassword, confirmPassword
@@ -264,13 +437,17 @@ function logout() {
 
 // UI Functions
 function showLoginForm() {
-    document.getElementById('loginForm').classList.remove('hidden');
-    document.getElementById('userDashboard').classList.add('hidden');
+    const loginForm = document.getElementById('loginForm');
+    const userDashboard = document.getElementById('userDashboard');
+    if (loginForm) loginForm.classList.remove('hidden');
+    if (userDashboard) userDashboard.classList.add('hidden');
 }
 
 function showUserDashboard() {
-    document.getElementById('loginForm').classList.add('hidden');
-    document.getElementById('userDashboard').classList.remove('hidden');
+    const loginForm = document.getElementById('loginForm');
+    const userDashboard = document.getElementById('userDashboard');
+    if (loginForm) loginForm.classList.add('hidden');
+    if (userDashboard) userDashboard.classList.remove('hidden');
     
     const athleteNameElement = document.getElementById('currentAthleteName');
     if (athleteNameElement && window.AuthManager?.getCurrentUser()) {
@@ -279,22 +456,29 @@ function showUserDashboard() {
 }
 
 function showPasswordReset() {
-    document.getElementById('loginForm').classList.add('hidden');
-    document.getElementById('passwordResetForm').classList.remove('hidden');
+    const loginForm = document.getElementById('loginForm');
+    const passwordResetForm = document.getElementById('passwordResetForm');
+    if (loginForm) loginForm.classList.add('hidden');
+    if (passwordResetForm) passwordResetForm.classList.remove('hidden');
 }
 
 function hidePasswordReset() {
-    document.getElementById('passwordResetForm').classList.add('hidden');
-    document.getElementById('loginForm').classList.remove('hidden');
+    const passwordResetForm = document.getElementById('passwordResetForm');
+    const loginForm = document.getElementById('loginForm');
+    if (passwordResetForm) passwordResetForm.classList.add('hidden');
+    if (loginForm) loginForm.classList.remove('hidden');
 }
 
 function showRegisterForm() {
-    document.getElementById('loginForm').classList.add('hidden');
-    document.getElementById('registerForm').classList.remove('hidden');
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    if (loginForm) loginForm.classList.add('hidden');
+    if (registerForm) registerForm.classList.remove('hidden');
 }
 
 function hideRegisterForm() {
-    document.getElementById('registerForm').classList.add('hidden');
+    const registerForm = document.getElementById('registerForm');
+    if (registerForm) registerForm.classList.add('hidden');
 }
 
 // Tab Functions
@@ -324,10 +508,17 @@ function loadUserData() {
     const user = window.AuthManager.getCurrentUser();
     
     if (user.personalData) {
-        if (user.personalData.age) document.getElementById('age').value = user.personalData.age;
-        if (user.personalData.weight) document.getElementById('weight').value = user.personalData.weight;
-        if (user.personalData.height) document.getElementById('height').value = user.personalData.height;
-        if (user.personalData.experience) document.getElementById('experience').value = user.personalData.experience;
+        const ageEl = document.getElementById('age');
+        if (ageEl && user.personalData.age) ageEl.value = user.personalData.age;
+        
+        const weightEl = document.getElementById('weight');
+        if (weightEl && user.personalData.weight) weightEl.value = user.personalData.weight;
+        
+        const heightEl = document.getElementById('height');
+        if (heightEl && user.personalData.height) heightEl.value = user.personalData.height;
+        
+        const experienceEl = document.getElementById('experience');
+        if (experienceEl && user.personalData.experience) experienceEl.value = user.personalData.experience;
     }
     
     if (user.goals) {
@@ -348,11 +539,21 @@ async function savePersonalInfo() {
         return;
     }
     
+    const ageEl = document.getElementById('age');
+    const weightEl = document.getElementById('weight');
+    const heightEl = document.getElementById('height');
+    const experienceEl = document.getElementById('experience');
+    
+    if (!ageEl || !weightEl || !heightEl || !experienceEl) {
+        showError(null, 'Personal info form not available');
+        return;
+    }
+    
     const personalData = {
-        age: parseInt(document.getElementById('age').value),
-        weight: parseFloat(document.getElementById('weight').value),
-        height: parseInt(document.getElementById('height').value),
-        experience: document.getElementById('experience').value
+        age: parseInt(ageEl.value) || 0,
+        weight: parseFloat(weightEl.value) || 0,
+        height: parseInt(heightEl.value) || 0,
+        experience: experienceEl.value || ''
     };
     
     const result = window.AuthManager?.updateUserData({ personalData });
@@ -489,14 +690,18 @@ function renderOnboardingQuestion() {
     `;
 
     // Update progress
-    document.getElementById('onboardingStep').textContent = progress.currentStep + 1;
-    document.getElementById('onboardingTotal').textContent = progress.totalSteps;
+    const onboardingStep = document.getElementById('onboardingStep');
+    if (onboardingStep) onboardingStep.textContent = progress.currentStep + 1;
+    
+    const onboardingTotal = document.getElementById('onboardingTotal');
+    if (onboardingTotal) onboardingTotal.textContent = progress.totalSteps;
 
     // Add event listeners for radio buttons
     const radioButtons = container.querySelectorAll('input[name="onboardingAnswer"]');
     radioButtons.forEach(radio => {
         radio.addEventListener('change', function() {
-            document.getElementById('nextBtn').disabled = false;
+            const nextBtn = document.getElementById('nextBtn');
+            if (nextBtn) nextBtn.disabled = false;
         });
     });
 }
@@ -768,28 +973,36 @@ function updateReadinessSummary() {
     
     if (readinessScore && adjustments) {
         // Show readiness summary
-        document.getElementById('readinessSummary').style.display = 'block';
-        document.getElementById('readinessScoreValue').textContent = readinessScore;
-        document.getElementById('coachMessage').textContent = adjustments.coachMessage;
+        const readinessSummaryEl = document.getElementById('readinessSummary');
+        const readinessScoreValueEl = document.getElementById('readinessScoreValue');
+        const coachMessageEl = document.getElementById('coachMessage');
+        
+        if (readinessSummaryEl) readinessSummaryEl.style.display = 'block';
+        if (readinessScoreValueEl) readinessScoreValueEl.textContent = readinessScore;
+        if (coachMessageEl) coachMessageEl.textContent = adjustments.coachMessage;
         
         // Show workout adjustments if any
         if (adjustments.intensityReduced || adjustments.recoverySuggested) {
-            document.getElementById('workoutAdjustments').style.display = 'block';
-            let adjustmentText = '';
+            const workoutAdjustmentsEl = document.getElementById('workoutAdjustments');
+            const adjustmentDetailsEl = document.getElementById('adjustmentDetails');
             
-            if (adjustments.intensityReduced) {
-                adjustmentText += `• Intensity reduced by ${Math.round((1 - adjustments.intensityMultiplier) * 100)}%<br>`;
+            if (workoutAdjustmentsEl) workoutAdjustmentsEl.style.display = 'block';
+            
+            if (adjustmentDetailsEl) {
+                let adjustmentText = '';
+                if (adjustments.intensityReduced) {
+                    adjustmentText += `• Intensity reduced by ${Math.round((1 - adjustments.intensityMultiplier) * 100)}%<br>`;
+                }
+                if (adjustments.recoverySuggested) {
+                    adjustmentText += `• Recovery workout suggested<br>`;
+                }
+                adjustmentDetailsEl.innerHTML = adjustmentText;
             }
-            
-            if (adjustments.recoverySuggested) {
-                adjustmentText += `• Recovery workout suggested<br>`;
-            }
-            
-            document.getElementById('adjustmentDetails').innerHTML = adjustmentText;
         }
         
         // Enable complete button
-        document.getElementById('completeCheckInBtn').disabled = false;
+        const completeCheckInBtn = document.getElementById('completeCheckInBtn');
+        if (completeCheckInBtn) completeCheckInBtn.disabled = false;
     }
 }
 

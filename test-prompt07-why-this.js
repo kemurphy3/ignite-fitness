@@ -10,7 +10,12 @@
  * ✅ Cypress test verifies reasons render in both Simple and Advanced modes
  */
 
-const testPrompts = {
+// Prevent duplicate declaration
+if (typeof window.testPrompts07 === 'undefined') {
+    window.testPrompts07 = {};
+}
+
+Object.assign(window.testPrompts07, {
     // Test reason generation
     testReasonGeneration() {
         console.group('🧪 Test Reason Generation');
@@ -271,15 +276,15 @@ const testPrompts = {
         
         console.groupEnd();
     }
-};
+});
 
 // Run all tests
 console.log('🧪 Running Prompt 7 Tests...\n');
 
-testPrompts.testReasonGeneration();
-testPrompts.testChipRendering();
-testPrompts.testReasonLogging();
-testPrompts.testModeRendering();
-testPrompts.testChipExpansion();
+window.testPrompts07.testReasonGeneration();
+window.testPrompts07.testChipRendering();
+window.testPrompts07.testReasonLogging();
+window.testPrompts07.testModeRendering();
+window.testPrompts07.testChipExpansion();
 
 console.log('\n✅ All Prompt 7 Tests Complete!');

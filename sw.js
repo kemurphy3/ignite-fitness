@@ -3,10 +3,19 @@
  * Implements cache-first strategy for static assets and network-first for API calls
  */
 
-const CACHE_NAME = 'ignite-fitness-v1';
-const STATIC_CACHE = 'ignite-fitness-static-v1';
-const API_CACHE = 'ignite-fitness-api-v1';
-const WORKOUT_CACHE = 'ignite-fitness-workout-v1';
+// Version from package.json or fallback
+const APP_VERSION = '1.0.0'; // This should be updated from package.json in build
+const CACHE_NAME = `ignite-fitness-v${APP_VERSION}`;
+const STATIC_CACHE = `ignite-fitness-static-v${APP_VERSION}`;
+const API_CACHE = `ignite-fitness-api-v${APP_VERSION}`;
+const WORKOUT_CACHE = `ignite-fitness-workout-v${APP_VERSION}`;
+
+// Expose version to main thread
+self.addEventListener('message', event => {
+    if (event.data && event.data.type === 'GET_VERSION') {
+        event.ports[0].postMessage({ version: APP_VERSION });
+    }
+});
 
 // Cache size limits (in MB)
 const MAX_CACHE_SIZE = 50;
@@ -82,20 +91,27 @@ self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys()
             .then(cacheNames => {
+                const currentCaches = [STATIC_CACHE, API_CACHE, WORKOUT_CACHE];
+                const oldCaches = cacheNames.filter(cacheName => 
+                    !currentCaches.includes(cacheName) && 
+                    cacheName.startsWith('ignite-fitness')
+                );
+                
+                console.log(`Found ${oldCaches.length} old caches to delete:`, oldCaches);
+                
                 return Promise.all(
-                    cacheNames.map(cacheName => {
-                        if (cacheName !== STATIC_CACHE && 
-                            cacheName !== API_CACHE && 
-                            cacheName !== WORKOUT_CACHE) {
-                            console.log('Deleting old cache:', cacheName);
-                            return caches.delete(cacheName);
-                        }
+                    oldCaches.map(cacheName => {
+                        console.log('Deleting old cache:', cacheName);
+                        return caches.delete(cacheName);
                     })
                 );
             })
             .then(() => {
                 console.log('Service Worker activated');
                 return self.clients.claim();
+            })
+            .catch(error => {
+                console.error('Failed to activate service worker:', error);
             })
     );
 });

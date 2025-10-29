@@ -13,7 +13,14 @@
     "perf:budget": "node scripts/perf-budget.js",
     "perf:lighthouse": "lhci autorun",
     "perf:check": "npm run build && npm run perf:budget",
-    "test:perf": "npm run perf:check"
+    "test:perf": "npm run perf:check",
+    "test:smoke": "playwright test tests/smoke.spec.js",
+    "test:imports": "node tools/check-imports.js",
+    "test:syntax": "node tools/check-syntax.js",
+    "test:dom": "node tools/check-dom-safety.js",
+    "test:health": "node -e \"require('http').createServer((req, res) => { res.writeHead(200); res.end('OK'); }).listen(8001, () => console.log('Health check server running on :8001'));\"",
+    "test:all": "npm run test:imports && npm run test:syntax && npm run test:dom && npm run test:smoke",
+    "lint": "npm run test:syntax && npm run test:imports && npm run test:dom"
   },
   "dependencies": {
     "chart.js": "^4.4.0"

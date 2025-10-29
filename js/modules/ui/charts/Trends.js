@@ -26,12 +26,19 @@ class Trends {
         
         // Initialize ChartManager
         try {
+            if (typeof ChartManager === 'undefined') {
+                this.logger.warn('ChartManager not available, charts will be disabled');
+                this.chartManager = null;
+                return;
+            }
+            
             this.chartManager = new ChartManager();
             await this.chartManager.init();
             this.logger.debug('ChartManager initialized');
         } catch (error) {
-            this.logger.error('Failed to initialize ChartManager:', error);
-            return;
+            this.logger.warn('Failed to initialize ChartManager, charts will be disabled:', error.message);
+            this.chartManager = null;
+            // Don't return - allow Trends to continue without charts
         }
         
         // Set up intersection observer for lazy loading
@@ -345,7 +352,9 @@ class Trends {
      */
     async renderChart(element, chartId, data) {
         if (!this.chartManager) {
-            throw new Error('ChartManager not initialized');
+            this.logger.warn('ChartManager not available, showing fallback message');
+            element.innerHTML = '<div class="chart-error" style="padding: 2rem; text-align: center; color: var(--text-secondary, #666);"><p>Charts are not available. Please check console for details.</p></div>';
+            return;
         }
 
         // Create canvas element

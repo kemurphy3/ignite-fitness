@@ -6,7 +6,12 @@
  * ✅ Unit test with mocked external run reduces next-day leg volume by ~20%
  */
 
-const testPrompts = {
+// Prevent duplicate declaration
+if (typeof window.testPrompts08 === 'undefined') {
+    window.testPrompts08 = {};
+}
+
+Object.assign(window.testPrompts08, {
     // Test passive readiness inference
     testPassiveReadinessInference() {
         console.group('🧪 Test Passive Readiness Inference');
@@ -166,7 +171,7 @@ const testPrompts = {
     },
     
     // Test Strava hook scaffold
-    testStravaHook() {
+    async testStravaHook() {
         console.group('🧪 Test Strava Hook Scaffold');
         
         const mockStravaHook = {
@@ -259,7 +264,7 @@ const testPrompts = {
         
         console.groupEnd();
     }
-};
+});
 
 // Helper function
 function calculateInferredReadiness(inputs) {
@@ -279,9 +284,9 @@ function calculateInferredReadiness(inputs) {
 // Run all tests
 console.log('🧪 Running Prompt 8 Tests...\n');
 
-testPrompts.testPassiveReadinessInference();
-testPrompts.testExternalLoadAdaptation();
-testPrompts.testStravaHook();
-testPrompts.testPlansAdaptWithoutDailyInput();
+window.testPrompts08.testPassiveReadinessInference();
+window.testPrompts08.testExternalLoadAdaptation();
+window.testPrompts08.testStravaHook();
+window.testPrompts08.testPlansAdaptWithoutDailyInput();
 
 console.log('\n✅ All Prompt 8 Tests Complete!');

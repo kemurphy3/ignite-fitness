@@ -3,11 +3,54 @@
  * Offloads chart rendering to prevent main thread blocking
  */
 
-// Import Chart.js in worker context
-importScripts('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js');
+// Try to import Chart.js from CDN, but catch errors since CORS may block it
+// Note: importScripts() throws synchronously if it fails, which will prevent
+// the rest of this script from executing. However, if we catch it here,
+// we can at least send an error message before the worker becomes unusable.
+let chartJSAvailable = false;
+let initError = null;
+
+try {
+    importScripts('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js');
+    chartJSAvailable = typeof Chart !== 'undefined';
+} catch (error) {
+    // If CDN import fails (CORS, network, etc.), the worker cannot function
+    // Try to notify main thread - but note: if importScripts throws,
+    // this catch block may not execute in all browsers
+    initError = {
+        type: 'INIT_ERROR',
+        error: 'Failed to load Chart.js - CORS or network issue. Worker cannot be used.',
+        message: error.message || 'Unknown error'
+    };
+    chartJSAvailable = false;
+    
+    // Try to send message - but if importScripts throws, execution may stop
+    try {
+        self.postMessage(initError);
+    } catch (e) {
+        // If postMessage fails, worker is unusable anyway
+        console.error('ChartWorker: Cannot send error message', e);
+    }
+}
+
+// Only proceed if Chart.js is available
+if (!chartJSAvailable) {
+    // Already sent INIT_ERROR above, just prevent class initialization
+    // Worker will remain alive but unusable
+}
 
 class ChartWorker {
     constructor() {
+        if (typeof Chart === 'undefined') {
+            console.error('ChartWorker: Chart.js not available');
+            self.postMessage({
+                type: 'INIT_ERROR',
+                error: 'Chart.js not available',
+                message: 'Chart.js is undefined'
+            });
+            return;
+        }
+        
         this.charts = new Map();
         this.canvas = null;
         this.ctx = null;
@@ -188,5 +231,21 @@ class ChartWorker {
     }
 }
 
-// Initialize worker
-new ChartWorker();
+// Initialize worker only if Chart.js is available
+if (chartJSAvailable && typeof Chart !== 'undefined') {
+    try {
+        new ChartWorker();
+    } catch (error) {
+        console.error('ChartWorker initialization failed:', error);
+        self.postMessage({
+            type: 'INIT_ERROR',
+            error: 'ChartWorker initialization failed',
+            message: error.message || 'Unknown error'
+        });
+    }
+} else {
+    // Chart.js not available - worker is unusable but stays alive
+    // INIT_ERROR already sent in the catch block above
+    // Use console.debug to reduce noise (this is expected in local dev)
+    console.debug('ChartWorker: Cannot initialize - Chart.js not available. Worker will not function.');
+}

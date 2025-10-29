@@ -55,6 +55,59 @@ class StorageManager {
     }
 
     /**
+     * Safely read from localStorage with error handling
+     * @param {string} key - Storage key
+     * @param {*} defaultValue - Default value if read fails
+     * @returns {*} Parsed value or default
+     */
+    safeGetItem(key, defaultValue = null) {
+        try {
+            const raw = localStorage.getItem(key);
+            if (raw === null) return defaultValue;
+            
+            // Handle empty string
+            if (raw === '') return defaultValue;
+            
+            // Try to parse as JSON
+            return JSON.parse(raw);
+        } catch (error) {
+            this.logger.warn(`Failed to parse localStorage item ${key}:`, error);
+            return defaultValue;
+        }
+    }
+
+    /**
+     * Safely write to localStorage with error handling
+     * @param {string} key - Storage key
+     * @param {*} value - Value to store
+     * @returns {boolean} Success status
+     */
+    safeSetItem(key, value) {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+            return true;
+        } catch (error) {
+            this.logger.error(`Failed to write localStorage item ${key}:`, error);
+            return false;
+        }
+    }
+
+    /**
+     * Safely remove from localStorage with error handling
+     * @param {string} key - Storage key
+     * @returns {boolean} Success status
+     */
+    safeRemoveItem(key) {
+        try {
+            localStorage.removeItem(key);
+            return true;
+        } catch (error) {
+            this.logger.error(`Failed to remove localStorage item ${key}:`, error);
+            return false;
+        }
+    }
+
+    /**
      * Save user profile
      * @param {string} userId - User ID
      * @param {Object} profile - Profile data
@@ -69,7 +122,9 @@ class StorageManager {
                 updatedAt: new Date().toISOString()
             };
             
-            this.setStorage(this.PREFIXES.PROFILES, profiles);
+            if (!this.safeSetItem(this.PREFIXES.PROFILES, profiles)) {
+                throw new Error('Failed to save profile to localStorage');
+            }
             
             // Emit event
             this.eventBus.emit(this.eventBus.TOPICS.PROFILE_UPDATED, { userId, profile });
@@ -99,7 +154,7 @@ class StorageManager {
      * @returns {Object} All user profiles
      */
     getUserProfiles() {
-        return this.getStorage(this.PREFIXES.PROFILES, {});
+        return this.safeGetItem(this.PREFIXES.PROFILES, {});
     }
 
     /**
@@ -352,7 +407,7 @@ class StorageManager {
      */
     loadSyncQueue() {
         try {
-            const queue = this.getStorage(this.PREFIXES.SYNC_QUEUE, []);
+            const queue = this.safeGetItem(this.PREFIXES.SYNC_QUEUE, []);
             this.syncQueue = Array.isArray(queue) ? queue : [];
         } catch (error) {
             this.logger.error('Failed to load sync queue:', error);
@@ -365,7 +420,9 @@ class StorageManager {
      */
     saveSyncQueue() {
         try {
-            this.setStorage(this.PREFIXES.SYNC_QUEUE, this.syncQueue);
+            if (!this.safeSetItem(this.PREFIXES.SYNC_QUEUE, this.syncQueue)) {
+                this.logger.error('Failed to save sync queue to localStorage');
+            }
         } catch (error) {
             this.logger.error('Failed to save sync queue:', error);
         }

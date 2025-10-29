@@ -8,7 +8,12 @@
  * ✅ No logging UI
  */
 
-const testPrompts = {
+// Prevent duplicate declaration
+if (typeof window.testPrompts05 === 'undefined') {
+    window.testPrompts05 = {};
+}
+
+Object.assign(window.testPrompts05, {
     // Test cases for body fat variations
     testBodyFatVariations() {
         console.group('🧪 Test Body Fat Variations');
@@ -223,7 +228,7 @@ const testPrompts = {
         
         console.groupEnd();
     }
-};
+});
 
 // Helper functions (if not in scope)
 function calculateBMR(gender, age, weight, height, bodyFat = null) {
@@ -324,9 +329,9 @@ function calculateNutrition(gender, age, weight, height, activityLevel, dayType,
 // Run all tests
 console.log('🧪 Running Prompt 5 Tests...\n');
 
-testPrompts.testBodyFatVariations();
-testPrompts.testGoalAdjustments();
-testPrompts.testDeterministicOutputs();
-testPrompts.testUICardRequirements();
+window.testPrompts05.testBodyFatVariations();
+window.testPrompts05.testGoalAdjustments();
+window.testPrompts05.testDeterministicOutputs();
+window.testPrompts05.testUICardRequirements();
 
 console.log('\n✅ All Prompt 5 Tests Complete!');

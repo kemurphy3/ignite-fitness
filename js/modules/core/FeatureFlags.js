@@ -22,7 +22,18 @@ class FeatureFlags {
      */
     async loadFlags() {
         try {
+            // Check if dependencies are available
+            if (!this.storageManager) {
+                this.logger.warn('StorageManager not available, using default flags');
+                return;
+            }
+            
             const userId = this.getUserId();
+            if (!userId) {
+                this.logger.debug('No user ID available, using default flags');
+                return;
+            }
+            
             const savedFlags = await this.storageManager.getData(userId, 'feature_flags');
             
             if (savedFlags) {
@@ -31,7 +42,9 @@ class FeatureFlags {
             
             this.logger.debug('Feature flags loaded', this.flags);
         } catch (error) {
-            this.logger.error('Failed to load feature flags', error);
+            // Non-critical error - use default flags (expected in local dev)
+            // Use debug level since this is expected when storage isn't available
+            this.logger.debug('Feature flags not available, using defaults', error.message);
         }
     }
 

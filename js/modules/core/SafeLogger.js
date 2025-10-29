@@ -91,7 +91,8 @@ class SafeLogger {
      */
     formatLog(level, message, ...args) {
         const timestamp = new Date().toISOString();
-        const maskedArgs = args.map(arg => this.maskSensitiveData);
+        // Actually call maskSensitiveData, don't just reference it
+        const maskedArgs = args.map(arg => this.maskSensitiveData(arg));
         
         return [
             `[${timestamp}] [${level.toUpperCase()}] ${message}`,

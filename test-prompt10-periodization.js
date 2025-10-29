@@ -11,7 +11,12 @@
  * ✅ Marking a key match in 10 days updates next 2 weeks with rationale
  */
 
-const testPrompts = {
+// Prevent duplicate declaration
+if (typeof window.testPrompts10 === 'undefined') {
+    window.testPrompts10 = {};
+}
+
+Object.assign(window.testPrompts10, {
     // Test 4-week block generation
     test4WeekBlockGeneration() {
         console.group('🧪 Test 4-Week Block Generation');
@@ -267,16 +272,16 @@ const testPrompts = {
         
         console.groupEnd();
     }
-};
+});
 
 // Run all tests
 console.log('🧪 Running Prompt 10 Tests...\n');
 
-testPrompts.test4WeekBlockGeneration();
-testPrompts.testSeasonBiases();
-testPrompts.testKeyMatchFlagging();
-testPrompts.testAutomaticTapering();
-testPrompts.testPeriodizationView();
-testPrompts.testMarkingKeyMatchUpdatesPlan();
+window.testPrompts10.test4WeekBlockGeneration();
+window.testPrompts10.testSeasonBiases();
+window.testPrompts10.testKeyMatchFlagging();
+window.testPrompts10.testAutomaticTapering();
+window.testPrompts10.testPeriodizationView();
+window.testPrompts10.testMarkingKeyMatchUpdatesPlan();
 
 console.log('\n✅ All Prompt 10 Tests Complete!');

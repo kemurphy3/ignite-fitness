@@ -22,11 +22,8 @@
     <link rel="manifest" href="/manifest.json">
     
     <!-- Critical Resource Preloading -->
-    <link rel="preload" href="/styles/main.css" as="style" crossorigin="anonymous">
-    <link rel="preload" href="/styles/mobile-first.css" as="style" crossorigin="anonymous">
-    <link rel="preload" href="/js/app.js" as="script" crossorigin="anonymous">
-    <link rel="preload" href="/js/modules/ui/VirtualList.js" as="script" crossorigin="anonymous">
-    <link rel="preload" href="/js/modules/cache/LRUCache.js" as="script" crossorigin="anonymous">
+    <!-- CSS preloads removed - using direct stylesheet links instead to avoid crossorigin mismatch -->
+    <!-- Removed script preloads that aren't immediately used to avoid preload warnings -->
     <!-- Font preloads -->
     <!-- <link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin="anonymous"> -->
     
@@ -41,7 +38,11 @@
     
     <!-- Stylesheets -->
     <!-- Mobile-First Styles -->
+    <!-- Stylesheets - Load main and mobile-first first for better LCP -->
+    <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="styles/mobile-first.css">
+    
+    <!-- Additional Stylesheets -->
     <link rel="stylesheet" href="styles/design-tokens.css">
     <link rel="stylesheet" href="styles/components.css">
     <link rel="stylesheet" href="styles/persistent-header.css">
@@ -53,9 +54,6 @@
     <link rel="stylesheet" href="styles/why-panel.css">
     <link rel="stylesheet" href="styles/charts.css">
     <link rel="stylesheet" href="styles/strava-import.css">
-    
-    <!-- Existing Styles -->
-    <link rel="stylesheet" href="styles/main.css">
     
     <!-- Onboarding and Dashboard Styles -->
     <style>
@@ -3000,6 +2998,7 @@
     <script src="js/modules/core/ErrorBoundary.js"></script>
     <script src="js/modules/core/EventBus.js"></script>
     <script src="js/modules/core/SafeLogger.js"></script>
+    <script src="js/utils/SafeDOM.js"></script>
     <script src="js/modules/core/LegalCopy.js"></script>
     <script src="js/modules/core/FeatureFlags.js"></script>
     <script src="js/modules/data/StorageManager.js"></script>
@@ -3024,6 +3023,7 @@
     <script src="js/modules/ui/UpgradeNudge.js"></script>
     <script src="js/modules/ui/components/ErrorAlert.js"></script>
     <script src="js/modules/ui/components/WhyPanel.js"></script>
+    <script src="js/modules/ui/charts/ChartManager.js"></script>
     <script src="js/modules/ui/charts/Trends.js"></script>
     <script src="js/modules/ui/StravaImportUI.js"></script>
     
@@ -3112,6 +3112,50 @@
     <script src="js/modules/ai/ExpertCoordinator.js"></script>
     <script src="js/modules/ai/WhyThisDecider.js"></script>
     <script src="js/modules/ai/CoachChat.js"></script>
+    <script>
+        // Provide global helpers for AI Chat controls used in markup
+        window.toggleAIChat = function() {
+            try {
+                if (window.CoachChat && typeof window.CoachChat.isOpen === 'boolean') {
+                    if (window.CoachChat.isOpen) {
+                        window.CoachChat.closeChat();
+                    } else {
+                        window.CoachChat.openChat();
+                    }
+                }
+            } catch (e) {
+                (window.SafeLogger || console).error('toggleAIChat failed', e);
+            }
+        };
+
+        window.sendToAI = function() {
+            try {
+                if (window.CoachChat && typeof window.CoachChat.sendMessage === 'function') {
+                    window.CoachChat.sendMessage();
+                }
+            } catch (e) {
+                (window.SafeLogger || console).error('sendToAI failed', e);
+            }
+        };
+
+        window.quickAction = function(action) {
+            try {
+                if (!window.CoachChat) return;
+                const mapping = {
+                    injury: 'Something hurts',
+                    fatigue: 'Too hard',
+                    goals: 'Different workout',
+                    schedule: 'Less time'
+                };
+                const suggestion = mapping[action] || 'Different workout';
+                if (typeof window.CoachChat.handleQuickSuggestion === 'function') {
+                    window.CoachChat.handleQuickSuggestion(suggestion);
+                }
+            } catch (e) {
+                (window.SafeLogger || console).error('quickAction failed', e);
+            }
+        };
+    </script>
     
     <!-- Mode Management & UI -->
     <script src="js/modules/ui/ModeManager.js"></script>
@@ -3223,6 +3267,8 @@
         // Update connection status
         function updateConnectionStatus() {
             const statusElement = document.getElementById('sync-status');
+            if (!statusElement) return; // Element doesn't exist, skip update
+            
             if (navigator.onLine) {
                 statusElement.innerHTML = '🟢 Online';
                 statusElement.style.background = '#2d3748';
@@ -3236,21 +3282,39 @@
         window.addEventListener('online', updateConnectionStatus);
         window.addEventListener('offline', updateConnectionStatus);
         
-        // Initial status check
-        updateConnectionStatus();
+        // Initial status check (only if element exists)
+        if (document.getElementById('sync-status')) {
+            updateConnectionStatus();
+        }
         
         // Personal Data Functions
         function savePersonalInfo() {
-            const age = document.getElementById('age').value;
-            const weight = document.getElementById('weight').value;
-            const height = document.getElementById('height').value;
-            const heightUnit = document.getElementById('heightUnit').value;
-            const heightFeet = document.getElementById('heightFeet').value;
-            const heightInches = document.getElementById('heightInches').value;
-            const experience = document.getElementById('experience').value;
-            const sportSpecific = document.getElementById('sportSpecific').checked;
-            const sport = document.getElementById('sport').value;
-            const seasonPhase = document.getElementById('seasonPhase').value;
+            const ageEl = document.getElementById('age');
+            const weightEl = document.getElementById('weight');
+            const heightEl = document.getElementById('height');
+            const heightUnitEl = document.getElementById('heightUnit');
+            const heightFeetEl = document.getElementById('heightFeet');
+            const heightInchesEl = document.getElementById('heightInches');
+            const experienceEl = document.getElementById('experience');
+            const sportSpecificEl = document.getElementById('sportSpecific');
+            const sportEl = document.getElementById('sport');
+            const seasonPhaseEl = document.getElementById('seasonPhase');
+            
+            if (!ageEl || !weightEl || !experienceEl) {
+                showStatus('personalDataStatus', 'Personal info form not available', 'error');
+                return;
+            }
+            
+            const age = ageEl.value;
+            const weight = weightEl.value;
+            const height = heightEl ? heightEl.value : '';
+            const heightUnit = heightUnitEl ? heightUnitEl.value : '';
+            const heightFeet = heightFeetEl ? heightFeetEl.value : '';
+            const heightInches = heightInchesEl ? heightInchesEl.value : '';
+            const experience = experienceEl.value;
+            const sportSpecific = sportSpecificEl ? sportSpecificEl.checked : false;
+            const sport = sportEl ? sportEl.value : '';
+            const seasonPhase = seasonPhaseEl ? seasonPhaseEl.value : '';
             
             if (!age || !weight || !experience) {
                 showStatus('personalDataStatus', 'Please fill in all required fields', 'error');

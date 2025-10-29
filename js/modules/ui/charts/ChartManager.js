@@ -7,6 +7,8 @@ class ChartManager {
         this.worker = null;
         this.charts = new Map();
         this.pendingRequests = new Map();
+        this.workerReady = false;
+        this._initLogged = false;
         this.supportsOffscreenCanvas = this.checkOffscreenCanvasSupport();
         
         this.init();
@@ -31,9 +33,40 @@ class ChartManager {
                 this.worker.onmessage = this.handleWorkerMessage.bind(this);
                 this.worker.onerror = this.handleWorkerError.bind(this);
                 
-                console.log('ChartManager: Web Worker initialized');
+                // Set timeout to check if worker initializes successfully
+                // If worker sends INIT_ERROR, it will be handled by handleWorkerMessage
+                // If no message received within 1 second, assume worker failed
+                const initTimeout = setTimeout(() => {
+                    if (this.supportsOffscreenCanvas && !this.workerReady) {
+                        console.warn('ChartManager: Worker did not respond, falling back to main thread');
+                        this.supportsOffscreenCanvas = false;
+                        if (this.worker) {
+                            this.worker.terminate();
+                            this.worker = null;
+                        }
+                    }
+                }, 1000);
+                
+                // Mark worker as ready when we receive first non-error message
+                const originalHandler = this.handleWorkerMessage.bind(this);
+                this.worker.onmessage = (event) => {
+                    if (event.data.type !== 'INIT_ERROR') {
+                        if (!this.workerReady) {
+                            this.workerReady = true;
+                            clearTimeout(initTimeout);
+                            // Log only when worker becomes ready
+                        }
+                    }
+                    originalHandler(event);
+                };
+                
+                // Only log once per instance to avoid duplicates
+                if (!this._initLogged) {
+                    console.debug('ChartManager: Web Worker created, waiting for initialization...');
+                    this._initLogged = true;
+                }
             } catch (error) {
-                console.warn('ChartManager: Failed to initialize worker, falling back to main thread:', error);
+                console.warn('ChartManager: Failed to create worker, falling back to main thread:', error);
                 this.supportsOffscreenCanvas = false;
             }
         } else {
@@ -45,9 +78,20 @@ class ChartManager {
      * Handle messages from worker
      */
     handleWorkerMessage(event) {
-        const { type, chartId, imageData, error } = event.data;
+        const { type, chartId, imageData, error, message } = event.data;
         
         switch (type) {
+            case 'INIT_ERROR':
+                // Worker failed to initialize (usually CDN/CORS issue)
+                // Use debug level since this is expected behavior in local dev
+                console.debug('ChartWorker initialization failed, falling back to main thread:', message || error);
+                this.supportsOffscreenCanvas = false;
+                if (this.worker) {
+                    this.worker.terminate();
+                    this.worker = null;
+                }
+                break;
+                
             case 'CHART_CREATED':
             case 'CHART_UPDATED':
             case 'CHART_RESIZED':
@@ -73,8 +117,12 @@ class ChartManager {
      * Handle worker errors
      */
     handleWorkerError(error) {
-        console.error('ChartWorker error:', error);
+        console.warn('ChartWorker error, falling back to main thread:', error.message || error);
         this.supportsOffscreenCanvas = false;
+        if (this.worker) {
+            this.worker.terminate();
+            this.worker = null;
+        }
     }
     
     /**
@@ -83,7 +131,8 @@ class ChartManager {
     async createChart(chartId, config, canvasElement) {
         const rect = canvasElement.getBoundingClientRect();
         
-        if (this.supportsOffscreenCanvas && this.worker) {
+        // Only use worker if it's ready and available
+        if (this.supportsOffscreenCanvas && this.worker && this.workerReady) {
             // Use web worker
             return this.createChartInWorker(chartId, config, {
                 width: rect.width,

@@ -21,9 +21,21 @@ class DashboardHero {
         const hero = document.createElement('section');
         hero.className = 'dashboard-hero';
         
-        // Get readiness data
+        // Get readiness data (may be null if no check-in)
         const recoverySummary = window.RecoverySummary;
-        const readinessData = recoverySummary?.getTodayReadiness() || { score: 5, color: 'yellow' };
+        const readinessData = recoverySummary?.getTodayReadiness();
+        
+        // Handle null readiness - don't show circle if no data
+        const readinessCircleHTML = readinessData 
+            ? `<div class="readiness-circle" 
+                     style="--readiness-color: ${readinessData.color}"
+                     role="status"
+                     aria-label="Readiness score ${readinessData.score} out of 10: ${this.getReadinessDescription(readinessData.score)}"
+                     title="${this.getReadinessDescription(readinessData.score)}">
+                    <div class="readiness-value">${readinessData.score}</div>
+                    <div class="readiness-label">Readiness</div>
+                </div>`
+            : '<div class="readiness-placeholder" style="padding: 1rem; text-align: center; color: #6c757d; font-size: 0.875rem;">Complete daily check-in to see readiness</div>';
         
         hero.innerHTML = `
             <div class="hero-content">
@@ -33,10 +45,7 @@ class DashboardHero {
                 </div>
                 
                 <!-- Readiness Circle -->
-                <div class="readiness-circle" style="--readiness-color: ${readinessData.color}">
-                    <div class="readiness-value">${readinessData.score}</div>
-                    <div class="readiness-label">Readiness</div>
-                </div>
+                ${readinessCircleHTML}
                 
                 ${currentPhase ? this.renderSeasonPhase(currentPhase) : ''}
             </div>
@@ -93,6 +102,27 @@ class DashboardHero {
                 <span class="phase-label">${config.label}</span>
             </div>
         `;
+    }
+
+    /**
+     * Get human-readable description of readiness score
+     * @param {number} score - Readiness score (1-10)
+     * @returns {string} Description
+     */
+    getReadinessDescription(score) {
+        if (!score || score === null || score === undefined) {
+            return 'No data - Complete daily check-in for accurate readiness';
+        }
+        
+        if (score >= 8 && score <= 10) {
+            return `Excellent (${score}/10) - Ready for full intensity training`;
+        } else if (score >= 5 && score <= 7) {
+            return `Moderate (${score}/10) - Reduce intensity by 10%. Take it easy.`;
+        } else if (score >= 1 && score <= 4) {
+            return `Low (${score}/10) - Recovery session recommended. Rest day or light movement only.`;
+        } else {
+            return `Score ${score}/10`;
+        }
     }
 
     /**

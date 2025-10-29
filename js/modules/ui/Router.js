@@ -118,8 +118,22 @@ class Router {
      * Handle initial route on page load
      */
     handleInitialRoute() {
-        const hash = window.location.hash || '#/';
-        this.navigate(hash, { replace: true });
+        const hash = window.location.hash;
+        
+        // If no hash and user is not authenticated, go to login
+        if (!hash && !this.isAuthenticated()) {
+            this.navigate('#/login', { replace: true });
+            return;
+        }
+        
+        // If hash is #/ and user is not authenticated, redirect to login
+        if ((!hash || hash === '#/') && !this.isAuthenticated()) {
+            this.navigate('#/login', { replace: true });
+            return;
+        }
+        
+        // Otherwise navigate to the hash (or default to #/)
+        this.navigate(hash || '#/', { replace: true });
     }
 
     /**
@@ -189,7 +203,8 @@ class Router {
      */
     async loadRouteComponent(routeConfig) {
         try {
-            const container = document.getElementById('app-content');
+            // Try both possible IDs for compatibility
+            const container = document.getElementById('main-content') || document.getElementById('app-content');
             if (!container) {
                 this.logger.error('App content container not found');
                 return;
@@ -487,11 +502,55 @@ class Router {
     }
 
     getLoginHTML() {
+        // Show the legacy login form from index.html
+        const loginForm = document.getElementById('loginForm');
+        if (loginForm) {
+            loginForm.style.display = 'block';
+            loginForm.classList.remove('hidden');
+        }
+        
+        // Also show login form content in main content area
         return `
-            <div data-component="LoginView" class="login-view">
-                <div class="auth-container">
-                    <h1>Sign In</h1>
-                    <p>Login form will be loaded here</p>
+            <div data-component="LoginView" class="login-view auth-view">
+                <div class="auth-container" style="max-width: 400px; margin: 2rem auto; padding: 2rem;">
+                    <section class="form-section" aria-labelledby="login-heading">
+                        <h2 id="login-heading" style="text-align: center; margin-bottom: 1.5rem; color: #2d3748;">Welcome Back</h2>
+                        <form role="form" aria-label="User login form" onsubmit="if(window.login){window.login(); return false;} return false;">
+                            <div class="form-group">
+                                <label for="loginUsername">Username</label>
+                                <input type="text" 
+                                       id="loginUsername" 
+                                       name="username"
+                                       class="form-input" 
+                                       placeholder="Enter username"
+                                       aria-required="true"
+                                       autocomplete="username"
+                                       required>
+                            </div>
+                            <div class="form-group">
+                                <label for="loginPassword">Password</label>
+                                <input type="password" 
+                                       id="loginPassword" 
+                                       name="password"
+                                       class="form-input" 
+                                       placeholder="Enter password"
+                                       aria-required="true"
+                                       autocomplete="current-password"
+                                       required>
+                            </div>
+                            <div class="form-actions" style="margin-top: 1.5rem;">
+                                <button type="submit" class="btn" style="width: 100%;">
+                                    Sign In
+                                </button>
+                            </div>
+                            <div class="form-footer" style="margin-top: 1rem; text-align: center;">
+                                <p style="color: #718096; font-size: 0.875rem;">
+                                    Don't have an account? 
+                                    <a href="#/register" onclick="window.Router?.navigate('#/register'); return false;" style="color: #4299e1; text-decoration: underline;">Sign up</a>
+                                </p>
+                            </div>
+                        </form>
+                    </section>
                 </div>
             </div>
         `;

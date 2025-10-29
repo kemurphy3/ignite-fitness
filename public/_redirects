@@ -1,0 +1,21 @@
+# Netlify SPA redirects configuration
+# This ensures all routes are handled by the SPA
+
+# Redirect all routes to index.html for SPA handling
+/*    /index.html   200
+
+# API routes should not be redirected
+/.netlify/functions/*    /.netlify/functions/:splat    200
+
+# Static assets should be served directly
+/js/*    /js/:splat    200
+/styles/*    /styles/:splat    200
+/images/*    /images/:splat    200
+/fonts/*    /fonts/:splat    200
+
+# Health check endpoint
+/health.html    /health.html    200
+
+# Admin routes (if needed)
+/admin/*    /admin/:splat    200
+

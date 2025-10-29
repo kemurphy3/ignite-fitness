@@ -13,7 +13,12 @@
  * ✅ Timers keep state across navigation
  */
 
-const testPrompts = {
+// Prevent duplicate declaration
+if (typeof window.testPrompts09 === 'undefined') {
+    window.testPrompts09 = {};
+}
+
+Object.assign(window.testPrompts09, {
     // Test one big Start button
     testStartButton() {
         console.group('🧪 Test One Big Start Button');
@@ -325,18 +330,18 @@ const testPrompts = {
         
         console.groupEnd();
     }
-};
+});
 
 // Run all tests
 console.log('🧪 Running Prompt 9 Tests...\n');
 
-testPrompts.testStartButton();
-testPrompts.testRestTimerControls();
-testPrompts.testVibrationOnTimerEnd();
-testPrompts.testRPEInputWheel();
-testPrompts.testEquipmentSwap();
-testPrompts.testOfflineLogging();
-testPrompts.testGracefulResume();
-testPrompts.testAccessibility();
+window.testPrompts09.testStartButton();
+window.testPrompts09.testRestTimerControls();
+window.testPrompts09.testVibrationOnTimerEnd();
+window.testPrompts09.testRPEInputWheel();
+window.testPrompts09.testEquipmentSwap();
+window.testPrompts09.testOfflineLogging();
+window.testPrompts09.testGracefulResume();
+window.testPrompts09.testAccessibility();
 
 console.log('\n✅ All Prompt 9 Tests Complete!');

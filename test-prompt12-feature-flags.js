@@ -10,7 +10,12 @@
  * ✅ No breakage in Simple Mode
  */
 
-const testPrompts = {
+// Prevent duplicate declaration
+if (typeof window.testPrompts12 === 'undefined') {
+    window.testPrompts12 = {};
+}
+
+Object.assign(window.testPrompts12, {
     // Test feature flags
     testFeatureFlags() {
         console.group('🧪 Test Feature Flags');
@@ -251,17 +256,17 @@ const testPrompts = {
         
         console.groupEnd();
     }
-};
+});
 
 // Run all tests
 console.log('🧪 Running Prompt 12 Tests...\n');
 
-testPrompts.testFeatureFlags();
-testPrompts.testFriendlyNudge();
-testPrompts.testNeverBlocksCoreSession();
-testPrompts.testTogglingChangesUI();
-testPrompts.testSimpleModeNoBreakage();
-testPrompts.testFlagsStoredPerUser();
-testPrompts.testFriendlyNudgeContent();
+window.testPrompts12.testFeatureFlags();
+window.testPrompts12.testFriendlyNudge();
+window.testPrompts12.testNeverBlocksCoreSession();
+window.testPrompts12.testTogglingChangesUI();
+window.testPrompts12.testSimpleModeNoBreakage();
+window.testPrompts12.testFlagsStoredPerUser();
+window.testPrompts12.testFriendlyNudgeContent();
 
 console.log('\n✅ All Prompt 12 Tests Complete!');

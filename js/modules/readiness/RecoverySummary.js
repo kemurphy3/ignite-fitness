@@ -17,8 +17,8 @@ class RecoverySummary {
     /**
      * Initialize and load data
      */
-    initialize() {
-        this.loadTodayReadiness();
+    async initialize() {
+        await this.loadTodayReadiness();
         this.loadWeekReadiness();
         this.calculateSafetyMeter();
         this.setupEventListeners();
@@ -26,26 +26,54 @@ class RecoverySummary {
 
     /**
      * Load today's readiness score
+     * If no explicit check-in exists, tries passive inference
      */
-    loadTodayReadiness() {
+    async loadTodayReadiness() {
         try {
             const today = new Date().toISOString().split('T')[0];
             const userId = this.getUserId();
             
+            // Try to get explicit readiness check-in first
             const readinessLog = this.storageManager.getReadinessLog(userId, today);
             
-            if (readinessLog) {
+            if (readinessLog && readinessLog.readinessScore !== undefined) {
+                // Explicit check-in found
                 this.todayReadiness = {
-                    score: readinessLog.readinessScore || 5,
+                    score: readinessLog.readinessScore,
                     date: today,
-                    color: this.getReadinessColor(readinessLog.readinessScore || 5)
+                    color: this.getReadinessColor(readinessLog.readinessScore),
+                    source: 'explicit'
                 };
-            } else {
-                this.todayReadiness = { score: null, color: 'gray' };
+                return;
             }
+            
+            // No explicit check-in - try passive inference
+            try {
+                const passiveReadiness = window.PassiveReadiness;
+                if (passiveReadiness && typeof passiveReadiness.inferReadiness === 'function') {
+                    const inferred = await passiveReadiness.inferReadiness({ userId });
+                    
+                    if (inferred && inferred.score !== undefined && inferred.score !== null) {
+                        this.todayReadiness = {
+                            score: inferred.score,
+                            date: today,
+                            color: this.getReadinessColor(inferred.score),
+                            source: 'inferred'
+                        };
+                        return;
+                    }
+                }
+            } catch (inferenceError) {
+                this.logger.debug('Passive readiness inference failed, using default', inferenceError.message);
+            }
+            
+            // No data available - set to null (user prefers this standard)
+            this.todayReadiness = null;
+            return;
         } catch (error) {
             this.logger.error('Failed to load today readiness', error);
-            this.todayReadiness = { score: null, color: 'gray' };
+            // No data available - set to null
+            this.todayReadiness = null;
         }
     }
 
@@ -171,7 +199,11 @@ class RecoverySummary {
      * @returns {Object} Today's readiness data
      */
     getTodayReadiness() {
-        return this.todayReadiness || { score: null, color: 'gray' };
+        // Return null when no readiness data is available (user prefers this standard)
+        if (!this.todayReadiness) {
+            return null;
+        }
+        return this.todayReadiness;
     }
 
     /**
@@ -276,7 +308,10 @@ Last injury report (${daysAgo} days ago):
 
 // Create global instance
 window.RecoverySummary = new RecoverySummary();
-window.RecoverySummary.initialize();
+// Initialize asynchronously - don't block page load
+window.RecoverySummary.initialize().catch(err => {
+    console.error('RecoverySummary initialization error:', err);
+});
 
 // Export for module systems
 if (typeof module !== 'undefined' && module.exports) {
