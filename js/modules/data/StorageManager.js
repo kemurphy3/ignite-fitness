@@ -440,6 +440,8 @@ class StorageManager {
         
         try {
             const itemsToSync = [...this.syncQueue];
+            const total = itemsToSync.length;
+            let completed = 0;
             
             for (const item of itemsToSync) {
                 try {
@@ -455,11 +457,20 @@ class StorageManager {
                     } else {
                         // Increment attempt count
                         item.attempts++;
+                        // Small progressive backoff (max 5s)
+                        const backoff = Math.min(500 * Math.pow(2, item.attempts - 1), 5000);
+                        await new Promise(r => setTimeout(r, backoff));
                     }
                 } catch (error) {
                     this.logger.error('Failed to sync item:', error);
                     item.attempts++;
                 }
+                completed++;
+                this.eventBus.emit(this.eventBus.TOPICS?.SYNC_PROGRESS || 'sync:progress', {
+                    completed,
+                    total,
+                    remaining: this.syncQueue.length
+                });
             }
             
             this.saveSyncQueue();
@@ -475,10 +486,74 @@ class StorageManager {
      * @returns {Promise<boolean>} Success status
      */
     async syncItem(item) {
-        // TODO: Implement actual sync to server
-        // For now, simulate successful sync
-        await new Promise(resolve => setTimeout(resolve, 100));
-        return true;
+        // Basic validation
+        if (!item || !item.table || !item.key || !item.data) {
+            this.logger.warn('syncItem: invalid item', item);
+            return false;
+        }
+
+        // Prepare payload with checksum for idempotency
+        const payload = {
+            table: item.table,
+            key: item.key,
+            data: item.data,
+            updated_at: item.data?.updatedAt || new Date().toISOString(),
+            checksum: this.computeChecksum(item)
+        };
+
+        const token = window.AuthManager?.getToken?.() || window.AuthManager?.getAuthState?.().token || null;
+
+        try {
+            const res = await fetch('/.netlify/functions/sync-upsert', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.status === 200 || res.status === 201 || res.status === 204) {
+                return true;
+            }
+
+            if (res.status === 409) {
+                // Conflict: assume server already has same/newer data, mark as synced
+                return true;
+            }
+
+            if (res.status === 422 || res.status === 400) {
+                const body = await res.json().catch(() => ({}));
+                this.logger.warn('syncItem: validation failed', body);
+                // Drop item to prevent infinite loop when invalid
+                return true;
+            }
+
+            if (res.status === 401 || res.status === 403) {
+                this.logger.warn('syncItem: unauthorized, will retry later');
+                return false;
+            }
+
+            this.logger.warn('syncItem: unexpected status', res.status);
+            return false;
+        } catch (error) {
+            this.logger.error('syncItem: network error', error.message || error);
+            return false;
+        }
+    }
+
+    computeChecksum(item) {
+        try {
+            const str = JSON.stringify({ t: item.table, k: item.key, d: item.data });
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash << 5) - hash) + str.charCodeAt(i);
+                hash |= 0;
+            }
+            return (hash >>> 0).toString(16);
+        } catch (e) {
+            return '0';
+        }
     }
 
     /**

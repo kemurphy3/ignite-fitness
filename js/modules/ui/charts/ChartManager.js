@@ -301,6 +301,7 @@ class ChartManager {
                 spinner.innerHTML = '<div class="spinner"></div><p>Loading chart...</p>';
                 container.appendChild(spinner);
             }
+            window.LiveRegionManager?.announce('Loading chart', 'polite');
         }, 500);
     }
     
@@ -317,6 +318,7 @@ class ChartManager {
         container.classList.remove('chart-loading');
         const spinner = container.querySelector('.chart-spinner');
         if (spinner) spinner.remove();
+        window.LiveRegionManager?.announce('Chart ready', 'polite');
     }
     
     /**

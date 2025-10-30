@@ -410,7 +410,7 @@ class Router {
             this.hideLoadingState(container);
 
         } catch (error) {
-            this.logger.error('Failed to load route component:', error);
+            this.logger.error('ROUTE_LOAD_FAILED', { route: routeConfig?.component, message: error?.message, stack: error?.stack });
             this.showErrorState(container, error);
         }
     }

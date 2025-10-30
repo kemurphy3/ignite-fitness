@@ -115,6 +115,7 @@ class CoachChat {
         
         // Add coach response
         this.addMessage('coach', response.text);
+        window.LiveRegionManager?.announce('Coach response ready', 'polite');
         
         // Apply any modifications
         if (response.modifications) {

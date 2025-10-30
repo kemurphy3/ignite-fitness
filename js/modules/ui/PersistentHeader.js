@@ -76,10 +76,12 @@ class PersistentHeader {
                         el.style.cssText = 'display:flex;align-items:center;gap:6px;margin-left:8px;color:#9CA3AF;font-size:12px;';
                         el.innerHTML = '<span class="if-spinner" style="width:14px;height:14px;border-width:2px"></span><span>Syncing…</span>';
                         right.appendChild(el);
+                        window.LiveRegionManager?.announce('Sync started', 'polite');
                     }, 500);
                 } else {
                     if (syncTimer) clearTimeout(syncTimer);
                     if (existing) existing.remove();
+                    window.LiveRegionManager?.announce('Sync complete', 'polite');
                 }
             });
         }

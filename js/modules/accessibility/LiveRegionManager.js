@@ -1,4 +1,52 @@
 /**
+ * LiveRegionManager - centralized ARIA live announcements (WCAG 2.1 AA)
+ * Provides polite/assertive regions with de-duplication and throttling
+ */
+(function () {
+  class LiveRegionManager {
+    constructor() {
+      this.lastMessage = '';
+      this.lastTs = 0;
+      this.throttleMs = 500; // prevent chatty updates
+      this.polite = this.createRegion('polite');
+      this.assertive = this.createRegion('assertive');
+    }
+
+    createRegion(politenness) {
+      const region = document.createElement('div');
+      region.className = `if-live-region if-live-${politenness}`;
+      region.setAttribute('aria-live', politenness);
+      region.setAttribute('aria-atomic', 'true');
+      region.style.position = 'absolute';
+      region.style.width = '1px';
+      region.style.height = '1px';
+      region.style.overflow = 'hidden';
+      region.style.clip = 'rect(1px, 1px, 1px, 1px)';
+      region.style.clipPath = 'inset(50%)';
+      region.style.whiteSpace = 'nowrap';
+      document.body.appendChild(region);
+      return region;
+    }
+
+    announce(message, politeness = 'polite') {
+      if (!message) return;
+      const now = Date.now();
+      if (message === this.lastMessage && now - this.lastTs < this.throttleMs) return;
+      this.lastMessage = message;
+      this.lastTs = now;
+
+      const region = politeness === 'assertive' ? this.assertive : this.polite;
+      // Clear then set to ensure announcement
+      region.textContent = '';
+      // Delay a tick to force SR update in some browsers
+      setTimeout(() => { region.textContent = String(message); }, 50);
+    }
+  }
+
+  window.LiveRegionManager = new LiveRegionManager();
+})();
+
+/**
  * LiveRegionManager - Manages ARIA live regions for dynamic content announcements
  * Provides accessible announcements for timer updates, status changes, and notifications
  */

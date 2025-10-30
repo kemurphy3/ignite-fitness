@@ -20,6 +20,8 @@ class SafeLogger {
             /name/i
         ];
         this.maskedValue = '[MASKED]';
+        this.remote = { enabled: false, url: null };
+        this.installGlobalHandlers();
     }
 
     /**
@@ -31,6 +33,25 @@ class SafeLogger {
         if (levels.includes(level)) {
             this.logLevel = level;
         }
+    }
+
+    setRemote(url, enabled = true) {
+        this.remote = { url, enabled: !!enabled };
+    }
+
+    installGlobalHandlers() {
+        if (this._globalsInstalled) return;
+        this._globalsInstalled = true;
+        window.addEventListener('error', (e) => {
+            try {
+                this.error('UNCAUGHT_ERROR', { message: e.message, filename: e.filename, lineno: e.lineno, colno: e.colno, stack: e.error?.stack });
+            } catch {}
+        });
+        window.addEventListener('unhandledrejection', (e) => {
+            try {
+                this.error('UNHANDLED_REJECTION', { reason: String(e.reason), stack: e.reason?.stack });
+            } catch {}
+        });
     }
 
     /**
@@ -142,6 +163,7 @@ class SafeLogger {
         if (!this.shouldLog('error')) return;
         const formatted = this.formatLog('error', message, ...args);
         console.error(...formatted);
+        this.sendRemote('error', message, args);
     }
 
     /**
@@ -159,6 +181,7 @@ class SafeLogger {
         };
 
         this.info('AUDIT', auditData);
+        this.sendRemote('audit', 'AUDIT', [auditData]);
         
         // Emit audit event for other modules
         if (window.EventBus) {
@@ -179,6 +202,7 @@ class SafeLogger {
         };
 
         this.warn('SECURITY', securityData);
+        this.sendRemote('security', 'SECURITY', [securityData]);
         
         // Emit security event for other modules
         if (window.EventBus) {
@@ -201,11 +225,28 @@ class SafeLogger {
         };
 
         this.info('PERFORMANCE', perfData);
+        this.sendRemote('performance', 'PERFORMANCE', [perfData]);
         
         // Emit performance event for other modules
         if (window.EventBus) {
             window.EventBus.emit('performance', perfData);
         }
+    }
+
+    async sendRemote(level, message, args = []) {
+        if (!this.remote.enabled || !this.remote.url) return;
+        try {
+            const payload = {
+                level,
+                message,
+                timestamp: new Date().toISOString(),
+                args: this.maskSensitiveData(args),
+                url: window.location.href,
+                userAgent: navigator.userAgent
+            };
+            navigator.sendBeacon?.(this.remote.url, JSON.stringify(payload)) ||
+            fetch(this.remote.url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        } catch {}
     }
 }
 
