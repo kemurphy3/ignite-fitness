@@ -329,6 +329,16 @@ class ExpertCoordinator {
             }
         }
         
+        // CRITICAL FIX: Prevent empty workout sessions when all 5 experts fail
+        // Check immediately after gathering all proposals - catch before logging
+        // If all proposals have empty blocks, user would get blank workout screen
+        if (Object.values(proposals).every(p => !p || !p.blocks || p.blocks.length === 0)) {
+            this.logger.warn('All expert proposals are empty - marking for fallback plan');
+            proposals._empty = true; // Mark as empty for detection by calling method
+            // Note: Cannot return getFallbackPlanStructured here as gatherProposals returns proposals
+            // Calling methods will detect _empty flag and return fallback plan
+        }
+        
         // Log summary of failed experts
         if (failedExperts.length > 0) {
             this.logger.error('Expert system failures', {
@@ -336,14 +346,6 @@ class ExpertCoordinator {
                 failedExperts: failedExperts.map(f => f.name),
                 totalExperts: Object.keys(this.experts).length
             });
-        }
-        
-        // CRITICAL FIX: Prevent empty workouts by validating proposals
-        // If all expert proposals have no blocks, this will be handled by the calling method
-        // We mark proposals as empty so generateWorkout can detect and use fallback
-        if (Object.values(proposals).every(p => !p.blocks || p.blocks.length === 0)) {
-            this.logger.warn('All expert proposals are empty - empty workout prevented');
-            proposals._empty = true; // Mark as empty for detection by calling method
         }
         
         return proposals;
