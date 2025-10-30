@@ -285,17 +285,23 @@ class ChartManager {
      */
     showChartLoading(canvas) {
         const container = canvas.parentElement;
-        if (container) {
+        if (!container) return;
+
+        // Delay showing spinner by 500ms to avoid flicker on fast renders
+        if (container.__chartLoadingTimer) {
+            clearTimeout(container.__chartLoadingTimer);
+            container.__chartLoadingTimer = null;
+        }
+
+        container.__chartLoadingTimer = setTimeout(() => {
             container.classList.add('chart-loading');
-            
-            // Add loading spinner if not exists
             if (!container.querySelector('.chart-spinner')) {
                 const spinner = document.createElement('div');
                 spinner.className = 'chart-spinner';
                 spinner.innerHTML = '<div class="spinner"></div><p>Loading chart...</p>';
                 container.appendChild(spinner);
             }
-        }
+        }, 500);
     }
     
     /**
@@ -303,13 +309,14 @@ class ChartManager {
      */
     hideChartLoading(canvas) {
         const container = canvas.parentElement;
-        if (container) {
-            container.classList.remove('chart-loading');
-            const spinner = container.querySelector('.chart-spinner');
-            if (spinner) {
-                spinner.remove();
-            }
+        if (!container) return;
+        if (container.__chartLoadingTimer) {
+            clearTimeout(container.__chartLoadingTimer);
+            container.__chartLoadingTimer = null;
         }
+        container.classList.remove('chart-loading');
+        const spinner = container.querySelector('.chart-spinner');
+        if (spinner) spinner.remove();
     }
     
     /**

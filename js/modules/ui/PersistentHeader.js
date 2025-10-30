@@ -54,6 +54,35 @@ class PersistentHeader {
 
         // Update connection status
         this.updateConnectionStatus();
+        // Listen to sync queue updates to show a delayed sync indicator
+        if (window.StorageManager && window.EventBus) {
+            let syncTimer = null;
+            window.EventBus.on(window.EventBus.TOPICS?.SYNC_QUEUE_UPDATED || 'sync:queue', ({ queueLength }) => {
+                const header = document.getElementById('persistent-header');
+                if (!header) return;
+                const right = header.querySelector('.header-right');
+                if (!right) return;
+
+                const existing = right.querySelector('.sync-indicator');
+                const show = queueLength > 0;
+
+                if (show) {
+                    if (syncTimer) clearTimeout(syncTimer);
+                    // Show after 500ms
+                    syncTimer = setTimeout(() => {
+                        if (right.querySelector('.sync-indicator')) return;
+                        const el = document.createElement('div');
+                        el.className = 'sync-indicator';
+                        el.style.cssText = 'display:flex;align-items:center;gap:6px;margin-left:8px;color:#9CA3AF;font-size:12px;';
+                        el.innerHTML = '<span class="if-spinner" style="width:14px;height:14px;border-width:2px"></span><span>Syncing…</span>';
+                        right.appendChild(el);
+                    }, 500);
+                } else {
+                    if (syncTimer) clearTimeout(syncTimer);
+                    if (existing) existing.remove();
+                }
+            });
+        }
         
         // Update season phase
         this.updateSeasonPhase();

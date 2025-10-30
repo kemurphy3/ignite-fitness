@@ -97,8 +97,21 @@ class CoachChat {
         // Clear input
         input.value = '';
         
+        // Show delayed typing indicator (>500ms)
+        let typingDiv = null;
+        const typingTimer = setTimeout(() => {
+            const messagesDiv = document.getElementById('chat-messages');
+            typingDiv = document.createElement('div');
+            typingDiv.className = 'chat-message coach typing';
+            typingDiv.innerHTML = `<div class="message-bubble"><span class="if-spinner" style="vertical-align: middle; margin-right: 8px;"></span>Coach is thinking…</div>`;
+            messagesDiv.appendChild(typingDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }, 500);
+
         // Get response
         const response = await this.getCoachResponse(message);
+        clearTimeout(typingTimer);
+        if (typingDiv && typingDiv.parentNode) typingDiv.parentNode.removeChild(typingDiv);
         
         // Add coach response
         this.addMessage('coach', response.text);
