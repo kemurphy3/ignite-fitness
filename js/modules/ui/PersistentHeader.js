@@ -98,6 +98,19 @@ class PersistentHeader {
             window.EventBus.on('user:login', () => this.updateSignInButton());
             window.EventBus.on('user:logout', () => this.updateSignInButton());
         }
+
+        // Wire Simple Mode toggle
+        const modeBtn = document.getElementById('if-mode-toggle');
+        if (modeBtn) {
+            modeBtn.onclick = () => {
+                const newState = window.SimpleModeManager?.toggle();
+                if (typeof newState === 'boolean') {
+                    modeBtn.setAttribute('aria-pressed', newState ? 'true' : 'false');
+                    modeBtn.textContent = newState ? 'Simple Mode' : 'Advanced Mode';
+                    window.LiveRegionManager?.announce(newState ? 'Simple Mode enabled' : 'Advanced Mode enabled', 'polite');
+                }
+            };
+        }
     }
 
     /**
@@ -111,6 +124,8 @@ class PersistentHeader {
             ? '<button onclick="window.Router?.navigate(\'#/login\')" class="header-sign-in-btn" style="padding: 0.5rem 1rem; background: #4299e1; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem; font-weight: 600;">Sign In</button>'
             : '';
         
+        const simpleEnabled = authState.isAuthenticated ? (window.SimpleModeManager?.isEnabled() ?? true) : (window.SimpleModeManager?.isEnabled() ?? true);
+        const simpleLabel = simpleEnabled ? 'Simple Mode' : 'Advanced Mode';
         return `
             <div class="header-content">
                 <div class="header-left">
@@ -123,6 +138,9 @@ class PersistentHeader {
                 
                 <div class="header-right">
                     ${signInButton}
+                    <button class="mode-toggle" id="if-mode-toggle" aria-pressed="${simpleEnabled ? 'true' : 'false'}" title="Click to toggle between Simple and Advanced modes">
+                        ${simpleLabel}
+                    </button>
                     <div class="season-phase-pill-container" id="season-phase-container">
                         ${this.renderSeasonPhasePill()}
                     </div>

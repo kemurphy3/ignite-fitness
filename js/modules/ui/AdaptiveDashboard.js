@@ -22,6 +22,30 @@ class AdaptiveDashboard extends AdaptiveComponent {
         
         this.element.innerHTML = `
             <div class="dashboard-simple">
+                <div class="simple-mode-indicator" style="
+                    position: absolute;
+                    top: 1rem;
+                    right: 1rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    padding: 0.5rem 1rem;
+                    background: #edf2f7;
+                    border-radius: 6px;
+                    font-size: 0.875rem;
+                    color: #4a5568;
+                ">
+                    <span>🎯 Simple Mode</span>
+                    <button onclick="window.Router?.navigate('#/profile')" style="
+                        background: none;
+                        border: none;
+                        color: #4299e1;
+                        cursor: pointer;
+                        text-decoration: underline;
+                        font-size: 0.875rem;
+                        padding: 0;
+                    " title="Change interface mode">Change</button>
+                </div>
                 <div class="welcome-card">
                     <h2>Welcome back, ${username}!</h2>
                     <p>Ready for your next workout?</p>

@@ -109,8 +109,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
         
-        // Initialize other app systems (non-blocking)
-        initializeApp();
+        // Initialize UI enhancements (non-blocking, after core boot)
+        initializeUIEnhancements();
         
         // Handle Enter key in AI chat input
         const aiInput = document.getElementById('aiChatInput');
@@ -198,9 +198,21 @@ function displayServiceWorkerVersion(version) {
 }
 
 /**
- * Initialize application modules
+ * Initialize UI enhancement modules (non-blocking)
+ * 
+ * NOTE: This is separate from BootSequence.boot() which handles:
+ * - Service Worker registration
+ * - Storage initialization
+ * - Auth state loading
+ * - Router initialization
+ * 
+ * This function handles post-boot UI enhancements:
+ * - Data migration
+ * - AI system setup
+ * - Seasonal training initialization
+ * - Module initialization
  */
-function initializeApp() {
+function initializeUIEnhancements() {
     try {
         // Run data migration first
         migrateUserData();
@@ -223,9 +235,10 @@ function initializeApp() {
         // Add workout styles
         addWorkoutStyles();
         
-        console.log('All modules initialized successfully');
+        console.log('UI enhancements initialized successfully');
     } catch (error) {
-        console.error('Failed to initialize app:', error);
+        console.error('Failed to initialize UI enhancements:', error);
+        // Don't throw - these are non-critical enhancements
     }
 }
 

@@ -3,6 +3,10 @@
 
 class SeasonalTrainingSystem {
     constructor() {
+        this.logger = window.SafeLogger || console;
+        this.storageManager = window.StorageManager;
+        this.authManager = window.AuthManager;
+        
         this.phases = {
             'off-season': {
                 name: 'Off-Season',
@@ -118,22 +122,86 @@ class SeasonalTrainingSystem {
 
     // Set current phase manually
     setPhase(phase) {
-        if (this.phases[phase]) {
+        try {
+            if (!phase || !this.phases[phase]) {
+                this.logger.warn(`Invalid phase: ${phase}`);
+                return false;
+            }
+            
             this.currentPhase = phase;
             this.savePhaseToStorage();
+            
+            // Emit event for phase change
+            if (window.EventBus) {
+                window.EventBus.emit('season:phaseChanged', {
+                    phase: this.currentPhase,
+                    details: this.phases[this.currentPhase]
+                });
+            }
+            
             return true;
+        } catch (error) {
+            this.logger.error('Failed to set phase:', error);
+            return false;
         }
-        return false;
     }
 
     // Get current phase details
     getCurrentPhase() {
-        return {
-            phase: this.currentPhase,
-            details: this.phases[this.currentPhase],
-            daysUntilSeason: this.getDaysUntilSeason(),
-            phaseProgress: this.getPhaseProgress()
-        };
+        try {
+            const phase = this.currentPhase || this.detectCurrentPhase();
+            const phaseDetails = this.phases[phase] || this.phases['off-season'];
+            
+            return {
+                phase: phase,
+                details: phaseDetails,
+                daysUntilSeason: this.getDaysUntilSeason(),
+                phaseProgress: this.calculatePhaseProgress(),
+                nextPhase: this.getNextPhase(),
+                weeksInPhase: this.getWeeksInPhase()
+            };
+        } catch (error) {
+            this.logger.error('Failed to get current phase:', error);
+            return {
+                phase: 'off-season',
+                details: this.phases['off-season'],
+                daysUntilSeason: 0,
+                phaseProgress: 0
+            };
+        }
+    }
+
+    // Get next phase in sequence
+    getNextPhase() {
+        const phaseOrder = ['off-season', 'pre-season', 'in-season', 'playoffs', 'off-season'];
+        const currentIndex = phaseOrder.indexOf(this.currentPhase);
+        return currentIndex >= 0 && currentIndex < phaseOrder.length - 1 
+            ? phaseOrder[currentIndex + 1] 
+            : 'off-season';
+    }
+
+    // Get number of weeks in current phase
+    getWeeksInPhase() {
+        try {
+            const now = new Date();
+            const month = now.getMonth();
+            
+            switch (this.currentPhase) {
+                case 'off-season':
+                    return Math.ceil((month + 1) / 4.33); // ~3 months
+                case 'pre-season':
+                    return Math.ceil(Math.max(0, month - 2) / 4.33); // ~2 months
+                case 'in-season':
+                    return Math.ceil(Math.max(0, month - 4) / 4.33); // ~6 months
+                case 'playoffs':
+                    return Math.ceil(Math.max(0, month - 10) / 4.33); // ~1 month
+                default:
+                    return 0;
+            }
+        } catch (error) {
+            this.logger.error('Failed to calculate weeks in phase:', error);
+            return 0;
+        }
     }
 
     // Calculate days until season starts
@@ -208,15 +276,59 @@ class SeasonalTrainingSystem {
 
     // Add game to schedule
     addGame(game) {
-        this.gameSchedule.push({
-            date: new Date(game.date),
-            opponent: game.opponent,
-            type: game.type || 'regular', // regular, playoff, championship
-            location: game.location || 'home'
-        });
-        
-        this.gameSchedule.sort((a, b) => a.date - b.date);
-        this.saveScheduleToStorage();
+        try {
+            if (!game || !game.date) {
+                this.logger.warn('Invalid game data provided');
+                return false;
+            }
+            
+            const gameDate = new Date(game.date);
+            if (isNaN(gameDate.getTime())) {
+                this.logger.warn('Invalid game date:', game.date);
+                return false;
+            }
+            
+            // Check for duplicates (same date)
+            const existingGame = this.gameSchedule.find(g => 
+                g.date.toDateString() === gameDate.toDateString()
+            );
+            
+            if (existingGame) {
+                // Update existing game
+                Object.assign(existingGame, {
+                    date: gameDate,
+                    opponent: game.opponent || existingGame.opponent,
+                    type: game.type || existingGame.type || 'regular',
+                    location: game.location || existingGame.location || 'home',
+                    notes: game.notes || existingGame.notes || null
+                });
+                this.logger.debug('Game updated:', existingGame);
+            } else {
+                // Add new game
+                const newGame = {
+                    date: gameDate,
+                    opponent: game.opponent || null,
+                    type: game.type || 'regular',
+                    location: game.location || 'home',
+                    notes: game.notes || null
+                };
+                this.gameSchedule.push(newGame);
+                this.logger.debug('Game added:', newGame);
+            }
+            
+            this.gameSchedule.sort((a, b) => a.date - b.date);
+            this.saveScheduleToStorage();
+            
+            // Emit event
+            if (window.EventBus) {
+                window.EventBus.emit('season:gameAdded', { game: gameDate });
+            }
+            
+            return true;
+        } catch (error) {
+            this.logger.error('Failed to add game:', error);
+            return false;
+        }
     }
 
     // Get upcoming games
@@ -314,54 +426,98 @@ class SeasonalTrainingSystem {
 
     // Get phase-specific recommendations
     getPhaseRecommendations() {
-        const phase = this.phases[this.currentPhase];
-        const recommendations = [];
-        
-        // General phase recommendations
-        recommendations.push({
-            category: 'Training Focus',
-            message: `Focus on ${phase.focus.toLowerCase()} during ${phase.name}`,
-            priority: 'high'
-        });
-        
-        // Volume recommendations
-        recommendations.push({
-            category: 'Volume',
-            message: `Maintain ${phase.volume.toLowerCase()} training volume`,
-            priority: 'medium'
-        });
-        
-        // Recovery recommendations
-        if (phase.adjustments.recoveryDays > 2) {
+        try {
+            const phase = this.phases[this.currentPhase] || this.phases['off-season'];
+            const recommendations = [];
+            
+            // General phase recommendations
             recommendations.push({
-                category: 'Recovery',
-                message: `Ensure ${phase.adjustments.recoveryDays} rest days between intense sessions`,
-                priority: 'high'
+                category: 'Training Focus',
+                message: `Focus on ${phase.focus.toLowerCase()} during ${phase.name}`,
+                priority: 'high',
+                phase: this.currentPhase
             });
-        }
-        
-        // Game-specific recommendations
-        if (this.isGameDay()) {
+            
+            // Volume recommendations
             recommendations.push({
-                category: 'Game Day',
-                message: 'Focus on light movement and mental preparation',
-                priority: 'high'
+                category: 'Volume',
+                message: `Maintain ${phase.volume.toLowerCase()} training volume`,
+                priority: 'medium',
+                multiplier: phase.adjustments.volumeMultiplier
             });
-        }
-        
-        const nextGame = this.getNextGame();
-        if (nextGame) {
-            const daysUntil = Math.ceil((nextGame.date - new Date()) / (1000 * 60 * 60 * 24));
-            if (daysUntil <= 2) {
+            
+            // Intensity recommendations
+            recommendations.push({
+                category: 'Intensity',
+                message: `Target ${phase.intensity.toLowerCase()} training intensity`,
+                priority: 'medium',
+                multiplier: phase.adjustments.intensityMultiplier
+            });
+            
+            // Recovery recommendations
+            if (phase.adjustments.recoveryDays > 2) {
                 recommendations.push({
-                    category: 'Upcoming Game',
-                    message: `Game in ${daysUntil} days - reduce training intensity`,
-                    priority: 'high'
+                    category: 'Recovery',
+                    message: `Ensure ${phase.adjustments.recoveryDays} rest days between intense sessions`,
+                    priority: 'high',
+                    recoveryDays: phase.adjustments.recoveryDays
                 });
             }
+            
+            // Session duration recommendations
+            recommendations.push({
+                category: 'Duration',
+                message: `Limit sessions to ${phase.adjustments.maxSessionDuration} minutes during ${phase.name}`,
+                priority: 'low',
+                maxDuration: phase.adjustments.maxSessionDuration
+            });
+            
+            // Game-specific recommendations
+            if (this.isGameDay()) {
+                recommendations.push({
+                    category: 'Game Day',
+                    message: 'Focus on light movement and mental preparation',
+                    priority: 'high',
+                    action: 'Use pre-game workout'
+                });
+            }
+            
+            const nextGame = this.getNextGame();
+            if (nextGame) {
+                const daysUntil = Math.ceil((nextGame.date - new Date()) / (1000 * 60 * 60 * 24));
+                if (daysUntil <= 2) {
+                    recommendations.push({
+                        category: 'Upcoming Game',
+                        message: `Game in ${daysUntil} days - reduce training intensity`,
+                        priority: 'high',
+                        daysUntil: daysUntil
+                    });
+                } else if (daysUntil <= 7) {
+                    recommendations.push({
+                        category: 'Upcoming Game',
+                        message: `Game in ${daysUntil} days - start tapering intensity`,
+                        priority: 'medium',
+                        daysUntil: daysUntil
+                    });
+                }
+            }
+            
+            // Phase progress recommendations
+            const progress = this.calculatePhaseProgress();
+            if (progress > 0.8) {
+                recommendations.push({
+                    category: 'Phase Transition',
+                    message: `${phase.name} is almost complete. Prepare for ${this.getNextPhase()} phase.`,
+                    priority: 'medium',
+                    progress: progress
+                });
+            }
+            
+            return recommendations;
+        } catch (error) {
+            this.logger.error('Failed to get phase recommendations:', error);
+            return [];
         }
-        
-        return recommendations;
     }
 
     // Save phase to localStorage
@@ -400,61 +556,101 @@ class SeasonalTrainingSystem {
 
     // Initialize the system
     initialize() {
-        this.loadPhaseFromStorage();
-        this.loadScheduleFromStorage();
-        console.log(`Seasonal Training System initialized - Current Phase: ${this.currentPhase}`);
+        try {
+            this.loadPhaseFromStorage();
+            this.loadScheduleFromStorage();
+            
+            // Re-detect phase if not set or if date-based detection is more accurate
+            const detectedPhase = this.detectCurrentPhase();
+            if (!this.currentPhase || this.currentPhase !== detectedPhase) {
+                this.currentPhase = detectedPhase;
+                this.savePhaseToStorage();
+            }
+            
+            this.logger.debug(`Seasonal Training System initialized - Current Phase: ${this.currentPhase}`);
+            return true;
+        } catch (error) {
+            this.logger.error('Failed to initialize Seasonal Training System:', error);
+            // Fallback to default phase
+            this.currentPhase = 'off-season';
+            this.gameSchedule = [];
+            return false;
+        }
     }
 
     // Adjust workout for current phase
     adjustWorkoutForPhase(workout) {
-        const phaseDetails = this.phases[this.currentPhase];
-        const adjustments = phaseDetails.adjustments;
-        
-        if (!workout || !workout.exercises) {
-            return workout;
-        }
-
-        const adjustedWorkout = {
-            ...workout,
-            phase: this.currentPhase,
-            phaseAdjustments: adjustments
-        };
-
-        // Adjust exercise parameters based on phase
-        adjustedWorkout.exercises = workout.exercises.map(exercise => {
-            const adjusted = { ...exercise };
-            
-            // Adjust sets based on phase
-            adjusted.sets = Math.round(adjusted.sets * adjustments.volumeMultiplier);
-            
-            // Adjust weight based on phase
-            if (adjusted.weight) {
-                adjusted.weight = Math.round(adjusted.weight * adjustments.intensityMultiplier);
+        try {
+            if (!workout) {
+                this.logger.warn('No workout provided for phase adjustment');
+                return null;
             }
             
-            // Adjust reps based on phase
-            if (phaseDetails.name === 'Off-Season') {
-                adjusted.reps = Math.ceil(adjusted.reps * 1.1);
-            } else if (phaseDetails.name === 'Pre-Season') {
-                adjusted.reps = Math.ceil(adjusted.reps * 0.9);
-            } else if (phaseDetails.name === 'In-Season') {
-                adjusted.reps = Math.ceil(adjusted.reps * 0.8);
-            } else if (phaseDetails.name === 'Playoffs') {
-                adjusted.reps = Math.ceil(adjusted.reps * 0.7);
+            const phaseDetails = this.phases[this.currentPhase] || this.phases['off-season'];
+            const adjustments = phaseDetails.adjustments;
+            
+            const adjustedWorkout = {
+                ...workout,
+                phase: this.currentPhase,
+                phaseAdjustments: adjustments,
+                adjustedAt: new Date().toISOString()
+            };
+
+            // Adjust exercise parameters based on phase
+            if (workout.exercises && Array.isArray(workout.exercises)) {
+                adjustedWorkout.exercises = workout.exercises.map(exercise => {
+                    if (!exercise) return exercise;
+                    
+                    const adjusted = { ...exercise };
+                    
+                    // Adjust sets based on phase (ensure minimum of 1)
+                    if (typeof adjusted.sets === 'number') {
+                        adjusted.sets = Math.max(1, Math.round(adjusted.sets * adjustments.volumeMultiplier));
+                    }
+                    
+                    // Adjust weight based on phase
+                    if (adjusted.weight && typeof adjusted.weight === 'number') {
+                        adjusted.weight = Math.max(0, Math.round(adjusted.weight * adjustments.intensityMultiplier));
+                    }
+                    
+                    // Adjust reps based on phase
+                    if (typeof adjusted.reps === 'number') {
+                        let repMultiplier = 1.0;
+                        if (phaseDetails.name === 'Off-Season') {
+                            repMultiplier = 1.1;
+                        } else if (phaseDetails.name === 'Pre-Season') {
+                            repMultiplier = 0.9;
+                        } else if (phaseDetails.name === 'In-Season') {
+                            repMultiplier = 0.8;
+                        } else if (phaseDetails.name === 'Playoffs') {
+                            repMultiplier = 0.7;
+                        }
+                        adjusted.reps = Math.max(1, Math.ceil(adjusted.reps * repMultiplier));
+                    }
+                    
+                    // Add phase note
+                    adjusted._phaseAdjusted = true;
+                    
+                    return adjusted;
+                });
+            }
+
+            // Adjust session duration
+            if (adjustedWorkout.duration && typeof adjustedWorkout.duration === 'number') {
+                adjustedWorkout.duration = Math.min(
+                    Math.max(1, Math.round(adjustedWorkout.duration * adjustments.volumeMultiplier)),
+                    adjustments.maxSessionDuration
+                );
             }
             
-            return adjusted;
-        });
+            // Add phase rationale
+            adjustedWorkout.phaseRationale = `Workout adjusted for ${phaseDetails.name}: ${phaseDetails.focus}`;
 
-        // Adjust session duration
-        if (adjustedWorkout.duration) {
-            adjustedWorkout.duration = Math.min(
-                Math.round(adjustedWorkout.duration * adjustments.volumeMultiplier),
-                adjustments.maxSessionDuration
-            );
+            return adjustedWorkout;
+        } catch (error) {
+            this.logger.error('Failed to adjust workout for phase:', error);
+            return workout; // Return original workout on error
         }
-
-        return adjustedWorkout;
     }
 
     // Calculate phase progress as a percentage

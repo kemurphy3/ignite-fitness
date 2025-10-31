@@ -179,26 +179,60 @@ function resetPassword() {
 
 // UI Functions
 function showPasswordReset() {
-    document.getElementById('loginForm').classList.add('hidden');
-    document.getElementById('passwordResetForm').classList.remove('hidden');
+    const loginForm = document.getElementById('loginForm');
+    const passwordResetForm = document.getElementById('passwordResetForm');
+    if (loginForm && passwordResetForm) {
+        loginForm.classList.add('hidden');
+        passwordResetForm.classList.remove('hidden');
+    }
 }
 
 function hidePasswordReset() {
-    document.getElementById('passwordResetForm').classList.add('hidden');
-    document.getElementById('loginForm').classList.remove('hidden');
+    const passwordResetForm = document.getElementById('passwordResetForm');
+    const loginForm = document.getElementById('loginForm');
+    if (passwordResetForm && loginForm) {
+        passwordResetForm.classList.add('hidden');
+        loginForm.classList.remove('hidden');
+    }
 }
 
 function showRegisterForm() {
-    document.getElementById('loginForm').classList.add('hidden');
-    document.getElementById('registerForm').classList.remove('hidden');
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    if (loginForm && registerForm) {
+        loginForm.classList.add('hidden');
+        registerForm.classList.remove('hidden');
+    }
 }
 
 function hideRegisterForm() {
-    document.getElementById('registerForm').classList.add('hidden');
+    const registerForm = document.getElementById('registerForm');
+    if (registerForm) {
+        registerForm.classList.add('hidden');
+    }
+}
+
+function showLoginForm() {
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.classList.remove('hidden');
+    }
+    // Hide other forms
+    const registerForm = document.getElementById('registerForm');
+    if (registerForm) {
+        registerForm.classList.add('hidden');
+    }
+    const passwordResetForm = document.getElementById('passwordResetForm');
+    if (passwordResetForm) {
+        passwordResetForm.classList.add('hidden');
+    }
 }
 
 function hideLoginForm() {
-    document.getElementById('loginForm').classList.add('hidden');
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.classList.add('hidden');
+    }
 }
 
 // Export functions for use in other modules
@@ -211,6 +245,7 @@ if (typeof module !== 'undefined' && module.exports) {
         hidePasswordReset,
         showRegisterForm,
         hideRegisterForm,
+        showLoginForm,
         hideLoginForm,
         simpleHash
     };
@@ -223,6 +258,7 @@ if (typeof module !== 'undefined' && module.exports) {
     window.hidePasswordReset = hidePasswordReset;
     window.showRegisterForm = showRegisterForm;
     window.hideRegisterForm = hideRegisterForm;
+    window.showLoginForm = showLoginForm;
     window.hideLoginForm = hideLoginForm;
     window.simpleHash = simpleHash;
 }

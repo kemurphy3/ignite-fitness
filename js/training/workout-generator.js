@@ -3,6 +3,10 @@
 
 class WorkoutGenerator {
     constructor() {
+        this.logger = window.SafeLogger || console;
+        this.storageManager = window.StorageManager;
+        this.authManager = window.AuthManager;
+        
         this.exerciseDatabase = this.initializeExerciseDatabase();
         this.templateLibrary = this.initializeTemplateLibrary();
     }
@@ -589,22 +593,43 @@ class WorkoutGenerator {
         return notes.join('. ');
     }
 
-    // Generate workout based on user profile and session type
+    // Generate workout based on user profile and session type (enhanced version)
     generateWorkout(userProfile, sessionType, duration) {
         try {
+            if (!userProfile) {
+                this.logger.warn('No user profile provided for workout generation');
+                return this.generateFallbackWorkout(sessionType || 'Full Body', duration || 60);
+            }
+            
+            if (!sessionType) {
+                this.logger.warn('No session type provided, using default');
+                sessionType = 'Full Body';
+            }
+            
+            if (!duration || duration < 15) {
+                this.logger.warn('Invalid duration provided, using default');
+                duration = 60;
+            }
+            
             const workout = {
                 id: this.generateWorkoutId(),
                 type: sessionType,
                 duration: duration,
                 exercises: [],
-                warmup: this.generateWarmup(sessionType),
-                cooldown: this.generateCooldown(sessionType),
+                warmup: this.generateWarmup(sessionType, duration),
+                cooldown: this.generateCooldown(sessionType, duration),
                 notes: '',
+                totalVolume: 0,
                 createdAt: new Date().toISOString()
             };
 
             // Select exercises based on session type and user profile
             const selectedExercises = this.selectExercises(userProfile, sessionType, duration);
+            
+            if (!selectedExercises || selectedExercises.length === 0) {
+                this.logger.warn('No exercises selected, using fallback workout');
+                return this.generateFallbackWorkout(sessionType, duration);
+            }
             
             // Assign sets, reps, and weights
             workout.exercises = this.assignExerciseParameters(selectedExercises, userProfile);
@@ -612,28 +637,82 @@ class WorkoutGenerator {
             // Calculate total volume
             workout.totalVolume = this.calculateWorkoutVolume(workout.exercises);
             
-            // Adjust for seasonal phase
-            workout.adjustedForPhase = this.adjustForSeasonalPhase(workout, userProfile.currentPhase);
+            // Adjust for seasonal phase if available
+            if (userProfile.currentPhase) {
+                const adjustedWorkout = this.adjustForSeasonalPhase(workout, userProfile.currentPhase);
+                workout.exercises = adjustedWorkout.exercises;
+                workout.phaseAdjustments = adjustedWorkout.phaseAdjustment;
+            }
             
             // Add progressive overload if previous workout exists
-            workout.progressiveOverload = this.addProgressiveOverload(userProfile.lastWorkout, workout);
+            if (userProfile.lastWorkout || userProfile.recentWorkouts?.[0]) {
+                const previousWorkout = userProfile.lastWorkout || userProfile.recentWorkouts[0];
+                const progressedWorkout = this.addProgressiveOverload(previousWorkout, workout);
+                workout.exercises = progressedWorkout.exercises;
+                workout.progressionApplied = progressedWorkout.progressionApplied;
+                workout.progressionSummary = progressedWorkout.progressionSummary;
+            }
             
             // Calculate rest periods
             workout.restPeriods = this.calculateRestPeriods(workout.exercises);
             
+            // Add rest periods to each exercise
+            workout.exercises.forEach((exercise, index) => {
+                if (workout.restPeriods && workout.restPeriods[index]) {
+                    exercise.rest = workout.restPeriods[index];
+                }
+            });
+            
+            // Generate workout notes
+            workout.notes = this.generateWorkoutNotes(
+                this.determineWorkoutFocus(userProfile.goals || {}, sessionType),
+                userProfile.currentPhase,
+                userProfile.preferences
+            );
+            
+            // Validate workout has exercises
+            if (workout.exercises.length === 0) {
+                this.logger.warn('Generated workout has no exercises, using fallback');
+                return this.generateFallbackWorkout(sessionType, duration);
+            }
+            
             return workout;
         } catch (error) {
-            console.error('Error generating workout:', error);
-            return this.generateFallbackWorkout(sessionType, duration);
+            this.logger.error('Error generating workout:', error);
+            return this.generateFallbackWorkout(sessionType || 'Full Body', duration || 60);
         }
     }
 
     // Calculate total workout volume
     calculateWorkoutVolume(exercises) {
-        return exercises.reduce((total, exercise) => {
-            const volume = (exercise.weight || 0) * (exercise.reps || 0) * (exercise.sets || 0);
-            return total + volume;
-        }, 0);
+        try {
+            if (!exercises || !Array.isArray(exercises)) {
+                this.logger.warn('Invalid exercises array for volume calculation');
+                return 0;
+            }
+            
+            return exercises.reduce((total, exercise) => {
+                if (!exercise) return total;
+                
+                // Handle string reps (e.g., "8-12")
+                let reps = exercise.reps || 0;
+                if (typeof reps === 'string' && reps.includes('-')) {
+                    const [min, max] = reps.split('-').map(Number);
+                    reps = (min + max) / 2; // Use average for calculation
+                } else {
+                    reps = Number(reps) || 0;
+                }
+                
+                const weight = Number(exercise.weight) || 0;
+                const sets = Number(exercise.sets) || 0;
+                const volume = weight * reps * sets;
+                
+                return total + volume;
+            }, 0);
+        } catch (error) {
+            this.logger.error('Failed to calculate workout volume:', error);
+            return 0;
+        }
     }
 
     // Adjust workout for seasonal phase
@@ -787,45 +866,143 @@ class WorkoutGenerator {
 
     // Calculate rest periods based on exercise intensity
     calculateRestPeriods(exercises) {
-        return exercises.map(exercise => {
-            const baseRest = 60; // 1 minute base rest
-            const intensityMultiplier = exercise.difficulty === 'advanced' ? 1.5 : 
-                                      exercise.difficulty === 'intermediate' ? 1.2 : 1.0;
-            const weightMultiplier = (exercise.weight || 0) > 100 ? 1.3 : 1.0;
+        try {
+            if (!exercises || !Array.isArray(exercises)) {
+                this.logger.warn('Invalid exercises array for rest period calculation');
+                return [];
+            }
             
-            return Math.round(baseRest * intensityMultiplier * weightMultiplier);
-        });
+            return exercises.map(exercise => {
+                if (!exercise) return 60; // Default rest
+                
+                const baseRest = 60; // 1 minute base rest
+                
+                // Intensity multiplier based on difficulty
+                let intensityMultiplier = 1.0;
+                if (exercise.difficulty === 'advanced') {
+                    intensityMultiplier = 1.5;
+                } else if (exercise.difficulty === 'intermediate') {
+                    intensityMultiplier = 1.2;
+                }
+                
+                // Weight multiplier (heavier = more rest)
+                const weight = Number(exercise.weight) || 0;
+                const weightMultiplier = weight > 100 ? 1.3 : weight > 50 ? 1.1 : 1.0;
+                
+                // RPE multiplier (higher RPE = more rest)
+                const rpe = Number(exercise.rpe) || 7;
+                const rpeMultiplier = rpe >= 9 ? 1.4 : rpe >= 8 ? 1.2 : rpe >= 7 ? 1.1 : 1.0;
+                
+                const restPeriod = Math.round(baseRest * intensityMultiplier * weightMultiplier * rpeMultiplier);
+                
+                // Ensure minimum rest period
+                return Math.max(30, Math.min(restPeriod, 300)); // 30 seconds to 5 minutes
+            });
+        } catch (error) {
+            this.logger.error('Failed to calculate rest periods:', error);
+            return exercises.map(() => 60); // Return default rest for each exercise
+        }
     }
 
     // Add progressive overload to workout
     addProgressiveOverload(previousWorkout, currentWorkout) {
-        if (!previousWorkout || !previousWorkout.exercises) {
-            return currentWorkout;
-        }
-
-        const progression = {
-            weightIncrease: 0.05, // 5% weight increase
-            repIncrease: 1, // 1 rep increase
-            setIncrease: 0.1 // 10% set increase
-        };
-
-        currentWorkout.exercises.forEach((exercise, index) => {
-            const previousExercise = previousWorkout.exercises[index];
-            if (previousExercise && previousExercise.name === exercise.name) {
-                // Progressive overload logic
-                if (previousExercise.weight) {
-                    exercise.weight = Math.round(previousExercise.weight * (1 + progression.weightIncrease));
-                }
-                if (previousExercise.reps) {
-                    exercise.reps = previousExercise.reps + progression.repIncrease;
-                }
-                if (previousExercise.sets) {
-                    exercise.sets = Math.round(previousExercise.sets * (1 + progression.setIncrease));
-                }
+        try {
+            if (!previousWorkout || !previousWorkout.exercises || !currentWorkout || !currentWorkout.exercises) {
+                return currentWorkout;
             }
-        });
 
-        return currentWorkout;
+            const progression = {
+                weightIncrease: 0.025, // 2.5% weight increase (more conservative)
+                repIncrease: 1, // 1 rep increase
+                setIncrease: 0.05, // 5% set increase (more conservative)
+                maxWeightIncrease: 0.10 // Maximum 10% increase per workout
+            };
+
+            // Track progression applied
+            const progressionApplied = [];
+
+            currentWorkout.exercises.forEach((exercise, index) => {
+                if (!exercise) return;
+                
+                // Find matching exercise by name (not just index)
+                const previousExercise = previousWorkout.exercises.find(
+                    prevEx => prevEx && prevEx.name === exercise.name
+                );
+                
+                if (previousExercise) {
+                    // Progressive overload logic
+                    const currentWeight = Number(exercise.weight) || 0;
+                    const previousWeight = Number(previousExercise.weight) || 0;
+                    
+                    if (previousWeight > 0 && currentWeight >= previousWeight) {
+                        // Only increase if current weight matches or exceeds previous
+                        const weightIncrease = Math.min(
+                            previousWeight * progression.weightIncrease,
+                            previousWeight * progression.maxWeightIncrease
+                        );
+                        exercise.weight = Math.max(0, Math.round(previousWeight + weightIncrease));
+                        progressionApplied.push({
+                            exercise: exercise.name,
+                            type: 'weight',
+                            increase: weightIncrease,
+                            newWeight: exercise.weight
+                        });
+                    }
+                    
+                    // Handle string reps (e.g., "8-12")
+                    const currentReps = exercise.reps;
+                    const previousReps = previousExercise.reps;
+                    
+                    if (previousReps) {
+                        if (typeof currentReps === 'string' && currentReps.includes('-')) {
+                            // For range reps, increase the range
+                            const [min, max] = currentReps.split('-').map(Number);
+                            exercise.reps = `${min + progression.repIncrease}-${max + progression.repIncrease}`;
+                        } else {
+                            const prevRepsNum = typeof previousReps === 'string' && previousReps.includes('-')
+                                ? Number(previousReps.split('-')[0])
+                                : Number(previousReps) || 0;
+                            const currRepsNum = Number(currentReps) || prevRepsNum;
+                            
+                            if (currRepsNum >= prevRepsNum) {
+                                exercise.reps = Math.max(1, currRepsNum + progression.repIncrease);
+                                progressionApplied.push({
+                                    exercise: exercise.name,
+                                    type: 'reps',
+                                    increase: progression.repIncrease,
+                                    newReps: exercise.reps
+                                });
+                            }
+                        }
+                    }
+                    
+                    const currentSets = Number(exercise.sets) || 0;
+                    const previousSets = Number(previousExercise.sets) || 0;
+                    
+                    if (previousSets > 0 && currentSets >= previousSets) {
+                        const setIncrease = Math.round(previousSets * progression.setIncrease);
+                        exercise.sets = Math.max(1, Math.round(previousSets + setIncrease));
+                        progressionApplied.push({
+                            exercise: exercise.name,
+                            type: 'sets',
+                            increase: setIncrease,
+                            newSets: exercise.sets
+                        });
+                    }
+                }
+            });
+
+            // Add progression metadata
+            if (progressionApplied.length > 0) {
+                currentWorkout.progressionApplied = progressionApplied;
+                currentWorkout.progressionSummary = `${progressionApplied.length} exercises progressed`;
+            }
+
+            return currentWorkout;
+        } catch (error) {
+            this.logger.error('Failed to add progressive overload:', error);
+            return currentWorkout; // Return original workout on error
+        }
     }
 
     // Helper methods

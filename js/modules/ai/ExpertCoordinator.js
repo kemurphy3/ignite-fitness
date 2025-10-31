@@ -21,7 +21,8 @@ class ExpertCoordinator {
             sports: new SportsCoach(),
             physio: new PhysioCoach(),
             nutrition: new NutritionCoach(),
-            aesthetics: new AestheticsCoach()
+            aesthetics: new AestheticsCoach(),
+            climbing: new ClimbingCoach()
         };
         
         // Register experts with memoized coordinator
@@ -195,9 +196,12 @@ class ExpertCoordinator {
             // Convert to required structure
             const structuredPlan = this.structurePlan(resolvedPlan, context);
             
-            // Add inference note if applicable
-            if (isInferred && inferenceRationale) {
-                structuredPlan.why.push(`Readiness inferred (${readiness}/10): ${inferenceRationale}`);
+            // Add inference transparency note if applicable
+            if (isInferred) {
+                const rationale = inferenceRationale || 'Estimated from recent training and schedule.';
+                structuredPlan.why.push(`Readiness inferred (${readiness}/10): ${rationale}`);
+                structuredPlan.notes = structuredPlan.notes || [];
+                structuredPlan.notes.push({ type: 'info', source: 'readiness', text: 'Today\'s readiness is estimated. Log a check-in to refine recommendations.' });
             }
             
             // Add load-based adjustments to rationale
@@ -362,7 +366,8 @@ class ExpertCoordinator {
             sports: 'Sports',
             physio: 'Physio',
             nutrition: 'Nutrition',
-            aesthetics: 'Aesthetics'
+            aesthetics: 'Aesthetics',
+            climbing: 'Climbing'
         };
         return names[expertName] || expertName;
     }
@@ -452,6 +457,34 @@ class ExpertCoordinator {
                     original: 'heavy_lower_body_work',
                     alternative: 'upper_body_light_or_power_maintenance',
                     reason: gameDayConstraints.rule
+                });
+            }
+        }
+
+        // 2a. Climbing coach recommendations (if user's sport is climbing)
+        if (context.user?.sport === 'climbing' && proposals.climbing?.blocks) {
+            const mainTraining = proposals.climbing.blocks.filter(b => b.type === 'main_training');
+            const antagonist = proposals.climbing.blocks.filter(b => b.type === 'antagonist');
+            
+            // Add climbing-specific training to main sets
+            plan.mainSets.push(...mainTraining);
+            
+            // Add antagonist work to finishers
+            plan.finishers.push(...antagonist);
+            
+            // Add finger recovery constraints
+            const fingerRecovery = proposals.climbing?.constraints?.find(c => c.type === 'finger_recovery');
+            if (fingerRecovery) {
+                plan.notes.push({
+                    source: 'climbing',
+                    text: 'Finger recovery period: Minimum 48 hours between intense finger work'
+                });
+            }
+            
+            if (mainTraining.length > 0 || antagonist.length > 0) {
+                plan.notes.push({
+                    source: 'climbing',
+                    text: `Climbing-specific training included for ${context.user.climbingStyle || 'mixed'} style`
                 });
             }
         }

@@ -2000,7 +2000,7 @@
                 <!-- Navigation content will be loaded here -->
             </nav>
         </header>
-        
+
         <!-- Main Content Area -->
         <main id="main-content" class="app-content" role="main">
             <!-- Dynamic content will be loaded here by Router -->
@@ -2023,7 +2023,7 @@
 
     <!-- Legacy content (to be migrated) -->
     <div style="display: none;">
-        <!-- Login Form -->
+            <!-- Login Form -->
             <section id="loginForm" class="form-section" aria-labelledby="login-heading">
                 <h2 id="login-heading">Welcome Back</h2>
                 <form role="form" aria-label="User login form" onsubmit="login(); return false;">
@@ -3028,6 +3028,7 @@
     <script src="js/modules/ui/components/WhyPanel.js"></script>
     <script src="js/modules/ui/charts/ChartManager.js"></script>
     <script src="js/modules/ui/charts/Trends.js"></script>
+    <script src="js/modules/progress/ProgressRenderer.js"></script>
     <script src="js/modules/ui/StravaImportUI.js"></script>
     
     <!-- Nutrition Modules -->
@@ -3035,6 +3036,7 @@
     <script src="js/modules/nutrition/MacroGuidance.js"></script>
     
     <!-- Settings Modules -->
+    <script src="js/modules/storage/DataExport.js"></script>
     <script src="js/modules/settings/IntegrationPanel.js"></script>
     <script src="js/modules/settings/PrivacyPanel.js"></script>
     
@@ -3059,6 +3061,7 @@
     <script src="js/modules/workout/WeightMath.js"></script>
     
     <!-- Sport-Specific Modules -->
+    <script src="js/modules/schedule/GameDayService.js"></script>
     <script src="js/modules/sports/SportDefinitions.js"></script>
     <script src="js/modules/sports/PositionTraining.js"></script>
     <script src="js/modules/sports/SeasonalPrograms.js"></script>
@@ -3110,6 +3113,7 @@
     <script src="js/modules/ai/experts/StrengthCoach.js"></script>
     <script src="js/modules/ai/experts/SportsCoach.js"></script>
     <script src="js/modules/ai/experts/PhysioCoach.js"></script>
+    <script src="js/modules/ai/experts/ClimbingCoach.js"></script>
     <script src="js/modules/ai/experts/NutritionCoach.js"></script>
     <script src="js/modules/ai/experts/AestheticsCoach.js"></script>
     <script src="js/modules/ai/ExpertCoordinator.js"></script>
@@ -3303,7 +3307,7 @@
         
         // Initial status check (only if element exists)
         if (document.getElementById('sync-status')) {
-            updateConnectionStatus();
+        updateConnectionStatus();
         }
         
         // Personal Data Functions

@@ -185,11 +185,21 @@ class PrivacyPanel extends BaseComponent {
                 <h4>Data Export & Portability</h4>
                 <p>Download your data or transfer it to another service</p>
                 
+                <div class="export-format-selector">
+                    <label class="control-label">
+                        <span class="control-text">Export Format:</span>
+                        <select class="export-format-select" id="export-format-select">
+                            <option value="csv">CSV (Excel-compatible)</option>
+                            <option value="json">JSON (Machine-readable)</option>
+                        </select>
+                    </label>
+                </div>
+                
                 <div class="export-controls">
                     <div class="export-option">
                         <h5>Complete Data Export</h5>
-                        <p>Download all your data in a portable format (JSON/CSV)</p>
-                        <button class="btn btn-outline export-complete-btn">
+                        <p>Download all your data: workouts, readiness scores, progression events</p>
+                        <button class="btn btn-outline export-complete-btn" data-export-type="all">
                             Export All Data
                         </button>
                     </div>
@@ -197,16 +207,24 @@ class PrivacyPanel extends BaseComponent {
                     <div class="export-option">
                         <h5>Workout Data Only</h5>
                         <p>Export just your workout history and performance data</p>
-                        <button class="btn btn-outline export-workouts-btn">
+                        <button class="btn btn-outline export-workouts-btn" data-export-type="sessions">
                             Export Workouts
                         </button>
                     </div>
                     
                     <div class="export-option">
-                        <h5>Settings & Preferences</h5>
-                        <p>Export your app settings and training preferences</p>
-                        <button class="btn btn-outline export-settings-btn">
-                            Export Settings
+                        <h5>Readiness Scores</h5>
+                        <p>Export your daily readiness check-ins and recovery data</p>
+                        <button class="btn btn-outline export-readiness-btn" data-export-type="readiness">
+                            Export Readiness
+                        </button>
+                    </div>
+                    
+                    <div class="export-option">
+                        <h5>Progression Events</h5>
+                        <p>Export your progress tracking and PR data</p>
+                        <button class="btn btn-outline export-progression-btn" data-export-type="progression">
+                            Export Progression
                         </button>
                     </div>
                 </div>
@@ -371,15 +389,19 @@ class PrivacyPanel extends BaseComponent {
         
         // Export buttons
         this.container.querySelectorAll('.export-complete-btn').forEach(btn => {
-            this.addEventListener(btn, 'click', () => this.exportData('complete'));
+            this.addEventListener(btn, 'click', () => this.exportData('all'));
         });
         
         this.container.querySelectorAll('.export-workouts-btn').forEach(btn => {
-            this.addEventListener(btn, 'click', () => this.exportData('workouts'));
+            this.addEventListener(btn, 'click', () => this.exportData('sessions'));
         });
         
-        this.container.querySelectorAll('.export-settings-btn').forEach(btn => {
-            this.addEventListener(btn, 'click', () => this.exportData('settings'));
+        this.container.querySelectorAll('.export-readiness-btn').forEach(btn => {
+            this.addEventListener(btn, 'click', () => this.exportData('readiness'));
+        });
+        
+        this.container.querySelectorAll('.export-progression-btn').forEach(btn => {
+            this.addEventListener(btn, 'click', () => this.exportData('progression'));
         });
         
         // Consent buttons
@@ -497,11 +519,48 @@ class PrivacyPanel extends BaseComponent {
     
     /**
      * Export user data
-     * @param {string} type - Export type
+     * @param {string} type - Export type ('all', 'sessions', 'readiness', 'progression')
      */
     async exportData(type) {
         try {
-            this.showExportStatus('Preparing export...', 0);
+            // Get export format from UI
+            const formatSelect = this.container.querySelector('#export-format-select');
+            const format = formatSelect ? formatSelect.value : 'csv';
+            
+            this.showExportStatus('Preparing export...', 10);
+            
+            // Try client-side export first (using DataExport module)
+            if (window.DataExport) {
+                try {
+                    this.showExportStatus('Collecting data...', 30);
+                    
+                    // Map export type to DataExport options
+                    const exportOptions = this.getExportOptions(type);
+                    
+                    this.showExportStatus('Generating export file...', 60);
+                    
+                    // Use DataExport module for client-side export
+                    await window.DataExport.exportDataType(type, format, exportOptions);
+                    
+                    this.showExportStatus('Export completed!', 100);
+                    
+                    // Log audit trail
+                    await this.logAuditEvent('data_export', {
+                        export_type: type,
+                        format: format,
+                        method: 'client-side'
+                    });
+                    
+                    setTimeout(() => this.hideExportStatus(), 2000);
+                    return;
+                } catch (clientError) {
+                    this.logger.warn('Client-side export failed, trying server-side:', clientError);
+                    // Fall through to server-side export
+                }
+            }
+            
+            // Fallback: Server-side export
+            this.showExportStatus('Preparing server export...', 40);
             
             const response = await fetch('/.netlify/functions/data-export', {
                 method: 'POST',
@@ -512,7 +571,7 @@ class PrivacyPanel extends BaseComponent {
                 body: JSON.stringify({
                     user_id: this.userId,
                     export_type: type,
-                    format: 'json'
+                    format: format
                 })
             });
             
@@ -520,33 +579,84 @@ class PrivacyPanel extends BaseComponent {
                 const data = await response.json();
                 
                 // Download the exported data
-                this.downloadFile(data.export_data, `ignite-fitness-${type}-export.json`);
+                const filename = format === 'csv' 
+                    ? `ignite-fitness-${type}-export.csv`
+                    : `ignite-fitness-${type}-export.json`;
+                
+                // Handle both string (CSV) and object (JSON) responses
+                if (format === 'csv' && typeof data.export_data === 'string') {
+                    this.downloadFileAsString(data.export_data, filename, 'text/csv');
+                } else {
+                    this.downloadFile(data.export_data, filename);
+                }
                 
                 this.showExportStatus('Export completed!', 100);
                 
                 // Log audit trail
                 await this.logAuditEvent('data_export', {
                     export_type: type,
-                    format: 'json',
-                    size: JSON.stringify(data.export_data).length
+                    format: format,
+                    method: 'server-side',
+                    size: typeof data.export_data === 'string' 
+                        ? data.export_data.length 
+                        : JSON.stringify(data.export_data).length
                 });
                 
             } else {
                 throw new Error('Export failed');
             }
             
+            setTimeout(() => this.hideExportStatus(), 2000);
+            
         } catch (error) {
             this.logger.error('Data export failed:', error);
-            this.showError('Failed to export data');
+            this.showError('Failed to export data: ' + (error.message || 'Unknown error'));
             this.hideExportStatus();
         }
+    }
+    
+    /**
+     * Get export options based on type
+     * @param {string} type - Export type
+     * @returns {Object} Export options
+     */
+    getExportOptions(type) {
+        const options = {
+            includeSessions: type === 'sessions' || type === 'all',
+            includeReadiness: type === 'readiness' || type === 'all',
+            includeProgression: type === 'progression' || type === 'all',
+            includeInjuryFlags: false, // Optional, not included by default
+            dateRange: null // Can be set to { start: Date, end: Date } to filter by date
+        };
+        
+        return options;
+    }
+    
+    /**
+     * Download file as string (for CSV)
+     * @param {string} content - File content
+     * @param {string} filename - Filename
+     * @param {string} mimeType - MIME type
+     */
+    downloadFileAsString(content, filename, mimeType = 'text/csv') {
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        URL.revokeObjectURL(url);
     }
     
     /**
      * Export all data
      */
     async exportAllData() {
-        await this.exportData('complete');
+        await this.exportData('all');
     }
     
     /**

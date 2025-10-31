@@ -135,6 +135,18 @@ class OnboardingManager {
      */
     renderStepComponent(step) {
         switch (step.component) {
+            case 'Goals':
+                if (window.GoalsStep) {
+                    window.GoalsStep.followUpData = this.onboardingData.goalFollowUps || {};
+                    return window.GoalsStep.render(this.onboardingData);
+                }
+                return this.renderFallback(step);
+            case 'SportSoccer':
+                return window.SportSoccer ? new window.SportSoccer().render(this.onboardingData) : this.renderFallback(step);
+            case 'EquipmentTime':
+                return window.EquipmentTime ? new window.EquipmentTime().render(this.onboardingData) : this.renderFallback(step);
+            case 'Preferences':
+                return window.Preferences ? new window.Preferences().render(this.onboardingData) : this.renderFallback(step);
             case 'SportSelection':
                 return window.SportSelection?.render() || this.renderFallback(step);
             case 'PositionSelection':
@@ -271,17 +283,110 @@ class OnboardingManager {
      * Complete onboarding process
      */
     async completeOnboarding() {
-        this.isCompleted = true;
+        // Show generating state first
+        this.showGeneratingState();
         
-        // Save complete user profile and preferences in single object
-        await this.saveCompleteProfile();
+        try {
+            // Save complete user profile and preferences in single object
+            await this.saveCompleteProfile();
+            
+            // Small delay to show generating state (improves UX)
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            this.isCompleted = true;
+            
+            this.logger.audit('ONBOARDING_COMPLETED', { 
+                data: this.onboardingData,
+                version: this.onboardingVersion 
+            });
+            
+            // Show first workout experience
+            this.finishOnboarding();
+        } catch (error) {
+            this.logger.error('Failed to complete onboarding', error);
+            this.showError('Something went wrong. Let\'s try again.');
+        }
+    }
+
+    /**
+     * Show generating state during workout creation
+     */
+    showGeneratingState() {
+        const container = document.getElementById('app-content') || document.getElementById('main-content');
+        if (!container) return;
         
-        this.logger.audit('ONBOARDING_COMPLETED', { 
-            data: this.onboardingData,
-            version: this.onboardingVersion 
-        });
+        container.innerHTML = `
+            <div class="onboarding-generating">
+                <div class="generating-content">
+                    <div class="spinner-large" style="
+                        width: 60px;
+                        height: 60px;
+                        border: 4px solid #e2e8f0;
+                        border-top: 4px solid #4299e1;
+                        border-radius: 50%;
+                        animation: spin 1s linear infinite;
+                        margin: 0 auto 2rem;
+                    "></div>
+                    <h2 style="margin: 0 0 0.5rem 0; color: #2d3748;">Creating Your Personalized Plan</h2>
+                    <p class="generating-message" style="color: #718096; margin: 0 0 2rem 0;">Analyzing your goals and schedule...</p>
+                    
+                    <div class="generating-steps" style="display: flex; flex-direction: column; gap: 1rem; max-width: 400px; margin: 0 auto;">
+                        <div class="gen-step active" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: #f7fafc; border-radius: 8px;">
+                            <span style="font-size: 1.25rem;">🎯</span>
+                            <span style="color: #2d3748;">Understanding your goals</span>
+                        </div>
+                        <div class="gen-step active" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: #f7fafc; border-radius: 8px;">
+                            <span style="font-size: 1.25rem;">📅</span>
+                            <span style="color: #2d3748;">Optimizing your schedule</span>
+                        </div>
+                        <div class="gen-step active" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: #f7fafc; border-radius: 8px;">
+                            <span style="font-size: 1.25rem;">🤖</span>
+                            <span style="color: #2d3748;">AI creating your workout</span>
+                        </div>
+                        <div class="gen-step" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: #e6fffa; border-radius: 8px;">
+                            <span style="font-size: 1.25rem;">✅</span>
+                            <span style="color: #2d3748; font-weight: 600;">Ready to start!</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <style>
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            </style>
+        `;
+    }
+
+    /**
+     * Show error message
+     * @param {string} message - Error message
+     */
+    showError(message) {
+        const container = document.getElementById('app-content') || document.getElementById('main-content');
+        if (!container) return;
         
-        this.updateOnboardingUI();
+        container.innerHTML = `
+            <div class="onboarding-error">
+                <div class="error-content" style="text-align: center; padding: 2rem;">
+                    <div class="error-icon" style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+                    <h2 style="color: #2d3748; margin: 0 0 0.5rem 0;">Something went wrong</h2>
+                    <p style="color: #718096; margin: 0 0 1.5rem 0;">${message}</p>
+                    <button class="btn-primary" onclick="window.OnboardingManager?.completeOnboarding()" style="
+                        background: #4299e1;
+                        color: white;
+                        border: none;
+                        padding: 0.75rem 1.5rem;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-weight: 600;
+                    ">
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        `;
     }
     
     /**
@@ -367,6 +472,23 @@ class OnboardingManager {
             if (container) {
                 const firstWorkoutView = new window.FirstWorkoutExperience();
                 container.innerHTML = firstWorkoutView.showWorkoutIntro(firstWorkout);
+                
+                // Mark onboarding as complete in localStorage
+                const userId = this.getUserId();
+                if (userId) {
+                    localStorage.setItem('ignite.user.hasCompletedOnboarding', 'true');
+                    
+                    // Update user preferences
+                    if (window.AuthManager) {
+                        const user = window.AuthManager.getCurrentUser();
+                        if (user) {
+                            if (!user.preferences) user.preferences = {};
+                            user.preferences.onboarding_version = this.onboardingVersion;
+                            user.preferences.hasCompletedOnboarding = true;
+                            window.AuthManager.updateUserData({ preferences: user.preferences });
+                        }
+                    }
+                }
             }
         } else {
             // Fallback: Navigate to dashboard
@@ -383,30 +505,109 @@ class OnboardingManager {
      * @returns {Object} First workout data
      */
     generateFirstWorkout() {
-        // Use existing workout generator if available
-        if (window.WorkoutGenerator || window.ExpertCoordinator) {
-            // This would call the actual workout generator
-            // For now, return a default personalized workout
+        try {
+            // Build user profile from onboarding data
+            const userProfile = {
+                goals: this.onboardingData.goals || ['general_fitness'],
+                experience: this.onboardingData.profile?.experience || this.onboardingData.experience || 'beginner',
+                sport: this.onboardingData.sport?.id || this.onboardingData.sport || 'general',
+                position: this.onboardingData.position?.position || this.onboardingData.position,
+                season_phase: this.onboardingData.season_phase || 'off-season',
+                preferences: this.onboardingData.preferences || {
+                    available_days: this.onboardingData.available_days || ['monday', 'wednesday', 'friday'],
+                    session_length: this.onboardingData.session_length || 45,
+                    equipment_type: this.onboardingData.equipment || 'commercial_gym'
+                }
+            };
+            
+            // Try to use ExpertCoordinator for personalized workout generation
+            if (window.ExpertCoordinator && typeof window.ExpertCoordinator.generateWorkout === 'function') {
+                try {
+                    const context = {
+                        user: userProfile,
+                        readiness: 7, // Default moderate readiness for first workout
+                        sessionType: 'Full Body',
+                        duration: userProfile.preferences.session_length || 45,
+                        goals: userProfile.goals
+                    };
+                    
+                    const generatedPlan = window.ExpertCoordinator.generateWorkout(context);
+                    if (generatedPlan && generatedPlan.blocks && generatedPlan.blocks.length > 0) {
+                        // Convert expert plan to workout format
+                        const exercises = [];
+                        generatedPlan.blocks.forEach(block => {
+                            if (block.exercises && Array.isArray(block.exercises)) {
+                                block.exercises.forEach(ex => {
+                                    exercises.push({
+                                        name: ex.name || ex.exercise || 'Exercise',
+                                        sets: ex.sets || 3,
+                                        reps: ex.reps || 10,
+                                        weight: ex.weight || null
+                                    });
+                                });
+                            }
+                        });
+                        
+                        if (exercises.length > 0) {
+                            return {
+                                name: 'Your First Workout',
+                                duration: context.duration,
+                                difficulty: this.getDifficultyLevel(),
+                                exercises: exercises,
+                                rationale: generatedPlan.rationale || 'Personalized based on your goals'
+                            };
+                        }
+                    }
+                } catch (error) {
+                    this.logger.warn('Failed to generate workout with ExpertCoordinator, using fallback', error);
+                }
+            }
+            
+            // Try WorkoutGenerator as fallback
+            if (window.WorkoutGenerator && typeof window.WorkoutGenerator.generateWorkout === 'function') {
+                try {
+                    const sessionType = 'Full Body';
+                    const duration = userProfile.preferences.session_length || 45;
+                    const generatedWorkout = window.WorkoutGenerator.generateWorkout(userProfile, sessionType, duration);
+                    
+                    if (generatedWorkout && generatedWorkout.exercises && generatedWorkout.exercises.length > 0) {
+                        return {
+                            name: generatedWorkout.type || 'Your First Workout',
+                            duration: generatedWorkout.duration || duration,
+                            difficulty: this.getDifficultyLevel(),
+                            exercises: generatedWorkout.exercises,
+                            notes: generatedWorkout.notes || ''
+                        };
+                    }
+                } catch (error) {
+                    this.logger.warn('Failed to generate workout with WorkoutGenerator, using default', error);
+                }
+            }
+            
+            // Default personalized workout based on goals
             return {
                 name: 'Your First Workout',
-                duration: this.onboardingData.preferences?.session_length || 30,
+                duration: userProfile.preferences.session_length || 30,
                 difficulty: this.getDifficultyLevel(),
-                exercises: this.getDefaultExercises()
+                exercises: this.getDefaultExercises(),
+                personalized: true
+            };
+        } catch (error) {
+            this.logger.error('Error generating first workout', error);
+            // Safe fallback
+            return {
+                name: 'Welcome Workout',
+                duration: 30,
+                difficulty: 'Beginner Friendly',
+                exercises: [
+                    { name: 'Warm-up', sets: 1, reps: '5 min' },
+                    { name: 'Bodyweight Squats', sets: 3, reps: 10 },
+                    { name: 'Push-ups', sets: 3, reps: 8 },
+                    { name: 'Plank', sets: 3, reps: '30 sec' },
+                    { name: 'Cool-down Stretch', sets: 1, reps: '5 min' }
+                ]
             };
         }
-        
-        return {
-            name: 'Welcome Workout',
-            duration: 30,
-            difficulty: 'Beginner Friendly',
-            exercises: [
-                { name: 'Warm-up', sets: 1, reps: '5 min' },
-                { name: 'Bodyweight Squats', sets: 3, reps: 10 },
-                { name: 'Push-ups', sets: 3, reps: 8 },
-                { name: 'Plank', sets: 3, reps: '30 sec' },
-                { name: 'Cool-down Stretch', sets: 1, reps: '5 min' }
-            ]
-        };
     }
 
     /**
@@ -476,6 +677,18 @@ class OnboardingManager {
 
         // Initialize step component
         switch (step.component) {
+            case 'Goals':
+                // Goals step handles its own initialization via event listeners
+                break;
+            case 'SportSoccer':
+                window.SportSoccer?.init?.();
+                break;
+            case 'EquipmentTime':
+                window.EquipmentTime?.init?.();
+                break;
+            case 'Preferences':
+                window.Preferences?.init?.();
+                break;
             case 'SportSelection':
                 window.SportSelection?.init();
                 break;

@@ -11,11 +11,79 @@ class PersonalizedCoaching {
         this.progressionEngine = window.ProgressionEngine;
         this.dailyCheckIn = window.DailyCheckIn;
         this.dataValidator = window.AIDataValidator;
+        this.habitTracker = window.HabitTracker;
         
         this.coachingTemplates = this.initializeCoachingTemplates();
         this.contextCache = null;
         this.personalityTraits = this.initializePersonalityTraits();
         this.guardrails = this.initializeGuardrails();
+        this.behavioralTriggers = this.initializeBehavioralTriggers();
+        this.lastTriggeredStreak = 0; // Track last triggered milestone to avoid repeats
+        this.lastPlateauDetection = null; // Track plateau states
+        
+        // Listen for workout completion events
+        this.setupEventListeners();
+    }
+
+    /**
+     * Setup event listeners for behavioral triggers
+     */
+    setupEventListeners() {
+        if (this.eventBus) {
+            // Listen for workout completion
+            this.eventBus.on('workout:completed', (data) => {
+                this.handleWorkoutCompletion(data);
+            });
+            
+            // Listen for progression events
+            this.eventBus.on('progression:updated', (data) => {
+                this.handleProgressionUpdate(data);
+            });
+            
+            // Listen for streak milestones
+            this.eventBus.on('habit:streakMilestone', (data) => {
+                this.handleStreakMilestone(data);
+            });
+        }
+    }
+
+    /**
+     * Initialize behavioral triggers configuration
+     * @returns {Object} Trigger configurations
+     */
+    initializeBehavioralTriggers() {
+        return {
+            streakMilestones: [7, 14, 30, 60, 90, 180], // Days to celebrate
+            plateauBreakthroughThreshold: 0.05, // 5% improvement after plateau
+            consistencyThreshold: 0.8, // 80% of planned workouts completed
+            celebrationMessages: {
+                streak_7: "🎉 7 days strong! You're building a real habit. Keep this momentum going!",
+                streak_14: "🔥 2 weeks of consistency! Your body is adapting to the routine. This is where change happens!",
+                streak_30: "💪 A full month! You're in the top 10% of people who start a fitness journey. You've made it a lifestyle!",
+                streak_60: "🏆 2 months straight! You've proven you can do this long-term. Your future self will thank you!",
+                streak_90: "⭐ 90 days! You've built a non-negotiable habit. This is who you are now - someone who takes care of themselves!",
+                breakthrough: "🚀 Breakthrough detected! You just crushed a plateau. That's the power of consistency paying off!",
+                consistency_high: "✨ Your consistency is impressive - {percentage}% of your planned workouts completed. That's the secret to results!",
+                comeback: "💚 Welcome back! Taking breaks is part of the journey. You're here now, that's what matters!"
+            },
+            plateauStrategies: [
+                {
+                    trigger: 'volume_plateau',
+                    strategy: 'deload',
+                    message: "Time for a deload week! Drop to 70% volume but keep the movement quality high. This will supercharge your gains when you come back strong."
+                },
+                {
+                    trigger: 'weight_plateau',
+                    strategy: 'variation',
+                    message: "Let's try a variation! Switch {exercise} to {variation} - sometimes a new angle is all your muscles need to grow."
+                },
+                {
+                    trigger: 'time_plateau',
+                    strategy: 'frequency',
+                    message: "Instead of longer sessions, let's try more frequent shorter workouts. Sometimes volume distributed differently breaks through plateaus."
+                }
+            ]
+        };
     }
 
     /**
@@ -686,6 +754,277 @@ class PersonalizedCoaching {
         
         return this.coachingTemplates.motivation.consistency
             .replace('{frequency}', context.trainingFrequency);
+    }
+
+    /**
+     * Handle workout completion - trigger behavioral responses
+     * @param {Object} data - Workout completion data
+     */
+    async handleWorkoutCompletion(data) {
+        try {
+            const context = await this.buildContext();
+            const streak = context.workoutStreak || 0;
+            
+            // Check for streak milestones
+            const milestone = this.behavioralTriggers.streakMilestones.find(m => 
+                streak >= m && (this.lastTriggeredStreak < m)
+            );
+            
+            if (milestone) {
+                this.triggerStreakCelebration(milestone, streak);
+                this.lastTriggeredStreak = milestone;
+            }
+            
+            // Check for consistency achievements
+            const consistencyScore = context.consistencyScore || 0;
+            if (consistencyScore >= this.behavioralTriggers.consistencyThreshold && 
+                consistencyScore < 0.85) { // Only trigger once when crossing threshold
+                this.triggerConsistencyCelebration(consistencyScore);
+            }
+            
+            // Check for comeback after break
+            if (data.comeback && context.missedWorkouts > 3) {
+                this.triggerComebackMessage(context.missedWorkouts);
+            }
+            
+        } catch (error) {
+            this.logger.error('Failed to handle workout completion:', error);
+        }
+    }
+
+    /**
+     * Handle progression update - detect breakthroughs
+     * @param {Object} data - Progression data
+     */
+    async handleProgressionUpdate(data) {
+        try {
+            const context = await this.buildContext();
+            
+            // Check for plateau breakthrough
+            if (data.exercise && data.previousWeight && data.currentWeight) {
+                const improvement = (data.currentWeight - data.previousWeight) / data.previousWeight;
+                
+                // If we were in a plateau and now see significant improvement
+                if (this.lastPlateauDetection && 
+                    this.lastPlateauDetection.exercise === data.exercise &&
+                    improvement >= this.behavioralTriggers.plateauBreakthroughThreshold) {
+                    
+                    this.triggerBreakthroughCelebration(data);
+                    this.lastPlateauDetection = null; // Clear plateau state
+                }
+            }
+            
+        } catch (error) {
+            this.logger.error('Failed to handle progression update:', error);
+        }
+    }
+
+    /**
+     * Handle streak milestone from HabitTracker
+     * @param {Object} data - Streak milestone data
+     */
+    async handleStreakMilestone(data) {
+        if (data && data.days) {
+            this.triggerStreakCelebration(data.days, data.days);
+            this.lastTriggeredStreak = data.days;
+        }
+    }
+
+    /**
+     * Trigger streak celebration
+     * @param {number} milestone - Milestone reached
+     * @param {number} currentStreak - Current streak
+     */
+    triggerStreakCelebration(milestone, currentStreak) {
+        const messageKey = `streak_${milestone}`;
+        const message = this.behavioralTriggers.celebrationMessages[messageKey] || 
+                       `🎉 ${milestone} days of consistency! That's incredible!`;
+        
+        // Emit celebration event
+        if (this.eventBus) {
+            this.eventBus.emit('coaching:celebration', {
+                type: 'streak',
+                milestone,
+                currentStreak,
+                message
+            });
+        }
+        
+        // Show notification
+        this.showCelebrationNotification(message, 'streak');
+        
+        this.logger.audit('STREAK_CELEBRATION', { milestone, currentStreak });
+    }
+
+    /**
+     * Trigger consistency celebration
+     * @param {number} consistencyScore - Consistency score (0-1)
+     */
+    triggerConsistencyCelebration(consistencyScore) {
+        const percentage = Math.round(consistencyScore * 100);
+        const message = this.behavioralTriggers.celebrationMessages.consistency_high
+            .replace('{percentage}', percentage);
+        
+        // Emit celebration event
+        if (this.eventBus) {
+            this.eventBus.emit('coaching:celebration', {
+                type: 'consistency',
+                score: consistencyScore,
+                message
+            });
+        }
+        
+        // Show notification
+        this.showCelebrationNotification(message, 'consistency');
+        
+        this.logger.audit('CONSISTENCY_CELEBRATION', { score: consistencyScore });
+    }
+
+    /**
+     * Trigger breakthrough celebration
+     * @param {Object} data - Breakthrough data
+     */
+    triggerBreakthroughCelebration(data) {
+        const message = this.behavioralTriggers.celebrationMessages.breakthrough;
+        
+        // Emit celebration event
+        if (this.eventBus) {
+            this.eventBus.emit('coaching:celebration', {
+                type: 'breakthrough',
+                exercise: data.exercise,
+                previousWeight: data.previousWeight,
+                currentWeight: data.currentWeight,
+                message
+            });
+        }
+        
+        // Show notification
+        this.showCelebrationNotification(message, 'breakthrough');
+        
+        this.logger.audit('BREAKTHROUGH_CELEBRATION', data);
+    }
+
+    /**
+     * Trigger comeback message
+     * @param {number} missedDays - Days missed
+     */
+    triggerComebackMessage(missedDays) {
+        const message = this.behavioralTriggers.celebrationMessages.comeback;
+        
+        // Emit celebration event
+        if (this.eventBus) {
+            this.eventBus.emit('coaching:celebration', {
+                type: 'comeback',
+                missedDays,
+                message
+            });
+        }
+        
+        // Show notification
+        this.showCelebrationNotification(message, 'comeback');
+        
+        this.logger.audit('COMEBACK_CELEBRATION', { missedDays });
+    }
+
+    /**
+     * Detect plateau and suggest strategies
+     * @param {Object} context - User context
+     * @returns {Object|null} Plateau strategy or null
+     */
+    detectPlateauAndSuggestStrategy(context) {
+        // Check for volume plateau (no progress in weekly volume)
+        if (context.progressionRate < 0.01 && context.workoutStreak > 14) {
+            const strategy = this.behavioralTriggers.plateauStrategies.find(s => s.trigger === 'volume_plateau');
+            if (strategy) {
+                this.lastPlateauDetection = {
+                    type: 'volume',
+                    detected: new Date()
+                };
+                return {
+                    type: 'plateau',
+                    strategy: strategy.strategy,
+                    message: strategy.message
+                };
+            }
+        }
+        
+        // Check for weight plateau (no strength gains)
+        if (context.progressionRate < 0.02 && context.workoutStreak > 21) {
+            const strategy = this.behavioralTriggers.plateauStrategies.find(s => s.trigger === 'weight_plateau');
+            if (strategy) {
+                this.lastPlateauDetection = {
+                    type: 'weight',
+                    exercise: context.primaryExercise || 'main lift',
+                    detected: new Date()
+                };
+                return {
+                    type: 'plateau',
+                    strategy: strategy.strategy,
+                    message: strategy.message.replace('{exercise}', context.primaryExercise || 'this exercise')
+                };
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Show celebration notification
+     * @param {string} message - Celebration message
+     * @param {string} type - Celebration type
+     */
+    showCelebrationNotification(message, type) {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `coaching-celebration celebration-${type}`;
+        notification.setAttribute('role', 'alert');
+        notification.setAttribute('aria-live', 'polite');
+        notification.innerHTML = `
+            <div class="celebration-content">
+                <div class="celebration-emoji">${this.getCelebrationEmoji(type)}</div>
+                <div class="celebration-message">${message}</div>
+            </div>
+            <button class="celebration-close" aria-label="Close notification">&times;</button>
+        `;
+        
+        // Add to page
+        document.body.appendChild(notification);
+        
+        // Auto-dismiss after 8 seconds
+        const autoDismiss = setTimeout(() => {
+            notification.remove();
+        }, 8000);
+        
+        // Manual close
+        const closeBtn = notification.querySelector('.celebration-close');
+        closeBtn.addEventListener('click', () => {
+            clearTimeout(autoDismiss);
+            notification.remove();
+        });
+        
+        // Announce to screen readers
+        if (window.LiveRegionManager) {
+            window.LiveRegionManager.announce(message, 'assertive');
+        }
+        
+        // Add animation
+        setTimeout(() => notification.classList.add('show'), 10);
+    }
+
+    /**
+     * Get celebration emoji for type
+     * @param {string} type - Celebration type
+     * @returns {string} Emoji
+     */
+    getCelebrationEmoji(type) {
+        const emojis = {
+            streak: '🔥',
+            consistency: '✨',
+            breakthrough: '🚀',
+            comeback: '💚',
+            plateau: '💡'
+        };
+        return emojis[type] || '🎉';
     }
 
     /**

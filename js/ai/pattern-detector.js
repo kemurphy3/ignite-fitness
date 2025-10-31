@@ -168,35 +168,55 @@ class PatternDetector {
 
     // Calculate workout consistency
     calculateConsistency(sessions) {
-        if (sessions.length < 7) return 0;
+        if (!sessions || sessions.length < 7) return 0;
         
-        const last30Days = sessions.filter(session => {
-            const sessionDate = new Date(session.start_at);
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            return sessionDate >= thirtyDaysAgo;
-        });
-        
-        const expectedWorkouts = 30; // Assuming daily workouts
-        const actualWorkouts = last30Days.length;
-        
-        return actualWorkouts / expectedWorkouts;
+        try {
+            const last30Days = sessions.filter(session => {
+                if (!session || !session.start_at) return false;
+                const sessionDate = new Date(session.start_at);
+                if (isNaN(sessionDate.getTime())) return false;
+                
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                return sessionDate >= thirtyDaysAgo;
+            });
+            
+            // Calculate expected workouts based on actual frequency (more realistic than daily)
+            const expectedFrequency = 3; // Default: 3 workouts per week
+            const expectedWorkouts = (expectedFrequency / 7) * 30; // ~12.9 workouts in 30 days
+            const actualWorkouts = last30Days.length;
+            
+            // Return ratio (capped at 1.0)
+            return Math.min(1.0, actualWorkouts / expectedWorkouts);
+        } catch (error) {
+            console.error('Error calculating consistency:', error);
+            return 0;
+        }
     }
 
     // Calculate improvement over time
     calculateImprovement(sessions) {
-        if (sessions.length < 4) return 0;
+        if (!sessions || sessions.length < 4) return 0;
         
-        const sortedSessions = sessions.sort((a, b) => new Date(a.start_at) - new Date(b.start_at));
-        const firstHalf = sortedSessions.slice(0, Math.floor(sortedSessions.length / 2));
-        const secondHalf = sortedSessions.slice(Math.floor(sortedSessions.length / 2));
-        
-        const firstHalfVolume = firstHalf.reduce((sum, session) => sum + this.calculateSessionVolume(session), 0);
-        const secondHalfVolume = secondHalf.reduce((sum, session) => sum + this.calculateSessionVolume(session), 0);
-        
-        if (firstHalfVolume === 0) return 0;
-        
-        return (secondHalfVolume - firstHalfVolume) / firstHalfVolume;
+        try {
+            // Filter out invalid sessions
+            const validSessions = sessions.filter(s => s && s.start_at && !isNaN(new Date(s.start_at).getTime()));
+            if (validSessions.length < 4) return 0;
+            
+            const sortedSessions = [...validSessions].sort((a, b) => new Date(a.start_at) - new Date(b.start_at));
+            const firstHalf = sortedSessions.slice(0, Math.floor(sortedSessions.length / 2));
+            const secondHalf = sortedSessions.slice(Math.floor(sortedSessions.length / 2));
+            
+            const firstHalfVolume = firstHalf.reduce((sum, session) => sum + this.calculateSessionVolume(session), 0);
+            const secondHalfVolume = secondHalf.reduce((sum, session) => sum + this.calculateSessionVolume(session), 0);
+            
+            if (firstHalfVolume === 0) return 0;
+            
+            return (secondHalfVolume - firstHalfVolume) / firstHalfVolume;
+        } catch (error) {
+            console.error('Error calculating improvement:', error);
+            return 0;
+        }
     }
 
     // Analyze timing patterns
@@ -495,54 +515,95 @@ class PatternDetector {
     generateInsights() {
         this.insights = [];
         
-        // Performance insights
-        if (this.patterns.performance.dayOfWeek) {
-            const bestDay = Object.entries(this.patterns.performance.dayOfWeek)
-                .sort(([,a], [,b]) => b.averageRPE - a.averageRPE)[0];
+        try {
+            // Performance insights
+            if (this.patterns?.performance?.dayOfWeek) {
+                const dayEntries = Object.entries(this.patterns.performance.dayOfWeek)
+                    .filter(([, data]) => data && data.count > 0 && data.averageRPE > 0)
+                    .sort(([,a], [,b]) => (b.averageRPE || 0) - (a.averageRPE || 0));
+                
+                if (dayEntries.length > 0) {
+                    const bestDay = dayEntries[0];
+                    const dayNumber = parseInt(bestDay[0]);
+                    const dayData = bestDay[1];
+                    
+                    if (!isNaN(dayNumber) && dayData.averageRPE > 0) {
+                        this.insights.push({
+                            type: 'performance',
+                            message: `You perform best on ${this.getDayName(dayNumber)} with an average RPE of ${dayData.averageRPE.toFixed(1)}`,
+                            priority: 'medium',
+                            value: dayData.averageRPE
+                        });
+                    }
+                }
+            }
             
-            if (bestDay && bestDay[1].count > 0) {
-                this.insights.push({
-                    type: 'performance',
-                    message: `You perform best on ${this.getDayName(bestDay[0])} with an average RPE of ${bestDay[1].averageRPE.toFixed(1)}`,
-                    priority: 'medium'
-                });
+            // Timing insights
+            if (this.patterns?.timing?.preferredTimes && Array.isArray(this.patterns.timing.preferredTimes)) {
+                const preferredTime = this.patterns.timing.preferredTimes.find(t => t && t.count > 0);
+                if (preferredTime) {
+                    this.insights.push({
+                        type: 'timing',
+                        message: `You prefer working out in the ${preferredTime.time} (${preferredTime.count} sessions)`,
+                        priority: 'low',
+                        value: preferredTime.count
+                    });
+                }
             }
-        }
-        
-        // Timing insights
-        if (this.patterns.timing.preferredTimes) {
-            const preferredTime = this.patterns.timing.preferredTimes[0];
-            if (preferredTime && preferredTime.count > 0) {
-                this.insights.push({
-                    type: 'timing',
-                    message: `You prefer working out in the ${preferredTime.time} (${preferredTime.count} sessions)`,
-                    priority: 'low'
-                });
+            
+            // Volume insights
+            if (this.patterns?.volume && typeof this.patterns.volume.volumeTrend === 'number') {
+                const trend = this.patterns.volume.volumeTrend;
+                if (Math.abs(trend) > 0.1) {
+                    this.insights.push({
+                        type: 'volume',
+                        message: `Your training volume is ${trend > 0 ? 'increasing' : 'decreasing'} by ${Math.abs(trend * 100).toFixed(1)}%`,
+                        priority: 'high',
+                        value: trend
+                    });
+                }
             }
-        }
-        
-        // Volume insights
-        if (this.patterns.volume.volumeTrend) {
-            const trend = this.patterns.volume.volumeTrend;
-            if (Math.abs(trend) > 0.1) {
-                this.insights.push({
-                    type: 'volume',
-                    message: `Your training volume is ${trend > 0 ? 'increasing' : 'decreasing'} by ${Math.abs(trend * 100).toFixed(1)}%`,
-                    priority: 'high'
-                });
+            
+            // Intensity insights
+            if (this.patterns?.intensity && typeof this.patterns.intensity.rpeTrend === 'number') {
+                const trend = this.patterns.intensity.rpeTrend;
+                if (Math.abs(trend) > 0.1) {
+                    this.insights.push({
+                        type: 'intensity',
+                        message: `Your training intensity is ${trend > 0 ? 'increasing' : 'decreasing'} by ${Math.abs(trend * 100).toFixed(1)}%`,
+                        priority: 'medium',
+                        value: trend
+                    });
+                }
             }
-        }
-        
-        // Recovery insights
-        if (this.patterns.recovery.overtrainingRisk) {
-            const risk = this.patterns.recovery.overtrainingRisk;
-            if (risk.riskLevel === 'high') {
-                this.insights.push({
-                    type: 'recovery',
-                    message: 'High risk of overtraining detected. Consider reducing intensity or frequency.',
-                    priority: 'high'
-                });
+            
+            // Recovery insights
+            if (this.patterns?.recovery?.overtrainingRisk) {
+                const risk = this.patterns.recovery.overtrainingRisk;
+                if (risk && risk.riskLevel === 'high') {
+                    this.insights.push({
+                        type: 'recovery',
+                        message: 'High risk of overtraining detected. Consider reducing intensity or frequency.',
+                        priority: 'high',
+                        value: risk.riskScore || 0
+                    });
+                }
             }
+            
+            // Consistency insights
+            if (this.patterns?.performance && typeof this.patterns.performance.consistency === 'number') {
+                const consistency = this.patterns.performance.consistency;
+                if (consistency < 0.5) {
+                    this.insights.push({
+                        type: 'consistency',
+                        message: `Your workout consistency is ${(consistency * 100).toFixed(0)}%. Try to maintain a more regular schedule.`,
+                        priority: 'medium',
+                        value: consistency
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Error generating insights:', error);
         }
     }
 
@@ -550,40 +611,94 @@ class PatternDetector {
     generateRecommendations(userProfile) {
         this.recommendations = [];
         
-        // Consistency recommendations
-        if (this.patterns.performance.consistency < 0.6) {
-            this.recommendations.push({
-                type: 'consistency',
-                message: 'Try to maintain a more consistent workout schedule',
-                action: 'Set specific workout days and times'
-            });
-        }
-        
-        // Volume recommendations
-        if (this.patterns.volume.volumeTrend < -0.1) {
-            this.recommendations.push({
-                type: 'volume',
-                message: 'Consider gradually increasing your training volume',
-                action: 'Add one more set or exercise to your workouts'
-            });
-        }
-        
-        // Recovery recommendations
-        if (this.patterns.recovery.overtrainingRisk?.riskLevel === 'high') {
-            this.recommendations.push({
-                type: 'recovery',
-                message: 'Take a deload week to allow for proper recovery',
-                action: 'Reduce intensity by 20-30% for one week'
-            });
-        }
-        
-        // Progression recommendations
-        if (this.patterns.progression.strengthProgression?.progressionLevel === 'poor') {
-            this.recommendations.push({
-                type: 'progression',
-                message: 'Focus on progressive overload to continue improving',
-                action: 'Increase weight or reps by 2-5% each week'
-            });
+        try {
+            // Consistency recommendations
+            if (this.patterns?.performance && typeof this.patterns.performance.consistency === 'number') {
+                const consistency = this.patterns.performance.consistency;
+                if (consistency < 0.6) {
+                    this.recommendations.push({
+                        type: 'consistency',
+                        message: 'Try to maintain a more consistent workout schedule',
+                        action: 'Set specific workout days and times',
+                        priority: 'high',
+                        value: consistency
+                    });
+                }
+            }
+            
+            // Volume recommendations
+            if (this.patterns?.volume && typeof this.patterns.volume.volumeTrend === 'number') {
+                const trend = this.patterns.volume.volumeTrend;
+                if (trend < -0.1) {
+                    this.recommendations.push({
+                        type: 'volume',
+                        message: 'Consider gradually increasing your training volume',
+                        action: 'Add one more set or exercise to your workouts',
+                        priority: 'medium',
+                        value: trend
+                    });
+                } else if (trend > 0.2) {
+                    this.recommendations.push({
+                        type: 'volume',
+                        message: 'Your volume is increasing rapidly. Monitor recovery closely.',
+                        action: 'Consider adding a deload week if fatigue increases',
+                        priority: 'medium',
+                        value: trend
+                    });
+                }
+            }
+            
+            // Recovery recommendations
+            if (this.patterns?.recovery?.overtrainingRisk) {
+                const risk = this.patterns.recovery.overtrainingRisk;
+                if (risk && risk.riskLevel === 'high') {
+                    this.recommendations.push({
+                        type: 'recovery',
+                        message: 'Take a deload week to allow for proper recovery',
+                        action: 'Reduce intensity by 20-30% for one week',
+                        priority: 'high',
+                        value: risk.riskScore || 0
+                    });
+                } else if (risk && risk.riskLevel === 'medium') {
+                    this.recommendations.push({
+                        type: 'recovery',
+                        message: 'Consider adding an extra rest day or reducing intensity slightly',
+                        action: 'Monitor readiness scores and adjust accordingly',
+                        priority: 'medium',
+                        value: risk.riskScore || 0
+                    });
+                }
+            }
+            
+            // Progression recommendations
+            if (this.patterns?.progression?.strengthProgression) {
+                const strengthProg = this.patterns.progression.strengthProgression;
+                if (strengthProg && strengthProg.progressionLevel === 'poor') {
+                    this.recommendations.push({
+                        type: 'progression',
+                        message: 'Focus on progressive overload to continue improving',
+                        action: 'Increase weight or reps by 2-5% each week',
+                        priority: 'high',
+                        value: strengthProg.averageProgression || 0
+                    });
+                }
+            }
+            
+            // Exercise variety recommendations
+            if (this.patterns?.performance?.exercisePerformance) {
+                const exerciseCount = Object.keys(this.patterns.performance.exercisePerformance).length;
+                if (exerciseCount < 5) {
+                    this.recommendations.push({
+                        type: 'variety',
+                        message: 'Consider adding more exercise variety to your routine',
+                        action: 'Try 2-3 new exercises that target different muscle groups',
+                        priority: 'low',
+                        value: exerciseCount
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Error generating recommendations:', error);
         }
     }
 
