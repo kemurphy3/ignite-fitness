@@ -805,21 +805,51 @@ class ExpertCoordinator {
             
             // T2B-4: Add user notification and override option for Simple Mode + Recovery Day collision
             if (isRecoveryDayMinimal) {
-                plan.notes.push({
-                    source: 'recovery_simple_mode',
-                    type: 'notification',
-                    text: 'Recovery day recommended - light activity planned',
-                    overrideAvailable: true,
-                    overrideMessage: 'You can override with a normal workout if preferred'
-                });
+                // Task 2: Check user preference for recovery day handling
+                const simpleModeManager = window.SimpleModeManager;
+                const userPreference = simpleModeManager?.getRecoveryDayPreference?.() || 'ask';
+                
+                // Auto-handle if user has set preference
+                if (userPreference === 'accept') {
+                    // User prefers to accept recovery days - no notification needed
+                    plan.notes.push({
+                        source: 'recovery_simple_mode',
+                        type: 'info',
+                        text: 'Recovery day recommended - light activity planned'
+                    });
+                } else if (userPreference === 'override') {
+                    // User prefers normal workouts - regenerate without recovery day
+                    context.recommendRecoveryDay = false;
+                    context.recoveryDayOverride = true;
+                    // Note: This will cause plan to regenerate without recovery day recommendation
+                    // For now, we'll still show notification but allow override
+                    plan.notes.push({
+                        source: 'recovery_simple_mode',
+                        type: 'notification',
+                        text: 'Recovery day recommended - light activity planned',
+                        overrideAvailable: true,
+                        overrideMessage: 'You can override with a normal workout if preferred'
+                    });
+                } else {
+                    // Default: ask user each time
+                    plan.notes.push({
+                        source: 'recovery_simple_mode',
+                        type: 'notification',
+                        text: 'Recovery day recommended - light activity planned',
+                        overrideAvailable: true,
+                        overrideMessage: 'You can override with a normal workout if preferred'
+                    });
+                }
                 
                 // Store recovery day preference prompt flag
                 context.showRecoveryDayPreference = true;
+                context.recoveryDayPreference = userPreference;
                 
                 this.logger.info('RECOVERY_DAY_SIMPLE_MODE_COLLISION', {
                     isSimpleMode: isSimpleMode,
                     isRecoveryDay: true,
                     workoutMinimal: isRecoveryDayMinimal,
+                    userPreference: userPreference,
                     message: 'Recovery day creates minimal workout in Simple Mode'
                 });
             }

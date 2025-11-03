@@ -1,0 +1,37 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-01-01",
+  "description": "Multi-sport workout catalog seed data - 61 workouts across Running, Cycling, and Swimming",
+  "workouts": {
+    "running": {
+      "track": 10,
+      "tempo": 5,
+      "hills": 5,
+      "soccer": 7,
+      "total": 27
+    },
+    "cycling": {
+      "endurance": 5,
+      "tempo": 5,
+      "vo2": 5,
+      "cadence": 4,
+      "total": 19
+    },
+    "swimming": {
+      "aerobic": 5,
+      "threshold": 5,
+      "vo2": 5,
+      "total": 15
+    },
+    "grandTotal": 61
+  },
+  "note": "All workout templates are defined in js/modules/sports/WorkoutCatalog.js. This file serves as metadata and seed reference.",
+  "intensityZones": {
+    "Z1": "Easy/Recovery",
+    "Z2": "Aerobic Base",
+    "Z3": "Tempo/Threshold",
+    "Z4": "VO2 Max",
+    "Z5": "Anaerobic/Max Effort"
+  }
+}
+

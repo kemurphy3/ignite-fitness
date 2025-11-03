@@ -15,3 +15,6 @@ export { MovementScreens } from './MovementScreens.js';
 // Training systems
 export { WorkoutGenerator } from '../workout/WorkoutGenerator.js';
 export { PeriodizationManager } from './PeriodizationManager.js';
+
+// Workout catalog
+export { WorkoutCatalog } from './WorkoutCatalog.js';

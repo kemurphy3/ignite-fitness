@@ -144,6 +144,60 @@ class SimpleModeManager {
         this.simpleMode = true;
         this.save();
     }
+
+    /**
+     * Task 2: Save recovery day preference
+     * @param {string} preference - 'accept' | 'override' | 'ask'
+     * @returns {Promise<void>}
+     */
+    async saveRecoveryDayPreference(preference) {
+        try {
+            const authManager = window.AuthManager;
+            const userId = authManager?.getCurrentUsername();
+            
+            if (!userId) {
+                this.logger.warn('Cannot save recovery day preference: user not logged in');
+                return;
+            }
+
+            const storageKey = 'ignite.ui.recoveryDayPreference';
+            localStorage.setItem(storageKey, preference);
+            
+            // Also save via StorageManager if available
+            if (this.storageManager && typeof this.storageManager.savePreferences === 'function') {
+                await this.storageManager.savePreferences(userId, {
+                    recoveryDayPreference: preference
+                });
+            }
+
+            this.logger.info('Recovery day preference saved', { userId, preference });
+        } catch (error) {
+            this.logger.error('Failed to save recovery day preference', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Task 2: Get recovery day preference
+     * @returns {string} 'accept' | 'override' | 'ask'
+     */
+    getRecoveryDayPreference() {
+        try {
+            const storageKey = 'ignite.ui.recoveryDayPreference';
+            const preference = localStorage.getItem(storageKey);
+            
+            // Validate preference value
+            if (preference && ['accept', 'override', 'ask'].includes(preference)) {
+                return preference;
+            }
+            
+            // Default: ask user each time
+            return 'ask';
+        } catch (error) {
+            this.logger.error('Failed to get recovery day preference', error);
+            return 'ask'; // Safe default
+        }
+    }
 }
 
 // Create global instance and initialize

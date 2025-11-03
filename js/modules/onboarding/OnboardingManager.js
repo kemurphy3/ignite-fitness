@@ -19,36 +19,73 @@ class OnboardingManager {
 
     /**
      * Initialize onboarding steps
+     * Enhanced for multi-sport beta requirements
      * @returns {Array} Onboarding steps
      */
     initializeSteps() {
         return [
             {
-                id: 'goals',
-                title: "What are your training goals?",
-                component: 'Goals',
-                description: 'Select all that apply',
+                id: 'sport_selection',
+                title: "Primary Sport Focus",
+                component: 'SportSelection',
+                description: 'Choose your main training focus',
+                required: true,
+                skippable: false
+            },
+            {
+                id: 'secondary_sports',
+                title: "Secondary Activities",
+                component: 'SecondarySports',
+                description: 'Cross-training and seasonal activities',
+                required: false,
                 skippable: true
             },
             {
-                id: 'sport_soccer',
-                title: "Soccer-Specific Details",
-                component: 'SportSoccer',
-                description: 'Your position and season phase',
+                id: 'current_volume',
+                title: "Current Training Volume",
+                component: 'CurrentVolume',
+                description: 'Weekly training minutes by activity',
+                required: true,
+                skippable: false
+            },
+            {
+                id: 'recent_efforts',
+                title: "Recent Best Efforts",
+                component: 'RecentEfforts',
+                description: 'Help us estimate your zones',
+                required: false,
                 skippable: true
             },
             {
-                id: 'equipment_time',
-                title: "Training Constraints",
-                component: 'EquipmentTime',
-                description: 'Schedule and equipment preferences',
+                id: 'equipment_access',
+                title: "Equipment & Access",
+                component: 'EquipmentAccess',
+                description: 'Available training facilities',
+                required: true,
+                skippable: false
+            },
+            {
+                id: 'injury_history',
+                title: "Injury Flags",
+                component: 'InjuryHistory',
+                description: 'Current limitations and past issues',
+                required: false,
                 skippable: true
             },
             {
-                id: 'preferences',
-                title: "Review & Complete",
-                component: 'Preferences',
-                description: 'Finalize your profile',
+                id: 'time_windows',
+                title: "Schedule Preferences",
+                component: 'TimeWindows',
+                description: 'When and how long you can train',
+                required: true,
+                skippable: false
+            },
+            {
+                id: 'review_complete',
+                title: "Review & Launch",
+                component: 'ReviewComplete',
+                description: 'Confirm your profile and start training',
+                required: true,
                 skippable: false
             }
         ];
@@ -135,6 +172,23 @@ class OnboardingManager {
      */
     renderStepComponent(step) {
         switch (step.component) {
+            case 'SportSelection':
+                return window.SportSelection ? new window.SportSelection().render(this.onboardingData) : this.renderFallback(step);
+            case 'SecondarySports':
+                return window.SecondarySports ? new window.SecondarySports().render(this.onboardingData) : this.renderFallback(step);
+            case 'CurrentVolume':
+                return window.CurrentVolume ? new window.CurrentVolume().render(this.onboardingData) : this.renderFallback(step);
+            case 'RecentEfforts':
+                return window.RecentEfforts ? new window.RecentEfforts().render(this.onboardingData) : this.renderFallback(step);
+            case 'EquipmentAccess':
+                return window.EquipmentAccess ? new window.EquipmentAccess().render(this.onboardingData) : this.renderFallback(step);
+            case 'InjuryHistory':
+                return window.InjuryHistory ? new window.InjuryHistory().render(this.onboardingData) : this.renderFallback(step);
+            case 'TimeWindows':
+                return window.TimeWindows ? new window.TimeWindows().render(this.onboardingData) : this.renderFallback(step);
+            case 'ReviewComplete':
+                return window.ReviewComplete ? new window.ReviewComplete().render(this.onboardingData) : this.renderFallback(step);
+            // Legacy components (for backwards compatibility)
             case 'Goals':
                 if (window.GoalsStep) {
                     window.GoalsStep.followUpData = this.onboardingData.goalFollowUps || {};
@@ -147,12 +201,6 @@ class OnboardingManager {
                 return window.EquipmentTime ? new window.EquipmentTime().render(this.onboardingData) : this.renderFallback(step);
             case 'Preferences':
                 return window.Preferences ? new window.Preferences().render(this.onboardingData) : this.renderFallback(step);
-            case 'SportSelection':
-                return window.SportSelection?.render() || this.renderFallback(step);
-            case 'PositionSelection':
-                return window.PositionSelection?.render() || this.renderFallback(step);
-            case 'ProfileSetup':
-                return window.ProfileSetup?.render() || this.renderFallback(step);
             default:
                 return this.renderFallback(step);
         }
@@ -390,7 +438,22 @@ class OnboardingManager {
     }
     
     /**
+     * Save step data
+     * @param {string} stepId - Step ID
+     * @param {Object} data - Step data
+     */
+    saveStepData(stepId, data) {
+        if (!this.onboardingData[stepId]) {
+            this.onboardingData[stepId] = {};
+        }
+        Object.assign(this.onboardingData[stepId], data);
+        Object.assign(this.onboardingData, data);
+        this.logger.debug('Step data saved', { stepId, data });
+    }
+
+    /**
      * Save complete profile (user_profile + preferences combined)
+     * Enhanced for multi-sport beta requirements
      */
     async saveCompleteProfile() {
         try {
@@ -398,23 +461,35 @@ class OnboardingManager {
             
             // Combine all onboarding data into single object
             const completeProfile = {
-                // User profile data
+                // User profile data (multi-sport)
                 user_profile: {
                     userId,
+                    primarySport: this.onboardingData.primarySport || 'running',
+                    secondarySports: this.onboardingData.secondarySports || [],
+                    sportSpecific: this.onboardingData.sportSpecific || {},
                     goals: this.onboardingData.goals || ['general_fitness'],
-                    sport: this.onboardingData.sport || 'soccer',
-                    position: this.onboardingData.position || 'midfielder',
+                    sport: this.onboardingData.sport || this.onboardingData.primarySport || 'running',
+                    position: this.onboardingData.position || 'general',
                     season_phase: this.onboardingData.season_phase || 'in-season',
-                    experience_level: this.onboardingData.experience || 'intermediate',
+                    experience_level: this.onboardingData.experience || this.onboardingData.trainingLevel || 'intermediate',
+                    trainingLevel: this.onboardingData.trainingLevel || 'intermediate',
+                    weeklyVolumes: this.onboardingData.weeklyVolumes || {},
+                    recentEfforts: this.onboardingData.recentEfforts || {},
+                    currentInjuries: this.onboardingData.currentInjuries || [],
+                    pastInjuries: this.onboardingData.pastInjuries || [],
+                    limitations: this.onboardingData.limitations || [],
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString()
                 },
                 
-                // Preferences
+                // Preferences (multi-sport)
                 preferences: {
+                    equipment: this.onboardingData.equipment || [],
+                    timePreferences: this.onboardingData.timePreferences || {},
+                    timeWindows: this.onboardingData.timeWindows || {},
                     available_days: this.onboardingData.available_days || ['monday', 'wednesday', 'friday'],
-                    session_length: this.onboardingData.session_length || 45,
-                    equipment_type: this.onboardingData.equipment || 'commercial_gym',
+                    session_length: this.onboardingData.session_length || this.onboardingData.timePreferences?.typicalDuration || 60,
+                    equipment_type: Array.isArray(this.onboardingData.equipment) ? 'mixed' : this.onboardingData.equipment || 'commercial_gym',
                     exercise_dislikes: this.onboardingData.exercise_dislikes || [],
                     aesthetic_focus: this.onboardingData.aesthetic_focus || 'functional',
                     training_mode: 'simple', // Default to simple mode
@@ -422,6 +497,12 @@ class OnboardingManager {
                     completed_at: new Date().toISOString()
                 }
             };
+            
+            // Validate required fields
+            const validation = this.validateOnboardingData(completeProfile);
+            if (!validation.valid) {
+                throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+            }
             
             // Save to StorageManager
             await this.storageManager.saveUserProfile(userId, completeProfile);
@@ -434,6 +515,39 @@ class OnboardingManager {
             this.logger.error('Failed to save complete profile', error);
             throw error;
         }
+    }
+
+    /**
+     * Validate onboarding data
+     * @param {Object} profile - Complete profile data
+     * @returns {Object} Validation result
+     */
+    validateOnboardingData(profile) {
+        const errors = [];
+        const userProfile = profile.user_profile || {};
+        const preferences = profile.preferences || {};
+
+        // Required fields
+        if (!userProfile.primarySport) {
+            errors.push('Primary sport is required');
+        }
+        if (!userProfile.trainingLevel) {
+            errors.push('Training level is required');
+        }
+        if (!userProfile.weeklyVolumes || Object.keys(userProfile.weeklyVolumes).length === 0) {
+            errors.push('Weekly training volume is required');
+        }
+        if (!preferences.equipment || preferences.equipment.length === 0) {
+            errors.push('At least one equipment/facility is required');
+        }
+        if (!preferences.timeWindows && !preferences.timePreferences) {
+            errors.push('Time preferences are required');
+        }
+
+        return {
+            valid: errors.length === 0,
+            errors: errors
+        };
     }
     
     /**
@@ -670,6 +784,7 @@ class OnboardingManager {
 
     /**
      * Initialize current step
+     * Enhanced for multi-sport onboarding
      */
     initializeCurrentStep() {
         const step = this.onboardingSteps[this.currentStep];
@@ -677,6 +792,18 @@ class OnboardingManager {
 
         // Initialize step component
         switch (step.component) {
+            // Enhanced multi-sport steps
+            case 'SportSelection':
+            case 'SecondarySports':
+            case 'CurrentVolume':
+            case 'RecentEfforts':
+            case 'EquipmentAccess':
+            case 'InjuryHistory':
+            case 'TimeWindows':
+            case 'ReviewComplete':
+                // New components auto-initialize via render
+                break;
+            // Legacy steps (for backwards compatibility)
             case 'Goals':
                 // Goals step handles its own initialization via event listeners
                 break;
@@ -688,15 +815,6 @@ class OnboardingManager {
                 break;
             case 'Preferences':
                 window.Preferences?.init?.();
-                break;
-            case 'SportSelection':
-                window.SportSelection?.init();
-                break;
-            case 'PositionSelection':
-                window.PositionSelection?.init();
-                break;
-            case 'ProfileSetup':
-                window.ProfileSetup?.init();
                 break;
         }
     }

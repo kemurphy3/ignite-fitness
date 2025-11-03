@@ -297,8 +297,71 @@ class DashboardRenderer {
                         <p>${this.getWorkoutSummary(plan)}</p>
                     </div>
                 ` : ''}
+                
+                ${this.renderPlanNotes(plan, simple)}
             </div>
         `;
+    }
+
+    /**
+     * Render plan notes including recovery day notifications
+     * @param {Object} plan - Workout plan
+     * @param {boolean} simple - Simple mode
+     * @returns {string} HTML for plan notes
+     */
+    renderPlanNotes(plan, simple) {
+        if (!plan.notes || !Array.isArray(plan.notes)) {
+            return '';
+        }
+
+        let notesHTML = '';
+        
+        plan.notes.forEach(note => {
+            // Check for recovery day override notification
+            if (note.source === 'recovery_simple_mode' && note.overrideAvailable) {
+                notesHTML += `
+                    <div class="plan-notification recovery-day-notification" data-note-id="${note.source}">
+                        <div class="notification-content">
+                            <span class="notification-icon">🛌</span>
+                            <div class="notification-text">
+                                <strong>${note.text}</strong>
+                                ${note.overrideMessage ? `<small>${note.overrideMessage}</small>` : ''}
+                            </div>
+                        </div>
+                        <button class="btn btn-small btn-secondary" onclick="window.handleRecoveryDayOverride('${note.source}')" aria-label="Prefer normal workout">
+                            Prefer Normal Workout
+                        </button>
+                    </div>
+                `;
+            } else {
+                // Regular note
+                notesHTML += `
+                    <div class="plan-note plan-note-${note.source || 'default'}" data-note-id="${note.source || 'default'}">
+                        <span class="note-icon">${this.getNoteIcon(note.source)}</span>
+                        <span class="note-text">${note.text || note}</span>
+                    </div>
+                `;
+            }
+        });
+
+        return notesHTML ? `<div class="plan-notes">${notesHTML}</div>` : '';
+    }
+
+    /**
+     * Get icon for note source
+     * @param {string} source - Note source
+     * @returns {string} Icon emoji
+     */
+    getNoteIcon(source) {
+        const icons = {
+            'load': '⚖️',
+            'recovery_simple_mode': '🛌',
+            'mode': '🎯',
+            'time': '⏱️',
+            'readiness': '💪',
+            'default': 'ℹ️'
+        };
+        return icons[source] || icons.default;
     }
 
     /**
@@ -733,6 +796,66 @@ class DashboardRenderer {
         return this.dashboardModes[mode];
     }
 }
+
+// Global handler for recovery day override
+window.handleRecoveryDayOverride = function(noteId) {
+    try {
+        const logger = window.SafeLogger || console;
+        const storageManager = window.StorageManager;
+        const authManager = window.AuthManager;
+        const expertCoordinator = window.ExpertCoordinator;
+
+        if (!expertCoordinator) {
+            logger.error('ExpertCoordinator not available');
+            window.showErrorNotification?.('Unable to override recovery day. Please try again.', 'error');
+            return;
+        }
+
+        // Get user preference
+        const userId = authManager?.getCurrentUsername();
+        if (userId && storageManager) {
+            // Store preference: user prefers normal workout over recovery day
+            storageManager.savePreferences?.(userId, {
+                recoveryDayPreference: 'override'
+            }).catch(err => {
+                logger.warn('Failed to save recovery day preference', err);
+            });
+        }
+
+        // Regenerate workout plan without recovery day recommendation
+        const context = expertCoordinator.getCurrentContext?.() || {};
+        context.recoveryDayOverride = true;
+        context.recommendRecoveryDay = false;
+
+        // Regenerate plan
+        expertCoordinator.planTodayFallback(context).then(newPlan => {
+            // Update UI with new plan
+            if (window.DashboardRenderer) {
+                const dashboard = window.DashboardRenderer;
+                const simple = context.preferences?.trainingMode === 'simple';
+                const planPreview = dashboard.generateWorkoutPreview(newPlan, simple);
+                
+                // Update workout preview in DOM
+                const previewElement = document.querySelector('.workout-preview');
+                if (previewElement) {
+                    previewElement.outerHTML = planPreview;
+                }
+            }
+
+            // Show success message
+            window.showSuccessNotification?.('Workout plan updated. Normal workout plan generated.', 'success');
+            
+            logger.info('RECOVERY_DAY_OVERRIDDEN', { userId, noteId });
+        }).catch(error => {
+            logger.error('Failed to regenerate workout plan', error);
+            window.showErrorNotification?.('Failed to update workout plan. Please try again.', 'error');
+        });
+    } catch (error) {
+        const logger = window.SafeLogger || console;
+        logger.error('Recovery day override failed', error);
+        window.showErrorNotification?.('An error occurred. Please try again.', 'error');
+    }
+};
 
 // Create global instance
 window.DashboardRenderer = new DashboardRenderer();
