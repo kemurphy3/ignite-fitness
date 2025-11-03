@@ -8,7 +8,7 @@ const {
   successResponse 
 } = require('./utils/admin-auth');
 
-const { getNeonClient } = require('./utils/connection-pool-simple');
+const { getNeonClient } = require('./utils/connection-pool');
 const { 
   validatePaginationParams, 
   createPaginatedResponse, 

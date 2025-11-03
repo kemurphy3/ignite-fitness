@@ -72,3 +72,6 @@ jspm_packages/
 # TernJS port file
 .tern-port
 node_modules
+
+# Archive directory (completed evaluation scripts)
+archive/

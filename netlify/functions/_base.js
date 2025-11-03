@@ -1,4 +1,4 @@
-const { getNeonClient } = require('./utils/connection-pool-simple');
+const { getNeonClient } = require('./utils/connection-pool');
 const crypto = require('crypto');
 
 // Use centralized connection pooling

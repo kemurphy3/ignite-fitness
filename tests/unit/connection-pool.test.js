@@ -2,7 +2,7 @@
 // Unit tests for connection pooling utilities
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { getNeonClient, healthCheck, getStats } from '../../netlify/functions/utils/connection-pool-simple.js';
+import { getNeonClient, healthCheck, getStats } from '../../netlify/functions/utils/connection-pool.js';
 
 // Mock the Neon client
 vi.mock('@neondatabase/serverless', () => ({

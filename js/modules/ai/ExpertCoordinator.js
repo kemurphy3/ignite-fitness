@@ -16,6 +16,10 @@ class ExpertCoordinator {
         // Initialize memoized coordinator for performance
         this.memoizedCoordinator = new MemoizedCoordinator();
         
+        // T2B-3: Initialize validation cache for performance optimization
+        this.validationCache = new Map();
+        this.validationCacheMaxSize = 100;
+        
         this.experts = {
             strength: new StrengthCoach(),
             sports: new SportsCoach(),
@@ -105,14 +109,89 @@ class ExpertCoordinator {
      */
     async planTodayFallback(context) {
         try {
-            // Validate and sanitize context data with conservative fallbacks
-            if (this.dataValidator) {
-                context = this.dataValidator.validateContext(context);
-                this.logger.info('Context validated with conservative fallbacks', {
-                    readiness: context.readinessScore,
-                    atl7: context.atl7,
-                    dataConfidence: context.dataConfidence
-                });
+            // T2B-3: Mandatory context validation with graceful degradation
+            // All user inputs MUST flow through validation pipeline
+            let validationResult = null;
+            let validationCacheKey = null;
+            
+            // Generate cache key for validation result caching
+            if (context) {
+                validationCacheKey = this.generateValidationCacheKey(context);
+                // Check cache first to reduce dependency calls
+                if (this.validationCache && this.validationCache.has(validationCacheKey)) {
+                    validationResult = this.validationCache.get(validationCacheKey);
+                    context = validationResult.validatedContext;
+                    this.logger.debug('Using cached validation result');
+                } else {
+                    // Perform validation with graceful degradation
+                    if (this.dataValidator && typeof this.dataValidator.validateContext === 'function') {
+                        try {
+                            validationResult = {
+                                validatedContext: this.dataValidator.validateContext(context),
+                                isValid: true,
+                                errors: [],
+                                warnings: []
+                            };
+                            context = validationResult.validatedContext;
+                            
+                            // Cache successful validation
+                            if (!this.validationCache) {
+                                this.validationCache = new Map();
+                                // Limit cache size to prevent memory issues
+                                this.validationCacheMaxSize = 100;
+                            }
+                            if (this.validationCache.size >= this.validationCacheMaxSize) {
+                                // Remove oldest entry (FIFO)
+                                const firstKey = this.validationCache.keys().next().value;
+                                this.validationCache.delete(firstKey);
+                            }
+                            this.validationCache.set(validationCacheKey, validationResult);
+                            
+                            this.logger.info('Context validated with conservative fallbacks', {
+                                readiness: context.readinessScore,
+                                atl7: context.atl7,
+                                dataConfidence: context.dataConfidence
+                            });
+                        } catch (validationError) {
+                            // Graceful degradation: use conservative defaults if validator fails
+                            this.logger.warn('Validation failed, using conservative defaults', validationError);
+                            validationResult = {
+                                validatedContext: this.applyConservativeDefaults(context),
+                                isValid: false,
+                                errors: [validationError.message || 'Validation error'],
+                                warnings: ['Using conservative defaults due to validation failure']
+                            };
+                            context = validationResult.validatedContext;
+                        }
+                    } else {
+                        // Graceful degradation: validator unavailable, use conservative defaults
+                        this.logger.warn('DataValidator unavailable, using conservative defaults');
+                        validationResult = {
+                            validatedContext: this.applyConservativeDefaults(context),
+                            isValid: false,
+                            errors: [],
+                            warnings: ['Validation unavailable, using conservative defaults']
+                        };
+                        context = validationResult.validatedContext;
+                    }
+                }
+                
+                // Store validation metadata in context for transparency
+                context._validationMetadata = {
+                    isValid: validationResult?.isValid ?? false,
+                    errors: validationResult?.errors ?? [],
+                    warnings: validationResult?.warnings ?? [],
+                    cached: validationResult !== null && this.validationCache?.has(validationCacheKey)
+                };
+                
+                // Log validation issues if any
+                if (validationResult && (!validationResult.isValid || validationResult.warnings.length > 0)) {
+                    this.logger.info('VALIDATION_WARNINGS', {
+                        isValid: validationResult.isValid,
+                        warnings: validationResult.warnings,
+                        errors: validationResult.errors
+                    });
+                }
             }
             
             // Build enhanced context with load metrics and confidence
@@ -696,6 +775,9 @@ class ExpertCoordinator {
         }
 
         // Apply recovery day recommendations
+        const isSimpleMode = context.preferences?.trainingMode === 'simple';
+        let isRecoveryDayMinimal = false;
+        
         if (context.recommendRecoveryDay) {
             // Replace main sets with recovery exercises
             plan.mainSets = [{
@@ -713,15 +795,38 @@ class ExpertCoordinator {
                 rationale: 'Promote recovery and mobility'
             }];
             
+            // T2B-4: Detect when recovery day creates minimal workout in Simple Mode
+            isRecoveryDayMinimal = isSimpleMode && plan.mainSets.length <= 1;
+            
             plan.notes.push({
                 source: 'load',
                 text: 'Recovery day recommended due to load spike - focus on mobility and light movement'
             });
+            
+            // T2B-4: Add user notification and override option for Simple Mode + Recovery Day collision
+            if (isRecoveryDayMinimal) {
+                plan.notes.push({
+                    source: 'recovery_simple_mode',
+                    type: 'notification',
+                    text: 'Recovery day recommended - light activity planned',
+                    overrideAvailable: true,
+                    overrideMessage: 'You can override with a normal workout if preferred'
+                });
+                
+                // Store recovery day preference prompt flag
+                context.showRecoveryDayPreference = true;
+                
+                this.logger.info('RECOVERY_DAY_SIMPLE_MODE_COLLISION', {
+                    isSimpleMode: isSimpleMode,
+                    isRecoveryDay: true,
+                    workoutMinimal: isRecoveryDayMinimal,
+                    message: 'Recovery day creates minimal workout in Simple Mode'
+                });
+            }
         }
 
         // Simple mode: limit to 1-2 blocks
-        const isSimpleMode = context.preferences?.trainingMode === 'simple';
-        if (isSimpleMode) {
+        if (isSimpleMode && !context.recommendRecoveryDay) {
             // Keep only warmup and main in simple mode
             plan.accessories = [];
             plan.finishers = plan.finishers?.slice(0, 1) || []; // One finisher only
@@ -1192,6 +1297,64 @@ class ExpertCoordinator {
         proxy *= (0.5 + dataConfidence.recent7days * 0.5);
 
         return Math.max(0.5, Math.min(1.2, proxy));
+    }
+    
+    /**
+     * T2B-3: Generate cache key for validation result caching
+     * @param {Object} context - User context
+     * @returns {string} Cache key
+     */
+    generateValidationCacheKey(context) {
+        // Create deterministic key from context fields that affect validation
+        const keyFields = {
+            readiness: context.readiness || context.readinessScore,
+            atl7: context.atl7,
+            ctl28: context.ctl28,
+            dataConfidence: context.dataConfidence?.recent7days || 0,
+            goals: context.goals,
+            userId: context.user?.id || context.userId
+        };
+        
+        // Create hash-like string from key fields
+        return JSON.stringify(keyFields);
+    }
+    
+    /**
+     * T2B-3: Apply conservative defaults when validation fails or is unavailable
+     * @param {Object} context - Original context
+     * @returns {Object} Context with conservative defaults
+     */
+    applyConservativeDefaults(context) {
+        const safeContext = { ...context };
+        
+        // Ensure readiness is valid (default to moderate 7)
+        if (!safeContext.readiness || isNaN(safeContext.readiness) || safeContext.readiness < 1 || safeContext.readiness > 10) {
+            safeContext.readiness = 7;
+            safeContext.readinessScore = 7;
+        }
+        
+        // Ensure load values are non-negative
+        safeContext.atl7 = Math.max(0, safeContext.atl7 || 0);
+        safeContext.ctl28 = Math.max(0, safeContext.ctl28 || 0);
+        
+        // Set conservative data confidence if missing
+        if (!safeContext.dataConfidence || typeof safeContext.dataConfidence !== 'object') {
+            safeContext.dataConfidence = {
+                recent7days: 0.5, // Moderate confidence
+                recent30days: 0.6
+            };
+        }
+        
+        // Set conservative intensity scale
+        safeContext.intensityScale = safeContext.intensityScale || 0.8;
+        
+        // Ensure volume scale is reasonable
+        safeContext.volumeScale = Math.max(0.5, Math.min(1.0, safeContext.volumeScale || 0.8));
+        
+        // Mark as using conservative defaults
+        safeContext._conservativeDefaults = true;
+        
+        return safeContext;
     }
 }
 

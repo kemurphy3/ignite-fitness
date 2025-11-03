@@ -96,10 +96,8 @@ class ExerciseAdapter {
             const exerciseRules = substitutionRules[exerciseName.toLowerCase()];
             
             if (!exerciseRules) {
-                return {
-                    alternatives: [],
-                    message: `No substitutions available for ${exerciseName}`
-                };
+                // Fallback: Provide generic alternatives when specific ones don't exist
+                return this.getFallbackAlternatives(exerciseName, painLocation, constraints);
             }
             
             // Filter by dislikes
@@ -116,6 +114,11 @@ class ExerciseAdapter {
             // Apply constraints
             if (constraints.equipment || constraints.time) {
                 alternatives = this.applyConstraints(alternatives, constraints);
+            }
+            
+            // If no alternatives after filtering, use fallback system
+            if (alternatives.length === 0) {
+                return this.getFallbackAlternatives(exerciseName, painLocation, constraints);
             }
             
             // Return top 2 alternatives
@@ -834,6 +837,241 @@ class ExerciseAdapter {
                 ? progressionStatus.rpe.reduce((sum, rpe) => sum + rpe, 0) / progressionStatus.rpe.length 
                 : null
         };
+    }
+
+    /**
+     * Get fallback alternatives when no specific alternatives exist
+     * @param {string} exerciseName - Original exercise name
+     * @param {string} painLocation - Pain location if any
+     * @param {Object} constraints - Additional constraints
+     * @returns {Object} Fallback alternatives with rationale
+     */
+    getFallbackAlternatives(exerciseName, painLocation = null, constraints = {}) {
+        try {
+            // Progressive fallback chain: specific → body-part → generic → bodyweight
+            const fallbackChain = this.getFallbackChain(exerciseName, painLocation, constraints);
+            
+            // Log fallback decision for transparency
+            this.logger.info('EXERCISE_FALLBACK', {
+                original: exerciseName,
+                painLocation: painLocation,
+                fallbackUsed: fallbackChain.level,
+                replacements: fallbackChain.alternatives.map(a => a.name)
+            });
+            
+            return {
+                alternatives: fallbackChain.alternatives,
+                message: fallbackChain.message,
+                fallbackReason: fallbackChain.reason,
+                fallbackLevel: fallbackChain.level
+            };
+        } catch (error) {
+            this.logger.error('Failed to get fallback alternatives', error);
+            // Ultimate fallback: bodyweight generic exercises
+            return {
+                alternatives: this.getGenericBodyweightAlternatives(),
+                message: 'Using generic bodyweight alternatives for safety',
+                fallbackReason: 'Error in fallback system',
+                fallbackLevel: 'generic_bodyweight'
+            };
+        }
+    }
+    
+    /**
+     * Get progressive fallback chain for exercise alternatives
+     * @param {string} exerciseName - Original exercise name
+     * @param {string} painLocation - Pain location if any
+     * @param {Object} constraints - Additional constraints
+     * @returns {Object} Fallback chain with alternatives
+     */
+    getFallbackChain(exerciseName, painLocation, constraints) {
+        // Level 1: Body-part-specific fallback
+        if (painLocation) {
+            const bodyPartFallbacks = this.getBodyPartFallback(painLocation);
+            if (bodyPartFallbacks.length > 0) {
+                return {
+                    alternatives: bodyPartFallbacks,
+                    message: `Safe alternatives for ${painLocation} injury`,
+                    reason: `No specific alternatives found, using ${painLocation}-safe exercises`,
+                    level: 'body_part_specific'
+                };
+            }
+        }
+        
+        // Level 2: Generic injury-safe exercises
+        const genericSafe = this.getGenericSafeAlternatives();
+        if (genericSafe.length > 0) {
+            return {
+                alternatives: genericSafe,
+                message: 'Generic safe alternatives provided',
+                reason: 'Using injury-safe exercise database',
+                level: 'generic_safe'
+            };
+        }
+        
+        // Level 3: Bodyweight alternatives
+        const bodyweightAlternatives = this.getGenericBodyweightAlternatives();
+        return {
+            alternatives: bodyweightAlternatives,
+            message: 'Bodyweight alternatives provided',
+            reason: 'Using bodyweight exercise database for maximum safety',
+            level: 'bodyweight'
+        };
+    }
+    
+    /**
+     * Get body-part-specific fallback exercises
+     * @param {string} bodyPart - Injured body part
+     * @returns {Array} Safe alternatives for that body part
+     */
+    getBodyPartFallback(bodyPart) {
+        const fallbackMap = {
+            'knee': [
+                {
+                    name: 'Seated Leg Press (light)',
+                    rationale: 'Knee-safe lower body training with reduced knee stress',
+                    restAdjustment: 0,
+                    volumeAdjustment: 0.7
+                },
+                {
+                    name: 'Upper Body Focus Session',
+                    rationale: 'Avoiding lower body while allowing upper body training',
+                    restAdjustment: -15,
+                    volumeAdjustment: 1.0
+                },
+                {
+                    name: 'Seated Cable Exercises',
+                    rationale: 'Seated position reduces knee loading',
+                    restAdjustment: 0,
+                    volumeAdjustment: 0.8
+                }
+            ],
+            'shoulder': [
+                {
+                    name: 'Lower Body Focus Session',
+                    rationale: 'Avoiding shoulder movements while maintaining lower body training',
+                    restAdjustment: 0,
+                    volumeAdjustment: 1.0
+                },
+                {
+                    name: 'Core Stability Work',
+                    rationale: 'Core training that doesn\'t stress shoulders',
+                    restAdjustment: -15,
+                    volumeAdjustment: 1.0
+                },
+                {
+                    name: 'Leg Press',
+                    rationale: 'Lower body training without upper body involvement',
+                    restAdjustment: 0,
+                    volumeAdjustment: 1.0
+                }
+            ],
+            'back': [
+                {
+                    name: 'Supported Row (machine)',
+                    rationale: 'Back-supported position reduces spinal loading',
+                    restAdjustment: 0,
+                    volumeAdjustment: 0.8
+                },
+                {
+                    name: 'Seated Exercises',
+                    rationale: 'Seated position provides back support',
+                    restAdjustment: -15,
+                    volumeAdjustment: 0.8
+                },
+                {
+                    name: 'Flexibility and Mobility Work',
+                    rationale: 'Gentle movement without loading',
+                    restAdjustment: -30,
+                    volumeAdjustment: 0.7
+                }
+            ],
+            'elbow': [
+                {
+                    name: 'Lower Body Focus Session',
+                    rationale: 'Avoiding upper body movements while maintaining lower body training',
+                    restAdjustment: 0,
+                    volumeAdjustment: 1.0
+                },
+                {
+                    name: 'Core and Leg Exercises',
+                    rationale: 'Exercises that don\'t stress elbow',
+                    restAdjustment: 0,
+                    volumeAdjustment: 1.0
+                }
+            ],
+            'wrist': [
+                {
+                    name: 'Lower Body and Core Focus',
+                    rationale: 'Avoiding gripping and wrist stress',
+                    restAdjustment: 0,
+                    volumeAdjustment: 1.0
+                },
+                {
+                    name: 'Machine-based Leg Exercises',
+                    rationale: 'No gripping required',
+                    restAdjustment: 0,
+                    volumeAdjustment: 1.0
+                }
+            ]
+        };
+        
+        const bodyPartLower = (bodyPart || '').toLowerCase();
+        return fallbackMap[bodyPartLower] || [];
+    }
+    
+    /**
+     * Get generic safe alternatives when no body-part-specific ones exist
+     * @returns {Array} Generic safe alternatives
+     */
+    getGenericSafeAlternatives() {
+        return [
+            {
+                name: 'Walking or Light Cardio',
+                rationale: 'Low-impact cardiovascular activity suitable for most injuries',
+                restAdjustment: -30,
+                volumeAdjustment: 0.6
+            },
+            {
+                name: 'Gentle Mobility Work',
+                rationale: 'Movement without loading, promotes recovery',
+                restAdjustment: -30,
+                volumeAdjustment: 0.5
+            },
+            {
+                name: 'Bodyweight Core Exercises',
+                rationale: 'Core training with minimal joint stress',
+                restAdjustment: -15,
+                volumeAdjustment: 0.7
+            }
+        ];
+    }
+    
+    /**
+     * Get generic bodyweight alternatives (ultimate fallback)
+     * @returns {Array} Bodyweight alternatives
+     */
+    getGenericBodyweightAlternatives() {
+        return [
+            {
+                name: 'Bodyweight Squats (if knee allows)',
+                rationale: 'Basic bodyweight movement, modify depth as needed',
+                restAdjustment: 0,
+                volumeAdjustment: 0.8
+            },
+            {
+                name: 'Plank Variations',
+                rationale: 'Core stability without loading',
+                restAdjustment: -15,
+                volumeAdjustment: 0.7
+            },
+            {
+                name: 'Gentle Stretching Routine',
+                rationale: 'Maintains mobility without stress',
+                restAdjustment: -30,
+                volumeAdjustment: 0.5
+            }
+        ];
     }
 
     /**

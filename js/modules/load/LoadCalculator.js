@@ -150,14 +150,17 @@ class LoadCalculator {
             });
         }
 
-        const totalLoad = volumeLoad + intensityLoad;
+        const totalLoad = Math.max(0, volumeLoad + intensityLoad);
 
+        // Prevent division by zero in ratio calculations
+        const safeTotalLoad = totalLoad > 0 ? totalLoad : 1;
+        
         return {
             total: totalLoad,
-            volume: volumeLoad,
-            intensity: intensityLoad,
-            volumeRatio: volumeLoad / totalLoad,
-            intensityRatio: intensityLoad / totalLoad
+            volume: Math.max(0, volumeLoad),
+            intensity: Math.max(0, intensityLoad),
+            volumeRatio: totalLoad > 0 ? Math.max(0, Math.min(1, volumeLoad / safeTotalLoad)) : 0,
+            intensityRatio: totalLoad > 0 ? Math.max(0, Math.min(1, intensityLoad / safeTotalLoad)) : 0
         };
     }
 
@@ -215,8 +218,15 @@ class LoadCalculator {
         const userLevel = this.getUserTrainingLevel();
         const thresholds = this.loadThresholds[userLevel];
         
-        const loadRatio = totalLoad / thresholds.weeklyLoad;
-        const dailyRatio = averageDailyLoad / thresholds.dailyLoad;
+        // Bounds checking: ensure thresholds are positive and totalLoad/averageDailyLoad are non-negative
+        const safeWeeklyLoad = Math.max(1, thresholds.weeklyLoad);
+        const safeDailyLoad = Math.max(1, thresholds.dailyLoad);
+        const safeTotalLoad = Math.max(0, totalLoad);
+        const safeAverageDailyLoad = Math.max(0, averageDailyLoad);
+        
+        // Cap ratios to prevent extreme values
+        const loadRatio = Math.min(Math.max(0.1, safeTotalLoad / safeWeeklyLoad), 10.0);
+        const dailyRatio = Math.min(Math.max(0.1, safeAverageDailyLoad / safeDailyLoad), 10.0);
 
         if (loadRatio > 1.2 || dailyRatio > 1.5) {
             return {
@@ -388,9 +398,16 @@ class LoadCalculator {
             // Calculate recovery debt
             const recoveryDebt = this.calculateRecoveryDebt(activities);
             
-            // Combine loads
-            const totalLoad = weeklyLoad.totalLoad + externalLoad.totalLoad;
-            const combinedRecommendation = this.getCombinedRecommendation(weeklyLoad, externalLoad, recoveryDebt);
+            // Combine loads with bounds checking
+            const safeWeeklyLoad = Math.max(0, weeklyLoad?.totalLoad || 0);
+            const safeExternalLoad = Math.max(0, externalLoad?.totalLoad || 0);
+            const totalLoad = safeWeeklyLoad + safeExternalLoad;
+            
+            const combinedRecommendation = this.getCombinedRecommendation(
+                { ...weeklyLoad, totalLoad: safeWeeklyLoad },
+                { ...externalLoad, totalLoad: safeExternalLoad },
+                recoveryDebt
+            );
             
             return {
                 internal: weeklyLoad,
@@ -437,12 +454,15 @@ class LoadCalculator {
             dailyLoads[date] += load;
         });
 
-        return {
-            totalLoad,
-            loadByType,
-            dailyLoads,
-            averageDailyLoad: totalLoad / 7
-        };
+            // Ensure non-negative total load and safe division
+            const safeTotalLoad = Math.max(0, totalLoad);
+            
+            return {
+                totalLoad: safeTotalLoad,
+                loadByType,
+                dailyLoads,
+                averageDailyLoad: Math.max(0, safeTotalLoad / 7)
+            };
     }
 
     /**
@@ -669,10 +689,15 @@ class LoadCalculator {
             const sessionLoad = this.calculateWeeklyLoad(recentSessions).totalLoad;
             const activityLoad = this.calculateExternalLoad(recentActivities).totalLoad;
             
-            return sessionLoad + activityLoad;
+            // Ensure non-negative values
+            const safeSessionLoad = Math.max(0, sessionLoad || 0);
+            const safeActivityLoad = Math.max(0, activityLoad || 0);
+            
+            return Math.max(0, safeSessionLoad + safeActivityLoad);
         } catch (error) {
             this.logger.error('Failed to calculate 7-day average', error);
-            return 0;
+            // Return conservative default instead of 0 to prevent division issues downstream
+            return 1;
         }
     }
 
@@ -683,11 +708,16 @@ class LoadCalculator {
      * @returns {Object} Load spike detection
      */
     detectLoadSpike(currentLoad, sevenDayAverage) {
-        if (sevenDayAverage === 0) {
+        // Bounds checking: ensure non-negative values
+        const safeCurrentLoad = Math.max(0, currentLoad || 0);
+        const safeSevenDayAverage = Math.max(0, sevenDayAverage || 0);
+        
+        if (safeSevenDayAverage === 0) {
             return { isSpike: false, ratio: 1.0, severity: 'none' };
         }
         
-        const ratio = currentLoad / sevenDayAverage;
+        // Cap ratio to prevent extreme values that could cause issues
+        const ratio = Math.min(Math.max(0.1, safeCurrentLoad / safeSevenDayAverage), 10.0);
         
         let severity = 'none';
         if (ratio > 1.5) {
@@ -734,8 +764,14 @@ class LoadCalculator {
         const userLevel = this.getUserTrainingLevel();
         const thresholds = this.loadThresholds[userLevel];
         
-        // Calculate load ratio
-        const loadRatio = sevenDayAverage > 0 ? currentLoad / sevenDayAverage : 1.0;
+        // Bounds checking: ensure all values are non-negative
+        const safeCurrentLoad = Math.max(0, currentLoad || 0);
+        const safeSevenDayAverage = Math.max(0, sevenDayAverage || 0);
+        
+        // Calculate load ratio with bounds checking
+        // Use safe default of 1.0 if average is 0, and cap ratio to prevent extreme values
+        const rawRatio = safeSevenDayAverage > 0 ? safeCurrentLoad / safeSevenDayAverage : 1.0;
+        const loadRatio = Math.min(Math.max(0.1, rawRatio), 10.0);
         
         // Base recommendations
         let intensity = 1.0;
@@ -771,10 +807,23 @@ class LoadCalculator {
         }
         
         // Additional adjustments based on absolute load
-        if (currentLoad > thresholds.weeklyLoad * 1.2) {
+        // Ensure thresholds.weeklyLoad is positive before comparison
+        const safeThreshold = Math.max(1, thresholds.weeklyLoad);
+        if (safeCurrentLoad > safeThreshold * 1.2) {
             intensity *= 0.8;
             volume *= 0.7;
             message = 'High absolute load - reduced intensity and volume';
+        }
+        
+        // Log if bounds checking was triggered (for monitoring)
+        if (currentLoad !== safeCurrentLoad || sevenDayAverage !== safeSevenDayAverage) {
+            this.logger.debug('LOAD_BOUNDS_CHECK', {
+                originalCurrentLoad: currentLoad,
+                originalAverage: sevenDayAverage,
+                safeCurrentLoad: safeCurrentLoad,
+                safeAverage: safeSevenDayAverage,
+                loadRatio: loadRatio
+            });
         }
         
         return {

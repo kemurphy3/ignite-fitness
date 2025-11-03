@@ -1,7 +1,7 @@
 // verify-ticket8-pagination.js
 // Comprehensive verification for Ticket 8: Add Pagination
 
-const { getNeonClient } = require('./netlify/functions/utils/connection-pool-simple');
+const { getNeonClient } = require('./netlify/functions/utils/connection-pool');
 const { 
   validatePaginationParams, 
   createPaginatedResponse, 
