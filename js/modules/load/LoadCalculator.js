@@ -129,6 +129,11 @@ class LoadCalculator {
         let volumeLoad = 0;
         let intensityLoad = 0;
 
+        // Check if this is a soccer-shape session
+        const isSoccerShape = session.category === 'soccer_shape' || 
+                             session.tags?.includes('soccer_shape') ||
+                             session.subcategory === 'soccer_shape';
+
         if (session.exercises) {
             session.exercises.forEach(exercise => {
                 // Volume load: sets × reps × weight
@@ -138,6 +143,21 @@ class LoadCalculator {
                 // Intensity factor (RPE/10)
                 const intensityFactor = exercise.rpe / 10;
                 intensityLoad += exerciseVolume * intensityFactor;
+
+                // Soccer-shape specific adjustments
+                if (isSoccerShape) {
+                    // High-intensity intervals: RPE × minutes × 1.3 multiplier
+                    if (exercise.intensity === 'Z4' || exercise.intensity === 'Z5') {
+                        intensityLoad *= 1.3;
+                    }
+
+                    // Change of direction work: Base load × 1.2 neuromotor factor
+                    if (exercise.tags?.includes('change_of_direction') || 
+                        exercise.tags?.includes('COD') ||
+                        exercise.tags?.includes('agility')) {
+                        intensityLoad *= 1.2;
+                    }
+                }
             });
         }
 
@@ -148,6 +168,14 @@ class LoadCalculator {
                 volumeLoad += activityLoad;
                 intensityLoad += activityLoad;
             });
+        }
+
+        // Soccer-shape specific load calculation for structured workouts
+        if (isSoccerShape && session.structure) {
+            const soccerLoad = this.calculateSoccerShapeLoad(session);
+            if (soccerLoad > 0) {
+                intensityLoad = Math.max(intensityLoad, soccerLoad);
+            }
         }
 
         const totalLoad = Math.max(0, volumeLoad + intensityLoad);
@@ -837,6 +865,63 @@ class LoadCalculator {
                 volumeReduction: Math.round((1 - volume) * 100)
             }
         };
+    }
+
+    /**
+     * Calculate soccer-shape specific load for structured workouts
+     * @param {Object} session - Soccer-shape session with structure
+     * @returns {number} Soccer-shape load score
+     */
+    calculateSoccerShapeLoad(session) {
+        if (!session.structure || !Array.isArray(session.structure)) {
+            return 0;
+        }
+
+        let totalLoad = 0;
+        const zoneMultipliers = {
+            Z1: 1.0,
+            Z2: 2.0,
+            Z3: 4.0,
+            Z4: 7.0,
+            Z5: 10.0
+        };
+
+        session.structure.forEach(block => {
+            if (block.block_type === 'main' && block.intensity) {
+                const intensity = block.intensity;
+                const zone = intensity.includes('Z') ? intensity.split('-')[0] : 'Z3';
+                const multiplier = zoneMultipliers[zone] || 4.0;
+
+                // Calculate work duration
+                let workMinutes = 0;
+                if (block.sets && block.work_duration) {
+                    workMinutes = (block.sets * block.work_duration) / 60;
+                } else if (block.duration) {
+                    workMinutes = block.duration;
+                }
+
+                // Base load calculation
+                let blockLoad = workMinutes * multiplier;
+
+                // High-intensity intervals: RPE × minutes × 1.3 multiplier
+                if (zone === 'Z4' || zone === 'Z5') {
+                    blockLoad *= 1.3;
+                }
+
+                // Change of direction work: Base load × 1.2 neuromotor factor
+                if (block.description?.toLowerCase().includes('shuttle') ||
+                    block.description?.toLowerCase().includes('agility') ||
+                    block.description?.toLowerCase().includes('change of direction') ||
+                    block.description?.toLowerCase().includes('COD')) {
+                    blockLoad *= 1.2;
+                }
+
+                totalLoad += blockLoad;
+            }
+        });
+
+        // Recovery intervals excluded from load calculation (already handled by excluding Z1 rest blocks)
+        return Math.round(totalLoad * 10) / 10;
     }
 
     /**

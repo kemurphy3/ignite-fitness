@@ -33,7 +33,8 @@ class DatabaseSeeder {
         const workoutFiles = [
             'workouts_running.json',
             'workouts_cycling.json',
-            'workouts_swimming.json'
+            'workouts_swimming.json',
+            'soccer_shape_workouts.json'
         ];
 
         let totalWorkouts = 0;
@@ -42,9 +43,10 @@ class DatabaseSeeder {
             const filePath = path.join(this.seedDataPath, file);
             const data = JSON.parse(await fs.readFile(filePath, 'utf-8'));
 
-            console.log(`  📄 Processing ${file} (${data.workouts.length} workouts)`);
+            const workoutArray = data.workouts || [];
+            console.log(`  📄 Processing ${file} (${workoutArray.length} workouts)`);
 
-            for (const workout of data.workouts) {
+            for (const workout of workoutArray) {
                 try {
                     // Insert workout template
                     await this.sql`

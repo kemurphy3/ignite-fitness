@@ -145,11 +145,88 @@ class ExerciseAdapter {
     }
 
     /**
-     * Get substitution rules database
+     * Get substitution rules database for exercises and soccer-shape workouts
      * @returns {Object} Substitution rules
      */
     getSubstitutionRules() {
         return {
+            // Soccer-shape workout substitutions
+            'track_200m_intervals': {
+                alternatives: [
+                    {
+                        name: 'Bike 30/30s Intervals',
+                        rationale: 'Similar VO2 max stimulus, cycling modality',
+                        modality: 'cycling',
+                        loadEquivalence: 0.95,
+                        timeFactor: 1.2
+                    },
+                    {
+                        name: 'Swim 50m Intervals',
+                        rationale: 'Similar anaerobic capacity, aquatic modality',
+                        modality: 'swimming',
+                        loadEquivalence: 0.90,
+                        timeFactor: 1.5
+                    },
+                    {
+                        name: 'Rowing 250m Intervals',
+                        rationale: 'Full-body anaerobic power, indoor alternative',
+                        modality: 'rowing',
+                        loadEquivalence: 0.92,
+                        timeFactor: 1.3
+                    }
+                ]
+            },
+            'field_shuttles': {
+                alternatives: [
+                    {
+                        name: 'Agility Ladder Drills',
+                        rationale: 'Similar change of direction, neuromotor coordination',
+                        modality: 'running',
+                        loadEquivalence: 0.85,
+                        timeFactor: 0.9
+                    },
+                    {
+                        name: 'Cone Drills',
+                        rationale: 'COD work, similar agility stimulus',
+                        modality: 'running',
+                        loadEquivalence: 0.88,
+                        timeFactor: 1.0
+                    },
+                    {
+                        name: 'Lateral Shuttle Runs',
+                        rationale: 'Similar movement pattern, lateral emphasis',
+                        modality: 'running',
+                        loadEquivalence: 0.90,
+                        timeFactor: 1.0
+                    }
+                ]
+            },
+            'hill_sprints': {
+                alternatives: [
+                    {
+                        name: 'Bike Hill Intervals',
+                        rationale: 'Similar power development, cycling modality',
+                        modality: 'cycling',
+                        loadEquivalence: 0.93,
+                        timeFactor: 1.2
+                    },
+                    {
+                        name: 'Rowing Sprints',
+                        rationale: 'Full-body power, indoor alternative',
+                        modality: 'rowing',
+                        loadEquivalence: 0.90,
+                        timeFactor: 1.1
+                    },
+                    {
+                        name: 'Stadium Steps',
+                        rationale: 'Similar power stimulus, vertical emphasis',
+                        modality: 'running',
+                        loadEquivalence: 0.95,
+                        timeFactor: 1.0
+                    }
+                ]
+            },
+            // Existing exercise substitutions
             'bulgarian split squat': {
                 alternatives: [
                     {
@@ -284,6 +361,42 @@ class ExerciseAdapter {
             }
             return true;
         });
+    }
+
+    /**
+     * Get soccer-shape substitution rules
+     * @returns {Object} Soccer-shape substitution rules
+     */
+    getSoccerShapeSubstitutions() {
+        return {
+            // Acceleration substitutions
+            acceleration: {
+                track: ['10x20m sprints', '6x30m builds', '8x15m accelerations'],
+                field: ['5-10-5 shuttles', '20m sprint touches', 'reactive starts'],
+                indoor: ['resistance band starts', 'wall drives', 'A-skips']
+            },
+
+            // COD substitutions
+            COD: {
+                track: ['lane weaving', 'cone zigzags', 'curve sprints'],
+                field: ['box drills', 'T-test repeats', '3-cone drills'],
+                indoor: ['agility ladder', 'mirror drills', 'reaction balls']
+            },
+
+            // Cross-modal equivalents
+            cross_modal: {
+                'track_200m_intervals': {
+                    bike: '30/30s power intervals x12',
+                    swim: '50m intervals on 10s rest x12',
+                    rowing: '250m intervals x10'
+                },
+                'field_shuttles': {
+                    bike: 'standing sprint intervals',
+                    indoor: 'agility ladder patterns',
+                    bodyweight: 'burpee lateral hops'
+                }
+            }
+        };
     }
 
     /**

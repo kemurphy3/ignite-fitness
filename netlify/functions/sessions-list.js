@@ -124,6 +124,28 @@ exports.handler = async (event) => {
       queryParams.push(endDateObj);
     }
 
+    // Add tag filtering
+    const tags = requestParams.tags;
+    const exclude_tags = requestParams.exclude_tags;
+
+    if (tags) {
+      const requiredTags = tags.split(',').map(t => t.trim()).filter(t => t);
+      if (requiredTags.length > 0) {
+        // Check if payload contains tags array that includes all required tags
+        whereConditions.push(`payload->'tags' @> $${queryParams.length + 1}::jsonb`);
+        queryParams.push(JSON.stringify(requiredTags));
+      }
+    }
+
+    if (exclude_tags) {
+      const excludedTags = exclude_tags.split(',').map(t => t.trim()).filter(t => t);
+      if (excludedTags.length > 0) {
+        // Check if payload does NOT contain any excluded tags
+        whereConditions.push(`NOT (payload->'tags' ?| $${queryParams.length + 1})`);
+        queryParams.push(excludedTags);
+      }
+    }
+
     // Add cursor-based pagination condition
     const cursorCondition = buildCursorCondition(pagination.cursor, 'start_at DESC, id ASC');
     if (cursorCondition.condition) {

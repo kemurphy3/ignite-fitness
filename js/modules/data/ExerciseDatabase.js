@@ -119,6 +119,68 @@ class ExerciseDatabase {
     }
 
     /**
+     * Get soccer-shape tag definitions
+     * @returns {Object} Soccer-shape tag definitions
+     */
+    getSoccerShapeTags() {
+        return {
+            acceleration: {
+                name: 'Acceleration',
+                description: 'First 20m sprint speed and explosive starts',
+                color: '#ff6b35',
+                adaptations: ['rate_of_force_development', 'neural_drive', 'stride_frequency']
+            },
+            COD: {
+                name: 'Change of Direction',
+                description: 'Cutting, pivoting, and multi-directional speed',
+                color: '#f7931e',
+                adaptations: ['reactive_strength', 'proprioception', 'eccentric_strength']
+            },
+            VO2: {
+                name: 'Aerobic Power',
+                description: 'Maximal oxygen uptake and aerobic capacity',
+                color: '#1e88e5',
+                adaptations: ['cardiac_output', 'mitochondrial_density', 'oxygen_extraction']
+            },
+            anaerobic_capacity: {
+                name: 'Anaerobic Capacity',
+                description: 'Lactate tolerance and high-intensity repeat ability',
+                color: '#e53935',
+                adaptations: ['lactate_buffering', 'glycolytic_power', 'fatigue_resistance']
+            },
+            neuromotor: {
+                name: 'Neuromotor',
+                description: 'Coordination, timing, and movement efficiency',
+                color: '#8e24aa',
+                adaptations: ['motor_learning', 'coordination', 'movement_economy']
+            }
+        };
+    }
+
+    /**
+     * Enhanced tag filtering
+     * @param {Array} exercises - Exercises to filter
+     * @param {Array} requiredTags - Tags that must be present
+     * @param {Array} excludedTags - Tags that must not be present
+     * @returns {Array} Filtered exercises
+     */
+    filterExercisesByTags(exercises, requiredTags = [], excludedTags = []) {
+        return exercises.filter(exercise => {
+            const exerciseTags = exercise.tags || [];
+
+            // Must have all required tags
+            const hasRequired = requiredTags.length === 0 || 
+                requiredTags.every(tag => exerciseTags.includes(tag));
+
+            // Must not have any excluded tags
+            const hasExcluded = excludedTags.length > 0 && 
+                excludedTags.some(tag => exerciseTags.includes(tag));
+
+            return hasRequired && !hasExcluded;
+        });
+    }
+
+    /**
      * Search exercises
      * @param {string} query - Search query
      * @param {Object} filters - Search filters
@@ -159,6 +221,15 @@ class ExerciseDatabase {
         if (filters.difficulty) {
             results = results.filter(exercise => 
                 exercise.difficulty === filters.difficulty
+            );
+        }
+
+        // Apply tag filtering if provided
+        if (filters.requiredTags || filters.excludedTags) {
+            results = this.filterExercisesByTags(
+                results,
+                filters.requiredTags || [],
+                filters.excludedTags || []
             );
         }
 
