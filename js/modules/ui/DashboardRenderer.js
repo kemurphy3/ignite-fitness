@@ -60,6 +60,7 @@ class DashboardRenderer {
                 lastWorkoutSummary: { show: true, simple: false },
                 progressCharts: { show: true, simplified: true },
                 weeklyLoad: { show: true, simplified: true },
+                weeklyLoadView: { show: true, simple: true },
                 strengthGains: { show: true, simplified: true },
                 rpeInput: { show: true, withTooltips: true },
                 loadCalculations: { show: false },
@@ -88,6 +89,8 @@ class DashboardRenderer {
                 lastWorkoutSummary: { show: true, simple: false },
                 progressCharts: { show: true, simplified: false },
                 weeklyLoad: { show: true, simplified: false },
+                weeklyLoadView: { show: true, simple: false },
+                weeklyTrends: { show: true },
                 strengthGains: { show: true, simplified: false },
                 rpeInput: { show: true, withTooltips: true },
                 loadCalculations: { show: true },
@@ -183,6 +186,11 @@ class DashboardRenderer {
             html += this.generateWeeklyLoadSection(config.components.weeklyLoad);
         }
 
+        // Weekly Load View (Week View)
+        if (config.components.weeklyLoadView?.show) {
+            html += this.generateWeeklyLoadViewSection(config.components.weeklyLoadView);
+        }
+
         // Strength Gains
         if (config.components.strengthGains.show) {
             html += this.generateStrengthGainsSection(config.components.strengthGains);
@@ -217,6 +225,19 @@ class DashboardRenderer {
                 </div>
             </div>
         `;
+
+        // After dashboard HTML is set, render week view if enabled
+        setTimeout(async () => {
+            if (config.components.weeklyLoadView?.show && window.WeekView) {
+                try {
+                    await window.WeekView.render('week-view-container', {
+                        simple: config.components.weeklyLoadView.simple
+                    });
+                } catch (error) {
+                    this.logger.error('Failed to render week view', error);
+                }
+            }
+        }, 100);
 
         return html;
     }
@@ -580,6 +601,21 @@ class DashboardRenderer {
                     '<p>Your training intensity this week</p>' :
                     '<p>Training load represents the total stress from your workouts. Monitor for optimal recovery.</p>'
                 }
+            </div>
+        `;
+    }
+
+    /**
+     * Generate weekly load view section (Week View)
+     * @param {Object} config - Component configuration
+     * @returns {string} HTML section
+     */
+    generateWeeklyLoadViewSection(config) {
+        const simple = config.simple;
+        
+        return `
+            <div class="dashboard-card weekly-load-view" style="grid-column: 1 / -1;">
+                <div id="week-view-container"></div>
             </div>
         `;
     }

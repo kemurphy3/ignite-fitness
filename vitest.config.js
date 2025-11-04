@@ -11,7 +11,8 @@ const hasRealDatabase = process.env.DATABASE_URL &&
 export default defineConfig({
   test: {
     // Test environment
-    environment: 'node',
+    environment: 'jsdom',
+    globals: true,
     
     // Test file patterns
     include: ['tests/**/*.{test,spec}.{js,ts}'],
@@ -21,12 +22,16 @@ export default defineConfig({
     setupFiles: ['tests/setup.js'],
     
     // Test timeout
-    testTimeout: 30000,
+    testTimeout: 10000,
     
     // Coverage configuration
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
+      include: [
+        'js/modules/load/**/*.js',
+        'js/modules/ui/WeekView.js'
+      ],
       exclude: [
         'node_modules/',
         'tests/',

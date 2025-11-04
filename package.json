@@ -36,7 +36,11 @@
     "test:substitution-api": "vitest run tests/integration/substitution-api.test.js",
     "test:substitution-all": "vitest run tests/unit/load-calculation-engine.test.js tests/unit/substitution-engine.test.js tests/integration/substitution-api.test.js",
     "test:tag-manager": "vitest run tests/unit/tag-manager.test.js",
-    "test:soccer-shape": "vitest run tests/integration/soccer-shape-api.test.js tests/unit/soccer-shape-load-calculation.test.js"
+    "test:soccer-shape": "vitest run tests/integration/soccer-shape-api.test.js tests/unit/soccer-shape-load-calculation.test.js",
+    "test:guardrails": "vitest run tests/unit/load-guardrails.test.js tests/integration/load-guardrails-integration.test.js",
+    "test:week-view": "vitest run tests/unit/week-view.test.js",
+    "test:load-performance": "vitest run tests/performance/load-calculations.test.js",
+    "test:load-all": "vitest run tests/unit/load-guardrails.test.js tests/unit/week-view.test.js tests/performance/load-calculations.test.js"
   },
   "dependencies": {
     "chart.js": "^4.4.0"

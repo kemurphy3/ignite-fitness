@@ -944,6 +944,70 @@ class LoadCalculator {
             return [];
         }
     }
+
+    /**
+     * Calculate ramp rate between time periods
+     * @param {Object} currentPeriod - Current period load
+     * @param {Object} previousPeriod - Previous period load
+     * @returns {number} Ramp rate percentage
+     */
+    calculateRampRate(currentPeriod, previousPeriod) {
+        if (!previousPeriod || !previousPeriod.total || previousPeriod.total === 0) {
+            return 0; // No previous data or zero load
+        }
+
+        if (!currentPeriod || !currentPeriod.total) {
+            return 0; // No current data
+        }
+
+        return (currentPeriod.total - previousPeriod.total) / previousPeriod.total;
+    }
+
+    /**
+     * Check if current load exceeds safe progression
+     * @param {Array} weeklyLoads - Array of weekly load totals
+     * @param {string} experienceLevel - User experience level
+     * @returns {Object} Safety check result
+     */
+    checkLoadProgression(weeklyLoads, experienceLevel = 'intermediate') {
+        if (!Array.isArray(weeklyLoads) || weeklyLoads.length < 2) {
+            return { safe: true, reason: 'insufficient_data' };
+        }
+
+        const guardrails = window.LoadGuardrails;
+        if (!guardrails || !guardrails.rampRateThresholds) {
+            return { safe: true, reason: 'guardrails_unavailable' };
+        }
+
+        const thresholds = guardrails.rampRateThresholds[experienceLevel] || 
+                          guardrails.rampRateThresholds['intermediate'];
+
+        const currentLoad = weeklyLoads[0];
+        const previousLoad = weeklyLoads[1];
+
+        // Ensure both are objects with total property
+        const currentTotal = typeof currentLoad === 'object' ? currentLoad.total : currentLoad;
+        const previousTotal = typeof previousLoad === 'object' ? previousLoad.total : previousLoad;
+
+        if (!previousTotal || previousTotal === 0) {
+            return { safe: true, reason: 'no_previous_load' };
+        }
+
+        const rampRate = this.calculateRampRate(
+            { total: currentTotal },
+            { total: previousTotal }
+        );
+
+        return {
+            safe: rampRate <= thresholds.maxWeeklyIncrease,
+            rampRate,
+            threshold: thresholds.maxWeeklyIncrease,
+            exceedsBy: Math.max(0, rampRate - thresholds.maxWeeklyIncrease),
+            recommendation: rampRate > thresholds.maxWeeklyIncrease ?
+                `Reduce next high-intensity session by ${Math.round(thresholds.hiitReduction * 100)}%` :
+                'Load progression is within safe limits'
+        };
+    }
 }
 
 // Create global instance
