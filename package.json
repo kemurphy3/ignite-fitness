@@ -30,7 +30,11 @@
     "db:migrate": "psql $DATABASE_URL -f database-beta-workout-templates.sql && psql $DATABASE_URL -f database-beta-substitution-engine.sql && psql $DATABASE_URL -f database-beta-safety-guardrails.sql && psql $DATABASE_URL -f database-beta-enhanced-sessions.sql",
     "db:seed": "node scripts/seed-database.js",
     "db:setup": "npm run db:migrate && npm run db:seed",
-    "test:acceptance": "npm run db:setup && npm run test:integration"
+    "test:acceptance": "npm run db:setup && npm run test:integration",
+    "test:load-calc": "vitest run tests/unit/load-calculation-engine.test.js",
+    "test:substitution": "vitest run tests/unit/substitution-engine.test.js",
+    "test:substitution-api": "vitest run tests/integration/substitution-api.test.js",
+    "test:substitution-all": "vitest run tests/unit/load-calculation-engine.test.js tests/unit/substitution-engine.test.js tests/integration/substitution-api.test.js"
   },
   "dependencies": {
     "chart.js": "^4.4.0"
