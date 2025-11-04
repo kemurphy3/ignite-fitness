@@ -26,7 +26,11 @@
     "test:all": "npm run test:imports && npm run test:syntax && npm run test:dom && npm run test:smoke",
     "lint": "npm run test:syntax && npm run test:imports && npm run test:dom",
     "serve": "npx http-server . -p 3000 -c-1 || python3 -m http.server 3000 || echo 'No server available, install http-server or use Python'",
-    "start": "npm run serve"
+    "start": "npm run serve",
+    "db:migrate": "psql $DATABASE_URL -f database-beta-workout-templates.sql && psql $DATABASE_URL -f database-beta-substitution-engine.sql && psql $DATABASE_URL -f database-beta-safety-guardrails.sql && psql $DATABASE_URL -f database-beta-enhanced-sessions.sql",
+    "db:seed": "node scripts/seed-database.js",
+    "db:setup": "npm run db:migrate && npm run db:seed",
+    "test:acceptance": "npm run db:setup && npm run test:integration"
   },
   "dependencies": {
     "chart.js": "^4.4.0"

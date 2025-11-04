@@ -1,0 +1,457 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2025-01-27T00:00:00.000Z",
+    "description": "Swimming workout templates for beta testing",
+    "total_workouts": 12
+  },
+  "workouts": [
+    {
+      "template_id": "swim_aerobic_3000m",
+      "name": "3000m Aerobic Swim",
+      "modality": "swimming",
+      "category": "aerobic",
+      "adaptation": "Aerobic capacity",
+      "estimated_load": 65,
+      "time_required": 75,
+      "difficulty_level": "intermediate",
+      "equipment_required": ["pool"],
+      "description": "Steady aerobic distance swim",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 15,
+          "distance": 400,
+          "intensity": "Z1",
+          "description": "Easy swim warmup, choice of stroke"
+        },
+        {
+          "block_type": "main",
+          "duration": 45,
+          "distance": 2200,
+          "intensity": "Z2",
+          "description": "Steady aerobic pace, primarily freestyle"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 15,
+          "distance": 400,
+          "intensity": "Z1",
+          "description": "Easy cooldown, stroke choice"
+        }
+      ],
+      "tags": ["aerobic", "distance", "endurance", "z2"]
+    },
+    {
+      "template_id": "swim_aerobic_2000m_mixed",
+      "name": "2000m Mixed Stroke Aerobic",
+      "modality": "swimming",
+      "category": "aerobic",
+      "adaptation": "Aerobic base, stroke variety",
+      "estimated_load": 60,
+      "time_required": 60,
+      "difficulty_level": "beginner",
+      "equipment_required": ["pool"],
+      "description": "Aerobic swim with stroke variety",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 10,
+          "distance": 300,
+          "intensity": "Z1",
+          "description": "Easy mixed stroke warmup"
+        },
+        {
+          "block_type": "main",
+          "duration": 40,
+          "distance": 1400,
+          "intensity": "Z2",
+          "description": "400m each: Free, Back, Breast, Free"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 10,
+          "distance": 300,
+          "intensity": "Z1",
+          "description": "Easy choice cooldown"
+        }
+      ],
+      "tags": ["aerobic", "mixed_stroke", "variety", "moderate"]
+    },
+    {
+      "template_id": "swim_aerobic_pyramid_distance",
+      "name": "Aerobic Distance Pyramid",
+      "modality": "swimming",
+      "category": "aerobic",
+      "adaptation": "Aerobic capacity, pacing",
+      "estimated_load": 70,
+      "time_required": 65,
+      "difficulty_level": "intermediate",
+      "equipment_required": ["pool"],
+      "description": "Pyramid distance set at aerobic pace",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 15,
+          "distance": 500,
+          "intensity": "Z1",
+          "description": "Progressive warmup"
+        },
+        {
+          "block_type": "main",
+          "duration": 35,
+          "distance": 1500,
+          "intensity": "Z2",
+          "description": "Pyramid: 100-200-300-400-300-200-100m"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 15,
+          "distance": 400,
+          "intensity": "Z1",
+          "description": "Easy cooldown"
+        }
+      ],
+      "tags": ["aerobic", "pyramid", "pacing", "structured"]
+    },
+    {
+      "template_id": "swim_aerobic_broken_1500",
+      "name": "Broken 1500m Aerobic",
+      "modality": "swimming",
+      "category": "aerobic",
+      "adaptation": "Aerobic endurance, pace control",
+      "estimated_load": 68,
+      "time_required": 55,
+      "difficulty_level": "intermediate",
+      "equipment_required": ["pool"],
+      "description": "1500m broken into manageable pieces",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 12,
+          "distance": 400,
+          "intensity": "Z1",
+          "description": "Easy warmup"
+        },
+        {
+          "block_type": "main",
+          "duration": 30,
+          "distance": 1500,
+          "intensity": "Z2",
+          "description": "6x250m on 30s rest - steady aerobic effort"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 13,
+          "distance": 300,
+          "intensity": "Z1",
+          "description": "Easy cooldown"
+        }
+      ],
+      "tags": ["aerobic", "broken_swim", "pace_control", "endurance"]
+    },
+    {
+      "template_id": "swim_threshold_10x100",
+      "name": "10x100m Threshold Set",
+      "modality": "swimming",
+      "category": "threshold",
+      "adaptation": "Lactate threshold",
+      "estimated_load": 75,
+      "time_required": 50,
+      "difficulty_level": "intermediate",
+      "equipment_required": ["pool"],
+      "description": "Classic 100m threshold repeats",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 15,
+          "distance": 600,
+          "intensity": "Z1",
+          "description": "Progressive warmup with build swims"
+        },
+        {
+          "block_type": "main",
+          "sets": 10,
+          "work_duration": 90,
+          "rest_duration": 20,
+          "distance": 100,
+          "intensity": "Z3",
+          "description": "100m freestyle on 20s rest"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 15,
+          "distance": 400,
+          "intensity": "Z1",
+          "description": "Easy cooldown"
+        }
+      ],
+      "tags": ["threshold", "intervals", "lactate", "z3"]
+    },
+    {
+      "template_id": "swim_threshold_5x200",
+      "name": "5x200m Threshold",
+      "modality": "swimming",
+      "category": "threshold",
+      "adaptation": "Lactate threshold, pace endurance",
+      "estimated_load": 80,
+      "time_required": 55,
+      "difficulty_level": "advanced",
+      "equipment_required": ["pool"],
+      "description": "Longer threshold intervals",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 18,
+          "distance": 700,
+          "intensity": "Z1",
+          "description": "Extended warmup with pace builds"
+        },
+        {
+          "block_type": "main",
+          "sets": 5,
+          "work_duration": 180,
+          "rest_duration": 30,
+          "distance": 200,
+          "intensity": "Z3",
+          "description": "200m freestyle at threshold pace"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 15,
+          "distance": 400,
+          "intensity": "Z1",
+          "description": "Easy cooldown"
+        }
+      ],
+      "tags": ["threshold", "long_intervals", "pace_endurance"]
+    },
+    {
+      "template_id": "swim_threshold_ladder",
+      "name": "Threshold Ladder Set",
+      "modality": "swimming",
+      "category": "threshold",
+      "adaptation": "Lactate threshold, mental toughness",
+      "estimated_load": 78,
+      "time_required": 60,
+      "difficulty_level": "advanced",
+      "equipment_required": ["pool"],
+      "description": "Ascending/descending threshold ladder",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 18,
+          "distance": 600,
+          "intensity": "Z1",
+          "description": "Thorough warmup"
+        },
+        {
+          "block_type": "main",
+          "duration": 25,
+          "distance": 1200,
+          "intensity": "Z3",
+          "description": "Ladder: 100-150-200-250-200-150-100m"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 17,
+          "distance": 400,
+          "intensity": "Z1",
+          "description": "Extended cooldown"
+        }
+      ],
+      "tags": ["threshold", "ladder", "progression", "mental"]
+    },
+    {
+      "template_id": "swim_threshold_broken_800",
+      "name": "3x Broken 800m Threshold",
+      "modality": "swimming",
+      "category": "threshold",
+      "adaptation": "Threshold endurance",
+      "estimated_load": 82,
+      "time_required": 65,
+      "difficulty_level": "advanced",
+      "equipment_required": ["pool"],
+      "description": "Broken 800s at threshold effort",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 20,
+          "distance": 700,
+          "intensity": "Z1",
+          "description": "Extended warmup preparation"
+        },
+        {
+          "block_type": "main",
+          "sets": 3,
+          "work_duration": 720,
+          "rest_duration": 120,
+          "distance": 800,
+          "intensity": "Z3",
+          "description": "800m as 4x200m on 10s rest, then 2min between sets"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 15,
+          "distance": 400,
+          "intensity": "Z1",
+          "description": "Recovery cooldown"
+        }
+      ],
+      "tags": ["threshold", "broken_distance", "endurance", "race_pace"]
+    },
+    {
+      "template_id": "swim_vo2_20x50",
+      "name": "20x50m VO2 Set",
+      "modality": "swimming",
+      "category": "vo2",
+      "adaptation": "VO2 max",
+      "estimated_load": 85,
+      "time_required": 50,
+      "difficulty_level": "intermediate",
+      "equipment_required": ["pool"],
+      "description": "Short rest VO2 max intervals",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 15,
+          "distance": 600,
+          "intensity": "Z1",
+          "description": "Warmup with speed builds"
+        },
+        {
+          "block_type": "main",
+          "sets": 20,
+          "work_duration": 45,
+          "rest_duration": 10,
+          "distance": 50,
+          "intensity": "Z4",
+          "description": "50m fast on 10s rest"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 15,
+          "distance": 400,
+          "intensity": "Z1",
+          "description": "Easy cooldown"
+        }
+      ],
+      "tags": ["vo2", "short_intervals", "speed", "anaerobic"]
+    },
+    {
+      "template_id": "swim_vo2_8x100_short_rest",
+      "name": "8x100m VO2 Short Rest",
+      "modality": "swimming",
+      "category": "vo2",
+      "adaptation": "VO2 max, speed endurance",
+      "estimated_load": 88,
+      "time_required": 55,
+      "difficulty_level": "advanced",
+      "equipment_required": ["pool"],
+      "description": "100m intervals with minimal rest",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 18,
+          "distance": 700,
+          "intensity": "Z1",
+          "description": "Progressive warmup with pace work"
+        },
+        {
+          "block_type": "main",
+          "sets": 8,
+          "work_duration": 75,
+          "rest_duration": 15,
+          "distance": 100,
+          "intensity": "Z4",
+          "description": "100m fast on 15s rest"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 17,
+          "distance": 400,
+          "intensity": "Z1",
+          "description": "Recovery cooldown"
+        }
+      ],
+      "tags": ["vo2", "speed_endurance", "lactate", "race_pace"]
+    },
+    {
+      "template_id": "swim_vo2_descending_50s",
+      "name": "Descending 50s VO2",
+      "modality": "swimming",
+      "category": "vo2",
+      "adaptation": "VO2 max, speed",
+      "estimated_load": 82,
+      "time_required": 45,
+      "difficulty_level": "intermediate",
+      "equipment_required": ["pool"],
+      "description": "Descending time VO2 max set",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 15,
+          "distance": 500,
+          "intensity": "Z1",
+          "description": "Warmup with builds"
+        },
+        {
+          "block_type": "main",
+          "sets": 12,
+          "work_duration": 35,
+          "rest_duration": 25,
+          "distance": 50,
+          "intensity": "Z4",
+          "description": "4 rounds of 3x50m descending 1-3 on 25s rest"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 12,
+          "distance": 300,
+          "intensity": "Z1",
+          "description": "Easy cooldown"
+        }
+      ],
+      "tags": ["vo2", "descending", "speed", "progression"]
+    },
+    {
+      "template_id": "swim_vo2_25_sprint_series",
+      "name": "25m Sprint Series",
+      "modality": "swimming",
+      "category": "vo2",
+      "adaptation": "Neuromuscular power, speed",
+      "estimated_load": 75,
+      "time_required": 40,
+      "difficulty_level": "advanced",
+      "equipment_required": ["pool"],
+      "description": "Short sprint series for power",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 15,
+          "distance": 500,
+          "intensity": "Z1",
+          "description": "Thorough warmup with activation"
+        },
+        {
+          "block_type": "main",
+          "sets": 16,
+          "work_duration": 15,
+          "rest_duration": 45,
+          "distance": 25,
+          "intensity": "Z5",
+          "description": "25m all-out sprint on 45s rest"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 10,
+          "distance": 300,
+          "intensity": "Z1",
+          "description": "Easy recovery"
+        }
+      ],
+      "tags": ["vo2", "sprint", "power", "neuromuscular", "speed"]
+    }
+  ]
+}
+

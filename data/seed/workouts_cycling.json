@@ -1,0 +1,415 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2025-01-27T00:00:00.000Z",
+    "description": "Cycling workout templates for beta testing",
+    "total_workouts": 12
+  },
+  "workouts": [
+    {
+      "template_id": "cycle_endurance_60min_z2",
+      "name": "60min Z2 Endurance",
+      "modality": "cycling",
+      "category": "endurance",
+      "adaptation": "Aerobic base",
+      "estimated_load": 60,
+      "time_required": 70,
+      "difficulty_level": "beginner",
+      "equipment_required": ["bike"],
+      "description": "Steady aerobic base building ride",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 10,
+          "intensity": "Z1",
+          "description": "Easy spinning warmup"
+        },
+        {
+          "block_type": "main",
+          "duration": 50,
+          "intensity": "Z2",
+          "description": "Steady aerobic pace - conversational"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 10,
+          "intensity": "Z1",
+          "description": "Easy spinning cooldown"
+        }
+      ],
+      "tags": ["endurance", "aerobic_base", "z2", "steady"]
+    },
+    {
+      "template_id": "cycle_endurance_90min_z2",
+      "name": "90min Z2 Endurance",
+      "modality": "cycling",
+      "category": "endurance",
+      "adaptation": "Aerobic base, fat oxidation",
+      "estimated_load": 85,
+      "time_required": 100,
+      "difficulty_level": "intermediate",
+      "equipment_required": ["bike"],
+      "description": "Extended aerobic base ride",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 15,
+          "intensity": "Z1",
+          "description": "Progressive warmup"
+        },
+        {
+          "block_type": "main",
+          "duration": 70,
+          "intensity": "Z2",
+          "description": "Steady aerobic effort"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 15,
+          "intensity": "Z1",
+          "description": "Easy cooldown"
+        }
+      ],
+      "tags": ["endurance", "aerobic_base", "z2", "long"]
+    },
+    {
+      "template_id": "cycle_endurance_mixed_zones",
+      "name": "Mixed Zone Endurance",
+      "modality": "cycling",
+      "category": "endurance",
+      "adaptation": "Aerobic base, zone practice",
+      "estimated_load": 70,
+      "time_required": 75,
+      "difficulty_level": "intermediate",
+      "equipment_required": ["bike"],
+      "description": "Endurance ride with zone variations",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 10,
+          "intensity": "Z1",
+          "description": "Easy spinning"
+        },
+        {
+          "block_type": "main",
+          "duration": 45,
+          "intensity": "Z2",
+          "description": "Base aerobic effort"
+        },
+        {
+          "block_type": "main",
+          "duration": 10,
+          "intensity": "Z3",
+          "description": "Tempo block"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 10,
+          "intensity": "Z1",
+          "description": "Easy cooldown"
+        }
+      ],
+      "tags": ["endurance", "mixed_zones", "progression"]
+    },
+    {
+      "template_id": "cycle_endurance_recovery",
+      "name": "45min Recovery Ride",
+      "modality": "cycling",
+      "category": "endurance",
+      "adaptation": "Recovery, blood flow",
+      "estimated_load": 35,
+      "time_required": 45,
+      "difficulty_level": "beginner",
+      "equipment_required": ["bike"],
+      "description": "Easy recovery ride for active recovery",
+      "structure": [
+        {
+          "block_type": "main",
+          "duration": 45,
+          "intensity": "Z1",
+          "description": "Very easy spinning - focus on smooth pedaling"
+        }
+      ],
+      "tags": ["recovery", "easy", "z1", "active_recovery"]
+    },
+    {
+      "template_id": "cycle_tempo_3x8min",
+      "name": "3x8min Tempo Intervals",
+      "modality": "cycling",
+      "category": "tempo",
+      "adaptation": "Threshold power",
+      "estimated_load": 75,
+      "time_required": 60,
+      "difficulty_level": "intermediate",
+      "equipment_required": ["bike"],
+      "description": "Tempo intervals at threshold power",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 15,
+          "intensity": "Z1",
+          "description": "Progressive warmup with build efforts"
+        },
+        {
+          "block_type": "main",
+          "sets": 3,
+          "work_duration": 8,
+          "rest_duration": 3,
+          "intensity": "Z3",
+          "description": "8min at tempo/threshold power"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 15,
+          "intensity": "Z1",
+          "description": "Easy spinning cooldown"
+        }
+      ],
+      "tags": ["tempo", "threshold", "intervals", "power"]
+    },
+    {
+      "template_id": "cycle_tempo_20min_continuous",
+      "name": "20min Tempo Continuous",
+      "modality": "cycling",
+      "category": "tempo",
+      "adaptation": "Lactate threshold",
+      "estimated_load": 80,
+      "time_required": 50,
+      "difficulty_level": "intermediate",
+      "equipment_required": ["bike"],
+      "description": "Continuous tempo effort",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 15,
+          "intensity": "Z1",
+          "description": "Gradual warmup"
+        },
+        {
+          "block_type": "main",
+          "duration": 20,
+          "intensity": "Z3",
+          "description": "Steady tempo effort at threshold"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 15,
+          "intensity": "Z1",
+          "description": "Easy cooldown"
+        }
+      ],
+      "tags": ["tempo", "threshold", "continuous", "sustained"]
+    },
+    {
+      "template_id": "cycle_tempo_over_unders",
+      "name": "Over/Under Intervals",
+      "modality": "cycling",
+      "category": "tempo",
+      "adaptation": "Lactate buffering, threshold",
+      "estimated_load": 85,
+      "time_required": 65,
+      "difficulty_level": "advanced",
+      "equipment_required": ["bike"],
+      "description": "Over/under threshold intervals",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 15,
+          "intensity": "Z1",
+          "description": "Progressive warmup"
+        },
+        {
+          "block_type": "main",
+          "sets": 3,
+          "work_duration": 12,
+          "rest_duration": 5,
+          "intensity": "Z3",
+          "description": "12min: 3min Z3, 3min Z4, repeat pattern"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 15,
+          "intensity": "Z1",
+          "description": "Easy cooldown"
+        }
+      ],
+      "tags": ["tempo", "over_under", "threshold", "lactate"]
+    },
+    {
+      "template_id": "cycle_tempo_pyramid",
+      "name": "Tempo Pyramid",
+      "modality": "cycling",
+      "category": "tempo",
+      "adaptation": "Threshold power, mental toughness",
+      "estimated_load": 82,
+      "time_required": 70,
+      "difficulty_level": "advanced",
+      "equipment_required": ["bike"],
+      "description": "Pyramid tempo intervals",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 15,
+          "intensity": "Z1",
+          "description": "Thorough warmup"
+        },
+        {
+          "block_type": "main",
+          "sets": 5,
+          "work_duration": 6,
+          "rest_duration": 3,
+          "intensity": "Z3",
+          "description": "Pyramid: 3min, 6min, 9min, 6min, 3min"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 15,
+          "intensity": "Z1",
+          "description": "Extended cooldown"
+        }
+      ],
+      "tags": ["tempo", "pyramid", "progression", "mental"]
+    },
+    {
+      "template_id": "cycle_vo2_30_30",
+      "name": "8x(30s on / 30s off)",
+      "modality": "cycling",
+      "category": "vo2",
+      "adaptation": "VO2 max",
+      "estimated_load": 85,
+      "time_required": 50,
+      "difficulty_level": "intermediate",
+      "equipment_required": ["bike"],
+      "description": "Classic 30/30 VO2 max intervals",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 15,
+          "intensity": "Z1",
+          "description": "Warmup with openers"
+        },
+        {
+          "block_type": "main",
+          "sets": 8,
+          "work_duration": 0.5,
+          "rest_duration": 0.5,
+          "intensity": "Z5",
+          "description": "30s hard / 30s easy spinning"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 15,
+          "intensity": "Z1",
+          "description": "Easy cooldown"
+        }
+      ],
+      "tags": ["vo2", "intervals", "short", "anaerobic"]
+    },
+    {
+      "template_id": "cycle_vo2_4x4min",
+      "name": "4x4min VO2 Intervals",
+      "modality": "cycling",
+      "category": "vo2",
+      "adaptation": "VO2 max, aerobic power",
+      "estimated_load": 95,
+      "time_required": 60,
+      "difficulty_level": "advanced",
+      "equipment_required": ["bike"],
+      "description": "Longer VO2 max intervals",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 20,
+          "intensity": "Z1",
+          "description": "Extended warmup with build efforts"
+        },
+        {
+          "block_type": "main",
+          "sets": 4,
+          "work_duration": 4,
+          "rest_duration": 4,
+          "intensity": "Z4",
+          "description": "4min at VO2 max power"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 16,
+          "intensity": "Z1",
+          "description": "Extended easy cooldown"
+        }
+      ],
+      "tags": ["vo2", "long_intervals", "aerobic_power"]
+    },
+    {
+      "template_id": "cycle_cadence_drills",
+      "name": "Cadence Drill Session",
+      "modality": "cycling",
+      "category": "cadence",
+      "adaptation": "Pedaling efficiency",
+      "estimated_load": 55,
+      "time_required": 50,
+      "difficulty_level": "beginner",
+      "equipment_required": ["bike"],
+      "description": "Pedaling efficiency and cadence work",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 15,
+          "intensity": "Z1",
+          "description": "Easy spinning warmup"
+        },
+        {
+          "block_type": "main",
+          "sets": 6,
+          "work_duration": 4,
+          "rest_duration": 2,
+          "intensity": "Z2",
+          "description": "Alternating: 2min high cadence (100+) / 2min low cadence (60-70)"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 10,
+          "intensity": "Z1",
+          "description": "Easy cooldown"
+        }
+      ],
+      "tags": ["cadence", "efficiency", "drills", "technique"]
+    },
+    {
+      "template_id": "cycle_cadence_progression",
+      "name": "Cadence Progression",
+      "modality": "cycling",
+      "category": "cadence",
+      "adaptation": "Neuromuscular coordination",
+      "estimated_load": 60,
+      "time_required": 55,
+      "difficulty_level": "intermediate",
+      "equipment_required": ["bike"],
+      "description": "Progressive cadence development",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 15,
+          "intensity": "Z1",
+          "description": "Standard warmup"
+        },
+        {
+          "block_type": "main",
+          "sets": 5,
+          "work_duration": 5,
+          "rest_duration": 2,
+          "intensity": "Z2",
+          "description": "Progressive cadence: 80, 90, 100, 110, 120 RPM"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 15,
+          "intensity": "Z1",
+          "description": "Easy spinning cooldown"
+        }
+      ],
+      "tags": ["cadence", "progression", "neuromuscular", "coordination"]
+    }
+  ]
+}
+

@@ -1,0 +1,451 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2025-01-27T00:00:00.000Z",
+    "description": "Running workout templates for beta testing",
+    "total_workouts": 12
+  },
+  "workouts": [
+    {
+      "template_id": "run_track_200m_repeats",
+      "name": "12x200m Track Repeats",
+      "modality": "running",
+      "category": "track",
+      "adaptation": "VO2 max, speed",
+      "estimated_load": 85,
+      "time_required": 45,
+      "difficulty_level": "intermediate",
+      "equipment_required": ["track"],
+      "description": "Classic 200m repeats for speed and VO2 development",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 15,
+          "intensity": "Z1",
+          "description": "Easy jog warmup"
+        },
+        {
+          "block_type": "drills",
+          "duration": 5,
+          "intensity": "Z1",
+          "description": "Dynamic warmup drills"
+        },
+        {
+          "block_type": "main",
+          "sets": 12,
+          "work_duration": 60,
+          "rest_duration": 90,
+          "intensity": "Z4",
+          "distance": 200,
+          "description": "200m hard with 90s recovery"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 10,
+          "intensity": "Z1",
+          "description": "Easy jog cooldown"
+        }
+      ],
+      "tags": ["track", "intervals", "vo2", "speed"]
+    },
+    {
+      "template_id": "run_track_400m_repeats",
+      "name": "6x400m Track Repeats",
+      "modality": "running",
+      "category": "track",
+      "adaptation": "VO2 max, lactate tolerance",
+      "estimated_load": 90,
+      "time_required": 50,
+      "difficulty_level": "advanced",
+      "equipment_required": ["track"],
+      "description": "400m repeats for VO2 max and speed endurance",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 15,
+          "intensity": "Z1",
+          "description": "Easy jog warmup"
+        },
+        {
+          "block_type": "drills",
+          "duration": 5,
+          "intensity": "Z1",
+          "description": "Dynamic warmup and strides"
+        },
+        {
+          "block_type": "main",
+          "sets": 6,
+          "work_duration": 120,
+          "rest_duration": 180,
+          "intensity": "Z4",
+          "distance": 400,
+          "description": "400m at mile race pace"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 15,
+          "intensity": "Z1",
+          "description": "Easy jog cooldown"
+        }
+      ],
+      "tags": ["track", "intervals", "vo2", "speed_endurance"]
+    },
+    {
+      "template_id": "run_track_800m_repeats",
+      "name": "4x800m Track Repeats",
+      "modality": "running",
+      "category": "track",
+      "adaptation": "Lactate threshold, speed endurance",
+      "estimated_load": 85,
+      "time_required": 55,
+      "difficulty_level": "advanced",
+      "equipment_required": ["track"],
+      "description": "800m repeats for threshold and speed endurance",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 20,
+          "intensity": "Z1",
+          "description": "Extended warmup for longer intervals"
+        },
+        {
+          "block_type": "drills",
+          "duration": 5,
+          "intensity": "Z1",
+          "description": "Dynamic warmup and strides"
+        },
+        {
+          "block_type": "main",
+          "sets": 4,
+          "work_duration": 240,
+          "rest_duration": 300,
+          "intensity": "Z3",
+          "distance": 800,
+          "description": "800m at threshold pace"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 15,
+          "intensity": "Z1",
+          "description": "Easy jog cooldown"
+        }
+      ],
+      "tags": ["track", "intervals", "threshold", "speed_endurance"]
+    },
+    {
+      "template_id": "run_track_mile_repeats",
+      "name": "3x1 Mile Track Repeats",
+      "modality": "running",
+      "category": "track",
+      "adaptation": "Lactate threshold, aerobic power",
+      "estimated_load": 80,
+      "time_required": 60,
+      "difficulty_level": "advanced",
+      "equipment_required": ["track"],
+      "description": "Mile repeats for threshold development",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 20,
+          "intensity": "Z1",
+          "description": "Extended warmup"
+        },
+        {
+          "block_type": "main",
+          "sets": 3,
+          "work_duration": 480,
+          "rest_duration": 480,
+          "intensity": "Z3",
+          "distance": 1609,
+          "description": "1 mile at threshold pace"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 15,
+          "intensity": "Z1",
+          "description": "Easy jog cooldown"
+        }
+      ],
+      "tags": ["track", "intervals", "threshold", "aerobic_power"]
+    },
+    {
+      "template_id": "run_soccer_shuttle_pyramid",
+      "name": "Soccer Shuttle Pyramid",
+      "modality": "running",
+      "category": "soccer",
+      "adaptation": "Agility, change of direction",
+      "estimated_load": 70,
+      "time_required": 35,
+      "difficulty_level": "intermediate",
+      "equipment_required": ["field", "cones"],
+      "description": "Shuttle runs with increasing distances",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 10,
+          "intensity": "Z1",
+          "description": "Easy jog and dynamic warmup"
+        },
+        {
+          "block_type": "main",
+          "sets": 6,
+          "work_duration": 45,
+          "rest_duration": 60,
+          "intensity": "Z4",
+          "description": "Shuttle pattern: 10m-20m-30m-20m-10m"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 10,
+          "intensity": "Z1",
+          "description": "Easy jog cooldown"
+        }
+      ],
+      "tags": ["soccer", "agility", "change_of_direction", "shuttles"]
+    },
+    {
+      "template_id": "run_soccer_box_runs",
+      "name": "Soccer Box Pattern Runs",
+      "modality": "running",
+      "category": "soccer",
+      "adaptation": "Agility, acceleration",
+      "estimated_load": 65,
+      "time_required": 30,
+      "difficulty_level": "beginner",
+      "equipment_required": ["field", "cones"],
+      "description": "Box pattern runs for soccer-specific agility",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 10,
+          "intensity": "Z1",
+          "description": "Jog and movement prep"
+        },
+        {
+          "block_type": "main",
+          "sets": 8,
+          "work_duration": 20,
+          "rest_duration": 40,
+          "intensity": "Z4",
+          "description": "20x20m box pattern with direction changes"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 8,
+          "intensity": "Z1",
+          "description": "Easy jog cooldown"
+        }
+      ],
+      "tags": ["soccer", "agility", "acceleration", "box_pattern"]
+    },
+    {
+      "template_id": "run_soccer_5_10_5",
+      "name": "Soccer 5-10-5 Agility",
+      "modality": "running",
+      "category": "soccer",
+      "adaptation": "Agility, reactive acceleration",
+      "estimated_load": 60,
+      "time_required": 25,
+      "difficulty_level": "beginner",
+      "equipment_required": ["field", "cones"],
+      "description": "Classic 5-10-5 agility drill for soccer",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 8,
+          "intensity": "Z1",
+          "description": "Light jog and leg swings"
+        },
+        {
+          "block_type": "main",
+          "sets": 10,
+          "work_duration": 8,
+          "rest_duration": 30,
+          "intensity": "Z5",
+          "description": "5-10-5 pattern: 5m right, 10m left, 5m right"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 7,
+          "intensity": "Z1",
+          "description": "Easy jog and stretching"
+        }
+      ],
+      "tags": ["soccer", "agility", "acceleration", "reactive"]
+    },
+    {
+      "template_id": "run_soccer_zigzag",
+      "name": "Soccer Zigzag Runs",
+      "modality": "running",
+      "category": "soccer",
+      "adaptation": "Agility, cutting mechanics",
+      "estimated_load": 68,
+      "time_required": 32,
+      "difficulty_level": "intermediate",
+      "equipment_required": ["field", "cones"],
+      "description": "Zigzag pattern runs for cutting practice",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 10,
+          "intensity": "Z1",
+          "description": "Jog and lateral movement prep"
+        },
+        {
+          "block_type": "main",
+          "sets": 8,
+          "work_duration": 25,
+          "rest_duration": 50,
+          "intensity": "Z4",
+          "description": "30m zigzag through 6 cones"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 8,
+          "intensity": "Z1",
+          "description": "Easy jog cooldown"
+        }
+      ],
+      "tags": ["soccer", "agility", "cutting", "zigzag"]
+    },
+    {
+      "template_id": "run_tempo_20min",
+      "name": "20min Tempo Run",
+      "modality": "running",
+      "category": "tempo",
+      "adaptation": "Lactate threshold",
+      "estimated_load": 75,
+      "time_required": 45,
+      "difficulty_level": "intermediate",
+      "equipment_required": ["road"],
+      "description": "Classic tempo run for threshold development",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 15,
+          "intensity": "Z1",
+          "description": "Easy jog warmup"
+        },
+        {
+          "block_type": "main",
+          "duration": 20,
+          "intensity": "Z3",
+          "description": "Comfortably hard pace - could speak 2-3 words"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 10,
+          "intensity": "Z1",
+          "description": "Easy jog cooldown"
+        }
+      ],
+      "tags": ["tempo", "threshold", "continuous"]
+    },
+    {
+      "template_id": "run_tempo_3x8min",
+      "name": "3x8min Tempo Intervals",
+      "modality": "running",
+      "category": "tempo",
+      "adaptation": "Lactate threshold",
+      "estimated_load": 78,
+      "time_required": 50,
+      "difficulty_level": "intermediate",
+      "equipment_required": ["road"],
+      "description": "Tempo intervals with short recovery",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 15,
+          "intensity": "Z1",
+          "description": "Easy jog warmup"
+        },
+        {
+          "block_type": "main",
+          "sets": 3,
+          "work_duration": 8,
+          "rest_duration": 2,
+          "intensity": "Z3",
+          "description": "8min tempo with 2min easy recovery"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 12,
+          "intensity": "Z1",
+          "description": "Easy jog cooldown"
+        }
+      ],
+      "tags": ["tempo", "threshold", "intervals"]
+    },
+    {
+      "template_id": "run_hills_8x30s",
+      "name": "8x30s Hill Repeats",
+      "modality": "running",
+      "category": "hills",
+      "adaptation": "Power, strength",
+      "estimated_load": 80,
+      "time_required": 40,
+      "difficulty_level": "intermediate",
+      "equipment_required": ["hills"],
+      "description": "Short hill repeats for power development",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 15,
+          "intensity": "Z1",
+          "description": "Easy jog warmup"
+        },
+        {
+          "block_type": "main",
+          "sets": 8,
+          "work_duration": 30,
+          "rest_duration": 90,
+          "intensity": "Z5",
+          "description": "30s hard uphill effort with walk-down recovery"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 10,
+          "intensity": "Z1",
+          "description": "Easy jog cooldown"
+        }
+      ],
+      "tags": ["hills", "power", "strength", "short_intervals"]
+    },
+    {
+      "template_id": "run_hills_6x2min",
+      "name": "6x2min Hill Repeats",
+      "modality": "running",
+      "category": "hills",
+      "adaptation": "Power endurance, strength",
+      "estimated_load": 85,
+      "time_required": 50,
+      "difficulty_level": "advanced",
+      "equipment_required": ["hills"],
+      "description": "Longer hill repeats for power endurance",
+      "structure": [
+        {
+          "block_type": "warmup",
+          "duration": 18,
+          "intensity": "Z1",
+          "description": "Extended warmup for longer intervals"
+        },
+        {
+          "block_type": "main",
+          "sets": 6,
+          "work_duration": 120,
+          "rest_duration": 180,
+          "intensity": "Z4",
+          "description": "2min hard uphill with walk/jog down recovery"
+        },
+        {
+          "block_type": "cooldown",
+          "duration": 12,
+          "intensity": "Z1",
+          "description": "Easy jog cooldown"
+        }
+      ],
+      "tags": ["hills", "power_endurance", "strength", "long_intervals"]
+    }
+  ]
+}
+

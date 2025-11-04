@@ -1,0 +1,180 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2025-01-27T00:00:00.000Z",
+    "description": "Safety guardrails and load management configuration",
+    "total_configs": 4
+  },
+  "guardrails_configs": [
+    {
+      "config_name": "beginner_safety",
+      "training_level": "beginner",
+      "weekly_load_cap": 250,
+      "weekly_hard_minutes_cap": 50,
+      "daily_load_cap": 60,
+      "max_weekly_load_increase": 0.10,
+      "max_weekly_volume_increase": 0.10,
+      "max_weekly_intensity_increase": 0.05,
+      "min_hours_between_hard": 48,
+      "max_consecutive_hard_days": 1,
+      "required_easy_days_per_week": 3,
+      "deload_frequency_weeks": 3,
+      "max_pain_threshold": 3,
+      "high_soreness_threshold": 6,
+      "soreness_load_reduction": 0.30,
+      "missed_days_auto_deload": 2
+    },
+    {
+      "config_name": "intermediate_safety",
+      "training_level": "intermediate",
+      "weekly_load_cap": 400,
+      "weekly_hard_minutes_cap": 80,
+      "daily_load_cap": 100,
+      "max_weekly_load_increase": 0.10,
+      "max_weekly_volume_increase": 0.10,
+      "max_weekly_intensity_increase": 0.05,
+      "min_hours_between_hard": 36,
+      "max_consecutive_hard_days": 2,
+      "required_easy_days_per_week": 2,
+      "deload_frequency_weeks": 4,
+      "max_pain_threshold": 4,
+      "high_soreness_threshold": 7,
+      "soreness_load_reduction": 0.25,
+      "missed_days_auto_deload": 3
+    },
+    {
+      "config_name": "advanced_safety",
+      "training_level": "advanced",
+      "weekly_load_cap": 600,
+      "weekly_hard_minutes_cap": 120,
+      "daily_load_cap": 150,
+      "max_weekly_load_increase": 0.08,
+      "max_weekly_volume_increase": 0.10,
+      "max_weekly_intensity_increase": 0.03,
+      "min_hours_between_hard": 24,
+      "max_consecutive_hard_days": 2,
+      "required_easy_days_per_week": 1,
+      "deload_frequency_weeks": 4,
+      "max_pain_threshold": 5,
+      "high_soreness_threshold": 8,
+      "soreness_load_reduction": 0.20,
+      "missed_days_auto_deload": 4
+    },
+    {
+      "config_name": "elite_safety",
+      "training_level": "elite",
+      "weekly_load_cap": 800,
+      "weekly_hard_minutes_cap": 160,
+      "daily_load_cap": 200,
+      "max_weekly_load_increase": 0.05,
+      "max_weekly_volume_increase": 0.08,
+      "max_weekly_intensity_increase": 0.02,
+      "min_hours_between_hard": 18,
+      "max_consecutive_hard_days": 3,
+      "required_easy_days_per_week": 1,
+      "deload_frequency_weeks": 5,
+      "max_pain_threshold": 6,
+      "high_soreness_threshold": 9,
+      "soreness_load_reduction": 0.15,
+      "missed_days_auto_deload": 5
+    }
+  ],
+  "zone_definitions": [
+    {
+      "zone_name": "Z1",
+      "zone_number": 1,
+      "description": "Active recovery and base aerobic development",
+      "physiological_marker": "Below first lactate threshold",
+      "perceived_exertion_range": "2-3 RPE",
+      "hr_percent_min": 50,
+      "hr_percent_max": 60,
+      "power_percent_min": 45,
+      "power_percent_max": 55,
+      "lactate_min": 0.5,
+      "lactate_max": 1.5,
+      "primary_adaptations": ["aerobic_base", "recovery", "fat_oxidation"],
+      "typical_durations": {
+        "running": "30-180min",
+        "cycling": "45-300min",
+        "swimming": "20-120min"
+      }
+    },
+    {
+      "zone_name": "Z2",
+      "zone_number": 2,
+      "description": "Aerobic base and endurance development",
+      "physiological_marker": "Below first lactate threshold",
+      "perceived_exertion_range": "3-4 RPE",
+      "hr_percent_min": 60,
+      "hr_percent_max": 70,
+      "power_percent_min": 55,
+      "power_percent_max": 75,
+      "lactate_min": 1.5,
+      "lactate_max": 2.5,
+      "primary_adaptations": ["aerobic_base", "endurance", "mitochondrial_development"],
+      "typical_durations": {
+        "running": "30-120min",
+        "cycling": "45-180min",
+        "swimming": "20-90min"
+      }
+    },
+    {
+      "zone_name": "Z3",
+      "zone_number": 3,
+      "description": "Tempo and lactate threshold training",
+      "physiological_marker": "At lactate threshold",
+      "perceived_exertion_range": "5-6 RPE",
+      "hr_percent_min": 70,
+      "hr_percent_max": 80,
+      "power_percent_min": 75,
+      "power_percent_max": 90,
+      "lactate_min": 2.5,
+      "lactate_max": 4.0,
+      "primary_adaptations": ["lactate_threshold", "tempo", "lactate_buffering"],
+      "typical_durations": {
+        "running": "8-60min",
+        "cycling": "10-90min",
+        "swimming": "5-45min"
+      }
+    },
+    {
+      "zone_name": "Z4",
+      "zone_number": 4,
+      "description": "VO2 max and lactate tolerance",
+      "physiological_marker": "Above lactate threshold, below VO2max",
+      "perceived_exertion_range": "7-8 RPE",
+      "hr_percent_min": 80,
+      "hr_percent_max": 90,
+      "power_percent_min": 90,
+      "power_percent_max": 105,
+      "lactate_min": 4.0,
+      "lactate_max": 8.0,
+      "primary_adaptations": ["vo2_max", "lactate_tolerance", "speed_endurance"],
+      "typical_durations": {
+        "running": "3-20min",
+        "cycling": "3-30min",
+        "swimming": "2-15min"
+      }
+    },
+    {
+      "zone_name": "Z5",
+      "zone_number": 5,
+      "description": "Neuromuscular power and anaerobic capacity",
+      "physiological_marker": "Above VO2max, anaerobic",
+      "perceived_exertion_range": "9-10 RPE",
+      "hr_percent_min": 90,
+      "hr_percent_max": 100,
+      "power_percent_min": 105,
+      "power_percent_max": 150,
+      "lactate_min": 8.0,
+      "lactate_max": 20.0,
+      "primary_adaptations": ["neuromuscular_power", "anaerobic_capacity", "speed"],
+      "typical_durations": {
+        "running": "10s-3min",
+        "cycling": "10s-5min",
+        "swimming": "10s-2min"
+      }
+    }
+  ]
+}
+
