@@ -9,7 +9,7 @@ cd "$root"
 # 1) Placeholder / TODO ban (report + nonzero exit)
 echo "== Scanning for placeholders =="
 # Add any patterns you consider illegal in main code:
-PATTERNS='TODO|FIXME|PLACEHOLDER|NotImplementedError|throw new Error\(.*not implemented.*\)|return null; // stub|pass # stub'
+PATTERNS='TODO|FIXME|PLACEHOLDER|NotImplemented|throw new Error\(.*not implemented.*\)|return null; // stub|pass # stub|your_.*_key|your_.*_id|your_.*_secret'
 if grep -RInE "$PATTERNS" --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist --exclude-dir=build .; then
   echo "❌ Placeholder patterns found. Remove or replace with real implementations."
   exit 1
