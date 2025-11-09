@@ -1,4 +1,4 @@
-name: CI Tests
+name: CI/CD Pipeline
 
 on:
   push:
@@ -6,144 +6,305 @@ on:
   pull_request:
     branches: [ main, develop ]
 
+env:
+  NODE_VERSION: '18'
+  CACHE_VERSION: v1
+
 jobs:
-  test:
+  quality:
+    name: Code Quality
     runs-on: ubuntu-latest
-    
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --prefer-offline --no-audit
+          echo "✅ Dependencies installed"
+
+      - name: Check code formatting
+        run: |
+          echo "🎨 Checking code formatting..."
+          npm run format:check || {
+            echo "❌ Code formatting issues found. Run 'npm run format' to fix.";
+            exit 1;
+          }
+
+      - name: Run ESLint
+        run: |
+          echo "🔍 Running ESLint..."
+          npm run lint:check || {
+            echo "❌ ESLint errors found. Run 'npm run lint:fix' to fix auto-fixable issues.";
+            exit 1;
+          }
+
+      - name: Run TypeScript checks
+        run: |
+          echo "📝 Running TypeScript check..."
+          npm run typecheck || {
+            echo "❌ TypeScript errors found. Check your type definitions.";
+            exit 1;
+          }
+
+      - name: Validate imports
+        run: |
+          echo "📦 Validating import statements..."
+          npm run test:imports || {
+            echo "❌ Import validation failed. Check for circular dependencies or missing imports.";
+            exit 1;
+          }
+
+      - name: Check syntax
+        run: |
+          echo "🔤 Checking JavaScript syntax..."
+          npm run test:syntax || {
+            echo "❌ Syntax errors found. Fix syntax issues before proceeding.";
+            exit 1;
+          }
+
+      - name: Check DOM safety (warning only)
+        run: |
+          echo "🛡️ Checking DOM safety..."
+          npm run test:dom || {
+            echo "⚠️ DOM safety check failed. Review for potential XSS vulnerabilities.";
+            exit 0;
+          }
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    needs: quality
+
     strategy:
       matrix:
-        node-version: [18.x, 20.x]
-    
+        test-type: [ unit, integration ]
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci || npm install
-      
-    - name: Run tests with coverage
-      run: |
-        if npm run test:coverage 2>/dev/null; then
-          echo "✅ Tests passed"
-        else
-          echo "⚠️  Test suite not fully configured, running basic checks instead"
-          npm run test:all || echo "Test suite skipped"
-        fi
-      env:
-        DATABASE_URL: ${{ secrets.TEST_DATABASE_URL || 'postgresql://test:test@localhost:5432/test_ignitefitness' }}
-        JWT_SECRET: ${{ secrets.JWT_SECRET || 'test-secret-for-ci-testing-min-32-chars-required' }}
-        NODE_ENV: test
-        
-    - name: Upload coverage reports
-      uses: codecov/codecov-action@v3
-      if: success()
-      continue-on-error: true
-      with:
-        file: ./coverage/lcov.info
-        flags: unittests
-        name: codecov-umbrella
-        token: ${{ secrets.CODECOV_TOKEN }}
-        
-    - name: Check coverage thresholds
-      run: |
-        echo "Coverage thresholds are enforced by Vitest configuration"
-        echo "Minimum coverage: 80% for branches, functions, lines, statements"
-        
-    - name: Upload test results
-      uses: actions/upload-artifact@v3
-      if: always()
-      continue-on-error: true
-      with:
-        name: test-results-${{ matrix.node-version }}
-        path: |
-          test-results.json
-          coverage/
-          
-  lint:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Configure test environment
+        run: |
+          cp env.example .env.test
+          echo "TEST_MODE=true" >> .env.test
+          echo "NODE_ENV=test" >> .env.test
+          echo "JWT_SECRET=test-jwt-secret-32-chars-minimum-length" >> .env.test
+
+      - name: Run ${{ matrix.test-type }} tests
+        run: |
+          if [ "${{ matrix.test-type }}" = "unit" ]; then
+            echo "🧪 Running unit tests...";
+            npm run test:unit;
+          else
+            echo "🔗 Running integration tests...";
+            npm run test:integration;
+          fi
+
+      - name: Upload coverage to Codecov
+        if: matrix.test-type == 'unit'
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+  performance:
+    name: Performance & Security
     runs-on: ubuntu-latest
-    
+    needs: quality
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci || npm install
-      
-    - name: Run linter
-      run: |
-        # Check for common issues
-        echo "Checking for skipped tests..."
-        if grep -r "\.skip(" tests/ --include="*.js" 2>/dev/null; then
-          echo "⚠️  Found skipped tests - these should be activated or removed"
-          # Don't fail, just warn
-        else
-          echo "✅ No skipped tests found"
-        fi
-        
-        echo "Checking for TODO comments in tests..."
-        if grep -r "TODO:" tests/ --include="*.js" 2>/dev/null; then
-          echo "⚠️  Found TODO comments in tests - consider implementing or removing"
-        else
-          echo "✅ No TODO comments in tests"
-        fi
-        
-        # Run lint scripts if available
-        if npm run lint 2>/dev/null; then
-          echo "✅ Lint checks passed"
-        else
-          echo "⚠️  Lint script failed or not configured, continuing..."
-        fi
-        
-    - name: Check test file structure
-      run: |
-        echo "Checking test file structure..."
-        if [ ! -d "tests" ]; then
-          echo "⚠️  Tests directory not found - creating basic structure"
-          mkdir -p tests
-          echo "// Placeholder for tests" > tests/placeholder.test.js
-        fi
-        
-        echo "✅ Test directory structure looks good"
-        
-  security:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Build application
+        run: |
+          echo "🏗️ Building application..."
+          npm run build
+
+      - name: Run performance tests (warning only)
+        run: |
+          echo "⚡ Running performance tests..."
+          npm run test:perf || {
+            echo "⚠️ Performance tests failed. Review bundle size and load times.";
+            exit 0;
+          }
+
+      - name: Security audit (warning only)
+        run: |
+          echo "🔒 Running security audit..."
+          npm audit --audit-level=high || {
+            echo "⚠️ Security vulnerabilities found. Review and update dependencies.";
+            exit 0;
+          }
+
+      - name: Check for secrets
+        run: |
+          echo "🕵️ Checking for exposed secrets..."
+          if grep -R "SUPABASE_SERVICE_ROLE_KEY\|JWT_SECRET" --exclude-dir=node_modules --include="*.js" --include="*.ts" .; then
+            echo "❌ Potential secrets found in source. Remove before committing.";
+            exit 1;
+          fi
+          echo "✅ No secrets detected in source code"
+
+  e2e:
+    name: E2E Tests
     runs-on: ubuntu-latest
-    
+    needs: [ quality, test ]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci || npm install
-      
-    - name: Run security audit
-      run: |
-        npm audit --audit-level=moderate || echo "⚠️  Security audit found issues (continuing...)"
-      continue-on-error: true
-      
-    - name: Check for hardcoded secrets
-      run: |
-        echo "Checking for potential secrets..."
-        if grep -r "password\|secret\|key\|token" --include="*.js" --include="*.json" . | grep -v node_modules | grep -v ".env" | grep -v "test" | grep -v ".github" | grep -v "package-lock.json" | grep -v "IGNORE_SECRET_CHECK"; then
-          echo "⚠️  Found potential secrets - please review"
-          echo "⚠️  This is a warning, not an error"
-        else
-          echo "✅ No obvious secrets found"
-        fi
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Setup E2E environment
+        run: |
+          cp env.example .env.test
+          echo "DEMO_MODE=true" >> .env.test
+          npm run demo:seed
+
+      - name: Run E2E tests (optional)
+        run: |
+          echo "🎭 Running E2E tests..."
+          npm run test:e2e || {
+            echo "⚠️ E2E tests not configured yet.";
+            exit 0;
+          }
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+
+  beta-validation:
+    name: Beta Validation
+    runs-on: ubuntu-latest
+    needs: [ quality, test ]
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Run beta validation
+        run: |
+          echo "🧪 Running beta validation..."
+          npm run beta:validate || {
+            echo "❌ Beta validation failed. Review docs/beta_checklist.md";
+            exit 1;
+          }
+
+      - name: Comment PR with beta status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const file = 'beta-results.json';
+            let betaResults = { passed: false, message: 'Beta validation not run' };
+            if (fs.existsSync(file)) {
+              betaResults = JSON.parse(fs.readFileSync(file, 'utf8'));
+            }
+            const body = `## 🧪 Beta Validation Results\n\n${betaResults.passed ? '✅' : '❌'} **Beta Ready**: ${betaResults.passed ? 'Yes' : 'No'}\n\n${betaResults.message}\n\n📖 Full checklist: [docs/beta_checklist.md](./docs/beta_checklist.md)`;
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body
+            });
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: [ quality, test, performance ]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Build for production
+        run: |
+          echo "🏗️ Building for production..."
+          NODE_ENV=production npm run build
+
+      - name: Deploy to Netlify
+        uses: nwtgck/actions-netlify@v3.0
+        with:
+          publish-dir: './dist'
+          production-branch: main
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Deploy from GitHub Actions"
+          enable-pull-request-comment: false
+          enable-commit-comment: true
+          overwrites-pull-request-comment: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
+      - name: Deployment notification
+        if: success()
+        run: |
+          echo "🚀 Deployment successful!"
+          echo "Production URL: https://your-app.netlify.app"

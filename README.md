@@ -29,6 +29,25 @@ A modern Progressive Web Application (PWA) for fitness tracking with AI-powered 
 
 *See `docs/PRIORITY_3_IMPLEMENTATION.md` for detailed implementation notes.*
 
+### Beta Testing
+
+**Comprehensive Beta Testing Checklist Available** ✅
+
+For beta testers and developers, a complete step-by-step testing checklist is available:
+
+- **[Beta Testing Checklist](docs/beta_checklist.md)** - Comprehensive validation guide for all beta features
+  - Step-by-step test scripts for all beta features
+  - Clear pass/fail criteria for each test
+  - Troubleshooting guide for common issues
+  - Performance validation steps
+  - Mobile and desktop testing procedures
+
+**Quick Beta Setup:**
+1. Copy `env.example` to `.env` with valid Supabase credentials
+2. Set `DEMO_MODE=true` for quick start
+3. Run `npm run demo` to start demo server
+4. Follow the [Beta Testing Checklist](docs/beta_checklist.md) for validation
+
 ---
 
 ## 🔒 Security Status

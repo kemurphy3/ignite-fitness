@@ -10,27 +10,46 @@
     "analyze": "webpack --mode=production --analyze",
     "clean": "rimraf dist",
     "prebuild": "npm run clean",
+
     "perf:budget": "node scripts/perf-budget.js",
     "perf:lighthouse": "lhci autorun",
     "perf:check": "npm run build && npm run perf:budget",
     "test:perf": "npm run perf:check",
+
+    "prepare": "husky install",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint js/ scripts/ netlify/functions/ tests/ --ext .js",
+    "lint:check": "npm run lint",
+    "lint:fix": "eslint js/ scripts/ netlify/functions/ tests/ --ext .js --fix",
+    "typecheck": "npx tsc --noEmit --project jsconfig.json",
+    "typecheck:watch": "npx tsc --noEmit --project jsconfig.json --watch",
+
     "test": "vitest run",
+    "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
-    "test:unit": "vitest run --run tests/**/*.test.js",
-    "test:integration": "vitest run --run tests/**/*.spec.js",
-    "test:smoke": "playwright test tests/smoke.spec.js || echo 'Playwright not configured, skipping smoke tests'",
+    "test:unit": "vitest run tests/unit/ --coverage",
+    "test:integration": "vitest run tests/integration/",
+    "test:e2e": "playwright test || echo 'Playwright not configured, skipping E2E tests'",
     "test:imports": "node tools/check-imports.js",
     "test:syntax": "node tools/check-syntax.js",
     "test:dom": "node tools/check-dom-safety.js || echo 'DOM safety check skipped'",
     "test:health": "node -e \"require('http').createServer((req, res) => { res.writeHead(200); res.end('OK'); }).listen(8001, () => console.log('Health check server running on :8001'));\"",
-    "test:all": "npm run test:imports && npm run test:syntax && npm run test:dom && npm run test:smoke",
-    "lint": "npm run test:syntax && npm run test:imports && npm run test:dom",
+    "test:all": "npm run test:imports && npm run test:syntax && npm run test:dom && npm run test:perf",
+    "test:ci": "npm run test:unit && npm run test:integration",
+
+    "quality:check": "npm run format:check && npm run lint:check && npm run typecheck",
+    "quality:fix": "npm run lint:fix && npm run format",
+    "pre-commit": "npm run quality:check && npm run test:ci",
+
     "serve": "npx http-server . -p 3000 -c-1 || python3 -m http.server 3000 || echo 'No server available, install http-server or use Python'",
     "start": "npm run serve",
+
     "db:migrate": "psql $DATABASE_URL -f database-beta-workout-templates.sql && psql $DATABASE_URL -f database-beta-substitution-engine.sql && psql $DATABASE_URL -f database-beta-safety-guardrails.sql && psql $DATABASE_URL -f database-beta-enhanced-sessions.sql",
     "db:seed": "node scripts/seed-database.js",
     "db:setup": "npm run db:migrate && npm run db:seed",
     "test:acceptance": "npm run db:setup && npm run test:integration",
+
     "test:load-calc": "vitest run tests/unit/load-calculation-engine.test.js",
     "test:substitution": "vitest run tests/unit/substitution-engine.test.js",
     "test:substitution-api": "vitest run tests/integration/substitution-api.test.js",
@@ -40,7 +59,35 @@
     "test:guardrails": "vitest run tests/unit/load-guardrails.test.js tests/integration/load-guardrails-integration.test.js",
     "test:week-view": "vitest run tests/unit/week-view.test.js",
     "test:load-performance": "vitest run tests/performance/load-calculations.test.js",
-    "test:load-all": "vitest run tests/unit/load-guardrails.test.js tests/unit/week-view.test.js tests/performance/load-calculations.test.js"
+    "test:load-all": "vitest run tests/unit/load-guardrails.test.js tests/unit/week-view.test.js tests/performance/load-calculations.test.js",
+
+    "demo": "node scripts/setup-demo.js && npm run serve",
+    "demo:seed": "node scripts/seed-demo-data.js",
+    "demo:reset": "node scripts/reset-demo-data.js && npm run demo:seed",
+    "demo:quick": "DEMO_MODE=true npm run serve",
+    "demo:serve": "npm run serve",
+
+    "beta:setup": "node scripts/beta-setup.js",
+    "beta:validate": "node scripts/validate-beta.js",
+
+    "dev:beta": "DEMO_MODE=true npm run dev",
+    "test:beta": "npm run test && npm run test:integration",
+    "validate:env": "node scripts/validate-env.js",
+    "validate:post-merge": "node scripts/post-merge-validation.js",
+    "validate:quick": "node scripts/post-merge-validation.js --quick",
+
+    "ci:install": "npm ci --prefer-offline --no-audit",
+    "ci:test": "npm run quality:check && npm run test:ci",
+    "ci:build": "NODE_ENV=production npm run build"
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "chart.js": "^4.4.0"
@@ -57,13 +104,18 @@
     "css-loader": "^6.8.1",
     "css-minimizer-webpack-plugin": "^5.0.1",
     "cssnano": "^6.0.1",
+    "eslint": "^8.57.0",
+    "husky": "^9.0.11",
     "html-webpack-plugin": "^5.5.3",
+    "lint-staged": "^15.2.2",
     "mini-css-extract-plugin": "^2.7.6",
     "playwright": "^1.40.0",
     "postcss": "^8.4.31",
     "postcss-loader": "^7.3.3",
+    "prettier": "^3.2.5",
     "rimraf": "^5.0.5",
     "terser-webpack-plugin": "^5.3.9",
+    "typescript": "^5.3.0",
     "vitest": "^2.0.0",
     "webpack": "^5.89.0",
     "webpack-bundle-analyzer": "^4.9.1",

@@ -457,27 +457,34 @@ ENABLE_DEBUG_LOGGING=true
 
 ### Post-Deployment
 
-1. **Security Audit**
+1. **Beta Testing**
+   - Follow the [Beta Testing Checklist](docs/beta_checklist.md)
+   - Validate all beta features (soccer-shape, guardrails, week view)
+   - Test on multiple browsers and devices
+   - Verify performance meets thresholds
+   - Document any discovered issues
+
+2. **Security Audit**
    - Run security scans
    - Test all security features
    - Verify compliance requirements
 
-2. **Performance Testing**
+3. **Performance Testing**
    - Load test the application
    - Monitor performance metrics
    - Optimize bottlenecks
 
-3. **Monitoring Setup**
+4. **Monitoring Setup**
    - Configure alerting
    - Set up dashboards
    - Monitor key metrics
 
-4. **Backup Strategy**
+5. **Backup Strategy**
    - Configure database backups
    - Test restore procedures
    - Document recovery processes
 
-5. **Documentation**
+6. **Documentation**
    - Update deployment docs
    - Document security procedures
    - Create runbooks
