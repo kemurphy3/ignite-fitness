@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
  * Replaces trivially-fixable stubs only:
- * - `throw new Error("not implemented")` -> clear, typed error messages with actionable guidance.
- * - `return null; // stub` in functions that promise an object -> inserts TODO-free fallback that throws at call site with file:line.
+ * - `throw new Error("UNIMPLEMENTED_CALL: Replace with real implementation. See docs/beta_checklist.md");` -> clear, typed error messages with actionable guidance.
+ * - `throw new Error("UNIMPLEMENTED_RETURN: Replace with real implementation. See docs/beta_checklist.md");` in functions that promise an object -> inserts TODO-free fallback that throws at call site with file:line.
  * NOTE: This does not invent business logic. It makes failure states explicit and searchable.
  */
 const fs = require('fs');
