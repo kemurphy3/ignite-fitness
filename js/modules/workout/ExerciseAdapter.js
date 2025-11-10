@@ -352,15 +352,7 @@ class ExerciseAdapter {
      * @returns {Array} Filtered alternatives
      */
     applyConstraints(alternatives, constraints) {
-        return alternatives.filter(alt => {
-            if (constraints.equipment && alt.equipment && !constraints.equipment.includes(alt.equipment)) {
-                return false;
-            }
-            if (constraints.time && alt.estimatedTime && alt.estimatedTime > constraints.time) {
-                return false;
-            }
-            return true;
-        });
+        return alternatives.filter(alt => this.matchesConstraints(alt, constraints));
     }
 
     /**
@@ -972,8 +964,14 @@ class ExerciseAdapter {
                 replacements: fallbackChain.alternatives.map(a => a.name)
             });
 
-            return {
-                alternatives: fallbackChain.alternatives,
+        const alternatives = this.applyConstraintFilters(fallbackChain.alternatives, constraints);
+
+        const finalAlternatives = alternatives.length > 0
+            ? alternatives
+            : this.applyConstraintFilters(this.getGenericBodyweightAlternatives(), constraints);
+
+        return {
+            alternatives: finalAlternatives,
                 message: fallbackChain.message,
                 fallbackReason: fallbackChain.reason,
                 fallbackLevel: fallbackChain.level
@@ -998,32 +996,43 @@ class ExerciseAdapter {
      * @returns {Object} Fallback chain with alternatives
      */
     getFallbackChain(exerciseName, painLocation, constraints) {
+        // Level 0: Attempt to fetch catalog-based specific matches (equipment friendly)
+        const specificAlternatives = this.getCatalogAlternatives(exerciseName, constraints);
+        if (specificAlternatives.length > 0) {
+            return {
+                alternatives: specificAlternatives,
+                message: `Alternatives matched to ${exerciseName}`,
+                reason: 'Applying catalog-specific replacements',
+                level: 'specific_match'
+            };
+        }
+
         // Level 1: Body-part-specific fallback
         if (painLocation) {
-            const bodyPartFallbacks = this.getBodyPartFallback(painLocation);
+            const bodyPartFallbacks = this.applyConstraintFilters(this.getBodyPartFallback(painLocation), constraints);
             if (bodyPartFallbacks.length > 0) {
                 return {
                     alternatives: bodyPartFallbacks,
                     message: `Safe alternatives for ${painLocation} injury`,
-                    reason: `No specific alternatives found, using ${painLocation}-safe exercises`,
+                    reason: `Using ${painLocation}-friendly exercise pool`,
                     level: 'body_part_specific'
                 };
             }
         }
 
         // Level 2: Generic injury-safe exercises
-        const genericSafe = this.getGenericSafeAlternatives();
+        const genericSafe = this.applyConstraintFilters(this.getGenericSafeAlternatives(), constraints);
         if (genericSafe.length > 0) {
             return {
                 alternatives: genericSafe,
-                message: 'Generic safe alternatives provided',
-                reason: 'Using injury-safe exercise database',
+                message: 'Generic low-impact alternatives provided',
+                reason: 'Using low-impact exercise database',
                 level: 'generic_safe'
             };
         }
 
         // Level 3: Bodyweight alternatives
-        const bodyweightAlternatives = this.getGenericBodyweightAlternatives();
+        const bodyweightAlternatives = this.applyConstraintFilters(this.getGenericBodyweightAlternatives(), constraints);
         return {
             alternatives: bodyweightAlternatives,
             message: 'Bodyweight alternatives provided',
@@ -1041,62 +1050,71 @@ class ExerciseAdapter {
         const fallbackMap = {
             'knee': [
                 {
-                    name: 'Seated Leg Press (light)',
-                    rationale: 'Knee-safe lower body training with reduced knee stress',
+                    name: 'Goblet Squat',
+                    rationale: 'Front-loaded squat reduces knee shear and keeps torso upright',
                     restAdjustment: 0,
-                    volumeAdjustment: 0.7
+                    volumeAdjustment: 0.8,
+                    equipment: 'dumbbell'
                 },
                 {
-                    name: 'Upper Body Focus Session',
-                    rationale: 'Avoiding lower body while allowing upper body training',
-                    restAdjustment: -15,
-                    volumeAdjustment: 1.0
+                    name: 'Box Squat',
+                    rationale: 'Box provides depth control and reduces knee travel',
+                    restAdjustment: 0,
+                    volumeAdjustment: 0.85,
+                    equipment: 'barbell'
                 },
                 {
-                    name: 'Seated Cable Exercises',
-                    rationale: 'Seated position reduces knee loading',
+                    name: 'Leg Press',
+                    rationale: 'Guided machine supports hips and limits knee stress',
                     restAdjustment: 0,
-                    volumeAdjustment: 0.8
+                    volumeAdjustment: 0.75,
+                    equipment: 'machine'
                 }
             ],
             'shoulder': [
                 {
-                    name: 'Lower Body Focus Session',
-                    rationale: 'Avoiding shoulder movements while maintaining lower body training',
+                    name: 'Goblet Squat Hold',
+                    rationale: 'Lower body strength focus without shoulder elevation',
                     restAdjustment: 0,
-                    volumeAdjustment: 1.0
+                    volumeAdjustment: 1.0,
+                    equipment: 'dumbbell'
                 },
                 {
-                    name: 'Core Stability Work',
-                    rationale: 'Core training that doesn\'t stress shoulders',
+                    name: 'Reverse Sled Drag',
+                    rationale: 'Leg drive with straps keeps shoulders neutral',
                     restAdjustment: -15,
-                    volumeAdjustment: 1.0
+                    volumeAdjustment: 1.0,
+                    equipment: 'sled'
                 },
                 {
-                    name: 'Leg Press',
-                    rationale: 'Lower body training without upper body involvement',
-                    restAdjustment: 0,
-                    volumeAdjustment: 1.0
+                    name: 'Roman Chair Core Series',
+                    rationale: 'Core work avoiding overhead shoulder stress',
+                    restAdjustment: -15,
+                    volumeAdjustment: 0.9,
+                    equipment: 'bodyweight'
                 }
             ],
             'back': [
                 {
-                    name: 'Supported Row (machine)',
-                    rationale: 'Back-supported position reduces spinal loading',
+                    name: 'Supported Chest Press (machine)',
+                    rationale: 'Back supported pressing minimises spinal loading',
                     restAdjustment: 0,
-                    volumeAdjustment: 0.8
+                    volumeAdjustment: 0.8,
+                    equipment: 'machine'
                 },
                 {
-                    name: 'Seated Exercises',
-                    rationale: 'Seated position provides back support',
-                    restAdjustment: -15,
-                    volumeAdjustment: 0.8
+                    name: 'Seated Cable Row (neutral grip)',
+                    rationale: 'Seated chest supported row reduces lumbar strain',
+                    restAdjustment: 0,
+                    volumeAdjustment: 0.8,
+                    equipment: 'cable'
                 },
                 {
-                    name: 'Flexibility and Mobility Work',
-                    rationale: 'Gentle movement without loading',
+                    name: 'Cat-Camel Mobility',
+                    rationale: 'Spine-friendly mobility sequence to maintain movement',
                     restAdjustment: -30,
-                    volumeAdjustment: 0.7
+                    volumeAdjustment: 0.6,
+                    equipment: 'bodyweight'
                 }
             ],
             'elbow': [
@@ -1133,6 +1151,60 @@ class ExerciseAdapter {
         return fallbackMap[bodyPartLower] || [];
     }
 
+    getCatalogAlternatives(exerciseName, constraints = {}) {
+        const library = this.getExerciseLibrary();
+        const normalized = exerciseName ? exerciseName.toLowerCase() : '';
+        const catalogMatch = library[normalized];
+        if (!catalogMatch || !Array.isArray(catalogMatch.alternatives)) {
+            return [];
+        }
+        return this.applyConstraintFilters(
+            catalogMatch.alternatives.map(alt => ({ ...alt })),
+            constraints
+        );
+    }
+
+    getExerciseLibrary() {
+        return {
+            'back squat': {
+                muscleGroup: 'legs',
+                alternatives: [
+                    { name: 'Goblet Squat', rationale: 'Front-loaded squat decreases spinal compression', equipment: 'dumbbell', restAdjustment: -15, volumeAdjustment: 0.85 },
+                    { name: 'Trap Bar Deadlift (light)', rationale: 'Neutral spine hinge with reduced knee travel', equipment: 'trap bar', restAdjustment: 0, volumeAdjustment: 0.9 },
+                    { name: 'Split Squat (bodyweight)', rationale: 'Unloaded split squat keeps loading manageable', equipment: 'bodyweight', restAdjustment: -20, volumeAdjustment: 0.8 }
+                ]
+            },
+            'bench press': {
+                muscleGroup: 'chest',
+                alternatives: [
+                    { name: 'Floor Press', rationale: 'Shortens pressing range to protect shoulders', equipment: 'barbell', restAdjustment: 0, volumeAdjustment: 0.8 },
+                    { name: 'Push-Up on Handles', rationale: 'Neutral wrist and scapular movement keep shoulders friendly', equipment: 'bodyweight', restAdjustment: -15, volumeAdjustment: 0.9 },
+                    { name: 'Seated Machine Press', rationale: 'Back support reduces shoulder stress', equipment: 'machine', restAdjustment: 0, volumeAdjustment: 0.75 }
+                ]
+            }
+        };
+    }
+
+    applyConstraintFilters(alternatives = [], constraints = {}) {
+        if (!Array.isArray(alternatives)) {return [];}
+        return alternatives.filter(alt => this.matchesConstraints(alt, constraints));
+    }
+
+    matchesConstraints(alternative, constraints = {}) {
+        if (!alternative) {return false;}
+        const equipmentRequired = alternative.equipment;
+        if (Array.isArray(constraints.equipment) && equipmentRequired) {
+            const available = constraints.equipment.map(e => e.toLowerCase());
+            if (equipmentRequired !== 'bodyweight' && !available.includes(equipmentRequired.toLowerCase())) {
+                return false;
+            }
+        }
+        if (constraints.time && alternative.estimatedTime && alternative.estimatedTime > constraints.time) {
+            return false;
+        }
+        return true;
+    }
+
     /**
      * Get generic safe alternatives when no body-part-specific ones exist
      * @returns {Array} Generic safe alternatives
@@ -1143,19 +1215,22 @@ class ExerciseAdapter {
                 name: 'Walking or Light Cardio',
                 rationale: 'Low-impact cardiovascular activity suitable for most injuries',
                 restAdjustment: -30,
-                volumeAdjustment: 0.6
+                volumeAdjustment: 0.6,
+                equipment: 'bodyweight'
             },
             {
                 name: 'Gentle Mobility Work',
                 rationale: 'Movement without loading, promotes recovery',
                 restAdjustment: -30,
-                volumeAdjustment: 0.5
+                volumeAdjustment: 0.5,
+                equipment: 'bodyweight'
             },
             {
                 name: 'Bodyweight Core Exercises',
                 rationale: 'Core training with minimal joint stress',
                 restAdjustment: -15,
-                volumeAdjustment: 0.7
+                volumeAdjustment: 0.7,
+                equipment: 'bodyweight'
             }
         ];
     }
@@ -1170,19 +1245,22 @@ class ExerciseAdapter {
                 name: 'Bodyweight Squats (if knee allows)',
                 rationale: 'Basic bodyweight movement, modify depth as needed',
                 restAdjustment: 0,
-                volumeAdjustment: 0.8
+                volumeAdjustment: 0.8,
+                equipment: 'bodyweight'
             },
             {
                 name: 'Plank Variations',
                 rationale: 'Core stability without loading',
                 restAdjustment: -15,
-                volumeAdjustment: 0.7
+                volumeAdjustment: 0.7,
+                equipment: 'bodyweight'
             },
             {
                 name: 'Gentle Stretching Routine',
                 rationale: 'Maintains mobility without stress',
                 restAdjustment: -30,
-                volumeAdjustment: 0.5
+                volumeAdjustment: 0.5,
+                equipment: 'bodyweight'
             }
         ];
     }
@@ -1202,17 +1280,9 @@ class ExerciseAdapter {
     }
 }
 
-const exerciseAdapterSingleton = new ExerciseAdapter();
-
 if (typeof window !== 'undefined') {
     window.ExerciseAdapter = ExerciseAdapter;
-    window.exerciseAdapter = exerciseAdapterSingleton;
 }
 
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = ExerciseAdapter;
-    module.exports.instance = exerciseAdapterSingleton;
-}
-
-export { exerciseAdapterSingleton };
 export default ExerciseAdapter;
+
