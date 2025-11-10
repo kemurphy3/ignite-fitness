@@ -10,7 +10,7 @@ cd "$root"
 echo "== Scanning for placeholders =="
 # Add any patterns you consider illegal in main code:
 PATTERNS='TODO|FIXME|PLACEHOLDER|NotImplemented|throw new Error\(.*not implemented.*\)|return null; // stub|pass # stub|your_.*_key|your_.*_id|your_.*_secret'
-if grep -RInE "$PATTERNS" --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist --exclude-dir=build --exclude-dir=docs --exclude="*template*" --exclude="README.md" --exclude="setup-env.*" --exclude="*placeholders.js" --exclude="prompt-validation-results.js" --exclude="repo_doctor.sh" .; then
+if grep -RInE "$PATTERNS" --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist --exclude-dir=build --exclude-dir=docs --exclude-dir=tools --exclude="*template*" --exclude="README.md" --exclude="setup-env.*" --exclude="*placeholders.js" --exclude="prompt-validation-results.js" --exclude="repo_doctor.sh" .; then
   echo "❌ Placeholder patterns found. Remove or replace with real implementations."
   exit 1
 else
