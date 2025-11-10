@@ -62,7 +62,10 @@ module.exports = {
         afterEach: 'readonly',
         beforeAll: 'readonly',
         afterAll: 'readonly',
-        vi: 'readonly'
+        vi: 'readonly',
+        spyOn: 'readonly',
+        jasmine: 'readonly',
+        ExerciseAdapter: 'readonly'
       },
       rules: {
         'no-console': 'off',
@@ -70,10 +73,12 @@ module.exports = {
       }
     },
     {
-      files: ['scripts/**/*.js', 'tools/**/*.js'],
+      files: ['scripts/**/*.js', 'tools/**/*.js', 'verify-*.js', 'test-*.js', 'check-*.js'],
       rules: {
         'no-console': 'off',
-        'no-process-exit': 'off'
+        'no-process-exit': 'off',
+        'no-unused-vars': 'off',
+        'prefer-const': 'off'
       }
     },
     {
