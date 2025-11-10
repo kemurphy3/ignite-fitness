@@ -14,7 +14,7 @@ describe('Strava Processor', () => {
             getStorage: vi.fn(() => ({})),
             setStorage: vi.fn()
         };
-        
+
         mockAuthManager = {
             getCurrentUsername: vi.fn(() => 'test-user')
         };
@@ -51,26 +51,26 @@ describe('Strava Processor', () => {
         }
 
         function parseDuration(seconds) {
-            if (!seconds || seconds <= 0) return null;
+            if (!seconds || seconds <= 0) {return null;}
             return Math.round(seconds / 60);
         }
 
         function parseDistance(meters) {
-            if (!meters || meters <= 0) return null;
+            if (!meters || meters <= 0) {return null;}
             return Math.round(meters);
         }
 
         function parseHeartRate(bpm) {
-            if (!bpm || bpm <= 0) return null;
+            if (!bpm || bpm <= 0) {return null;}
             return Math.round(bpm);
         }
 
         function parseStartTime(dateString) {
-            if (!dateString) return null;
-            
+            if (!dateString) {return null;}
+
             try {
                 const date = new Date(dateString);
-                if (isNaN(date.getTime())) return null;
+                if (isNaN(date.getTime())) {return null;}
                 return date.toISOString();
             } catch (error) {
                 return null;
@@ -79,9 +79,9 @@ describe('Strava Processor', () => {
 
         function calculateTrainingLoad(activity) {
             const { type, duration, distance, avgHR } = activity;
-            
+
             let baseLoad = 0;
-            
+
             const typeMultipliers = {
                 'run': 1.0,
                 'cycle': 0.8,
@@ -90,24 +90,24 @@ describe('Strava Processor', () => {
                 'recovery': 0.3,
                 'other': 0.5
             };
-            
+
             baseLoad = typeMultipliers[type] || 0.5;
-            
+
             const durationFactor = Math.log10(Math.max(duration, 1)) / 2;
-            
+
             let distanceFactor = 0;
             if (['run', 'cycle', 'swim'].includes(type) && distance) {
                 distanceFactor = Math.min(distance / 10000, 1);
             }
-            
+
             let hrFactor = 0;
             if (avgHR && avgHR > 0) {
                 const hrPercent = Math.min(avgHR / 200, 1);
                 hrFactor = hrPercent * 0.5;
             }
-            
+
             const totalLoad = baseLoad * (durationFactor + distanceFactor + hrFactor) * 20;
-            
+
             return Math.max(0, Math.min(100, Math.round(totalLoad)));
         }
 
@@ -115,7 +115,7 @@ describe('Strava Processor', () => {
             const type = mapActivityType(activity.type);
             const startTime = parseStartTime(activity.start_date_local);
             const duration = parseDuration(activity.moving_time || activity.elapsed_time);
-            
+
             return `${type}_${startTime}_${duration}`;
         }
 
@@ -237,11 +237,11 @@ describe('Strava Processor', () => {
         }
 
         function parseStartTime(dateString) {
-            if (!dateString) return null;
-            
+            if (!dateString) {return null;}
+
             try {
                 const date = new Date(dateString);
-                if (isNaN(date.getTime())) return null;
+                if (isNaN(date.getTime())) {return null;}
                 return date.toISOString();
             } catch (error) {
                 return null;
@@ -249,7 +249,7 @@ describe('Strava Processor', () => {
         }
 
         function parseDuration(seconds) {
-            if (!seconds || seconds <= 0) return null;
+            if (!seconds || seconds <= 0) {return null;}
             return Math.round(seconds / 60);
         }
 
@@ -272,7 +272,7 @@ describe('Strava Processor', () => {
             // Both activities should have same dedupe key
             const key1 = `${mapActivityType(activities[0].type)}_${parseStartTime(activities[0].start_date_local)}_${parseDuration(activities[0].moving_time)}`;
             const key2 = `${mapActivityType(activities[1].type)}_${parseStartTime(activities[1].start_date_local)}_${parseDuration(activities[1].moving_time)}`;
-            
+
             expect(key1).toBe(key2);
         });
 
@@ -292,7 +292,7 @@ describe('Strava Processor', () => {
 
             const key1 = `${mapActivityType(activities[0].type)}_${parseStartTime(activities[0].start_date_local)}_${parseDuration(activities[0].moving_time)}`;
             const key2 = `${mapActivityType(activities[1].type)}_${parseStartTime(activities[1].start_date_local)}_${parseDuration(activities[1].moving_time)}`;
-            
+
             expect(key1).not.toBe(key2);
         });
     });
@@ -347,7 +347,7 @@ describe('Strava Processor', () => {
             // Filter last 7 days
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-            
+
             const recentActivities = activities.filter(activity => {
                 const activityDate = new Date(activity.startTime);
                 return activityDate >= sevenDaysAgo;

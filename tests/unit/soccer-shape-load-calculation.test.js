@@ -11,14 +11,14 @@ import { describe, it, expect } from 'vitest';
  */
 function calculateSoccerShapeLoad(workout) {
     const baseLoad = workout.time_required * 0.8; // Base RPE of 8 for soccer-shape
-    
+
     // Get intensity multiplier from structure if available
     let intensityMultiplier = 1.0;
     if (workout.structure && Array.isArray(workout.structure)) {
         const mainBlock = workout.structure.find(b => b.block_type === 'main');
         if (mainBlock && mainBlock.intensity) {
-            const zone = mainBlock.intensity.includes('Z') 
-                ? mainBlock.intensity.split('-')[0] 
+            const zone = mainBlock.intensity.includes('Z')
+                ? mainBlock.intensity.split('-')[0]
                 : 'Z3';
             const zoneMultipliers = {
                 'Z1': 1.0,
@@ -30,10 +30,10 @@ function calculateSoccerShapeLoad(workout) {
             intensityMultiplier = zoneMultipliers[zone] || 4.0;
         }
     }
-    
+
     // Complexity factor (default 5, scaled to 0-1)
     const complexityFactor = 0.5; // Mid-range complexity
-    
+
     // Calculate final load
     return Math.round(baseLoad * intensityMultiplier * (1 + complexityFactor));
 }
@@ -327,7 +327,7 @@ describe('Soccer-Shape Load Calculation', () => {
             };
 
             const calculatedLoad = calculateSoccerShapeLoad(simpleWorkout);
-            
+
             // Base calculation: 30 * 0.8 * 7.0 * 1.5 = 252
             expect(calculatedLoad).toBe(252);
         });

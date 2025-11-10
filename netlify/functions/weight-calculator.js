@@ -46,7 +46,7 @@ exports.handler = async (event, context) => {
         }
 
         const result = calculateWeightLoad(targetWeight, mode, equipmentAvailable);
-        
+
         return {
             statusCode: 200,
             headers,
@@ -71,11 +71,11 @@ exports.handler = async (event, context) => {
  */
 function calculateWeightLoad(targetWeight, mode = 'us', equipmentAvailable = null) {
     const config = BAR_CONFIGS[mode] || BAR_CONFIGS.us;
-    const barWeight = config.barWeight;
-    
+    const {barWeight} = config;
+
     // Calculate weight needed per side
     const weightPerSide = (targetWeight - barWeight) / 2;
-    
+
     if (weightPerSide <= 0) {
         return {
             totalWeight: barWeight,
@@ -131,7 +131,7 @@ function calculatePlateCombination(targetWeight, availablePlates, unit) {
 
     for (const plateWeight of availablePlates) {
         const count = Math.floor(remainingWeight / plateWeight);
-        
+
         if (count > 0) {
             for (let i = 0; i < count; i++) {
                 plates.push({
@@ -142,7 +142,7 @@ function calculatePlateCombination(targetWeight, availablePlates, unit) {
             }
         }
 
-        if (remainingWeight < 0.1) break;
+        if (remainingWeight < 0.1) {break;}
     }
 
     // Round to nearest plate if very close
@@ -205,9 +205,9 @@ function generateInstruction(plates, barWeight, targetWeight, config) {
 function generateFallback(targetWeight, availablePlates, config) {
     // Find next lower achievable weight
     const smallerTarget = targetWeight - (availablePlates[availablePlates.length - 1] || 2.5);
-    
+
     const { plates } = calculatePlateCombination(smallerTarget, availablePlates, config.unit);
-    
+
     return {
         totalWeight: config.barWeight + (plates.reduce((sum, p) => sum + p.weight * 2, 0)),
         instruction: `If missing plates, use ${Math.floor(smallerTarget * 2 + config.barWeight)} ${config.unit} and add 2-3 reps per set`,

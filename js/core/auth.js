@@ -19,7 +19,7 @@ function initAuth(globals) {
 // Simple hash function for password hashing (in production, use bcrypt)
 function simpleHash(str) {
     let hash = 0;
-    if (str.length === 0) return hash;
+    if (str.length === 0) {return hash;}
     for (let i = 0; i < str.length; i++) {
         const char = str.charCodeAt(i);
         hash = ((hash << 5) - hash) + char;
@@ -103,7 +103,7 @@ function register() {
     // Create new user with hashed password
     users[username] = {
         passwordHash: simpleHash(password), // Store hashed password
-        athleteName: athleteName,
+        athleteName,
         personalData: {},
         goals: {},
         wearableSettings: {},
@@ -121,7 +121,7 @@ function register() {
 
     // Save users
     localStorage.setItem('ignitefitness_users', JSON.stringify(users));
-    
+
     // Auto-login after registration
     currentUser = username;
     isLoggedIn = true;
@@ -169,7 +169,7 @@ function resetPassword() {
 
         // Save updated users
         localStorage.setItem('ignitefitness_users', JSON.stringify(users));
-        
+
         showSuccess('Password reset successfully! Please login with your new password.');
         hidePasswordReset();
     } else {

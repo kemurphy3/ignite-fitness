@@ -6,7 +6,7 @@ class RPEInput {
     constructor() {
         this.logger = window.SafeLogger || console;
         this.currentRPE = 5;
-        
+
         this.createModal();
     }
 
@@ -55,16 +55,16 @@ class RPEInput {
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(modal);
-        
+
         // Add event listener for slider
         const slider = document.getElementById('rpe-slider');
         if (slider) {
             slider.addEventListener('input', (e) => {
                 this.updateDisplay(parseInt(e.target.value));
             });
-            
+
             // Update on touch for mobile
             slider.addEventListener('touchmove', (e) => {
                 this.updateDisplay(parseInt(e.target.value));
@@ -81,7 +81,7 @@ class RPEInput {
         const modal = document.getElementById('rpe-input-modal');
         if (modal) {
             modal.classList.remove('hidden');
-            
+
             // Reset to default
             this.currentRPE = 5;
             this.updateDisplay(5);
@@ -104,13 +104,13 @@ class RPEInput {
      */
     updateDisplay(rpe) {
         this.currentRPE = rpe;
-        
+
         const valueDisplay = document.getElementById('rpe-value');
         const slider = document.getElementById('rpe-slider');
-        
+
         if (valueDisplay) {
             valueDisplay.textContent = rpe;
-            
+
             // Add visual feedback
             valueDisplay.className = 'rpe-value';
             if (rpe <= 3) {
@@ -123,7 +123,7 @@ class RPEInput {
                 valueDisplay.classList.add('max');
             }
         }
-        
+
         // Update slider with accessibility attributes
         if (slider) {
             slider.value = rpe;
@@ -160,7 +160,7 @@ class RPEInput {
         if (this.callback) {
             this.callback(this.currentRPE);
         }
-        
+
         this.hide();
     }
 

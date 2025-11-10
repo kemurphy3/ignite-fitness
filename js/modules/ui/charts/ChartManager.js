@@ -10,19 +10,19 @@ class ChartManager {
         this.workerReady = false;
         this._initLogged = false;
         this.supportsOffscreenCanvas = this.checkOffscreenCanvasSupport();
-        
+
         this.init();
     }
-    
+
     /**
      * Check if browser supports OffscreenCanvas
      */
     checkOffscreenCanvasSupport() {
-        return typeof OffscreenCanvas !== 'undefined' && 
+        return typeof OffscreenCanvas !== 'undefined' &&
                typeof Worker !== 'undefined' &&
                'transferToImageBitmap' in OffscreenCanvas.prototype;
     }
-    
+
     /**
      * Initialize chart manager
      */
@@ -32,7 +32,7 @@ class ChartManager {
                 this.worker = new Worker('./js/workers/ChartWorker.js');
                 this.worker.onmessage = this.handleWorkerMessage.bind(this);
                 this.worker.onerror = this.handleWorkerError.bind(this);
-                
+
                 // Set timeout to check if worker initializes successfully
                 // If worker sends INIT_ERROR, it will be handled by handleWorkerMessage
                 // If no message received within 1 second, assume worker failed
@@ -46,7 +46,7 @@ class ChartManager {
                         }
                     }
                 }, 1000);
-                
+
                 // Mark worker as ready when we receive first non-error message
                 const originalHandler = this.handleWorkerMessage.bind(this);
                 this.worker.onmessage = (event) => {
@@ -59,7 +59,7 @@ class ChartManager {
                     }
                     originalHandler(event);
                 };
-                
+
                 // Only log once per instance to avoid duplicates
                 if (!this._initLogged) {
                     console.debug('ChartManager: Web Worker created, waiting for initialization...');
@@ -73,13 +73,13 @@ class ChartManager {
             console.log('ChartManager: OffscreenCanvas not supported, using main thread');
         }
     }
-    
+
     /**
      * Handle messages from worker
      */
     handleWorkerMessage(event) {
         const { type, chartId, imageData, error, message } = event.data;
-        
+
         switch (type) {
             case 'INIT_ERROR':
                 // Worker failed to initialize (usually CDN/CORS issue)
@@ -91,28 +91,28 @@ class ChartManager {
                     this.worker = null;
                 }
                 break;
-                
+
             case 'CHART_CREATED':
             case 'CHART_UPDATED':
             case 'CHART_RESIZED':
                 this.updateChartDisplay(chartId, imageData);
                 break;
-                
+
             case 'CHART_DESTROYED':
                 this.removeChartDisplay(chartId);
                 break;
-                
+
             case 'CHART_ERROR':
                 console.error(`Chart error for ${chartId}:`, error);
                 this.showChartError(chartId, error);
                 break;
-                
+
             case 'ERROR':
                 console.error('Worker error:', error);
                 break;
         }
     }
-    
+
     /**
      * Handle worker errors
      */
@@ -124,13 +124,13 @@ class ChartManager {
             this.worker = null;
         }
     }
-    
+
     /**
      * Create a chart
      */
     async createChart(chartId, config, canvasElement) {
         const rect = canvasElement.getBoundingClientRect();
-        
+
         // Only use worker if it's ready and available
         if (this.supportsOffscreenCanvas && this.worker && this.workerReady) {
             // Use web worker
@@ -143,7 +143,7 @@ class ChartManager {
             return this.createChartInMainThread(chartId, config, canvasElement);
         }
     }
-    
+
     /**
      * Create chart in web worker
      */
@@ -151,12 +151,12 @@ class ChartManager {
         return new Promise((resolve, reject) => {
             const requestId = Date.now();
             this.pendingRequests.set(requestId, { resolve, reject });
-            
+
             this.worker.postMessage({
                 type: 'CREATE_CHART',
                 data: { chartId, config, canvasData }
             });
-            
+
             // Timeout after 5 seconds
             setTimeout(() => {
                 if (this.pendingRequests.has(requestId)) {
@@ -166,7 +166,7 @@ class ChartManager {
             }, 5000);
         });
     }
-    
+
     /**
      * Create chart in main thread (fallback)
      */
@@ -174,7 +174,7 @@ class ChartManager {
         try {
             // Show loading state
             this.showChartLoading(canvasElement);
-            
+
             // Import Chart.js dynamically
             return this.loadChartJS().then(Chart => {
                 const chart = new Chart(canvasElement, {
@@ -188,20 +188,20 @@ class ChartManager {
                         }
                     }
                 });
-                
+
                 this.charts.set(chartId, chart);
                 this.hideChartLoading(canvasElement);
-                
+
                 return chart;
             });
-            
+
         } catch (error) {
             console.error('Failed to create chart in main thread:', error);
             this.showChartError(canvasElement, error.message);
             throw error;
         }
     }
-    
+
     /**
      * Update chart data
      */
@@ -219,7 +219,7 @@ class ChartManager {
             }
         }
     }
-    
+
     /**
      * Resize chart
      */
@@ -236,7 +236,7 @@ class ChartManager {
             }
         }
     }
-    
+
     /**
      * Destroy chart
      */
@@ -254,7 +254,7 @@ class ChartManager {
             }
         }
     }
-    
+
     /**
      * Update chart display with image data from worker
      */
@@ -264,11 +264,11 @@ class ChartManager {
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(imageData, 0, 0);
-            
+
             this.hideChartLoading(canvas);
         }
     }
-    
+
     /**
      * Remove chart display
      */
@@ -279,13 +279,13 @@ class ChartManager {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
     }
-    
+
     /**
      * Show chart loading state
      */
     showChartLoading(canvas) {
         const container = canvas.parentElement;
-        if (!container) return;
+        if (!container) {return;}
 
         // Delay showing spinner by 500ms to avoid flicker on fast renders
         if (container.__chartLoadingTimer) {
@@ -304,23 +304,23 @@ class ChartManager {
             window.LiveRegionManager?.announce('Loading chart', 'polite');
         }, 500);
     }
-    
+
     /**
      * Hide chart loading state
      */
     hideChartLoading(canvas) {
         const container = canvas.parentElement;
-        if (!container) return;
+        if (!container) {return;}
         if (container.__chartLoadingTimer) {
             clearTimeout(container.__chartLoadingTimer);
             container.__chartLoadingTimer = null;
         }
         container.classList.remove('chart-loading');
         const spinner = container.querySelector('.chart-spinner');
-        if (spinner) spinner.remove();
+        if (spinner) {spinner.remove();}
         window.LiveRegionManager?.announce('Chart ready', 'polite');
     }
-    
+
     /**
      * Show chart error
      */
@@ -328,7 +328,7 @@ class ChartManager {
         const container = canvas.parentElement;
         if (container) {
             container.classList.add('chart-error');
-            
+
             const errorDiv = document.createElement('div');
             errorDiv.className = 'chart-error-message';
             errorDiv.innerHTML = `
@@ -339,7 +339,7 @@ class ChartManager {
             container.appendChild(errorDiv);
         }
     }
-    
+
     /**
      * Load Chart.js dynamically
      */
@@ -347,7 +347,7 @@ class ChartManager {
         if (window.Chart) {
             return window.Chart;
         }
-        
+
         return new Promise((resolve, reject) => {
             const script = document.createElement('script');
             script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js';
@@ -356,7 +356,7 @@ class ChartManager {
             document.head.appendChild(script);
         });
     }
-    
+
     /**
      * Cleanup resources
      */
@@ -365,7 +365,7 @@ class ChartManager {
             this.worker.terminate();
             this.worker = null;
         }
-        
+
         this.charts.forEach(chart => chart.destroy());
         this.charts.clear();
         this.pendingRequests.clear();

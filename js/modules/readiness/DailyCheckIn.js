@@ -11,7 +11,7 @@ class DailyCheckIn {
         this.storageManager = window.StorageManager;
         this.riskAssessment = window.RiskAssessment;
         this.screeningResults = window.ScreeningResults;
-        
+
         this.checkInData = {
             sleepHours: 8,
             sleepQuality: 5,
@@ -19,7 +19,7 @@ class DailyCheckIn {
             energyLevel: 5,
             sorenessLevel: 5
         };
-        
+
         this.descriptions = this.initializeDescriptions();
         this.adjustmentRules = this.initializeAdjustmentRules();
     }
@@ -151,18 +151,18 @@ class DailyCheckIn {
     startDailyCheckIn() {
         try {
             if (this.hasCompletedTodayCheckIn()) {
-                return { 
-                    success: false, 
+                return {
+                    success: false,
                     error: 'Check-in already completed today',
-                    alreadyCompleted: true 
+                    alreadyCompleted: true
                 };
             }
 
-            this.logger.audit('DAILY_CHECKIN_STARTED', { 
-                userId: this.authManager?.getCurrentUsername() 
+            this.logger.audit('DAILY_CHECKIN_STARTED', {
+                userId: this.authManager?.getCurrentUsername()
             });
             this.eventBus?.emit('checkin:started');
-            
+
             return { success: true, data: this.checkInData };
         } catch (error) {
             this.logger.error('Failed to start daily check-in', error);
@@ -183,10 +183,10 @@ class DailyCheckIn {
             }
 
             this.checkInData[metric] = value;
-            
+
             this.logger.debug('Check-in data updated', { metric, value });
             this.eventBus?.emit('checkin:dataUpdated', { metric, value, data: this.checkInData });
-            
+
             return { success: true, data: this.checkInData };
         } catch (error) {
             this.logger.error('Failed to update check-in data', error);
@@ -202,26 +202,26 @@ class DailyCheckIn {
     calculateReadinessScore(data = this.checkInData) {
         try {
             const { sleepQuality, stressLevel, energyLevel, sorenessLevel } = data;
-            
+
             // Weighted formula: 30% sleep quality, 25% stress (inverted), 25% soreness (inverted), 20% energy
             const sleepWeight = 0.30;
             const stressWeight = 0.25;
             const sorenessWeight = 0.25;
             const energyWeight = 0.20;
-            
+
             // Invert stress and soreness (lower is better)
             const stressScore = 11 - stressLevel;
             const sorenessScore = 11 - sorenessLevel;
-            
+
             // Calculate weighted score
-            const weightedScore = 
-                (sleepQuality * sleepWeight) +           // 30%
-                (stressScore * stressWeight) +          // 25%
-                (sorenessScore * sorenessWeight) +      // 25%
-                (energyLevel * energyWeight);           // 20%
-            
+            const weightedScore =
+                (sleepQuality * sleepWeight) + // 30%
+                (stressScore * stressWeight) + // 25%
+                (sorenessScore * sorenessWeight) + // 25%
+                (energyLevel * energyWeight); // 20%
+
             const readinessScore = Math.round(weightedScore);
-            
+
             return Math.max(1, Math.min(10, readinessScore));
         } catch (error) {
             this.logger.error('Failed to calculate readiness score', error);
@@ -264,9 +264,9 @@ class DailyCheckIn {
                 adjustments.coachMessage = 'Excellent readiness! Ready for full intensity.';
             }
 
-            this.logger.debug('Workout adjustments calculated', { 
-                readinessScore, 
-                adjustments 
+            this.logger.debug('Workout adjustments calculated', {
+                readinessScore,
+                adjustments
             });
 
             return adjustments;
@@ -299,8 +299,8 @@ class DailyCheckIn {
                 stressLevel: this.checkInData.stressLevel,
                 energyLevel: this.checkInData.energyLevel,
                 sorenessLevel: this.checkInData.sorenessLevel,
-                readinessScore: readinessScore,
-                adjustments: adjustments,
+                readinessScore,
+                adjustments,
                 completedAt: new Date().toISOString()
             };
 
@@ -313,18 +313,18 @@ class DailyCheckIn {
                 this.storageManager.addToSyncQueue('daily_checkin', checkInRecord);
             }
 
-            this.logger.audit('DAILY_CHECKIN_COMPLETED', { 
+            this.logger.audit('DAILY_CHECKIN_COMPLETED', {
                 userId: this.authManager?.getCurrentUsername(),
                 readinessScore,
                 adjustments: adjustments.workoutType
             });
             this.eventBus?.emit('checkin:completed', checkInRecord);
 
-            return { 
-                success: true, 
+            return {
+                success: true,
                 checkInRecord,
                 adjustments,
-                message: 'Daily check-in completed successfully!' 
+                message: 'Daily check-in completed successfully!'
             };
         } catch (error) {
             this.logger.error('Failed to complete daily check-in', error);
@@ -340,14 +340,14 @@ class DailyCheckIn {
         try {
             const today = new Date().toISOString().split('T')[0];
             const stored = localStorage.getItem('ignitefitness_checkin_data');
-            
+
             if (stored) {
                 const data = JSON.parse(stored);
                 if (data.date === today) {
                     return data;
                 }
             }
-            
+
             return null;
         } catch (error) {
             this.logger.error('Failed to get today\'s check-in', error);
@@ -366,11 +366,11 @@ class DailyCheckIn {
             // For now, return mock data
             const trend = [];
             const today = new Date();
-            
+
             for (let i = days - 1; i >= 0; i--) {
                 const date = new Date(today);
                 date.setDate(date.getDate() - i);
-                
+
                 trend.push({
                     date: date.toISOString().split('T')[0],
                     readinessScore: Math.floor(Math.random() * 4) + 6, // 6-10 range
@@ -379,7 +379,7 @@ class DailyCheckIn {
                     stressLevel: Math.floor(Math.random() * 3) + 3 // 3-5 range
                 });
             }
-            
+
             return trend;
         } catch (error) {
             this.logger.error('Failed to get readiness trend', error);
@@ -396,14 +396,14 @@ class DailyCheckIn {
     getSliderDescription(metric, value) {
         try {
             const descriptions = this.descriptions[metric];
-            if (!descriptions) return '';
+            if (!descriptions) {return '';}
 
             if (metric === 'sleep' && descriptions.quality) {
                 return descriptions.quality.descriptions[Math.round(value)] || '';
             } else if (descriptions.descriptions) {
                 return descriptions.descriptions[Math.round(value)] || '';
             }
-            
+
             return '';
         } catch (error) {
             this.logger.error('Failed to get slider description', error);
@@ -419,7 +419,7 @@ class DailyCheckIn {
     getSliderConfig(metric) {
         try {
             const descriptions = this.descriptions[metric];
-            if (!descriptions) return null;
+            if (!descriptions) {return null;}
 
             if (metric === 'sleep') {
                 return {
@@ -447,12 +447,12 @@ class DailyCheckIn {
         try {
             const today = new Date().toISOString().split('T')[0];
             localStorage.setItem('ignitefitness_last_checkin', today);
-            
-            this.logger.audit('DAILY_CHECKIN_SKIPPED', { 
-                userId: this.authManager?.getCurrentUsername() 
+
+            this.logger.audit('DAILY_CHECKIN_SKIPPED', {
+                userId: this.authManager?.getCurrentUsername()
             });
             this.eventBus?.emit('checkin:skipped');
-            
+
             return { success: true, message: 'Check-in skipped for today' };
         } catch (error) {
             this.logger.error('Failed to skip daily check-in', error);
@@ -473,10 +473,10 @@ class DailyCheckIn {
                 energyLevel: 5,
                 sorenessLevel: 5
             };
-            
+
             this.logger.debug('Check-in data reset');
             this.eventBus?.emit('checkin:dataReset');
-            
+
             return { success: true, data: this.checkInData };
         } catch (error) {
             this.logger.error('Failed to reset check-in data', error);
@@ -505,7 +505,7 @@ class DailyCheckIn {
         };
 
         const riskAssessment = this.riskAssessment.calculateDailyRisk(userData);
-        
+
         this.logger.audit('INJURY_RISK_CALCULATED', {
             userId: userData.userId,
             riskLevel: riskAssessment.level,
@@ -522,11 +522,11 @@ class DailyCheckIn {
     getUserSport() {
         try {
             const username = this.authManager?.getCurrentUsername();
-            if (!username) return 'soccer';
+            if (!username) {return 'soccer';}
 
             const users = JSON.parse(localStorage.getItem('ignitefitness_users') || '{}');
             const user = users[username];
-            if (!user) return 'soccer';
+            if (!user) {return 'soccer';}
 
             return user.onboardingData?.sport?.id || 'soccer';
         } catch (error) {
@@ -548,10 +548,10 @@ class DailyCheckIn {
      * @returns {number} Screen score
      */
     getLastScreenScore() {
-        if (!this.screeningResults) return 2.5;
+        if (!this.screeningResults) {return 2.5;}
 
         const username = this.authManager?.getCurrentUsername();
-        if (!username) return 2.5;
+        if (!username) {return 2.5;}
 
         const latestResult = this.screeningResults.getUserResults(username)[0];
         return latestResult ? latestResult.score : 2.5;
@@ -564,11 +564,11 @@ class DailyCheckIn {
     getInjuryHistory() {
         try {
             const username = this.authManager?.getCurrentUsername();
-            if (!username) return 0;
+            if (!username) {return 0;}
 
             const users = JSON.parse(localStorage.getItem('ignitefitness_users') || '{}');
             const user = users[username];
-            if (!user || !user.injuryHistory) return 0;
+            if (!user || !user.injuryHistory) {return 0;}
 
             return user.injuryHistory.length || 0;
         } catch (error) {
@@ -586,9 +586,9 @@ class DailyCheckIn {
         const injuryRisk = this.calculateInjuryRisk();
 
         return {
-            readiness: readiness,
-            workoutAdjustment: workoutAdjustment,
-            injuryRisk: injuryRisk,
+            readiness,
+            workoutAdjustment,
+            injuryRisk,
             recommendations: this.combineRecommendations(readiness, injuryRisk),
             timestamp: new Date().toISOString()
         };

@@ -12,7 +12,7 @@ let isLoggedIn = false;
 window.IF_clearCachesAndReload = async function() {
     try {
         console.log('Clearing all caches and reloading...');
-        
+
         // Clear all caches
         if ('caches' in window) {
             const cacheNames = await caches.keys();
@@ -21,7 +21,7 @@ window.IF_clearCachesAndReload = async function() {
                 console.log('Deleted cache:', name);
             }
         }
-        
+
         // Unregister service workers
         if ('serviceWorker' in navigator) {
             const registrations = await navigator.serviceWorker.getRegistrations();
@@ -30,11 +30,11 @@ window.IF_clearCachesAndReload = async function() {
                 console.log('Unregistered service worker');
             }
         }
-        
+
         // Clear problematic localStorage items
         localStorage.removeItem('ignitefitness_user_profile_migration_in_progress');
         localStorage.removeItem('ignite_user_prefs');
-        
+
         // Force reload
         location.reload(true);
     } catch (error) {
@@ -85,15 +85,15 @@ ${error.stack || error.message || error}
             </div>
         </div>
     `;
-    
+
     document.body.innerHTML = errorHtml;
 }
 
 // Initialize when DOM is loaded with error handling
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', async () => {
     try {
         console.log('Ignite Fitness App Starting...');
-        
+
         // Deterministic boot sequence
         if (window.BootSequence) {
             await window.BootSequence.boot();
@@ -108,27 +108,27 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
         }
-        
+
         // Initialize UI enhancements (non-blocking, after core boot)
         initializeUIEnhancements();
-        
+
         // Handle Enter key in AI chat input
         const aiInput = document.getElementById('aiChatInput');
         if (aiInput) {
-            aiInput.addEventListener('keypress', function(e) {
+            aiInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     sendToAI();
                 }
             });
         }
-        
+
         // Mark app as ready
         window.appReady = true;
         console.log('Ignite Fitness App Ready!');
-        
+
         // Get service worker version and display it
         getServiceWorkerVersion();
-        
+
     } catch (error) {
         console.error('Boot error:', error);
         showBootError(error);
@@ -136,14 +136,14 @@ document.addEventListener('DOMContentLoaded', async function() {
 });
 
 // Global error handler for unhandled errors
-window.addEventListener('error', function(event) {
+window.addEventListener('error', (event) => {
     console.error('Unhandled error:', event.error);
     if (!window.appReady) {
         showBootError(event.error);
     }
 });
 
-window.addEventListener('unhandledrejection', function(event) {
+window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection:', event.reason);
     if (!window.appReady) {
         showBootError(event.reason);
@@ -199,13 +199,13 @@ function displayServiceWorkerVersion(version) {
 
 /**
  * Initialize UI enhancement modules (non-blocking)
- * 
+ *
  * NOTE: This is separate from BootSequence.boot() which handles:
  * - Service Worker registration
  * - Storage initialization
  * - Auth state loading
  * - Router initialization
- * 
+ *
  * This function handles post-boot UI enhancements:
  * - Data migration
  * - AI system setup
@@ -216,25 +216,25 @@ function initializeUIEnhancements() {
     try {
         // Run data migration first
         migrateUserData();
-        
+
         // Initialize AI system
         initializeAI();
-        
+
         // Initialize seasonal training
         initializeSeasonalTraining();
-        
+
         // Initialize data store
         initializeDataStore();
-        
+
         // Initialize workout generator
         initializeWorkoutGenerator();
-        
+
         // Initialize pattern detector
         initializePatternDetector();
-        
+
         // Add workout styles
         addWorkoutStyles();
-        
+
         console.log('UI enhancements initialized successfully');
     } catch (error) {
         console.error('Failed to initialize UI enhancements:', error);
@@ -246,18 +246,18 @@ function initializeUIEnhancements() {
 function migrateUserData() {
     const currentVersion = '2.0';
     const storedVersion = localStorage.getItem('ignitefitness_data_version');
-    
+
     if (storedVersion === currentVersion) {
         return; // No migration needed
     }
-    
+
     console.log('Migrating user data from version', storedVersion || '1.0', 'to', currentVersion);
-    
+
     // Migrate from version 1.0 to 2.0
     if (!storedVersion || storedVersion === '1.0') {
         migrateFromV1ToV2();
     }
-    
+
     // Set new version
     localStorage.setItem('ignitefitness_data_version', currentVersion);
     console.log('Data migration completed');
@@ -270,12 +270,12 @@ function migrateFromV1ToV2() {
         if (oldUsers) {
             const usersData = JSON.parse(oldUsers);
             const migratedUsers = {};
-            
+
             Object.keys(usersData).forEach(username => {
                 const user = usersData[username];
                 migratedUsers[username] = {
                     version: '2.0',
-                    username: username,
+                    username,
                     password: user.password,
                     athleteName: user.athleteName,
                     personalData: user.personalData || {},
@@ -288,14 +288,14 @@ function migrateFromV1ToV2() {
                     updatedAt: new Date().toISOString()
                 };
             });
-            
+
             localStorage.setItem('ignitefitness_users', JSON.stringify(migratedUsers));
         }
-        
+
         // Migrate other data structures
         migrateStravaData();
         migrateWorkoutData();
-        
+
     } catch (error) {
         console.error('Error during data migration:', error);
     }
@@ -306,7 +306,7 @@ function migrateStravaData() {
     const refreshToken = localStorage.getItem('strava_refresh_token');
     const expiresAt = localStorage.getItem('strava_token_expires');
     const athleteId = localStorage.getItem('strava_athlete_id');
-    
+
     if (accessToken && refreshToken) {
         const stravaData = {
             access_token: accessToken,
@@ -315,9 +315,9 @@ function migrateStravaData() {
             athlete_id: athleteId,
             last_updated: Date.now()
         };
-        
+
         localStorage.setItem('ignitefitness_strava_data', JSON.stringify(stravaData));
-        
+
         // Clean up old keys
         localStorage.removeItem('strava_access_token');
         localStorage.removeItem('strava_refresh_token');
@@ -332,7 +332,7 @@ function migrateWorkoutData() {
         try {
             const workouts = JSON.parse(oldWorkouts);
             localStorage.setItem('ignitefitness_workout_data', JSON.stringify({
-                workouts: workouts,
+                workouts,
                 version: '2.0',
                 last_updated: Date.now()
             }));
@@ -348,14 +348,14 @@ function login() {
     const usernameEl = document.getElementById('loginUsername');
     const passwordEl = document.getElementById('loginPassword');
     const errorDiv = document.getElementById('loginError');
-    
-    if (!usernameEl || !passwordEl) return; // Form not available
-    
+
+    if (!usernameEl || !passwordEl) {return;} // Form not available
+
     const username = usernameEl.value;
     const password = passwordEl.value;
 
     if (!username || !password) {
-        if (errorDiv) showError(errorDiv, 'Please enter both username and password');
+        if (errorDiv) {showError(errorDiv, 'Please enter both username and password');}
         return;
     }
 
@@ -364,7 +364,7 @@ function login() {
         currentUser = username;
         isLoggedIn = true;
         showSuccess('Login successful!');
-        
+
         // Check if user needs onboarding
         if (window.OnboardingManager?.needsOnboarding()) {
             showOnboarding();
@@ -383,9 +383,9 @@ function register() {
     const confirmPasswordEl = document.getElementById('regConfirmPassword');
     const athleteNameEl = document.getElementById('regAthleteName');
     const errorDiv = document.getElementById('registerError');
-    
-    if (!usernameEl || !passwordEl || !confirmPasswordEl || !athleteNameEl) return; // Form not available
-    
+
+    if (!usernameEl || !passwordEl || !confirmPasswordEl || !athleteNameEl) {return;} // Form not available
+
     const username = usernameEl.value;
     const password = passwordEl.value;
     const confirmPassword = confirmPasswordEl.value;
@@ -394,7 +394,7 @@ function register() {
     const result = window.AuthManager?.register({
         username, password, confirmPassword, athleteName
     });
-    
+
     if (result.success) {
         currentUser = username;
         isLoggedIn = true;
@@ -413,9 +413,9 @@ function resetPassword() {
     const newPasswordEl = document.getElementById('newPassword');
     const confirmPasswordEl = document.getElementById('confirmNewPassword');
     const errorDiv = document.getElementById('resetError');
-    
-    if (!usernameEl || !athleteNameEl || !newPasswordEl || !confirmPasswordEl) return; // Form not available
-    
+
+    if (!usernameEl || !athleteNameEl || !newPasswordEl || !confirmPasswordEl) {return;} // Form not available
+
     const username = usernameEl.value;
     const athleteName = athleteNameEl.value;
     const newPassword = newPasswordEl.value;
@@ -424,7 +424,7 @@ function resetPassword() {
     const result = window.AuthManager?.resetPassword({
         username, athleteName, newPassword, confirmPassword
     });
-    
+
     if (result.success) {
         showSuccess('Password reset successfully! Please login with your new password.');
         hidePasswordReset();
@@ -447,16 +447,16 @@ function logout() {
 function showLoginForm() {
     const loginForm = document.getElementById('loginForm');
     const userDashboard = document.getElementById('userDashboard');
-    if (loginForm) loginForm.classList.remove('hidden');
-    if (userDashboard) userDashboard.classList.add('hidden');
+    if (loginForm) {loginForm.classList.remove('hidden');}
+    if (userDashboard) {userDashboard.classList.add('hidden');}
 }
 
 function showUserDashboard() {
     const loginForm = document.getElementById('loginForm');
     const userDashboard = document.getElementById('userDashboard');
-    if (loginForm) loginForm.classList.add('hidden');
-    if (userDashboard) userDashboard.classList.remove('hidden');
-    
+    if (loginForm) {loginForm.classList.add('hidden');}
+    if (userDashboard) {userDashboard.classList.remove('hidden');}
+
     const athleteNameElement = document.getElementById('currentAthleteName');
     if (athleteNameElement && window.AuthManager?.getCurrentUser()) {
         athleteNameElement.textContent = window.AuthManager.getCurrentUser().athleteName || currentUser;
@@ -466,27 +466,27 @@ function showUserDashboard() {
 function showPasswordReset() {
     const loginForm = document.getElementById('loginForm');
     const passwordResetForm = document.getElementById('passwordResetForm');
-    if (loginForm) loginForm.classList.add('hidden');
-    if (passwordResetForm) passwordResetForm.classList.remove('hidden');
+    if (loginForm) {loginForm.classList.add('hidden');}
+    if (passwordResetForm) {passwordResetForm.classList.remove('hidden');}
 }
 
 function hidePasswordReset() {
     const passwordResetForm = document.getElementById('passwordResetForm');
     const loginForm = document.getElementById('loginForm');
-    if (passwordResetForm) passwordResetForm.classList.add('hidden');
-    if (loginForm) loginForm.classList.remove('hidden');
+    if (passwordResetForm) {passwordResetForm.classList.add('hidden');}
+    if (loginForm) {loginForm.classList.remove('hidden');}
 }
 
 function showRegisterForm() {
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
-    if (loginForm) loginForm.classList.add('hidden');
-    if (registerForm) registerForm.classList.remove('hidden');
+    if (loginForm) {loginForm.classList.add('hidden');}
+    if (registerForm) {registerForm.classList.remove('hidden');}
 }
 
 function hideRegisterForm() {
     const registerForm = document.getElementById('registerForm');
-    if (registerForm) registerForm.classList.add('hidden');
+    if (registerForm) {registerForm.classList.add('hidden');}
 }
 
 // Tab Functions
@@ -494,16 +494,16 @@ function showTab(tabName, clickedButton) {
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.add('hidden');
     });
-    
+
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('active');
     });
-    
+
     const selectedTab = document.getElementById(tabName);
     if (selectedTab) {
         selectedTab.classList.remove('hidden');
     }
-    
+
     if (clickedButton) {
         clickedButton.classList.add('active');
     }
@@ -511,32 +511,32 @@ function showTab(tabName, clickedButton) {
 
 // Data Functions (delegated to modules)
 function loadUserData() {
-    if (!currentUser || !window.AuthManager?.getCurrentUser()) return;
-    
+    if (!currentUser || !window.AuthManager?.getCurrentUser()) {return;}
+
     const user = window.AuthManager.getCurrentUser();
-    
+
     if (user.personalData) {
         const ageEl = document.getElementById('age');
-        if (ageEl && user.personalData.age) ageEl.value = user.personalData.age;
-        
+        if (ageEl && user.personalData.age) {ageEl.value = user.personalData.age;}
+
         const weightEl = document.getElementById('weight');
-        if (weightEl && user.personalData.weight) weightEl.value = user.personalData.weight;
-        
+        if (weightEl && user.personalData.weight) {weightEl.value = user.personalData.weight;}
+
         const heightEl = document.getElementById('height');
-        if (heightEl && user.personalData.height) heightEl.value = user.personalData.height;
-        
+        if (heightEl && user.personalData.height) {heightEl.value = user.personalData.height;}
+
         const experienceEl = document.getElementById('experience');
-        if (experienceEl && user.personalData.experience) experienceEl.value = user.personalData.experience;
+        if (experienceEl && user.personalData.experience) {experienceEl.value = user.personalData.experience;}
     }
-    
+
     if (user.goals) {
         if (user.goals.primary) {
             const primaryGoal = document.querySelector(`input[name="primaryGoal"][value="${user.goals.primary}"]`);
-            if (primaryGoal) primaryGoal.checked = true;
+            if (primaryGoal) {primaryGoal.checked = true;}
         }
         if (user.goals.secondary) {
             const secondaryGoal = document.querySelector(`input[name="secondaryGoal"][value="${user.goals.secondary}"]`);
-            if (secondaryGoal) secondaryGoal.checked = true;
+            if (secondaryGoal) {secondaryGoal.checked = true;}
         }
     }
 }
@@ -546,24 +546,24 @@ async function savePersonalInfo() {
         showError(null, 'Please log in first');
         return;
     }
-    
+
     const ageEl = document.getElementById('age');
     const weightEl = document.getElementById('weight');
     const heightEl = document.getElementById('height');
     const experienceEl = document.getElementById('experience');
-    
+
     if (!ageEl || !weightEl || !heightEl || !experienceEl) {
         showError(null, 'Personal info form not available');
         return;
     }
-    
+
     const personalData = {
         age: parseInt(ageEl.value) || 0,
         weight: parseFloat(weightEl.value) || 0,
         height: parseInt(heightEl.value) || 0,
         experience: experienceEl.value || ''
     };
-    
+
     const result = window.AuthManager?.updateUserData({ personalData });
     if (result.success) {
         showSuccess('Personal information saved!');
@@ -577,12 +577,12 @@ async function saveGoals() {
         showError(null, 'Please log in first');
         return;
     }
-    
+
     const goals = {
         primary: document.querySelector('input[name="primaryGoal"]:checked')?.value,
         secondary: document.querySelector('input[name="secondaryGoal"]:checked')?.value
     };
-    
+
     const result = window.AuthManager?.updateUserData({ goals });
     if (result.success) {
         showSuccess('Goals saved!');
@@ -668,13 +668,13 @@ function startOnboardingFlow() {
 
 function renderOnboardingQuestion() {
     const question = window.OnboardingManager?.getCurrentQuestion();
-    if (!question) return;
+    if (!question) {return;}
 
     const container = document.getElementById('onboardingContainer');
-    if (!container) return;
+    if (!container) {return;}
 
     const progress = window.OnboardingManager?.getOnboardingProgress();
-    
+
     container.innerHTML = `
         <div class="onboarding-question">
             <h3>${question.question}</h3>
@@ -699,28 +699,28 @@ function renderOnboardingQuestion() {
 
     // Update progress
     const onboardingStep = document.getElementById('onboardingStep');
-    if (onboardingStep) onboardingStep.textContent = progress.currentStep + 1;
-    
+    if (onboardingStep) {onboardingStep.textContent = progress.currentStep + 1;}
+
     const onboardingTotal = document.getElementById('onboardingTotal');
-    if (onboardingTotal) onboardingTotal.textContent = progress.totalSteps;
+    if (onboardingTotal) {onboardingTotal.textContent = progress.totalSteps;}
 
     // Add event listeners for radio buttons
     const radioButtons = container.querySelectorAll('input[name="onboardingAnswer"]');
     radioButtons.forEach(radio => {
-        radio.addEventListener('change', function() {
+        radio.addEventListener('change', () => {
             const nextBtn = document.getElementById('nextBtn');
-            if (nextBtn) nextBtn.disabled = false;
+            if (nextBtn) {nextBtn.disabled = false;}
         });
     });
 }
 
 function answerOnboardingQuestion() {
     const selectedAnswer = document.querySelector('input[name="onboardingAnswer"]:checked');
-    if (!selectedAnswer) return;
+    if (!selectedAnswer) {return;}
 
     const answer = selectedAnswer.value;
     const result = window.OnboardingManager?.answerQuestion(answer);
-    
+
     if (result.success) {
         const nextResult = window.OnboardingManager?.nextStep();
         if (nextResult.success) {
@@ -779,15 +779,15 @@ function showPreferences() {
 
 function loadCurrentPreferences() {
     const preferences = window.OnboardingManager?.getUserPreferences();
-    
+
     // Set data preference
     const dataPreference = preferences.data_preference || 'some_metrics';
     document.querySelector(`input[name="dataPreference"][value="${dataPreference}"]`).checked = true;
-    
+
     // Set role
     const role = preferences.role || 'athlete';
     document.querySelector(`input[name="userRole"][value="${role}"]`).checked = true;
-    
+
     // Set primary goal
     const primaryGoal = preferences.primary_goal || 'general_fitness';
     document.getElementById('primaryGoalPref').value = primaryGoal;
@@ -797,13 +797,13 @@ function savePreferences() {
     const dataPreference = document.querySelector('input[name="dataPreference"]:checked')?.value;
     const role = document.querySelector('input[name="userRole"]:checked')?.value;
     const primaryGoal = document.getElementById('primaryGoalPref').value;
-    
+
     const newPreferences = {
         data_preference: dataPreference,
-        role: role,
+        role,
         primary_goal: primaryGoal
     };
-    
+
     const result = window.OnboardingManager?.updateUserPreferences(newPreferences);
     if (result.success) {
         closePreferences();
@@ -825,7 +825,7 @@ function closePreferences() {
 function toggleRole() {
     const currentRole = window.OnboardingManager?.getUserRole();
     const newRole = currentRole === 'athlete' ? 'coach' : 'athlete';
-    
+
     const result = window.OnboardingManager?.updateUserPreferences({ role: newRole });
     if (result.success) {
         // Re-render dashboard with new role
@@ -860,7 +860,7 @@ function showDailyCheckIn() {
 
 function renderDailyCheckIn() {
     const container = document.getElementById('checkInContainer');
-    if (!container) return;
+    if (!container) {return;}
 
     container.innerHTML = `
         <div class="checkin-metrics">
@@ -953,17 +953,17 @@ function renderDailyCheckIn() {
 }
 
 function updateSliderValue(metric, value) {
-    const valueElement = document.getElementById(metric + 'Value');
-    const descElement = document.getElementById(metric + 'Desc');
-    
-    if (valueElement) valueElement.textContent = value;
-    
+    const valueElement = document.getElementById(`${metric }Value`);
+    const descElement = document.getElementById(`${metric }Desc`);
+
+    if (valueElement) {valueElement.textContent = value;}
+
     // Update description
     const description = window.DailyCheckIn?.getSliderDescription(metric, parseInt(value));
     if (descElement && description) {
         descElement.textContent = description;
     }
-    
+
     // Update check-in data
     updateCheckInData(metric, parseInt(value));
 }
@@ -978,39 +978,39 @@ function updateCheckInData(metric, value) {
 function updateReadinessSummary() {
     const readinessScore = window.DailyCheckIn?.calculateReadinessScore();
     const adjustments = window.DailyCheckIn?.getWorkoutAdjustments();
-    
+
     if (readinessScore && adjustments) {
         // Show readiness summary
         const readinessSummaryEl = document.getElementById('readinessSummary');
         const readinessScoreValueEl = document.getElementById('readinessScoreValue');
         const coachMessageEl = document.getElementById('coachMessage');
-        
-        if (readinessSummaryEl) readinessSummaryEl.style.display = 'block';
-        if (readinessScoreValueEl) readinessScoreValueEl.textContent = readinessScore;
-        if (coachMessageEl) coachMessageEl.textContent = adjustments.coachMessage;
-        
+
+        if (readinessSummaryEl) {readinessSummaryEl.style.display = 'block';}
+        if (readinessScoreValueEl) {readinessScoreValueEl.textContent = readinessScore;}
+        if (coachMessageEl) {coachMessageEl.textContent = adjustments.coachMessage;}
+
         // Show workout adjustments if any
         if (adjustments.intensityReduced || adjustments.recoverySuggested) {
             const workoutAdjustmentsEl = document.getElementById('workoutAdjustments');
             const adjustmentDetailsEl = document.getElementById('adjustmentDetails');
-            
-            if (workoutAdjustmentsEl) workoutAdjustmentsEl.style.display = 'block';
-            
+
+            if (workoutAdjustmentsEl) {workoutAdjustmentsEl.style.display = 'block';}
+
             if (adjustmentDetailsEl) {
                 let adjustmentText = '';
                 if (adjustments.intensityReduced) {
                     adjustmentText += `• Intensity reduced by ${Math.round((1 - adjustments.intensityMultiplier) * 100)}%<br>`;
                 }
                 if (adjustments.recoverySuggested) {
-                    adjustmentText += `• Recovery workout suggested<br>`;
+                    adjustmentText += '• Recovery workout suggested<br>';
                 }
                 adjustmentDetailsEl.innerHTML = adjustmentText;
             }
         }
-        
+
         // Enable complete button
         const completeCheckInBtn = document.getElementById('completeCheckInBtn');
-        if (completeCheckInBtn) completeCheckInBtn.disabled = false;
+        if (completeCheckInBtn) {completeCheckInBtn.disabled = false;}
     }
 }
 
@@ -1054,7 +1054,7 @@ function showExerciseFeedback(exerciseName, exerciseData) {
 
 function renderExerciseFeedback(exerciseName, exerciseData) {
     const container = document.getElementById('exerciseFeedbackContainer');
-    if (!container) return;
+    if (!container) {return;}
 
     container.innerHTML = `
         <div class="exercise-feedback-form">
@@ -1107,10 +1107,10 @@ function selectFeedbackOption(element, feedbackType) {
     document.querySelectorAll('.feedback-option').forEach(opt => {
         opt.classList.remove('selected');
     });
-    
+
     // Select current option
     element.classList.add('selected');
-    
+
     // Store selected feedback
     window.currentExerciseFeedback = feedbackType;
 }
@@ -1124,7 +1124,7 @@ function setExerciseRating(rating) {
             star.classList.remove('active');
         }
     });
-    
+
     // Store rating
     window.currentExerciseRating = rating;
 }
@@ -1133,19 +1133,19 @@ function submitExerciseFeedback() {
     const feedbackType = window.currentExerciseFeedback;
     const rating = window.currentExerciseRating || 3;
     const comments = document.getElementById('feedbackText').value;
-    
+
     if (!feedbackType) {
         showError(null, 'Please select how the exercise felt');
         return;
     }
-    
+
     // Process feedback with ExerciseAdapter
     const result = window.ExerciseAdapter?.processExerciseFeedback(
-        window.currentExerciseName, 
-        feedbackType, 
+        window.currentExerciseName,
+        feedbackType,
         window.currentExerciseData
     );
-    
+
     if (result.success && result.alternatives.length > 0) {
         // Show alternatives
         showExerciseAlternatives(result.alternatives);
@@ -1164,7 +1164,7 @@ function saveExerciseFeedback(feedbackType, rating, comments) {
         feedbackType === 'good' ? 'prefer' : 'avoid',
         comments
     );
-    
+
     // Save rating
     if (window.currentExerciseData) {
         window.currentExerciseData.userRating = rating;
@@ -1181,7 +1181,7 @@ function showExerciseAlternatives(alternatives) {
 
 function renderExerciseAlternatives(alternatives) {
     const container = document.getElementById('exerciseAlternativesContainer');
-    if (!container) return;
+    if (!container) {return;}
 
     container.innerHTML = `
         <div class="alternatives-list">
@@ -1218,7 +1218,7 @@ function selectAlternative(element, index) {
     document.querySelectorAll('.alternative-exercise').forEach(alt => {
         alt.classList.remove('selected');
     });
-    
+
     // Select current alternative
     element.classList.add('selected');
     window.selectedAlternativeIndex = index;
@@ -1227,15 +1227,15 @@ function selectAlternative(element, index) {
 function selectExerciseAlternative() {
     const alternatives = window.currentAlternatives;
     const selectedIndex = window.selectedAlternativeIndex;
-    
+
     if (selectedIndex !== undefined && alternatives[selectedIndex]) {
         const selectedAlternative = alternatives[selectedIndex];
-        
+
         // Update current exercise with alternative
         if (window.currentExerciseData) {
             Object.assign(window.currentExerciseData, selectedAlternative);
         }
-        
+
         closeExerciseAlternatives();
         closeExerciseFeedback();
         showSuccess(`Exercise updated to ${selectedAlternative.name}!`);
@@ -1266,18 +1266,18 @@ function calculateExerciseProgression(exerciseName, lastRPE, setsCompleted, reps
         reps: 8,
         sets: 3
     };
-    
+
     const progression = window.ProgressionEngine?.calculateNextSession(
-        exerciseData, 
-        lastRPE, 
-        setsCompleted, 
+        exerciseData,
+        lastRPE,
+        setsCompleted,
         repsCompleted
     );
-    
+
     if (progression && progression.changes.length > 0) {
         showProgressionSummary(progression);
     }
-    
+
     return progression;
 }
 
@@ -1290,7 +1290,7 @@ function showProgressionSummary(progression) {
                 ${progression.changes.map(change => `
                     <div class="progression-change">
                         <div class="progression-change-icon ${progression.progression}">
-                            ${progression.progression === 'weight_increase' ? '↑' : 
+                            ${progression.progression === 'weight_increase' ? '↑' :
                               progression.progression === 'weight_decrease' ? '↓' : '='}
                         </div>
                         <span>${change}</span>
@@ -1299,7 +1299,7 @@ function showProgressionSummary(progression) {
             </div>
         </div>
     `;
-    
+
     // This would typically be displayed in the workout interface
     console.log('Progression Summary:', summaryHtml);
 }
@@ -1309,13 +1309,13 @@ function adaptWorkoutToTime(availableTime) {
         exercises: [], // This would come from current workout
         estimatedTime: 60
     };
-    
+
     const adaptedWorkout = window.ProgressionEngine?.adaptWorkoutToTime(availableTime, plannedWorkout);
-    
+
     if (adaptedWorkout && adaptedWorkout.message) {
         showSuccess(adaptedWorkout.message);
     }
-    
+
     return adaptedWorkout;
 }
 
@@ -1330,10 +1330,10 @@ function showGoalsModal() {
 
 function renderGoals() {
     const container = document.getElementById('goalsContainer');
-    if (!container) return;
+    if (!container) {return;}
 
     const goalManager = window.GoalManager;
-    if (!goalManager) return;
+    if (!goalManager) {return;}
 
     const activeGoals = goalManager.getActiveGoals();
     const completedGoals = goalManager.getCompletedGoals();
@@ -1374,7 +1374,7 @@ function renderGoals() {
 
 function renderGoalCard(goal, isCompleted = false) {
     const progressPercentage = Math.round(goal.progress_percentage);
-    
+
     return `
         <div class="goal-card ${isCompleted ? 'completed' : ''}">
             <div class="goal-header">
@@ -1421,12 +1421,12 @@ function showCreateGoalModal() {
 
 function renderCreateGoalForm() {
     const container = document.getElementById('createGoalContainer');
-    if (!container) return;
+    if (!container) {return;}
 
     const goalManager = window.GoalManager;
-    if (!goalManager) return;
+    if (!goalManager) {return;}
 
-    const goalTemplates = goalManager.goalTemplates;
+    const {goalTemplates} = goalManager;
 
     container.innerHTML = `
         <div class="create-goal-form">
@@ -1490,16 +1490,16 @@ function selectGoalType(type) {
     document.querySelectorAll('.goal-type-option').forEach(option => {
         option.classList.remove('selected');
     });
-    
+
     // Select current option
     event.target.closest('.goal-type-option').classList.add('selected');
-    
+
     // Show form fields
     document.getElementById('goalFormFields').style.display = 'block';
-    
+
     // Store selected type
     window.selectedGoalType = type;
-    
+
     // Pre-fill form with template if available
     const goalManager = window.GoalManager;
     if (goalManager && goalManager.goalTemplates[type]) {
@@ -1516,7 +1516,7 @@ function selectGoalType(type) {
 
 function createGoal() {
     const goalManager = window.GoalManager;
-    if (!goalManager) return;
+    if (!goalManager) {return;}
 
     const goalData = {
         type: window.selectedGoalType,
@@ -1529,7 +1529,7 @@ function createGoal() {
     };
 
     const result = goalManager.createGoal(goalData);
-    
+
     if (result.success) {
         closeCreateGoalModal();
         showGoalsModal(); // Refresh goals display
@@ -1563,10 +1563,10 @@ function showHabitsModal() {
 
 function renderHabits() {
     const container = document.getElementById('habitsContainer');
-    if (!container) return;
+    if (!container) {return;}
 
     const habitTracker = window.HabitTracker;
-    if (!habitTracker) return;
+    if (!habitTracker) {return;}
 
     const habitProgress = habitTracker.getHabitProgress(habitTracker.authManager?.getCurrentUsername());
     const achievements = habitTracker.getUserAchievements(habitTracker.authManager?.getCurrentUsername());
@@ -1640,11 +1640,11 @@ function closeHabitsModal() {
 function showMotivationalToast(message) {
     const toast = document.getElementById('motivationalToast');
     const messageElement = document.getElementById('motivationalMessage');
-    
+
     if (toast && messageElement) {
         messageElement.textContent = message;
         toast.classList.remove('hidden');
-        
+
         // Auto-hide after 5 seconds
         setTimeout(() => {
             closeMotivationalToast();
@@ -1664,11 +1664,11 @@ function initializeGoalsAndHabits() {
     if (window.GoalManager) {
         window.GoalManager.initialize();
     }
-    
+
     if (window.HabitTracker) {
         window.HabitTracker.initialize();
     }
-    
+
     // Listen for motivational messages
     if (window.EventBus) {
         window.EventBus.on('motivational:message', (data) => {
@@ -1688,10 +1688,10 @@ function showLoadManagementModal() {
 
 function renderLoadManagement() {
     const container = document.getElementById('loadManagementContainer');
-    if (!container) return;
+    if (!container) {return;}
 
     const loadCalculator = window.LoadCalculator;
-    if (!loadCalculator) return;
+    if (!loadCalculator) {return;}
 
     const dashboardData = loadCalculator.getLoadDashboard();
     if (dashboardData.error) {
@@ -1780,14 +1780,14 @@ function renderLoadManagement() {
 }
 
 function getLoadStatus(totalLoad) {
-    if (totalLoad < 200) return 'low';
-    if (totalLoad < 400) return 'medium';
+    if (totalLoad < 200) {return 'low';}
+    if (totalLoad < 400) {return 'medium';}
     return 'high';
 }
 
 function getLoadStatusText(totalLoad) {
-    if (totalLoad < 200) return 'Low Load';
-    if (totalLoad < 400) return 'Moderate Load';
+    if (totalLoad < 200) {return 'Low Load';}
+    if (totalLoad < 400) {return 'Moderate Load';}
     return 'High Load';
 }
 
@@ -1822,7 +1822,7 @@ function showStravaImportModal() {
 
 function renderStravaImport() {
     const container = document.getElementById('stravaImportContainer');
-    if (!container) return;
+    if (!container) {return;}
 
     container.innerHTML = `
         <div class="strava-import-form">
@@ -1858,10 +1858,10 @@ function selectImportOption(option) {
     document.querySelectorAll('.import-option').forEach(opt => {
         opt.classList.remove('selected');
     });
-    
+
     // Select current option
     event.target.closest('.import-option').classList.add('selected');
-    
+
     // Store selected option
     window.selectedImportOption = option;
 }
@@ -1883,7 +1883,7 @@ function importStravaActivities() {
     const progressDiv = document.getElementById('importProgress');
     const progressFill = document.getElementById('importProgressFill');
     const progressText = document.getElementById('importProgressText');
-    
+
     progressDiv.classList.add('show');
     progressText.textContent = 'Connecting to Strava...';
     progressFill.style.width = '20%';
@@ -1892,15 +1892,15 @@ function importStravaActivities() {
     setTimeout(() => {
         progressText.textContent = 'Fetching activities...';
         progressFill.style.width = '50%';
-        
+
         setTimeout(() => {
             progressText.textContent = 'Processing activities...';
             progressFill.style.width = '80%';
-            
+
             setTimeout(() => {
                 progressText.textContent = 'Import complete!';
                 progressFill.style.width = '100%';
-                
+
                 setTimeout(() => {
                     closeStravaImportModal();
                     showSuccess('Strava activities imported successfully!');
@@ -1923,7 +1923,7 @@ function initializeLoadManagement() {
         // Initialize Strava processor
         console.log('Strava processor initialized');
     }
-    
+
     if (window.LoadCalculator) {
         // Initialize load calculator
         console.log('Load calculator initialized');

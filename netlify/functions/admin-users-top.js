@@ -1,19 +1,19 @@
 // GET /api/admin/users/top - Top users with keyset pagination
 const { neon } = require('@neondatabase/serverless');
 const crypto = require('crypto');
-const { 
-  verifyAdmin, 
-  auditLog, 
-  errorResponse, 
+const {
+  verifyAdmin,
+  auditLog,
+  errorResponse,
   decodeCursor,
   encodeCursor,
   withTimeout,
-  successResponse 
+  successResponse
 } = require('./utils/admin-auth');
 
-const { 
-  safeQuery, 
-  validateMetric 
+const {
+  safeQuery,
+  validateMetric
 } = require('./utils/safe-query');
 
 const { getNeonClient } = require('./utils/connection-pool');
@@ -22,25 +22,25 @@ const sql = getNeonClient();
 exports.handler = async (event) => {
   const startTime = Date.now();
   const requestId = crypto.randomUUID();
-  
+
   try {
     await sql`SET statement_timeout = '5s'`;
-    
+
     const token = event.headers.authorization?.split(' ')[1];
     if (!token) {
       return errorResponse(401, 'MISSING_TOKEN', 'Authorization header required', requestId);
     }
-    
+
     const { adminId } = await verifyAdmin(token, requestId);
-    
+
     const { metric = 'sessions', limit = 50, cursor } = event.queryStringParameters || {};
-    
+
     // Validate inputs using safe validation
     const allowedMetrics = ['sessions', 'duration'];
     const validatedMetric = validateMetric(metric, allowedMetrics);
-    
+
     const parsedLimit = Math.min(Math.max(parseInt(limit) || 50, 1), 100);
-    
+
     // Parse keyset cursor
     let lastValue = null;
     let lastId = null;
@@ -53,7 +53,7 @@ exports.handler = async (event) => {
         return errorResponse(400, 'INVALID_CURSOR', 'Invalid cursor format', requestId);
       }
     }
-    
+
     // Keyset pagination query with privacy using safe queries
     const users = await withTimeout(async () => {
       return await safeQuery(async () => {
@@ -100,7 +100,7 @@ exports.handler = async (event) => {
         }
       });
     });
-    
+
     // Check for next page
     let nextCursor = null;
     let results = users;
@@ -109,7 +109,7 @@ exports.handler = async (event) => {
       const last = results[results.length - 1];
       nextCursor = encodeCursor(last.metric_value, last.user_alias);
     }
-    
+
     // Add ranks (null for subsequent pages)
     const rankedResults = results.map((user, index) => ({
       user_alias: user.user_alias,
@@ -117,10 +117,10 @@ exports.handler = async (event) => {
       rank: cursor ? null : index + 1,
       last_active: user.last_active
     }));
-    
-    await auditLog(adminId, '/admin/users/top', 'GET', 
+
+    await auditLog(adminId, '/admin/users/top', 'GET',
       { metric, limit: parsedLimit, cursor }, 200, Date.now() - startTime, requestId);
-    
+
     return successResponse(
       {
         users: rankedResults,
@@ -135,14 +135,14 @@ exports.handler = async (event) => {
       requestId,
       'private, no-cache'
     );
-    
+
   } catch (error) {
     const { handleError } = require('./utils/error-handler');
-    
+
     // Log audit with error
-    await auditLog(null, '/admin/users/top', 'GET', 
+    await auditLog(null, '/admin/users/top', 'GET',
       event.queryStringParameters, 500, Date.now() - startTime, requestId);
-    
+
     return handleError(error, {
       statusCode: 500,
       context: {

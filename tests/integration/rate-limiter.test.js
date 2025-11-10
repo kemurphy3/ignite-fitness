@@ -24,24 +24,24 @@ describe('Rate Limiter Tests', () => {
                 this.tokensPerSecond = options.tokensPerSecond || (this.maxRequests / (this.windowMs / 1000));
                 this.maxRetries = options.maxRetries || 3;
                 this.baseDelayMs = options.baseDelayMs || 1000;
-                
+
                 this.tokens = this.maxRequests;
                 this.lastRefill = Date.now();
                 this.requestTimes = [];
-                
+
                 this.failureCount = 0;
                 this.lastFailureTime = 0;
                 this.circuitOpen = false;
                 this.circuitOpenTime = 0;
                 this.circuitTimeout = 60000;
-                
+
                 this.logger = options.logger || console;
             }
 
             refillTokens() {
                 const now = Date.now();
                 const elapsed = now - this.lastRefill;
-                
+
                 if (elapsed > 0) {
                     const tokensToAdd = (elapsed / 1000) * this.tokensPerSecond;
                     this.tokens = Math.min(this.maxRequests, this.tokens + tokensToAdd);
@@ -86,7 +86,7 @@ describe('Rate Limiter Tests', () => {
                 if (this.requestTimes.length >= this.maxRequests) {
                     const oldestRequest = Math.min(...this.requestTimes);
                     const waitTime = oldestRequest + this.windowMs - Date.now();
-                    
+
                     return {
                         allowed: false,
                         reason: 'window_limit',
@@ -107,7 +107,7 @@ describe('Rate Limiter Tests', () => {
             recordFailure() {
                 this.failureCount++;
                 this.lastFailureTime = Date.now();
-                
+
                 if (this.failureCount >= 5) {
                     this.circuitOpen = true;
                     this.circuitOpenTime = Date.now();
@@ -129,16 +129,16 @@ describe('Rate Limiter Tests', () => {
 
                 for (let attempt = 0; attempt <= maxRetries; attempt++) {
                     const canRequest = this.canMakeRequest();
-                    
+
                     if (!canRequest.allowed) {
                         if (canRequest.reason === 'circuit_open') {
                             throw new Error(`Circuit breaker is open. Wait ${Math.ceil(canRequest.waitTime / 1000)} seconds.`);
                         }
-                        
+
                         if (attempt === maxRetries) {
                             throw new Error(`Rate limit exceeded. Wait ${Math.ceil(canRequest.waitTime / 1000)} seconds.`);
                         }
-                        
+
                         await this.sleep(canRequest.waitTime);
                         continue;
                     }
@@ -146,56 +146,56 @@ describe('Rate Limiter Tests', () => {
                     try {
                         const response = await requestFn();
                         this.recordRequest();
-                        
+
                         if (response.status === 429) {
                             const retryAfter = response.headers?.['retry-after'] || response.headers?.['Retry-After'];
                             const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : this.calculateBackoffDelay(attempt);
-                            
+
                             this.logger.warn('Rate limited by API', {
                                 attempt,
-                                retryAfter: retryAfter,
+                                retryAfter,
                                 waitTime
                             });
-                            
+
                             if (attempt === maxRetries) {
                                 throw new Error(`Rate limited by API. Retry after ${Math.ceil(waitTime / 1000)} seconds.`);
                             }
-                            
+
                             await this.sleep(waitTime);
                             continue;
                         }
-                        
+
                         if (response.status >= 400) {
                             this.recordFailure();
                             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                         }
-                        
+
                         return response;
-                        
+
                     } catch (error) {
                         lastError = error;
                         this.recordFailure();
-                        
-                        if (error.message.includes('Circuit breaker') || 
+
+                        if (error.message.includes('Circuit breaker') ||
                             error.message.includes('Rate limit exceeded')) {
                             throw error;
                         }
-                        
+
                         if (attempt === maxRetries) {
                             break;
                         }
-                        
+
                         const delay = this.calculateBackoffDelay(attempt);
                         this.logger.warn('Request failed, retrying', {
                             attempt: attempt + 1,
                             error: error.message,
                             delay
                         });
-                        
+
                         await this.sleep(delay);
                     }
                 }
-                
+
                 throw lastError || new Error('Request failed after all retries');
             }
 
@@ -206,7 +206,7 @@ describe('Rate Limiter Tests', () => {
             getStatus() {
                 this.refillTokens();
                 this.cleanOldRequests();
-                
+
                 return {
                     tokensAvailable: Math.floor(this.tokens),
                     maxTokens: this.maxRequests,
@@ -247,7 +247,7 @@ describe('Rate Limiter Tests', () => {
         it('should deny requests when no tokens available', () => {
             // Consume all tokens
             rateLimiter.tokens = 0;
-            
+
             const result = rateLimiter.canMakeRequest();
             expect(result.allowed).toBe(false);
             expect(result.reason).toBe('no_tokens');
@@ -258,18 +258,18 @@ describe('Rate Limiter Tests', () => {
             // Consume all tokens
             rateLimiter.tokens = 0;
             rateLimiter.lastRefill = Date.now() - 1000; // 1 second ago
-            
+
             rateLimiter.refillTokens();
-            
+
             expect(rateLimiter.tokens).toBeGreaterThan(0);
         });
 
         it('should not exceed maximum tokens', () => {
             rateLimiter.tokens = rateLimiter.maxRequests;
             rateLimiter.lastRefill = Date.now() - 10000; // 10 seconds ago
-            
+
             rateLimiter.refillTokens();
-            
+
             expect(rateLimiter.tokens).toBeLessThanOrEqual(rateLimiter.maxRequests);
         });
     });
@@ -284,9 +284,9 @@ describe('Rate Limiter Tests', () => {
             // Add old request time
             rateLimiter.requestTimes.push(Date.now() - 70000); // 70 seconds ago
             rateLimiter.requestTimes.push(Date.now() - 1000); // 1 second ago
-            
+
             rateLimiter.cleanOldRequests();
-            
+
             expect(rateLimiter.requestTimes.length).toBe(1);
         });
 
@@ -295,7 +295,7 @@ describe('Rate Limiter Tests', () => {
             for (let i = 0; i < rateLimiter.maxRequests; i++) {
                 rateLimiter.requestTimes.push(Date.now());
             }
-            
+
             const result = rateLimiter.canMakeRequest();
             expect(result.allowed).toBe(false);
             expect(result.reason).toBe('window_limit');
@@ -308,7 +308,7 @@ describe('Rate Limiter Tests', () => {
             for (let i = 0; i < 5; i++) {
                 rateLimiter.recordFailure();
             }
-            
+
             expect(rateLimiter.circuitOpen).toBe(true);
             expect(mockLogger.warn).toHaveBeenCalledWith(
                 'Circuit breaker opened due to failures',
@@ -319,7 +319,7 @@ describe('Rate Limiter Tests', () => {
         it('should deny requests when circuit is open', () => {
             rateLimiter.circuitOpen = true;
             rateLimiter.circuitOpenTime = Date.now();
-            
+
             const result = rateLimiter.canMakeRequest();
             expect(result.allowed).toBe(false);
             expect(result.reason).toBe('circuit_open');
@@ -329,7 +329,7 @@ describe('Rate Limiter Tests', () => {
             rateLimiter.circuitOpen = true;
             rateLimiter.circuitOpenTime = Date.now() - 70000; // 70 seconds ago
             rateLimiter.failureCount = 5;
-            
+
             const result = rateLimiter.canMakeRequest();
             expect(result.allowed).toBe(true);
             expect(rateLimiter.circuitOpen).toBe(false);
@@ -342,7 +342,7 @@ describe('Rate Limiter Tests', () => {
             const delay1 = rateLimiter.calculateBackoffDelay(0);
             const delay2 = rateLimiter.calculateBackoffDelay(1);
             const delay3 = rateLimiter.calculateBackoffDelay(2);
-            
+
             expect(delay2).toBeGreaterThan(delay1);
             expect(delay3).toBeGreaterThan(delay2);
         });
@@ -357,7 +357,7 @@ describe('Rate Limiter Tests', () => {
             for (let i = 0; i < 10; i++) {
                 delays.push(rateLimiter.calculateBackoffDelay(1));
             }
-            
+
             // Should have some variation due to jitter
             const uniqueDelays = new Set(delays);
             expect(uniqueDelays.size).toBeGreaterThan(1);
@@ -371,9 +371,9 @@ describe('Rate Limiter Tests', () => {
                 statusText: 'OK',
                 headers: {}
             });
-            
+
             const result = await rateLimiter.executeRequest(mockRequest);
-            
+
             expect(result.status).toBe(200);
             expect(mockRequest).toHaveBeenCalledTimes(1);
         });
@@ -390,16 +390,16 @@ describe('Rate Limiter Tests', () => {
                     statusText: 'OK',
                     headers: {}
                 });
-            
+
             const result = await rateLimiter.executeRequest(mockRequest);
-            
+
             expect(result.status).toBe(200);
             expect(mockRequest).toHaveBeenCalledTimes(2);
         });
 
         it('should fail after max retries', async () => {
             const mockRequest = vi.fn().mockRejectedValue(new Error('Network error'));
-            
+
             await expect(rateLimiter.executeRequest(mockRequest)).rejects.toThrow('Network error');
             expect(mockRequest).toHaveBeenCalledTimes(4); // Initial + 3 retries
         });
@@ -407,9 +407,9 @@ describe('Rate Limiter Tests', () => {
         it('should handle circuit breaker errors', async () => {
             rateLimiter.circuitOpen = true;
             rateLimiter.circuitOpenTime = Date.now();
-            
+
             const mockRequest = vi.fn();
-            
+
             await expect(rateLimiter.executeRequest(mockRequest)).rejects.toThrow('Circuit breaker is open');
             expect(mockRequest).not.toHaveBeenCalled();
         });
@@ -419,9 +419,9 @@ describe('Rate Limiter Tests', () => {
         it('should provide accurate status', () => {
             rateLimiter.recordRequest();
             rateLimiter.recordRequest();
-            
+
             const status = rateLimiter.getStatus();
-            
+
             expect(status.tokensAvailable).toBeLessThanOrEqual(rateLimiter.maxRequests);
             expect(status.requestsInWindow).toBe(2);
             expect(status.maxRequestsPerWindow).toBe(rateLimiter.maxRequests);
@@ -434,7 +434,7 @@ describe('Rate Limiter Tests', () => {
             for (let i = 0; i < rateLimiter.maxRequests / 2; i++) {
                 rateLimiter.requestTimes.push(Date.now());
             }
-            
+
             const status = rateLimiter.getStatus();
             expect(status.utilizationPercent).toBe(50);
         });
@@ -447,9 +447,9 @@ describe('Rate Limiter Tests', () => {
             rateLimiter.requestTimes.push(Date.now());
             rateLimiter.failureCount = 3;
             rateLimiter.circuitOpen = true;
-            
+
             rateLimiter.reset();
-            
+
             expect(rateLimiter.tokens).toBe(rateLimiter.maxRequests);
             expect(rateLimiter.requestTimes.length).toBe(0);
             expect(rateLimiter.failureCount).toBe(0);
@@ -468,7 +468,7 @@ describe('Rate Limiter Tests', () => {
         it('should handle zero tokens per second', () => {
             rateLimiter.tokensPerSecond = 0;
             rateLimiter.tokens = 0;
-            
+
             const result = rateLimiter.canMakeRequest();
             expect(result.allowed).toBe(false);
             expect(result.reason).toBe('no_tokens');
@@ -477,7 +477,7 @@ describe('Rate Limiter Tests', () => {
         it('should handle very small window', () => {
             rateLimiter.windowMs = 1000; // 1 second
             rateLimiter.maxRequests = 1;
-            
+
             rateLimiter.recordRequest();
             const result = rateLimiter.canMakeRequest();
             expect(result.allowed).toBe(false);

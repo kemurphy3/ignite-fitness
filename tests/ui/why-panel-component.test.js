@@ -40,7 +40,7 @@ global.document = {
                 remove: vi.fn()
             }
         };
-        
+
         // Mock textContent setter for HTML escaping
         Object.defineProperty(element, 'textContent', {
             get: () => element._textContent || '',
@@ -55,7 +55,7 @@ global.document = {
                     .replace(/'/g, '&#39;');
             }
         });
-        
+
         return element;
     }),
     getElementById: vi.fn(),
@@ -90,7 +90,7 @@ describe('WhyPanel Component', () => {
     beforeEach(() => {
         // Reset mocks
         vi.clearAllMocks();
-        
+
         // Create fresh instance
         whyPanel = new WhyPanel();
     });
@@ -118,7 +118,7 @@ describe('WhyPanel Component', () => {
             };
 
             const result = whyPanel.render(plan);
-            
+
             expect(result).toContain('why-panel');
             expect(result).toContain('Why this plan?');
             expect(result).toContain('Reduced leg volume due to soccer game tomorrow');
@@ -136,7 +136,7 @@ describe('WhyPanel Component', () => {
             };
 
             const result = whyPanel.render(plan);
-            
+
             expect(result).toContain('why-warnings');
             expect(result).toContain('High fatigue detected');
             expect(result).toContain('Consider reducing intensity');
@@ -145,7 +145,7 @@ describe('WhyPanel Component', () => {
         it('should include proper ARIA attributes', () => {
             const plan = { why: ['Test rationale'] };
             const result = whyPanel.render(plan);
-            
+
             expect(result).toContain('role="region"');
             expect(result).toContain('aria-label="Workout rationale"');
             expect(result).toContain('aria-expanded="false"');
@@ -156,10 +156,10 @@ describe('WhyPanel Component', () => {
     describe('Toggle Functionality', () => {
         it('should toggle expansion state', () => {
             expect(whyPanel.isExpanded).toBe(false);
-            
+
             whyPanel.toggle();
             expect(whyPanel.isExpanded).toBe(true);
-            
+
             whyPanel.toggle();
             expect(whyPanel.isExpanded).toBe(false);
         });
@@ -177,8 +177,8 @@ describe('WhyPanel Component', () => {
             };
 
             document.getElementById = vi.fn((id) => {
-                if (id === 'why-panel-toggle') return mockButton;
-                if (id === 'why-panel-content') return mockContent;
+                if (id === 'why-panel-toggle') {return mockButton;}
+                if (id === 'why-panel-content') {return mockContent;}
                 return null;
             });
 
@@ -212,7 +212,7 @@ describe('WhyPanel Component', () => {
                 addEventListener: vi.fn(),
                 remove: vi.fn()
             };
-            
+
             document.createElement = vi.fn(() => mockModal);
 
             whyPanel.createOverrideModal('Squat', 0, [
@@ -226,7 +226,7 @@ describe('WhyPanel Component', () => {
 
         it('should select alternate exercise', () => {
             const renderSpy = vi.spyOn(window.WorkoutTracker, 'render');
-            
+
             whyPanel.selectAlternate('Goblet Squat', 'Squat', 0);
 
             expect(window.WorkoutTracker.currentPlan.blocks[0].items[0].name).toBe('Goblet Squat');
@@ -236,7 +236,7 @@ describe('WhyPanel Component', () => {
 
         it('should apply regression (reduce sets)', () => {
             const renderSpy = vi.spyOn(window.WorkoutTracker, 'render');
-            
+
             whyPanel.applyRegression('Squat', 0);
 
             expect(window.WorkoutTracker.currentPlan.blocks[0].items[0].sets).toBe(2);
@@ -246,7 +246,7 @@ describe('WhyPanel Component', () => {
 
         it('should apply progression (increase sets)', () => {
             const renderSpy = vi.spyOn(window.WorkoutTracker, 'render');
-            
+
             whyPanel.applyProgression('Squat', 0);
 
             expect(window.WorkoutTracker.currentPlan.blocks[0].items[0].sets).toBe(4);
@@ -256,7 +256,7 @@ describe('WhyPanel Component', () => {
 
         it('should handle different pattern by selecting alternate', () => {
             const selectAlternateSpy = vi.spyOn(whyPanel, 'selectAlternate');
-            
+
             whyPanel.applyDifferentPattern('Squat', 0);
 
             expect(selectAlternateSpy).toHaveBeenCalledWith('Goblet Squat', 'Squat', 0);
@@ -290,14 +290,14 @@ describe('WhyPanel Component', () => {
             };
 
             const result = whyPanel.render(plan);
-            
+
             expect(result).toContain('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;');
             expect(result).toContain('Normal text &amp; symbols');
         });
 
         it('should escape HTML in exercise names', () => {
             const result = whyPanel.renderOverrideButton('<script>alert("xss")</script>', 0);
-            
+
             expect(result).toContain('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;');
         });
     });
@@ -305,7 +305,7 @@ describe('WhyPanel Component', () => {
     describe('Error Handling', () => {
         it('should handle missing plan gracefully', () => {
             window.WorkoutTracker.currentPlan = null;
-            
+
             expect(() => whyPanel.selectAlternate('Test', 'Original', 0)).not.toThrow();
             expect(() => whyPanel.applyRegression('Test', 0)).not.toThrow();
             expect(() => whyPanel.applyProgression('Test', 0)).not.toThrow();
@@ -313,7 +313,7 @@ describe('WhyPanel Component', () => {
 
         it('should handle missing blocks gracefully', () => {
             window.WorkoutTracker.currentPlan = { blocks: null };
-            
+
             expect(() => whyPanel.selectAlternate('Test', 'Original', 0)).not.toThrow();
         });
 
@@ -321,7 +321,7 @@ describe('WhyPanel Component', () => {
             window.WorkoutTracker.currentPlan = {
                 blocks: [{ items: [{ name: 'Squat' }] }]
             };
-            
+
             // Try to override non-existent exercise
             expect(() => whyPanel.selectAlternate('Test', 'Original', 5)).not.toThrow();
         });
@@ -331,7 +331,7 @@ describe('WhyPanel Component', () => {
         it('should include proper ARIA roles and labels', () => {
             const plan = { why: ['Test rationale'] };
             const result = whyPanel.render(plan);
-            
+
             expect(result).toContain('role="list"');
             expect(result).toContain('role="listitem"');
             expect(result).toContain('role="alert"');
@@ -345,7 +345,7 @@ describe('WhyPanel Component', () => {
                 remove: vi.fn(),
                 querySelector: vi.fn(() => ({ focus: vi.fn() }))
             };
-            
+
             document.createElement = vi.fn(() => mockModal);
 
             whyPanel.createOverrideModal('Squat', 0, []);
@@ -457,7 +457,7 @@ class WhyPanel {
 
     selectAlternate(alternateName, originalName, index) {
         const plan = window.WorkoutTracker?.currentPlan;
-        
+
         if (!plan || !plan.blocks) {
             this.logger.error('No plan available for override');
             return;
@@ -492,7 +492,7 @@ class WhyPanel {
 
     applyRegression(exerciseName, index) {
         const plan = window.WorkoutTracker?.currentPlan;
-        
+
         if (!plan || !plan.blocks) {
             this.logger.error('No plan available for regression');
             return;
@@ -501,7 +501,7 @@ class WhyPanel {
         for (const block of plan.blocks) {
             if (block.items && block.items[index]) {
                 const item = block.items[index];
-                
+
                 if (typeof item.sets === 'number') {
                     item.sets = Math.max(1, item.sets - 1);
                 }
@@ -526,7 +526,7 @@ class WhyPanel {
 
     applyProgression(exerciseName, index) {
         const plan = window.WorkoutTracker?.currentPlan;
-        
+
         if (!plan || !plan.blocks) {
             this.logger.error('No plan available for progression');
             return;
@@ -535,7 +535,7 @@ class WhyPanel {
         for (const block of plan.blocks) {
             if (block.items && block.items[index]) {
                 const item = block.items[index];
-                
+
                 if (typeof item.sets === 'number') {
                     item.sets += 1;
                 }
@@ -560,7 +560,7 @@ class WhyPanel {
 
     applyDifferentPattern(exerciseName, index) {
         const plan = window.WorkoutTracker?.currentPlan;
-        
+
         if (!plan || !plan.blocks) {
             this.logger.error('No plan available for pattern change');
             return;
@@ -576,7 +576,7 @@ class WhyPanel {
 
     logOverride(overrideData) {
         this.eventBus.emit('EXERCISE_OVERRIDE', overrideData);
-        
+
         this.logger.info('Exercise override applied', overrideData);
 
         if (window.StorageManager) {

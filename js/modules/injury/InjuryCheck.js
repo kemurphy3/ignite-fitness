@@ -8,7 +8,7 @@ class InjuryCheck {
         this.eventBus = window.EventBus;
         this.storageManager = window.StorageManager;
         this.correctiveExercises = window.CorrectiveExercises;
-        
+
         this.activeModals = new Map();
         this.painReports = [];
     }
@@ -25,7 +25,7 @@ class InjuryCheck {
                 this.handlePainReport(result, exerciseName);
                 resolve(result);
             });
-            
+
             document.body.appendChild(modal);
             this.activeModals.set(bodyLocation, modal);
         });
@@ -80,20 +80,20 @@ class InjuryCheck {
                 </div>
             </div>
         `;
-        
+
         // Add event listeners
         const slider = modal.querySelector('#pain-level');
         const valueDisplay = modal.querySelector('#pain-value');
-        
+
         slider.addEventListener('input', (e) => {
             valueDisplay.textContent = e.target.value;
         });
-        
+
         // Handle submission
         window.handlePainAssessment = () => {
             const painLevel = parseInt(modal.querySelector('#pain-level').value);
             const painType = modal.querySelector('#pain-type').value;
-            
+
             const result = {
                 exerciseName,
                 bodyLocation,
@@ -102,11 +102,11 @@ class InjuryCheck {
                 timestamp: new Date().toISOString(),
                 suggestions: this.getSafeModifications(bodyLocation, painLevel)
             };
-            
+
             modal.remove();
             callback(result);
         };
-        
+
         return modal;
     }
 
@@ -180,7 +180,7 @@ class InjuryCheck {
                 }
             }
         };
-        
+
         const specificRules = rules[location];
         if (!specificRules) {
             return {
@@ -190,15 +190,15 @@ class InjuryCheck {
                 message: 'If pain persists or increases, reduce intensity or stop the exercise.'
             };
         }
-        
+
         // Determine severity category
         let category;
-        if (painLevel >= 7) category = 'high';
-        else if (painLevel >= 4) category = 'moderate';
-        else category = 'low';
-        
+        if (painLevel >= 7) {category = 'high';}
+        else if (painLevel >= 4) {category = 'moderate';}
+        else {category = 'low';}
+
         const rule = specificRules[category];
-        
+
         return {
             category,
             ...rule,
@@ -215,12 +215,12 @@ class InjuryCheck {
         try {
             const authManager = window.AuthManager;
             const userId = authManager?.getCurrentUsername();
-            
+
             if (!userId) {
                 this.logger.warn('No user ID for pain report');
                 return;
             }
-            
+
             const date = new Date().toISOString().split('T')[0];
             const painReport = {
                 userId,
@@ -232,16 +232,16 @@ class InjuryCheck {
                 suggestions: painData.suggestions,
                 timestamp: painData.timestamp
             };
-            
+
             // Save to injury_flags
             await this.storageManager.saveInjuryFlag(userId, date, painReport);
-            
+
             // Store in local array for quick access
             this.painReports.push(painReport);
-            
+
             // Emit event
             this.eventBus.emit('injury:pain_reported', painReport);
-            
+
             this.logger.audit('PAIN_REPORT_LOGGED', painReport);
         } catch (error) {
             this.logger.error('Failed to handle pain report', error);
@@ -271,18 +271,18 @@ class InjuryCheck {
     checkExerciseModifications(exerciseName) {
         const authManager = window.AuthManager;
         const userId = authManager?.getCurrentUsername();
-        
-        if (!userId) return null;
-        
-        const recentPain = this.painReports.find(report => 
-            report.exerciseName === exerciseName && 
+
+        if (!userId) {return null;}
+
+        const recentPain = this.painReports.find(report =>
+            report.exerciseName === exerciseName &&
             new Date(report.timestamp) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
         );
-        
+
         if (recentPain && recentPain.painLevel >= 5) {
             return recentPain.suggestions;
         }
-        
+
         return null;
     }
 }

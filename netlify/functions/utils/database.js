@@ -71,14 +71,14 @@ async function cleanupExpiredLocks() {
 async function getDatabaseStats() {
   try {
     const sql = getServerlessDB();
-    
+
     const [tokens, audit, rateLimits, circuitBreakers] = await Promise.all([
       sql`SELECT COUNT(*) as count FROM strava_tokens`,
       sql`SELECT COUNT(*) as count FROM strava_token_audit WHERE created_at > NOW() - INTERVAL '24 hours'`,
       sql`SELECT COUNT(*) as count FROM api_rate_limits WHERE request_timestamp > NOW() - INTERVAL '1 hour'`,
       sql`SELECT COUNT(*) as count FROM circuit_breaker_state`
     ]);
-    
+
     return {
       tokens: parseInt(tokens[0].count),
       auditLogs24h: parseInt(audit[0].count),
@@ -95,9 +95,9 @@ async function getDatabaseStats() {
   }
 }
 
-module.exports = { 
-  getServerlessDB, 
-  getConnectionPool, 
+module.exports = {
+  getServerlessDB,
+  getConnectionPool,
   checkDatabaseHealth,
   withTransaction,
   cleanupRateLimits,

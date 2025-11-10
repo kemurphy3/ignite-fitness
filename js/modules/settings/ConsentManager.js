@@ -6,7 +6,7 @@
 class ConsentManager extends BaseComponent {
     constructor(options = {}) {
         super(options);
-        
+
         this.userId = options.userId;
         this.consentVersion = options.consentVersion || '1.0';
         this.consentTypes = [
@@ -17,25 +17,25 @@ class ConsentManager extends BaseComponent {
             'data_retention',
             'third_party_sharing'
         ];
-        
+
         this.logger = window.SafeLogger || console;
-        
+
         this.init();
     }
-    
+
     /**
      * Initialize consent manager
      */
     async init() {
         await this.loadConsentHistory();
         await this.loadCurrentConsent();
-        
+
         this.logger.info('ConsentManager initialized', {
             user_id: this.userId,
             consent_version: this.consentVersion
         });
     }
-    
+
     /**
      * Load consent history
      */
@@ -48,20 +48,20 @@ class ConsentManager extends BaseComponent {
                     'Content-Type': 'application/json'
                 }
             });
-            
+
             if (response.ok) {
                 const data = await response.json();
                 this.consentHistory = data.consent_history || [];
             } else {
                 this.consentHistory = [];
             }
-            
+
         } catch (error) {
             this.logger.error('Failed to load consent history:', error);
             this.consentHistory = [];
         }
     }
-    
+
     /**
      * Load current consent status
      */
@@ -74,20 +74,20 @@ class ConsentManager extends BaseComponent {
                     'Content-Type': 'application/json'
                 }
             });
-            
+
             if (response.ok) {
                 const data = await response.json();
                 this.currentConsent = data.consent || this.getDefaultConsent();
             } else {
                 this.currentConsent = this.getDefaultConsent();
             }
-            
+
         } catch (error) {
             this.logger.error('Failed to load current consent:', error);
             this.currentConsent = this.getDefaultConsent();
         }
     }
-    
+
     /**
      * Get default consent configuration
      * @returns {Object} Default consent
@@ -105,7 +105,7 @@ class ConsentManager extends BaseComponent {
             last_updated: null
         };
     }
-    
+
     /**
      * Grant consent for specific type
      * @param {string} consentType - Type of consent
@@ -117,11 +117,11 @@ class ConsentManager extends BaseComponent {
             if (!this.consentTypes.includes(consentType)) {
                 throw new Error(`Invalid consent type: ${consentType}`);
             }
-            
+
             const consentData = {
                 user_id: this.userId,
                 consent_type: consentType,
-                granted: granted,
+                granted,
                 consent_version: this.consentVersion,
                 details: {
                     ...details,
@@ -130,7 +130,7 @@ class ConsentManager extends BaseComponent {
                     user_agent: navigator.userAgent
                 }
             };
-            
+
             const response = await fetch('/.netlify/functions/grant-consent', {
                 method: 'POST',
                 headers: {
@@ -139,35 +139,35 @@ class ConsentManager extends BaseComponent {
                 },
                 body: JSON.stringify(consentData)
             });
-            
+
             if (response.ok) {
                 // Update local consent
                 this.currentConsent[consentType] = granted;
                 this.currentConsent.last_updated = new Date().toISOString();
-                
+
                 // Add to history
                 this.consentHistory.unshift({
                     ...consentData,
                     timestamp: new Date().toISOString()
                 });
-                
+
                 this.logger.info('Consent granted', {
                     user_id: this.userId,
                     consent_type: consentType,
-                    granted: granted
+                    granted
                 });
-                
+
                 return true;
             } else {
                 throw new Error('Failed to grant consent');
             }
-            
+
         } catch (error) {
             this.logger.error('Failed to grant consent:', error);
             throw error;
         }
     }
-    
+
     /**
      * Withdraw consent for specific type
      * @param {string} consentType - Type of consent to withdraw
@@ -178,7 +178,7 @@ class ConsentManager extends BaseComponent {
             if (!this.consentTypes.includes(consentType)) {
                 throw new Error(`Invalid consent type: ${consentType}`);
             }
-            
+
             const consentData = {
                 user_id: this.userId,
                 consent_type: consentType,
@@ -191,7 +191,7 @@ class ConsentManager extends BaseComponent {
                     user_agent: navigator.userAgent
                 }
             };
-            
+
             const response = await fetch('/.netlify/functions/withdraw-consent', {
                 method: 'POST',
                 headers: {
@@ -200,34 +200,34 @@ class ConsentManager extends BaseComponent {
                 },
                 body: JSON.stringify(consentData)
             });
-            
+
             if (response.ok) {
                 // Update local consent
                 this.currentConsent[consentType] = false;
                 this.currentConsent.last_updated = new Date().toISOString();
-                
+
                 // Add to history
                 this.consentHistory.unshift({
                     ...consentData,
                     timestamp: new Date().toISOString()
                 });
-                
+
                 this.logger.info('Consent withdrawn', {
                     user_id: this.userId,
                     consent_type: consentType
                 });
-                
+
                 return true;
             } else {
                 throw new Error('Failed to withdraw consent');
             }
-            
+
         } catch (error) {
             this.logger.error('Failed to withdraw consent:', error);
             throw error;
         }
     }
-    
+
     /**
      * Withdraw all consent
      * @param {Object} details - Additional details
@@ -245,7 +245,7 @@ class ConsentManager extends BaseComponent {
                     user_agent: navigator.userAgent
                 }
             };
-            
+
             const response = await fetch('/.netlify/functions/withdraw-all-consent', {
                 method: 'POST',
                 headers: {
@@ -254,35 +254,35 @@ class ConsentManager extends BaseComponent {
                 },
                 body: JSON.stringify(consentData)
             });
-            
+
             if (response.ok) {
                 // Update local consent
                 this.consentTypes.forEach(type => {
                     this.currentConsent[type] = false;
                 });
                 this.currentConsent.last_updated = new Date().toISOString();
-                
+
                 // Add to history
                 this.consentHistory.unshift({
                     ...consentData,
                     timestamp: new Date().toISOString()
                 });
-                
+
                 this.logger.info('All consent withdrawn', {
                     user_id: this.userId
                 });
-                
+
                 return true;
             } else {
                 throw new Error('Failed to withdraw all consent');
             }
-            
+
         } catch (error) {
             this.logger.error('Failed to withdraw all consent:', error);
             throw error;
         }
     }
-    
+
     /**
      * Update consent for specific type
      * @param {string} consentType - Type of consent
@@ -295,19 +295,19 @@ class ConsentManager extends BaseComponent {
                 // No change needed
                 return true;
             }
-            
+
             if (granted) {
                 return await this.grantConsent(consentType, true, details);
             } else {
                 return await this.withdrawConsent(consentType, details);
             }
-            
+
         } catch (error) {
             this.logger.error('Failed to update consent:', error);
             throw error;
         }
     }
-    
+
     /**
      * Check if consent is granted for specific type
      * @param {string} consentType - Type of consent
@@ -316,7 +316,7 @@ class ConsentManager extends BaseComponent {
     hasConsent(consentType) {
         return this.currentConsent[consentType] === true;
     }
-    
+
     /**
      * Get consent status for all types
      * @returns {Object} Consent status for all types
@@ -328,7 +328,7 @@ class ConsentManager extends BaseComponent {
         });
         return status;
     }
-    
+
     /**
      * Get consent history
      * @returns {Array} Consent history
@@ -336,7 +336,7 @@ class ConsentManager extends BaseComponent {
     getConsentHistory() {
         return this.consentHistory;
     }
-    
+
     /**
      * Get current consent
      * @returns {Object} Current consent
@@ -344,7 +344,7 @@ class ConsentManager extends BaseComponent {
     getCurrentConsent() {
         return this.currentConsent;
     }
-    
+
     /**
      * Check if consent is required
      * @param {string} consentType - Type of consent
@@ -358,10 +358,10 @@ class ConsentManager extends BaseComponent {
             'marketing',
             'third_party_sharing'
         ];
-        
+
         return requiredConsentTypes.includes(consentType);
     }
-    
+
     /**
      * Get consent summary
      * @returns {Object} Consent summary
@@ -376,7 +376,7 @@ class ConsentManager extends BaseComponent {
             last_updated: this.currentConsent.last_updated,
             total_consent_events: this.consentHistory.length
         };
-        
+
         this.consentTypes.forEach(type => {
             if (this.hasConsent(type)) {
                 summary.granted_consent.push(type);
@@ -386,10 +386,10 @@ class ConsentManager extends BaseComponent {
                 summary.withdrawn_consent.push(type);
             }
         });
-        
+
         return summary;
     }
-    
+
     /**
      * Export consent data
      * @returns {Object} Consent data for export
@@ -405,7 +405,7 @@ class ConsentManager extends BaseComponent {
             gdpr_compliant: true
         };
     }
-    
+
     /**
      * Validate consent for action
      * @param {string} action - Action to validate
@@ -419,15 +419,15 @@ class ConsentManager extends BaseComponent {
             'export_data': 'data_export',
             'share_third_party': 'third_party_sharing'
         };
-        
+
         const requiredConsent = actionConsentMap[action];
         if (!requiredConsent) {
             return true; // No consent required
         }
-        
+
         return this.hasConsent(requiredConsent);
     }
-    
+
     /**
      * Get consent statistics
      * @returns {Object} Consent statistics
@@ -441,7 +441,7 @@ class ConsentManager extends BaseComponent {
             consent_history_count: this.consentHistory.length,
             last_consent_update: this.currentConsent.last_updated
         };
-        
+
         this.consentTypes.forEach(type => {
             if (this.hasConsent(type)) {
                 stats.granted_consent_count++;
@@ -451,10 +451,10 @@ class ConsentManager extends BaseComponent {
                 stats.withdrawn_consent_count++;
             }
         });
-        
+
         return stats;
     }
-    
+
     /**
      * Check consent compliance
      * @returns {Object} Compliance status
@@ -466,39 +466,39 @@ class ConsentManager extends BaseComponent {
             warnings: [],
             recommendations: []
         };
-        
+
         // Check required consent
-        const requiredConsent = this.consentTypes.filter(type => 
+        const requiredConsent = this.consentTypes.filter(type =>
             this.isConsentRequired(type)
         );
-        
+
         requiredConsent.forEach(type => {
             if (!this.hasConsent(type)) {
                 compliance.issues.push(`Missing required consent: ${type}`);
                 compliance.gdpr_compliant = false;
             }
         });
-        
+
         // Check consent version
         if (this.currentConsent.consent_version !== this.consentVersion) {
             compliance.warnings.push('Consent version mismatch');
             compliance.recommendations.push('Update consent to latest version');
         }
-        
+
         // Check consent age
         if (this.currentConsent.last_updated) {
             const lastUpdate = new Date(this.currentConsent.last_updated);
             const daysSinceUpdate = (Date.now() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24);
-            
+
             if (daysSinceUpdate > 365) {
                 compliance.warnings.push('Consent is older than 1 year');
                 compliance.recommendations.push('Refresh consent annually');
             }
         }
-        
+
         return compliance;
     }
-    
+
     /**
      * Get client IP address
      * @returns {Promise<string>} Client IP
@@ -515,7 +515,7 @@ class ConsentManager extends BaseComponent {
         }
         return 'unknown';
     }
-    
+
     /**
      * Get auth token
      * @returns {string} Auth token
@@ -523,7 +523,7 @@ class ConsentManager extends BaseComponent {
     getAuthToken() {
         return localStorage.getItem('auth_token') || '';
     }
-    
+
     /**
      * Create consent banner
      * @returns {HTMLElement} Consent banner
@@ -542,7 +542,7 @@ class ConsentManager extends BaseComponent {
             z-index: 10000;
             box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
         `;
-        
+
         banner.innerHTML = `
             <div style="max-width: 1200px; margin: 0 auto;">
                 <h3 style="margin: 0 0 12px 0; color: var(--color-text);">Privacy & Consent</h3>
@@ -557,50 +557,50 @@ class ConsentManager extends BaseComponent {
                 </div>
             </div>
         `;
-        
+
         // Bind events
         banner.querySelector('.accept-all-btn').addEventListener('click', () => {
             this.acceptAllConsent();
             banner.remove();
         });
-        
+
         banner.querySelector('.manage-preferences-btn').addEventListener('click', () => {
             this.showConsentModal();
         });
-        
+
         banner.querySelector('.reject-all-btn').addEventListener('click', () => {
             this.rejectAllConsent();
             banner.remove();
         });
-        
+
         return banner;
     }
-    
+
     /**
      * Accept all consent
      */
     async acceptAllConsent() {
         try {
-            const consentTypes = this.consentTypes.filter(type => 
+            const consentTypes = this.consentTypes.filter(type =>
                 this.isConsentRequired(type)
             );
-            
+
             for (const type of consentTypes) {
                 await this.grantConsent(type, true, {
                     source: 'consent_banner',
                     action: 'accept_all'
                 });
             }
-            
+
             this.logger.info('All consent accepted', {
                 user_id: this.userId
             });
-            
+
         } catch (error) {
             this.logger.error('Failed to accept all consent:', error);
         }
     }
-    
+
     /**
      * Reject all consent
      */
@@ -610,16 +610,16 @@ class ConsentManager extends BaseComponent {
                 source: 'consent_banner',
                 action: 'reject_all'
             });
-            
+
             this.logger.info('All consent rejected', {
                 user_id: this.userId
             });
-            
+
         } catch (error) {
             this.logger.error('Failed to reject all consent:', error);
         }
     }
-    
+
     /**
      * Show consent modal
      */
@@ -630,15 +630,15 @@ class ConsentManager extends BaseComponent {
             user_id: this.userId
         });
     }
-    
+
     /**
      * Show consent banner if needed
      */
     showConsentBannerIfNeeded() {
-        const requiredConsent = this.consentTypes.filter(type => 
+        const requiredConsent = this.consentTypes.filter(type =>
             this.isConsentRequired(type) && !this.hasConsent(type)
         );
-        
+
         if (requiredConsent.length > 0) {
             const banner = this.createConsentBanner();
             document.body.appendChild(banner);

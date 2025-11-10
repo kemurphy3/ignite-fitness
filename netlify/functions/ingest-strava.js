@@ -31,37 +31,37 @@ async function processActivitiesInBatches(activities, userId, supabase, transact
     const results = [];
     const affectedDates = new Set();
     const activitiesById = new Map();
-    
+
     console.log(`Processing ${activities.length} activities in batches of ${batchSize}`);
-    
+
     // Process activities in batches
     for (let i = 0; i < activities.length; i += batchSize) {
         const batch = activities.slice(i, i + batchSize);
         const batchNumber = Math.floor(i / batchSize) + 1;
         const totalBatches = Math.ceil(activities.length / batchSize);
-        
+
         console.log(`Processing batch ${batchNumber}/${totalBatches} (${batch.length} activities)`);
-        
+
         // Process each activity in the batch
         for (const rawActivity of batch) {
             try {
                 const normalized = normalizeStravaActivity(rawActivity, userId);
                 normalized.dedupHash = buildDedupHash(normalized);
-                
+
                 // Execute deduplication in transaction
                 const result = await transactionManager.executeActivityDedupTransaction(
-                    normalized, 
-                    userId, 
+                    normalized,
+                    userId,
                     affectedDates
                 );
-                
+
                 results.push(result);
-                
+
                 // Store for potential stream attachment
                 if (result.status === 'imported' || result.status === 'updated' || result.status === 'merged') {
                     activitiesById.set(result.id, result);
                 }
-                
+
             } catch (error) {
                 console.error(`Failed to process activity ${rawActivity.id}:`, error);
                 results.push({
@@ -71,22 +71,22 @@ async function processActivitiesInBatches(activities, userId, supabase, transact
                 });
             }
         }
-        
+
         // Yield to main thread between batches
         if (i + batchSize < activities.length) {
             await new Promise(resolve => setTimeout(resolve, 16)); // ~60fps
         }
     }
-    
+
     // Step 2: Attach streams to activities that need them
     await attachStreamsToActivities(activitiesById, supabase);
-    
+
     // Step 3: Update daily aggregates for affected dates
     await updateDailyAggregates(Array.from(affectedDates), userId, supabase);
-    
+
     // Step 4: Log ingestion completion
     await logIngestionCompletion(userId, results, supabase);
-    
+
     return {
         processed: results.length,
         imported: results.filter(r => r.status === 'imported').length,
@@ -119,21 +119,21 @@ async function ingestStravaActivities(payload, userId, supabase) {
         try {
             const normalized = normalizeStravaActivity(rawActivity, userId);
             normalized.dedupHash = buildDedupHash(normalized);
-            
+
             // Execute deduplication in transaction
             const result = await transactionManager.executeActivityDedupTransaction(
-                normalized, 
-                userId, 
+                normalized,
+                userId,
                 affectedDates
             );
-            
+
             results.push(result);
-            
+
             // Store for potential stream attachment
             if (result.status === 'imported' || result.status === 'updated' || result.status === 'merged') {
                 activitiesById.set(result.id, result);
             }
-            
+
         } catch (error) {
             console.error('Error processing activity in transaction:', error);
             results.push({
@@ -149,8 +149,8 @@ async function ingestStravaActivities(payload, userId, supabase) {
     if (payload.streams && activitiesById.size > 0) {
         try {
             await transactionManager.attachStreamsInTransaction(
-                payload.streams, 
-                activitiesById, 
+                payload.streams,
+                activitiesById,
                 'streams_tx'
             );
         } catch (error) {
@@ -162,10 +162,10 @@ async function ingestStravaActivities(payload, userId, supabase) {
     // Step 3: Log ingestion in transaction
     try {
         await transactionManager.logIngestionInTransaction(
-            userId, 
-            'strava', 
-            payload, 
-            results, 
+            userId,
+            'strava',
+            payload,
+            results,
             'log_tx'
         );
     } catch (error) {
@@ -189,14 +189,14 @@ async function ingestStravaActivities(payload, userId, supabase) {
  */
 function normalizeStravaActivity(rawActivity, userId) {
     return {
-        userId: userId,
+        userId,
         canonicalSource: 'strava',
         canonicalExternalId: rawActivity.id?.toString(),
         type: mapStravaActivityType(rawActivity.type),
         name: rawActivity.name || 'Untitled Activity',
         startTs: rawActivity.start_date,
-        endTs: rawActivity.start_date ? 
-            new Date(new Date(rawActivity.start_date).getTime() + (rawActivity.moving_time || 0) * 1000).toISOString() : 
+        endTs: rawActivity.start_date ?
+            new Date(new Date(rawActivity.start_date).getTime() + (rawActivity.moving_time || 0) * 1000).toISOString() :
             null,
         durationS: rawActivity.moving_time || rawActivity.elapsed_time || 0,
         device: extractDeviceInfo(rawActivity),
@@ -216,7 +216,7 @@ function normalizeStravaActivity(rawActivity, userId) {
         isExcluded: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        rawActivity: rawActivity // Keep original for potential stream processing
+        rawActivity // Keep original for potential stream processing
     };
 }
 
@@ -249,11 +249,11 @@ function hashString(input) {
 function calculateRichness(activity) {
     let score = 0.0;
 
-    if (activity.has_heartrate || activity.average_heartrate || activity.max_heartrate) score += 0.4;
-    if (activity.start_latlng || activity.end_latlng || activity.distance) score += 0.2;
-    if (activity.device_watts || activity.average_watts) score += 0.2;
-    if (activity.device_name || activity.device_type) score += 0.1;
-    if (activity.calories && activity.calories > 0) score += 0.05;
+    if (activity.has_heartrate || activity.average_heartrate || activity.max_heartrate) {score += 0.4;}
+    if (activity.start_latlng || activity.end_latlng || activity.distance) {score += 0.2;}
+    if (activity.device_watts || activity.average_watts) {score += 0.2;}
+    if (activity.device_name || activity.device_type) {score += 0.1;}
+    if (activity.calories && activity.calories > 0) {score += 0.05;}
 
     return Math.min(score, 1.0);
 }
@@ -281,8 +281,8 @@ function mapStravaActivityType(stravaType) {
  */
 function extractDeviceInfo(rawActivity) {
     const device = {};
-    if (rawActivity.device_name) device.name = rawActivity.device_name;
-    if (rawActivity.device_type) device.type = rawActivity.device_type;
+    if (rawActivity.device_name) {device.name = rawActivity.device_name;}
+    if (rawActivity.device_type) {device.type = rawActivity.device_type;}
     return Object.keys(device).length > 0 ? device : null;
 }
 
@@ -336,8 +336,8 @@ async function findLikelyDuplicates(normalized, userId, supabase) {
         return data.filter(activity => {
             const duration1 = normalized.durationS || 0;
             const duration2 = activity.duration_s || 0;
-            
-            if (duration1 === 0 || duration2 === 0) return false;
+
+            if (duration1 === 0 || duration2 === 0) {return false;}
 
             const durationDiff = Math.abs(duration1 - duration2);
             const durationTolerance = Math.max(duration1, duration2) * 0.1;
@@ -360,12 +360,12 @@ async function handleExistingActivity(existing, normalized, userId, supabase, af
     // If new version is richer, update
     if (newRichness > existingRichness) {
         console.log(`Updating activity ${existing.id} with richer version (richness: ${existingRichness} -> ${newRichness})`);
-        
+
         // Update source set
         const updatedSourceSet = existing.source_set || {};
         updatedSourceSet.strava = normalized.sourceSet.strava;
         updatedSourceSet.merged_from = updatedSourceSet.merged_from || [];
-        
+
         if (existing.canonical_source !== 'strava') {
             updatedSourceSet.merged_from.push({
                 canonical_source: existing.canonical_source,
@@ -421,7 +421,7 @@ async function handleLikelyDuplicate(existing, normalized, userId, supabase, aff
     const updatedSourceSet = existing.source_set || {};
     updatedSourceSet.strava = normalized.sourceSet.strava;
     updatedSourceSet.merged_from = updatedSourceSet.merged_from || [];
-    
+
     if (existing.canonical_source !== 'strava') {
         updatedSourceSet.merged_from.push({
             canonical_source: existing.canonical_source,
@@ -504,7 +504,7 @@ async function handleNewActivity(normalized, userId, supabase, affectedDates) {
 async function attachStreams(streamsByActivityId, activitiesById, supabase) {
     for (const [externalId, streams] of Object.entries(streamsByActivityId)) {
         const activity = Array.from(activitiesById.values()).find(a => a.externalId === externalId);
-        if (!activity || !activity.id) continue;
+        if (!activity || !activity.id) {continue;}
 
         for (const [streamType, streamData] of Object.entries(streams)) {
             try {
@@ -527,7 +527,7 @@ async function attachStreams(streamsByActivityId, activitiesById, supabase) {
  * Calculate sample rate
  */
 function calculateSampleRate(samples) {
-    if (!Array.isArray(samples) || samples.length < 2) return 0;
+    if (!Array.isArray(samples) || samples.length < 2) {return 0;}
     const timeSpan = samples[samples.length - 1].t - samples[0].t;
     return samples.length / timeSpan;
 }
@@ -542,7 +542,7 @@ async function logIngestion(userId, provider, payload, results, supabase) {
                 .from('ingest_log')
                 .insert({
                     user_id: userId,
-                    provider: provider,
+                    provider,
                     external_id: result.externalId,
                     status: result.status,
                     metadata: { error: result.error, richness: result.richness }
@@ -560,7 +560,7 @@ async function triggerAggregateRecalculation(userId, date, supabase) {
     // This would typically trigger an async job or queue
     // For now, we'll just log it
     console.log(`Triggering aggregate recalculation for user ${userId} on ${date}`);
-    
+
     // In a real implementation, this would:
     // 1. Query activities for that date
     // 2. Calculate TRIMP, TSS, zones, etc.

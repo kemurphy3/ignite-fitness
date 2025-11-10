@@ -1,6 +1,6 @@
 /**
  * Public Configuration Endpoint
- * 
+ *
  * Returns only safe, public configuration that can be exposed to the client.
  * NEVER includes API keys, secrets, or sensitive environment variables.
  */
@@ -41,7 +41,7 @@ exports.handler = async (event, context) => {
                 version: '1.0.0',
                 environment: process.env.NODE_ENV || 'development'
             },
-            
+
             // API endpoints (public URLs only)
             api: {
                 baseUrl: process.env.NETLIFY_URL || 'http://localhost:8888',
@@ -73,7 +73,7 @@ exports.handler = async (event, context) => {
                     }
                 }
             },
-            
+
             // Feature flags (public only)
             features: {
                 stravaIntegration: true,
@@ -81,7 +81,7 @@ exports.handler = async (event, context) => {
                 offlineMode: true,
                 pwa: true
             },
-            
+
             // Public integration settings
             integrations: {
                 strava: {
@@ -90,14 +90,14 @@ exports.handler = async (event, context) => {
                     scope: 'read,activity:read_all,profile:read_all'
                 }
             },
-            
+
             // UI configuration
             ui: {
                 theme: 'default',
                 language: 'en',
                 timezone: 'UTC'
             },
-            
+
             // Cache configuration
             cache: {
                 defaultTtl: 300000, // 5 minutes
@@ -113,11 +113,11 @@ exports.handler = async (event, context) => {
 
     } catch (error) {
         console.error('Error in public-config:', error);
-        
+
         return {
             statusCode: 500,
             headers,
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 error: 'Internal server error',
                 message: 'Failed to load public configuration'
             })

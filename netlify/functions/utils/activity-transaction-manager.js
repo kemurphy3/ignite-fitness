@@ -22,34 +22,34 @@ class ActivityTransactionManager {
      */
     async executeActivityDedupTransaction(normalized, userId, affectedDates) {
         const transactionId = `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
+
         try {
             // Start transaction tracking
             this.rollbackManager.startTransaction(transactionId);
             console.log(`Starting transaction ${transactionId} for activity ${normalized.canonicalExternalId}`);
-            
+
             // Step 1: Check for existing activity by dedup hash
             const existingActivity = await this.findActivityByDedupHash(normalized.dedupHash, userId);
-            
+
             let result;
             if (existingActivity) {
                 result = await this.handleExistingActivityInTransaction(existingActivity, normalized, userId, affectedDates, transactionId);
             } else {
                 // Step 2: Check for likely duplicates
                 const likelyDuplicates = await this.findLikelyDuplicatesInTransaction(normalized, userId);
-                
+
                 if (likelyDuplicates.length > 0) {
                     result = await this.handleLikelyDuplicateInTransaction(likelyDuplicates[0], normalized, userId, affectedDates, transactionId);
                 } else {
                     result = await this.handleNewActivityInTransaction(normalized, userId, affectedDates, transactionId);
                 }
             }
-            
+
             // Step 3: Commit transaction
             this.rollbackManager.completeTransaction(transactionId);
             console.log(`Transaction ${transactionId} completed successfully`);
             return result;
-            
+
         } catch (error) {
             // Step 4: Rollback transaction
             console.error(`Transaction ${transactionId} failed, rolling back:`, error);
@@ -106,8 +106,8 @@ class ActivityTransactionManager {
             return data.filter(activity => {
                 const duration1 = normalized.durationS || 0;
                 const duration2 = activity.duration_s || 0;
-                
-                if (duration1 === 0 || duration2 === 0) return false;
+
+                if (duration1 === 0 || duration2 === 0) {return false;}
 
                 const durationDiff = Math.abs(duration1 - duration2);
                 const durationTolerance = Math.max(duration1, duration2) * 0.1;
@@ -130,7 +130,7 @@ class ActivityTransactionManager {
         // If new version is richer, update
         if (newRichness > existingRichness) {
             console.log(`Transaction ${transactionId}: Updating activity ${existing.id} with richer version`);
-            
+
             // Record original state for rollback
             this.rollbackManager.recordAction(transactionId, 'update', {
                 table: 'activities',
@@ -147,11 +147,11 @@ class ActivityTransactionManager {
                     updated_at: existing.updated_at
                 }
             });
-            
+
             const updatedSourceSet = existing.source_set || {};
             updatedSourceSet.strava = normalized.sourceSet.strava;
             updatedSourceSet.merged_from = updatedSourceSet.merged_from || [];
-            
+
             if (existing.canonical_source !== 'strava') {
                 updatedSourceSet.merged_from.push({
                     canonical_source: existing.canonical_source,
@@ -222,7 +222,7 @@ class ActivityTransactionManager {
         const updatedSourceSet = existing.source_set || {};
         updatedSourceSet.strava = normalized.sourceSet.strava;
         updatedSourceSet.merged_from = updatedSourceSet.merged_from || [];
-        
+
         if (existing.canonical_source !== 'strava') {
             updatedSourceSet.merged_from.push({
                 canonical_source: existing.canonical_source,
@@ -317,10 +317,10 @@ class ActivityTransactionManager {
      */
     async attachStreamsInTransaction(streamsByActivityId, activitiesById, transactionId) {
         console.log(`Transaction ${transactionId}: Attaching streams to activities`);
-        
+
         for (const [externalId, streams] of Object.entries(streamsByActivityId)) {
             const activity = Array.from(activitiesById.values()).find(a => a.externalId === externalId);
-            if (!activity || !activity.id) continue;
+            if (!activity || !activity.id) {continue;}
 
             for (const [streamType, streamData] of Object.entries(streams)) {
                 try {
@@ -366,7 +366,7 @@ class ActivityTransactionManager {
      */
     async logIngestionInTransaction(userId, provider, payload, results, transactionId) {
         console.log(`Transaction ${transactionId}: Logging ingestion results`);
-        
+
         for (const result of results) {
             try {
                 // Record insert action for rollback
@@ -379,7 +379,7 @@ class ActivityTransactionManager {
                     .from('ingest_log')
                     .insert({
                         user_id: userId,
-                        provider: provider,
+                        provider,
                         external_id: result.externalId,
                         status: result.status,
                         metadata: { error: result.error, richness: result.richness }
@@ -412,11 +412,11 @@ class ActivityTransactionManager {
     calculateRichness(activity) {
         let score = 0.0;
 
-        if (activity.has_heartrate || activity.average_heartrate || activity.max_heartrate) score += 0.4;
-        if (activity.start_latlng || activity.end_latlng || activity.distance) score += 0.2;
-        if (activity.device_watts || activity.average_watts) score += 0.2;
-        if (activity.device_name || activity.device_type) score += 0.1;
-        if (activity.calories && activity.calories > 0) score += 0.05;
+        if (activity.has_heartrate || activity.average_heartrate || activity.max_heartrate) {score += 0.4;}
+        if (activity.start_latlng || activity.end_latlng || activity.distance) {score += 0.2;}
+        if (activity.device_watts || activity.average_watts) {score += 0.2;}
+        if (activity.device_name || activity.device_type) {score += 0.1;}
+        if (activity.calories && activity.calories > 0) {score += 0.05;}
 
         return Math.min(score, 1.0);
     }
@@ -425,7 +425,7 @@ class ActivityTransactionManager {
      * Calculate sample rate
      */
     calculateSampleRate(samples) {
-        if (!Array.isArray(samples) || samples.length < 2) return 0;
+        if (!Array.isArray(samples) || samples.length < 2) {return 0;}
         const timeSpan = samples[samples.length - 1].t - samples[0].t;
         return samples.length / timeSpan;
     }

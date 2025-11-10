@@ -34,9 +34,9 @@ class MacroGuidance {
 
             const data = await response.json();
             this.currentGuidance = data;
-            
+
             this.logger.debug('Nutrition guidance fetched', data);
-            
+
             return data;
         } catch (error) {
             this.logger.error('Failed to fetch nutrition guidance', error);
@@ -54,7 +54,7 @@ class MacroGuidance {
             // Get user profile from storage
             const userId = window.AuthManager?.getCurrentUsername() || 'anonymous';
             const profile = await this.storageManager.getUserProfile(userId);
-            
+
             if (!profile) {
                 this.logger.warn('No profile found, using defaults');
                 return this.getFallbackGuidance();
@@ -62,7 +62,7 @@ class MacroGuidance {
 
             // Determine day type from context
             const dayType = this.determineDayType(context);
-            
+
             // Build input for calculator
             const input = {
                 profile: {
@@ -98,11 +98,11 @@ class MacroGuidance {
         if (context.isGame) {
             return 'game';
         }
-        
+
         if (context.isHeavy || context.hasTraining) {
             return 'training';
         }
-        
+
         return 'rest';
     }
 
@@ -119,7 +119,7 @@ class MacroGuidance {
         // Re-fetch with new day type
         const userId = window.AuthManager?.getCurrentUsername() || 'anonymous';
         const profile = await this.storageManager.getUserProfile(userId);
-        
+
         const input = {
             profile: {
                 gender: profile.gender,
@@ -160,7 +160,7 @@ class MacroGuidance {
      */
     generateGuidanceHTML(guidance) {
         const { macros, timing, hydration, mealExamples } = guidance;
-        
+
         return `
             <div class="nutrition-guidance-card">
                 <div class="card-header">
@@ -209,8 +209,8 @@ class MacroGuidance {
      * @returns {string} HTML
      */
     renderTimingDetails(timing) {
-        if (!timing || !Array.isArray(timing)) return '';
-        
+        if (!timing || !Array.isArray(timing)) {return '';}
+
         return `
             <div class="timing-details">
                 <div class="timing-block">
@@ -231,8 +231,8 @@ class MacroGuidance {
      * @returns {string} HTML
      */
     renderHydration(hydration) {
-        if (!hydration) return '';
-        
+        if (!hydration) {return '';}
+
         return `
             <div class="hydration-section">
                 <h4>💧 Hydration</h4>
@@ -248,13 +248,13 @@ class MacroGuidance {
      * @returns {string} HTML
      */
     renderMealExamples(mealExamples) {
-        if (!mealExamples) return '';
-        
+        if (!mealExamples) {return '';}
+
         const preMeal = mealExamples.pre || mealExamples.preWorkout;
         const postMeal = mealExamples.post || mealExamples.postWorkout;
-        
+
         let html = '<div class="meal-examples-section">';
-        
+
         if (preMeal) {
             html += `
                 <div class="meal-example">
@@ -262,7 +262,7 @@ class MacroGuidance {
                 </div>
             `;
         }
-        
+
         if (postMeal) {
             html += `
                 <div class="meal-example">
@@ -270,9 +270,9 @@ class MacroGuidance {
                 </div>
             `;
         }
-        
+
         html += '</div>';
-        
+
         return html;
     }
 
@@ -311,8 +311,8 @@ class MacroGuidance {
      * @returns {string} Formatted timing
      */
     formatTiming(timing) {
-        if (!Array.isArray(timing)) return '';
-        
+        if (!Array.isArray(timing)) {return '';}
+
         return timing.map(t => `• ${t}`).join('<br>');
     }
 
@@ -323,19 +323,19 @@ class MacroGuidance {
      */
     getRationale(guidance) {
         const rationale = [];
-        
+
         if (guidance.dayType) {
             rationale.push(`Today is a ${guidance.dayType} day`);
         }
-        
+
         if (guidance.goalAdjustment) {
             rationale.push(`${guidance.goalAdjustment > 0 ? '+' : ''}${guidance.goalAdjustment}% for goals`);
         }
-        
+
         if (guidance.dayTypeAdjustment) {
             rationale.push(`${guidance.dayTypeAdjustment > 0 ? '+' : ''}${guidance.dayTypeAdjustment}% for day type`);
         }
-        
+
         return rationale.join(' • ');
     }
 }

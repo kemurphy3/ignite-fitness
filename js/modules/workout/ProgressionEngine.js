@@ -7,7 +7,7 @@ class ProgressionEngine {
         this.logger = window.SafeLogger || console;
         this.eventBus = window.EventBus;
         this.storageManager = window.StorageManager;
-        
+
         this.deloadWeekFrequency = 4; // Every 4th week
         this.rpeAdjustmentStep = 0.05; // ±5% adjustment
     }
@@ -112,7 +112,7 @@ class ProgressionEngine {
     getDeloadAdjustments() {
             return {
             intensityMultiplier: 1.0, // Maintain intensity
-            volumeMultiplier: 0.80,    // Reduce volume by 20%
+            volumeMultiplier: 0.80, // Reduce volume by 20%
             deload: true,
             coachMessage: 'Deload week detected (every 4th week). Reducing volume by 20% for active recovery and supercompensation.'
         };
@@ -126,13 +126,13 @@ class ProgressionEngine {
     getGameDayAdjustments(schedule = {}) {
         const today = new Date();
         const gameDate = schedule.gameDate ? new Date(schedule.gameDate) : null;
-        
+
         if (!gameDate) {
             return { intensityMultiplier: 1.0, volumeMultiplier: 1.0 };
         }
 
         const daysToGame = Math.ceil((gameDate - today) / (1000 * 60 * 60 * 24));
-        
+
         if (daysToGame === 1) {
             // Game -1 day: Upper body light
             return {
@@ -235,17 +235,17 @@ class ProgressionEngine {
         try {
             const events = this.storageManager.getProgressionEvents();
             const userEvents = Object.values(events).filter(e => e.userId === userId);
-            
+
             // Sort by date descending
             userEvents.sort((a, b) => new Date(b.date) - new Date(a.date));
-            
+
             // Find most recent RPE tracking event
             for (const event of userEvents) {
                 if (event.type === 'rpe_tracking') {
                     return event;
                 }
             }
-            
+
             return null;
         } catch (error) {
             this.logger.error('Failed to get previous session RPE', error);

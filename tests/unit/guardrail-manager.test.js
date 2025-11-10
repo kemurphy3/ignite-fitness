@@ -35,7 +35,7 @@ describe('GuardrailManager', () => {
         // Load GuardrailManager
         const module = await import('../../js/modules/safety/GuardrailManager.js');
         GuardrailManager = module.default || module.GuardrailManager || window.GuardrailManager?.constructor;
-        
+
         // Create new instance for each test
         manager = new GuardrailManager();
     });
@@ -136,7 +136,7 @@ describe('GuardrailManager', () => {
             const userProfile = { trainingLevel: 'intermediate' };
             const lastWeek = new Date();
             lastWeek.setDate(lastWeek.getDate() - 7);
-            
+
             const recentSessions = [
                 { date: lastWeek.toISOString(), calculatedLoad: 200 },
                 { date: new Date().toISOString(), calculatedLoad: 150 }
@@ -159,10 +159,10 @@ describe('GuardrailManager', () => {
             const userProfile = { trainingLevel: 'intermediate' };
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
-            
+
             const recentSessions = [
-                { 
-                    date: yesterday.toISOString(), 
+                {
+                    date: yesterday.toISOString(),
                     calculatedLoad: 70,
                     averageIntensity: 'Z5',
                     hardMinutes: 20
@@ -222,7 +222,7 @@ describe('GuardrailManager', () => {
             };
 
             const userProfile = { trainingLevel: 'intermediate' };
-            
+
             // Create 4 weeks of sessions
             const recentSessions = [];
             for (let week = 0; week < 4; week++) {
@@ -233,7 +233,7 @@ describe('GuardrailManager', () => {
                     calculatedLoad: 300
                 });
             }
-            
+
             const readinessData = { readinessScore: 8 };
 
             const result = await manager.validateWorkout(workout, userProfile, recentSessions, readinessData);
@@ -291,8 +291,8 @@ describe('GuardrailManager', () => {
 
             const userProfile = { trainingLevel: 'intermediate' };
             const recentSessions = [
-                { 
-                    date: new Date().toISOString(), 
+                {
+                    date: new Date().toISOString(),
                     calculatedLoad: 100,
                     hardMinutes: 70
                 }
@@ -316,7 +316,7 @@ describe('GuardrailManager', () => {
             const userProfile = { trainingLevel: 'intermediate' };
             const lastWeek = new Date();
             lastWeek.setDate(lastWeek.getDate() - 7);
-            
+
             const recentSessions = [
                 { date: lastWeek.toISOString(), calculatedLoad: 300 },
                 { date: new Date().toISOString(), calculatedLoad: 250 }
@@ -338,7 +338,7 @@ describe('GuardrailManager', () => {
             const userProfile = { trainingLevel: 'intermediate' };
             const lastWeek = new Date();
             lastWeek.setDate(lastWeek.getDate() - 7);
-            
+
             const recentSessions = [
                 { date: lastWeek.toISOString(), calculatedLoad: 200 },
                 { date: new Date().toISOString(), calculatedLoad: 150 }
@@ -378,7 +378,7 @@ describe('GuardrailManager', () => {
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
             yesterday.setHours(12, 0, 0, 0);
-            
+
             const recentSessions = [
                 {
                     date: yesterday.toISOString(),
@@ -406,7 +406,7 @@ describe('GuardrailManager', () => {
             day1.setDate(day1.getDate() - 2);
             const day2 = new Date();
             day2.setDate(day2.getDate() - 1);
-            
+
             const recentSessions = [
                 {
                     date: day1.toISOString(),
@@ -507,7 +507,7 @@ describe('GuardrailManager', () => {
 
         it('should require deload after 4 weeks', () => {
             const userProfile = { trainingLevel: 'intermediate' };
-            
+
             const recentSessions = [];
             for (let week = 0; week < 4; week++) {
                 const date = new Date();

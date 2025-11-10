@@ -40,7 +40,7 @@ const createProfileSchema = {
         },
         sex: { enum: ['male', 'female', 'other', 'prefer_not_to_say'] },
         preferred_units: { enum: ['metric', 'imperial'] },
-        goals: { 
+        goals: {
             type: 'array',
             items: { type: 'string' },
             maxItems: 10
@@ -86,7 +86,7 @@ exports.handler = async (event) => {
     const sql = getServerlessDB();
     const ajv = new Ajv();
     const validate = ajv.compile(createProfileSchema);
-    
+
     try {
         // Authenticate user via JWT
         const userId = await verifyJWT(event.headers);
@@ -97,32 +97,32 @@ exports.handler = async (event) => {
                 body: JSON.stringify({ error: 'Unauthorized', code: 'AUTH_001' })
             };
         }
-        
+
         // Check rate limit
         const canUpdate = await sql`SELECT check_profile_rate_limit(${userId}) as allowed`;
         if (!canUpdate[0].allowed) {
             return {
                 statusCode: 429,
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
                     'Retry-After': '3600'
                 },
-                body: JSON.stringify({ 
-                    error: 'Rate limit exceeded', 
+                body: JSON.stringify({
+                    error: 'Rate limit exceeded',
                     code: 'RATE_001',
-                    retry_after: 3600 
+                    retry_after: 3600
                 })
             };
         }
-        
+
         // Generate request ID for tracking
         const requestId = crypto.randomUUID();
         const requestHash = generateRequestHash(
-            event.body, 
-            userId, 
+            event.body,
+            userId,
             Date.now()
         );
-        
+
         // Check for duplicate request
         try {
             await sql`
@@ -140,18 +140,18 @@ exports.handler = async (event) => {
                 return {
                     statusCode: 409,
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        error: 'Duplicate request', 
-                        code: 'DUP_001' 
+                    body: JSON.stringify({
+                        error: 'Duplicate request',
+                        code: 'DUP_001'
                     })
                 };
             }
             throw error;
         }
-        
+
         // Parse and validate input
         const profileData = JSON.parse(event.body);
-        
+
         // Validate input for security
         const inputValidation = validateInput(profileData);
         if (!inputValidation.valid) {
@@ -165,10 +165,10 @@ exports.handler = async (event) => {
                 })
             };
         }
-        
+
         // Sanitize input
         const sanitizedData = sanitizeInput(profileData);
-        
+
         // Convert units if necessary
         if (sanitizedData.height && typeof sanitizedData.height === 'object') {
             sanitizedData.height_cm = convertUnits.toCm(sanitizedData.height);
@@ -177,7 +177,7 @@ exports.handler = async (event) => {
             sanitizedData.height_cm = sanitizedData.height;
             delete sanitizedData.height;
         }
-        
+
         if (sanitizedData.weight && typeof sanitizedData.weight === 'object') {
             sanitizedData.weight_kg = convertUnits.toKg(sanitizedData.weight);
             delete sanitizedData.weight;
@@ -185,7 +185,7 @@ exports.handler = async (event) => {
             sanitizedData.weight_kg = sanitizedData.weight;
             delete sanitizedData.weight;
         }
-        
+
         if (!validate(sanitizedData)) {
             return {
                 statusCode: 400,
@@ -197,7 +197,7 @@ exports.handler = async (event) => {
                 })
             };
         }
-        
+
         // Validate goals and check conflicts
         if (sanitizedData.goals && sanitizedData.goals.length > 0) {
             const validGoals = await sql`
@@ -205,7 +205,7 @@ exports.handler = async (event) => {
                 WHERE id = ANY(${sanitizedData.goals})
                 AND is_active = true
             `;
-            
+
             if (validGoals.length !== sanitizedData.goals.length) {
                 return {
                     statusCode: 400,
@@ -217,23 +217,23 @@ exports.handler = async (event) => {
                     })
                 };
             }
-            
+
             // Check for conflicting goals
             const conflicts = await sql`
                 SELECT * FROM validate_goal_conflicts(${JSON.stringify(sanitizedData.goals)})
             `;
-            
+
             if (conflicts.length > 0) {
                 console.warn('Goal conflicts detected:', conflicts);
                 // We'll allow but warn about conflicts
             }
         }
-        
+
         // Check if profile already exists
         const existing = await sql`
             SELECT id FROM user_profiles WHERE user_id = ${userId}
         `;
-        
+
         if (existing.length > 0) {
             return {
                 statusCode: 409,
@@ -244,10 +244,10 @@ exports.handler = async (event) => {
                 })
             };
         }
-        
+
         // Set request context for trigger
         await sql`SELECT set_config('app.request_id', ${requestId}, false)`;
-        
+
         // Create profile
         const result = await sql`
             INSERT INTO user_profiles (
@@ -287,7 +287,7 @@ exports.handler = async (event) => {
             )
             RETURNING id, version, completeness_score, created_at
         `;
-        
+
         // Log sanitized action (no PII)
         console.log('Profile created:', {
             userId: sanitizeForLog(userId),
@@ -295,7 +295,7 @@ exports.handler = async (event) => {
             completeness: result[0].completeness_score,
             timestamp: result[0].created_at
         });
-        
+
         return {
             statusCode: 201,
             headers: { 'Content-Type': 'application/json' },
@@ -307,14 +307,14 @@ exports.handler = async (event) => {
                 message: 'Profile created successfully'
             })
         };
-        
+
     } catch (error) {
         console.error('Profile creation error:', sanitizeForLog(error.message));
-        
+
         return {
             statusCode: 500,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 error: 'Internal server error',
                 code: 'SYS_001'
             })

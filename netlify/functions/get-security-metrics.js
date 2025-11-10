@@ -59,8 +59,8 @@ const okPreflight = () => ({
 });
 
 exports.handler = async (event) => {
-    if (event.httpMethod === 'OPTIONS') return okPreflight();
-    if (event.httpMethod !== 'GET') return methodNotAllowed();
+    if (event.httpMethod === 'OPTIONS') {return okPreflight();}
+    if (event.httpMethod !== 'GET') {return methodNotAllowed();}
 
     try {
         // Validate admin access
@@ -70,7 +70,7 @@ exports.handler = async (event) => {
         }
 
         const jwtToken = authHeader.substring(7);
-        
+
         // Verify admin access (simplified - in production, use proper JWT verification)
         if (!jwtToken || jwtToken.length < 10) {
             return unauthorized('Invalid JWT token');
@@ -139,12 +139,12 @@ async function getSecurityMetrics() {
         const metrics = {
             failedLogins: failedLogins24h,
             securityEvents: securityEvents24h,
-            activeThreats: activeThreats,
-            complianceScore: complianceScore,
-            failedLoginsChange: failedLoginsChange,
-            securityEventsChange: securityEventsChange,
-            activeThreatsChange: activeThreatsChange,
-            complianceScoreChange: complianceScoreChange,
+            activeThreats,
+            complianceScore,
+            failedLoginsChange,
+            securityEventsChange,
+            activeThreatsChange,
+            complianceScoreChange,
             timestamp: now.toISOString()
         };
 
@@ -274,21 +274,21 @@ async function getComplianceScore() {
 
         data.forEach(event => {
             totalChecks++;
-            
+
             if (event.result === 'failure') {
                 violations++;
             }
-            
+
             if (event.risk_level === 'critical' || event.risk_level === 'high') {
                 violations += 0.5; // Weight high-risk events
             }
         });
 
         const complianceScore = Math.max(0, Math.round(100 - (violations / totalChecks) * 100));
-        
+
         logger.debug('Compliance score calculated', {
             total_checks: totalChecks,
-            violations: violations,
+            violations,
             compliance_score: complianceScore
         });
 
@@ -310,7 +310,7 @@ function calculatePercentageChange(oldValue, newValue) {
     if (oldValue === 0) {
         return newValue > 0 ? 100 : 0;
     }
-    
+
     return Math.round(((newValue - oldValue) / oldValue) * 100);
 }
 
@@ -318,8 +318,8 @@ function calculatePercentageChange(oldValue, newValue) {
  * Get security events for dashboard
  */
 exports.getSecurityEvents = async (event) => {
-    if (event.httpMethod === 'OPTIONS') return okPreflight();
-    if (event.httpMethod !== 'GET') return methodNotAllowed();
+    if (event.httpMethod === 'OPTIONS') {return okPreflight();}
+    if (event.httpMethod !== 'GET') {return methodNotAllowed();}
 
     try {
         // Validate admin access
@@ -385,8 +385,8 @@ exports.getSecurityEvents = async (event) => {
  * Get compliance status for dashboard
  */
 exports.getComplianceStatus = async (event) => {
-    if (event.httpMethod === 'OPTIONS') return okPreflight();
-    if (event.httpMethod !== 'GET') return methodNotAllowed();
+    if (event.httpMethod === 'OPTIONS') {return okPreflight();}
+    if (event.httpMethod !== 'GET') {return methodNotAllowed();}
 
     try {
         // Validate admin access

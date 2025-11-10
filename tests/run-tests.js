@@ -18,7 +18,7 @@ if (!process.env.DATABASE_URL) {
 const envTestPath = join(process.cwd(), '.env.test');
 if (!existsSync(envTestPath)) {
   console.log('⚠️  .env.test not found. Creating from .env...');
-  
+
   try {
     const fs = await import('fs');
     const envContent = fs.readFileSync('.env', 'utf8');
@@ -36,19 +36,19 @@ try {
   console.log('📊 Running Unit Tests...');
   execSync('npm run test:run -- tests/unit/', { stdio: 'inherit' });
   console.log('✅ Unit tests completed\n');
-  
+
   // Run integration tests
   console.log('📊 Running Integration Tests...');
   execSync('npm run test:run -- tests/integration/', { stdio: 'inherit' });
   console.log('✅ Integration tests completed\n');
-  
+
   // Run coverage report
   console.log('📊 Generating Coverage Report...');
   execSync('npm run test:coverage', { stdio: 'inherit' });
   console.log('✅ Coverage report generated\n');
-  
+
   console.log('🎉 All tests completed successfully!');
-  
+
 } catch (error) {
   console.error('❌ Test run failed:', error.message);
   process.exit(1);

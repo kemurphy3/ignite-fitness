@@ -24,14 +24,14 @@ const RATE_LIMIT_CONFIG = {
         maxBackoff: 60 * 60 * 1000, // 1 hour
         cleanupInterval: 5 * 60 * 1000 // 5 minutes
     },
-    
+
     // General API limits
     api: {
         window: 15 * 60 * 1000, // 15 minutes
         maxAttempts: 100,
         progressiveBackoff: false
     },
-    
+
     // Login specific limits
     login: {
         window: 15 * 60 * 1000, // 15 minutes
@@ -55,15 +55,15 @@ class RateLimiter {
     constructor(config = {}) {
         this.config = { ...RATE_LIMIT_CONFIG, ...config };
         this.store = rateLimitStore;
-        
+
         // Start cleanup interval
         this.startCleanup();
-        
+
         logger.info('RateLimiter initialized', {
             config: this.config
         });
     }
-    
+
     /**
      * Check if request is allowed
      * @param {string} key - Rate limit key (IP, user ID, etc.)
@@ -74,7 +74,7 @@ class RateLimiter {
         try {
             const config = this.config[type] || this.config.api;
             const now = Date.now();
-            
+
             // Get or create rate limit entry
             let entry = this.store.get(key);
             if (!entry) {
@@ -87,18 +87,18 @@ class RateLimiter {
                 };
                 this.store.set(key, entry);
             }
-            
+
             // Check if currently in backoff period
             if (now < entry.backoffUntil) {
                 const remainingBackoff = Math.ceil((entry.backoffUntil - now) / 1000);
-                
+
                 logger.warn('Rate limit backoff active', {
-                    key: key,
-                    type: type,
+                    key,
+                    type,
                     remaining_seconds: remainingBackoff,
                     violations: entry.violations
                 });
-                
+
                 return {
                     allowed: false,
                     reason: 'backoff',
@@ -107,19 +107,19 @@ class RateLimiter {
                     retryAfter: entry.backoffUntil
                 };
             }
-            
+
             // Reset attempts if window has passed
             if (now - entry.firstAttempt > config.window) {
                 entry.attempts = 0;
                 entry.firstAttempt = now;
                 entry.violations = 0;
             }
-            
+
             // Check if limit exceeded
             if (entry.attempts >= config.maxAttempts) {
                 entry.violations++;
                 entry.lastAttempt = now;
-                
+
                 // Apply progressive backoff if enabled
                 if (config.progressiveBackoff) {
                     const backoffDuration = Math.min(
@@ -128,15 +128,15 @@ class RateLimiter {
                     );
                     entry.backoffUntil = now + backoffDuration;
                 }
-                
+
                 logger.warn('Rate limit exceeded', {
-                    key: key,
-                    type: type,
+                    key,
+                    type,
                     attempts: entry.attempts,
                     violations: entry.violations,
                     backoff_until: entry.backoffUntil
                 });
-                
+
                 return {
                     allowed: false,
                     reason: 'limit_exceeded',
@@ -146,32 +146,32 @@ class RateLimiter {
                     remainingSeconds: Math.ceil((entry.backoffUntil - now) / 1000)
                 };
             }
-            
+
             // Allow request and increment attempts
             entry.attempts++;
             entry.lastAttempt = now;
-            
+
             logger.debug('Rate limit check passed', {
-                key: key,
-                type: type,
+                key,
+                type,
                 attempts: entry.attempts,
                 max_attempts: config.maxAttempts
             });
-            
+
             return {
                 allowed: true,
                 attempts: entry.attempts,
                 remainingAttempts: config.maxAttempts - entry.attempts,
                 resetTime: entry.firstAttempt + config.window
             };
-            
+
         } catch (error) {
             logger.error('Rate limit check failed', {
-                key: key,
-                type: type,
+                key,
+                type,
                 error: error.message
             });
-            
+
             // Fail open - allow request if rate limiting fails
             return {
                 allowed: true,
@@ -180,7 +180,7 @@ class RateLimiter {
             };
         }
     }
-    
+
     /**
      * Record successful request
      * @param {string} key - Rate limit key
@@ -193,21 +193,21 @@ class RateLimiter {
                 // Reset violations on successful request
                 entry.violations = 0;
                 entry.backoffUntil = 0;
-                
+
                 logger.debug('Rate limit success recorded', {
-                    key: key,
-                    type: type
+                    key,
+                    type
                 });
             }
         } catch (error) {
             logger.error('Failed to record success', {
-                key: key,
-                type: type,
+                key,
+                type,
                 error: error.message
             });
         }
     }
-    
+
     /**
      * Get rate limit status
      * @param {string} key - Rate limit key
@@ -218,7 +218,7 @@ class RateLimiter {
         try {
             const config = this.config[type] || this.config.api;
             const entry = this.store.get(key);
-            
+
             if (!entry) {
                 return {
                     attempts: 0,
@@ -228,11 +228,11 @@ class RateLimiter {
                     backoffUntil: 0
                 };
             }
-            
+
             const now = Date.now();
             const windowStart = entry.firstAttempt;
             const windowEnd = windowStart + config.window;
-            
+
             return {
                 attempts: entry.attempts,
                 remainingAttempts: Math.max(0, config.maxAttempts - entry.attempts),
@@ -242,14 +242,14 @@ class RateLimiter {
                 inBackoff: now < entry.backoffUntil,
                 remainingBackoffSeconds: Math.max(0, Math.ceil((entry.backoffUntil - now) / 1000))
             };
-            
+
         } catch (error) {
             logger.error('Failed to get rate limit status', {
-                key: key,
-                type: type,
+                key,
+                type,
                 error: error.message
             });
-            
+
             return {
                 attempts: 0,
                 remainingAttempts: 0,
@@ -260,7 +260,7 @@ class RateLimiter {
             };
         }
     }
-    
+
     /**
      * Reset rate limit for key
      * @param {string} key - Rate limit key
@@ -269,21 +269,21 @@ class RateLimiter {
     reset(key, type = 'api') {
         try {
             this.store.delete(key);
-            
+
             logger.info('Rate limit reset', {
-                key: key,
-                type: type
+                key,
+                type
             });
-            
+
         } catch (error) {
             logger.error('Failed to reset rate limit', {
-                key: key,
-                type: type,
+                key,
+                type,
                 error: error.message
             });
         }
     }
-    
+
     /**
      * Get all rate limit entries
      * @returns {Array} All rate limit entries
@@ -291,16 +291,16 @@ class RateLimiter {
     getAllEntries() {
         try {
             const entries = [];
-            
+
             for (const [key, entry] of this.store.entries()) {
                 entries.push({
-                    key: key,
+                    key,
                     ...entry
                 });
             }
-            
+
             return entries;
-            
+
         } catch (error) {
             logger.error('Failed to get all entries', {
                 error: error.message
@@ -308,7 +308,7 @@ class RateLimiter {
             return [];
         }
     }
-    
+
     /**
      * Get rate limit statistics
      * @returns {Object} Rate limit statistics
@@ -322,20 +322,20 @@ class RateLimiter {
                 totalViolations: 0,
                 config: this.config
             };
-            
+
             const now = Date.now();
-            
+
             for (const [key, entry] of this.store.entries()) {
                 stats.activeEntries++;
                 stats.totalViolations += entry.violations;
-                
+
                 if (now < entry.backoffUntil) {
                     stats.backoffEntries++;
                 }
             }
-            
+
             return stats;
-            
+
         } catch (error) {
             logger.error('Failed to get stats', {
                 error: error.message
@@ -349,7 +349,7 @@ class RateLimiter {
             };
         }
     }
-    
+
     /**
      * Start cleanup interval
      */
@@ -357,16 +357,16 @@ class RateLimiter {
         if (cleanupInterval) {
             clearInterval(cleanupInterval);
         }
-        
+
         cleanupInterval = setInterval(() => {
             this.cleanup();
         }, RATE_LIMIT_CONFIG.oauth.cleanupInterval);
-        
+
         logger.info('Rate limit cleanup started', {
             interval: RATE_LIMIT_CONFIG.oauth.cleanupInterval
         });
     }
-    
+
     /**
      * Stop cleanup interval
      */
@@ -374,11 +374,11 @@ class RateLimiter {
         if (cleanupInterval) {
             clearInterval(cleanupInterval);
             cleanupInterval = null;
-            
+
             logger.info('Rate limit cleanup stopped');
         }
     }
-    
+
     /**
      * Cleanup expired entries
      */
@@ -386,7 +386,7 @@ class RateLimiter {
         try {
             const now = Date.now();
             let cleanedCount = 0;
-            
+
             for (const [key, entry] of this.store.entries()) {
                 // Remove entries older than the longest window
                 const maxWindow = Math.max(
@@ -394,20 +394,20 @@ class RateLimiter {
                     RATE_LIMIT_CONFIG.api.window,
                     RATE_LIMIT_CONFIG.login.window
                 );
-                
+
                 if (now - entry.lastAttempt > maxWindow) {
                     this.store.delete(key);
                     cleanedCount++;
                 }
             }
-            
+
             if (cleanedCount > 0) {
                 logger.debug('Rate limit cleanup completed', {
                     cleaned_count: cleanedCount,
                     remaining_entries: this.store.size
                 });
             }
-            
+
         } catch (error) {
             logger.error('Rate limit cleanup failed', {
                 error: error.message
@@ -430,18 +430,18 @@ function withRateLimit(handler, type = 'api') {
         try {
             // Extract rate limit key
             const key = extractRateLimitKey(event);
-            
+
             // Check rate limit
             const rateLimitResult = rateLimiter.checkRateLimit(key, type);
-            
+
             if (!rateLimitResult.allowed) {
                 logger.warn('Rate limit exceeded', {
-                    key: key,
-                    type: type,
+                    key,
+                    type,
                     reason: rateLimitResult.reason,
                     violations: rateLimitResult.violations
                 });
-                
+
                 return {
                     statusCode: 429,
                     headers: {
@@ -460,27 +460,27 @@ function withRateLimit(handler, type = 'api') {
                     })
                 };
             }
-            
+
             // Add rate limit headers
             const response = await handler(event, context);
-            
+
             if (response && response.headers) {
                 response.headers['X-RateLimit-Limit'] = RATE_LIMIT_CONFIG[type]?.maxAttempts || 100;
                 response.headers['X-RateLimit-Remaining'] = rateLimitResult.remainingAttempts || 0;
                 response.headers['X-RateLimit-Reset'] = rateLimitResult.resetTime || Date.now() + 900000;
             }
-            
+
             // Record successful request
             rateLimiter.recordSuccess(key, type);
-            
+
             return response;
-            
+
         } catch (error) {
             logger.error('Rate limiting middleware error', {
                 error: error.message,
-                type: type
+                type
             });
-            
+
             // Fail open - allow request if rate limiting fails
             return await handler(event, context);
         }
@@ -501,11 +501,11 @@ function extractRateLimitKey(event) {
         event.headers['x-client-ip'],
         event.headers['x-forwarded'],
         event.headers['forwarded-for'],
-        event.headers['forwarded']
+        event.headers.forwarded
     ];
-    
+
     let ip = 'unknown';
-    
+
     for (const source of ipSources) {
         if (source) {
             // Take first IP if comma-separated
@@ -513,17 +513,17 @@ function extractRateLimitKey(event) {
             break;
         }
     }
-    
+
     // Add user ID if available
     const authHeader = event.headers.authorization || event.headers.Authorization;
     let userId = 'anonymous';
-    
+
     if (authHeader && authHeader.startsWith('Bearer ')) {
         const token = authHeader.substring(7);
         // In production, decode JWT to get user ID
         userId = token.substring(0, 16); // Simplified for demo
     }
-    
+
     return `${ip}:${userId}`;
 }
 
@@ -559,13 +559,13 @@ exports.getRateLimitStatus = async (event) => {
             body: JSON.stringify({ error: 'Method not allowed' })
         };
     }
-    
+
     try {
         const key = extractRateLimitKey(event);
         const type = event.queryStringParameters?.type || 'api';
-        
+
         const status = rateLimiter.getStatus(key, type);
-        
+
         return {
             statusCode: 200,
             headers: {
@@ -573,17 +573,17 @@ exports.getRateLimitStatus = async (event) => {
                 'Access-Control-Allow-Origin': '*'
             },
             body: JSON.stringify({
-                key: key,
-                type: type,
-                status: status
+                key,
+                type,
+                status
             })
         };
-        
+
     } catch (error) {
         logger.error('Failed to get rate limit status', {
             error: error.message
         });
-        
+
         return {
             statusCode: 500,
             headers: {
@@ -609,18 +609,18 @@ exports.resetRateLimit = async (event) => {
             body: JSON.stringify({ error: 'Method not allowed' })
         };
     }
-    
+
     try {
         const key = extractRateLimitKey(event);
         const type = event.queryStringParameters?.type || 'api';
-        
+
         rateLimiter.reset(key, type);
-        
+
         logger.info('Rate limit reset', {
-            key: key,
-            type: type
+            key,
+            type
         });
-        
+
         return {
             statusCode: 200,
             headers: {
@@ -629,16 +629,16 @@ exports.resetRateLimit = async (event) => {
             },
             body: JSON.stringify({
                 message: 'Rate limit reset successfully',
-                key: key,
-                type: type
+                key,
+                type
             })
         };
-        
+
     } catch (error) {
         logger.error('Failed to reset rate limit', {
             error: error.message
         });
-        
+
         return {
             statusCode: 500,
             headers: {
@@ -664,10 +664,10 @@ exports.getRateLimitStats = async (event) => {
             body: JSON.stringify({ error: 'Method not allowed' })
         };
     }
-    
+
     try {
         const stats = rateLimiter.getStats();
-        
+
         return {
             statusCode: 200,
             headers: {
@@ -675,16 +675,16 @@ exports.getRateLimitStats = async (event) => {
                 'Access-Control-Allow-Origin': '*'
             },
             body: JSON.stringify({
-                stats: stats,
+                stats,
                 timestamp: new Date().toISOString()
             })
         };
-        
+
     } catch (error) {
         logger.error('Failed to get rate limit stats', {
             error: error.message
         });
-        
+
         return {
             statusCode: 500,
             headers: {

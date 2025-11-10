@@ -221,23 +221,23 @@ class DataExport {
      * @returns {boolean} Is in range
      */
     isInDateRange(date, dateRange) {
-        if (!dateRange) return true;
-        
+        if (!dateRange) {return true;}
+
         const checkDate = new Date(date);
         checkDate.setHours(0, 0, 0, 0);
-        
+
         if (dateRange.start) {
             const start = new Date(dateRange.start);
             start.setHours(0, 0, 0, 0);
-            if (checkDate < start) return false;
+            if (checkDate < start) {return false;}
         }
-        
+
         if (dateRange.end) {
             const end = new Date(dateRange.end);
             end.setHours(23, 59, 59, 999);
-            if (checkDate > end) return false;
+            if (checkDate > end) {return false;}
         }
-        
+
         return true;
     }
 
@@ -247,8 +247,8 @@ class DataExport {
      * @returns {number} Total sets
      */
     calculateTotalSets(exercises) {
-        if (!Array.isArray(exercises)) return 0;
-        
+        if (!Array.isArray(exercises)) {return 0;}
+
         return exercises.reduce((total, ex) => {
             if (Array.isArray(ex.sets)) {
                 return total + ex.sets.length;
@@ -263,11 +263,11 @@ class DataExport {
      * @returns {number} Total volume
      */
     calculateTotalVolume(exercises) {
-        if (!Array.isArray(exercises)) return 0;
-        
+        if (!Array.isArray(exercises)) {return 0;}
+
         return exercises.reduce((total, ex) => {
             const sets = Array.isArray(ex.sets) ? ex.sets : [{ weight: 0, reps: 0 }];
-            
+
             return total + sets.reduce((exTotal, set) => {
                 const weight = set.weight || set.targetWeight || 0;
                 const reps = set.reps || set.targetReps || 0;
@@ -282,20 +282,20 @@ class DataExport {
      * @returns {number|null} Average RPE
      */
     calculateAverageRPE(exercises) {
-        if (!Array.isArray(exercises)) return null;
-        
+        if (!Array.isArray(exercises)) {return null;}
+
         const rpeValues = exercises.reduce((rpes, ex) => {
-            if (ex.rpe) rpes.push(ex.rpe);
+            if (ex.rpe) {rpes.push(ex.rpe);}
             if (Array.isArray(ex.sets)) {
                 ex.sets.forEach(set => {
-                    if (set.rpe) rpes.push(set.rpe);
+                    if (set.rpe) {rpes.push(set.rpe);}
                 });
             }
             return rpes;
         }, []);
-        
-        if (rpeValues.length === 0) return null;
-        
+
+        if (rpeValues.length === 0) {return null;}
+
         const sum = rpeValues.reduce((total, rpe) => total + rpe, 0);
         return Math.round((sum / rpeValues.length) * 10) / 10;
     }
@@ -308,12 +308,12 @@ class DataExport {
     async downloadCSV(exportData, options = {}) {
         const timestamp = new Date().toISOString().split('T')[0];
         let csvContent = '';
-        
+
         // Add metadata
         csvContent += '# IgniteFitness Data Export\n';
         csvContent += `# Export Date: ${exportData.metadata.exportDate}\n`;
         csvContent += `# User ID: ${exportData.metadata.userId}\n`;
-        csvContent += `# Format: CSV\n\n`;
+        csvContent += '# Format: CSV\n\n';
 
         // Sessions CSV
         if (exportData.sessions.length > 0) {
@@ -363,7 +363,7 @@ class DataExport {
     async downloadJSON(exportData, options = {}) {
         const timestamp = new Date().toISOString().split('T')[0];
         const jsonContent = JSON.stringify(exportData, null, 2);
-        
+
         // Download
         this.downloadFile(jsonContent, `ignite-fitness-export-${timestamp}.json`, 'application/json');
     }
@@ -375,35 +375,35 @@ class DataExport {
      * @returns {string} CSV string
      */
     convertToCSV(data, columns) {
-        if (!data || data.length === 0) return '';
+        if (!data || data.length === 0) {return '';}
 
         // CSV header
         const header = columns.join(',');
-        
+
         // CSV rows
         const rows = data.map(row => {
             return columns.map(col => {
                 const value = row[col];
-                
+
                 // Handle null/undefined
-                if (value === null || value === undefined) return '';
-                
+                if (value === null || value === undefined) {return '';}
+
                 // Handle arrays/objects
                 if (Array.isArray(value) || typeof value === 'object') {
                     return `"${JSON.stringify(value).replace(/"/g, '""')}"`;
                 }
-                
+
                 // Handle strings with quotes or commas
                 const stringValue = String(value);
                 if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
                     return `"${stringValue.replace(/"/g, '""')}"`;
                 }
-                
+
                 return stringValue;
             }).join(',');
         });
-        
-        return [header, ...rows].join('\n') + '\n';
+
+        return `${[header, ...rows].join('\n') }\n`;
     }
 
     /**
@@ -415,15 +415,15 @@ class DataExport {
     downloadFile(content, filename, mimeType) {
         const blob = new Blob([content], { type: mimeType });
         const url = URL.createObjectURL(blob);
-        
+
         const link = document.createElement('a');
         link.href = url;
         link.download = filename;
         link.style.display = 'none';
-        
+
         document.body.appendChild(link);
         link.click();
-        
+
         // Cleanup
         setTimeout(() => {
             document.body.removeChild(link);
@@ -445,7 +445,7 @@ class DataExport {
             includeInjuryFlags: dataType === 'injuryFlags' || dataType === 'all',
             ...options
         };
-        
+
         return this.exportData(format, exportOptions);
     }
 
@@ -481,7 +481,7 @@ class DataExport {
             };
 
             summary.totalRecords = summary.sessions + summary.readiness + summary.progression + summary.injuryFlags;
-            
+
             // Estimate file size (rough calculation)
             const avgRecordSize = 200; // bytes per record
             summary.estimatedSize = `${(summary.totalRecords * avgRecordSize / 1024).toFixed(1)} KB`;

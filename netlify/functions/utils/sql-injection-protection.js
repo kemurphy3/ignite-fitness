@@ -1,6 +1,6 @@
 /**
  * SQL Injection Protection Utilities
- * 
+ *
  * Provides secure database query execution with parameterized queries
  * and comprehensive SQL injection protection.
  */
@@ -28,7 +28,7 @@ class SQLInjectionProtection {
             /(\b(OPENROWSET|OPENDATASOURCE)\b)/gi,
             /(\b(BULK|BULKINSERT)\b)/gi
         ];
-        
+
         this.safeTableNames = new Set([
             'users', 'user_preferences', 'user_profiles', 'sessions', 'exercises',
             'sleep_sessions', 'strava_activities', 'external_sources', 'activities',
@@ -90,7 +90,7 @@ class SQLInjectionProtection {
         }
 
         const upperInput = input.toUpperCase();
-        
+
         for (const pattern of this.dangerousPatterns) {
             if (pattern.test(upperInput)) {
                 return true;
@@ -115,7 +115,7 @@ class SQLInjectionProtection {
             // Remove potential SQL injection characters
             return input.replace(/['"\\;\-]/g, '');
         }
-        
+
         if (typeof input === 'number') {
             // Ensure numbers are within safe ranges
             if (input > Number.MAX_SAFE_INTEGER || input < Number.MIN_SAFE_INTEGER) {
@@ -123,19 +123,19 @@ class SQLInjectionProtection {
             }
             return input;
         }
-        
+
         if (typeof input === 'boolean') {
             return input;
         }
-        
+
         if (input instanceof Date) {
             return input;
         }
-        
+
         if (Array.isArray(input)) {
             return input.map(item => this.sanitizeInput(item));
         }
-        
+
         if (input && typeof input === 'object') {
             const sanitized = {};
             for (const [key, value] of Object.entries(input)) {
@@ -145,7 +145,7 @@ class SQLInjectionProtection {
             }
             return sanitized;
         }
-        
+
         return input;
     }
 
@@ -160,32 +160,32 @@ class SQLInjectionProtection {
         try {
             // Validate query structure
             this.validateQueryStructure(query);
-            
+
             // Sanitize all parameters
             const sanitizedParams = params.map(param => this.sanitizeInput(param));
-            
+
             // Execute query with timeout
             const timeout = options.timeout || 30000; // 30 seconds default
             const startTime = Date.now();
-            
+
             const result = await Promise.race([
                 sql(query, sanitizedParams),
-                new Promise((_, reject) => 
+                new Promise((_, reject) =>
                     setTimeout(() => reject(new Error('Query timeout')), timeout)
                 )
             ]);
-            
+
             const executionTime = Date.now() - startTime;
-            
+
             // Log query execution (without sensitive data)
             console.log('Safe query executed:', {
                 executionTime,
                 resultCount: Array.isArray(result) ? result.length : 0,
                 timestamp: new Date().toISOString()
             });
-            
+
             return result;
-            
+
         } catch (error) {
             console.error('Safe query execution failed:', {
                 error: error.message,
@@ -225,10 +225,10 @@ class SQLInjectionProtection {
      */
     async safeSelect(table, conditions = {}, options = {}) {
         const validatedTable = this.validateTableName(table);
-        
+
         let query = `SELECT * FROM ${validatedTable}`;
         const params = [];
-        
+
         // Build WHERE clause with parameterized queries
         if (Object.keys(conditions).length > 0) {
             const whereClause = Object.entries(conditions)
@@ -240,13 +240,13 @@ class SQLInjectionProtection {
                 .join(' AND ');
             query += ` WHERE ${whereClause}`;
         }
-        
+
         // Add ORDER BY if specified
         if (options.orderBy) {
             const orderBy = options.orderBy.replace(/[^a-zA-Z0-9_,\s]/g, '');
             query += ` ORDER BY ${orderBy}`;
         }
-        
+
         // Add LIMIT if specified
         if (options.limit) {
             const limit = parseInt(options.limit);
@@ -254,7 +254,7 @@ class SQLInjectionProtection {
                 query += ` LIMIT ${limit}`;
             }
         }
-        
+
         return this.executeSafeQuery(query, params, options);
     }
 
@@ -267,7 +267,7 @@ class SQLInjectionProtection {
      */
     async safeInsert(table, data, options = {}) {
         const validatedTable = this.validateTableName(table);
-        
+
         if (!data || typeof data !== 'object') {
             throw new Error('Data must be a non-empty object');
         }
@@ -295,7 +295,7 @@ class SQLInjectionProtection {
      */
     async safeUpdate(table, data, conditions = {}, options = {}) {
         const validatedTable = this.validateTableName(table);
-        
+
         if (!data || typeof data !== 'object') {
             throw new Error('Data must be a non-empty object');
         }
@@ -305,11 +305,11 @@ class SQLInjectionProtection {
                 const validatedKey = this.validateColumnName(key);
                 return `${validatedKey} = $${index + 1}`;
             });
-        
+
         const updateValues = Object.values(data).map(value => this.sanitizeInput(value));
-        
+
         let query = `UPDATE ${validatedTable} SET ${updateFields.join(', ')}`;
-        
+
         // Build WHERE clause
         if (Object.keys(conditions).length > 0) {
             const whereClause = Object.entries(conditions)
@@ -321,9 +321,9 @@ class SQLInjectionProtection {
                 .join(' AND ');
             query += ` WHERE ${whereClause}`;
         }
-        
+
         query += ' RETURNING *';
-        
+
         return this.executeSafeQuery(query, updateValues, options);
     }
 
@@ -336,7 +336,7 @@ class SQLInjectionProtection {
      */
     async safeDelete(table, conditions = {}, options = {}) {
         const validatedTable = this.validateTableName(table);
-        
+
         if (Object.keys(conditions).length === 0) {
             throw new Error('DELETE queries must have WHERE conditions');
         }
@@ -347,11 +347,11 @@ class SQLInjectionProtection {
                 return `${validatedKey} = $${index + 1}`;
             })
             .join(' AND ');
-        
+
         const params = Object.values(conditions).map(value => this.sanitizeInput(value));
-        
+
         const query = `DELETE FROM ${validatedTable} WHERE ${whereClause} RETURNING *`;
-        
+
         return this.executeSafeQuery(query, params, options);
     }
 }

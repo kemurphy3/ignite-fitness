@@ -13,7 +13,7 @@ describe('WorkoutTimer', () => {
         if (workoutTimer) {
             workoutTimer.reset();
         }
-        
+
         // Mock localStorage for Node.js environment
         global.localStorage = global.localStorage || {
             data: {},
@@ -27,7 +27,7 @@ describe('WorkoutTimer', () => {
                 delete global.localStorage.data[key];
             })
         };
-        
+
         // Mock window.WorkoutTimer for Node.js environment
         global.window = global.window || {};
         if (!global.window.WorkoutTimer) {
@@ -42,7 +42,7 @@ describe('WorkoutTimer', () => {
                     const hours = Math.floor(seconds / 3600);
                     const minutes = Math.floor((seconds % 3600) / 60);
                     const secs = seconds % 60;
-                    
+
                     // Always use HH:MM:SS format for readability
                     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
                 }),
@@ -53,7 +53,7 @@ describe('WorkoutTimer', () => {
                 reset: vi.fn()
             };
         }
-        
+
         workoutTimer = global.window.WorkoutTimer;
     });
 
@@ -88,7 +88,7 @@ describe('WorkoutTimer', () => {
         it('should pause and resume session', () => {
             workoutTimer.pauseSession();
             expect(workoutTimer.pauseSession).toHaveBeenCalled();
-            
+
             workoutTimer.resumeSession();
             expect(workoutTimer.resumeSession).toHaveBeenCalled();
         });
@@ -98,7 +98,7 @@ describe('WorkoutTimer', () => {
         it('should start rest countdown', () => {
             const duration = 90;
             const callback = vi.fn();
-            
+
             workoutTimer.startRest(duration, callback);
             expect(workoutTimer.startRest).toHaveBeenCalledWith(duration, callback);
         });
@@ -133,10 +133,10 @@ describe('WorkoutTimer', () => {
             };
 
             localStorage.setItem('workout_timer_session_state', JSON.stringify(mockState));
-            
+
             const saved = localStorage.getItem('workout_timer_session_state');
             expect(saved).toBeTruthy();
-            
+
             const parsed = JSON.parse(saved);
             expect(parsed.isActive).toBe(true);
         });
@@ -150,7 +150,7 @@ describe('WorkoutTimer', () => {
             };
 
             localStorage.setItem('workout_timer_session_state', JSON.stringify(mockState));
-            
+
             const loaded = localStorage.getItem('workout_timer_session_state');
             expect(loaded).toBeTruthy();
         });
@@ -158,7 +158,7 @@ describe('WorkoutTimer', () => {
         it('should clear session state', () => {
             localStorage.setItem('workout_timer_session_state', '{}');
             localStorage.removeItem('workout_timer_session_state');
-            
+
             const cleared = localStorage.getItem('workout_timer_session_state');
             expect(cleared).toBeNull();
         });
@@ -174,10 +174,10 @@ describe('WorkoutTimer', () => {
             };
 
             localStorage.setItem('workout_timer_rest_state', JSON.stringify(mockState));
-            
+
             const saved = localStorage.getItem('workout_timer_rest_state');
             expect(saved).toBeTruthy();
-            
+
             const parsed = JSON.parse(saved);
             expect(parsed.duration).toBe(90);
         });
@@ -185,7 +185,7 @@ describe('WorkoutTimer', () => {
         it('should clear rest state', () => {
             localStorage.setItem('workout_timer_rest_state', '{}');
             localStorage.removeItem('workout_timer_rest_state');
-            
+
             const cleared = localStorage.getItem('workout_timer_rest_state');
             expect(cleared).toBeNull();
         });

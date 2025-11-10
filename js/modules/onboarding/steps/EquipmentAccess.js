@@ -216,7 +216,7 @@ class EquipmentAccess extends window.BaseComponent {
      */
     selectTrainingDays(days) {
         this.timePreferences.trainingDaysPerWeek = days;
-        
+
         // Update UI
         document.querySelectorAll('.days-btn').forEach(btn => {
             btn.classList.remove('selected');
@@ -236,12 +236,12 @@ class EquipmentAccess extends window.BaseComponent {
         if (onboardingManager) {
             onboardingManager.onboardingData.equipment = Array.from(this.availableEquipment);
             onboardingManager.onboardingData.timePreferences = this.timePreferences;
-            
+
             onboardingManager.saveStepData('equipment_access', {
                 equipment: Array.from(this.availableEquipment),
                 timePreferences: this.timePreferences
             });
-            
+
             onboardingManager.nextStep();
         }
     }

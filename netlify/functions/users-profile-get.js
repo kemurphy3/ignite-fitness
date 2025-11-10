@@ -6,12 +6,12 @@ const convertUnits = require('./utils/units');
 
 // Helper function to format time
 function formatTime(seconds) {
-    if (!seconds) return null;
-    
+    if (!seconds) {return null;}
+
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    
+
     if (hours > 0) {
         return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     } else {
@@ -42,7 +42,7 @@ exports.handler = async (event) => {
     }
 
     const sql = getServerlessDB();
-    
+
     try {
         // Authenticate user
         const userId = await verifyJWT(event.headers);
@@ -53,7 +53,7 @@ exports.handler = async (event) => {
                 body: JSON.stringify({ error: 'Unauthorized', code: 'AUTH_001' })
             };
         }
-        
+
         // Fetch profile with goal details
         const result = await sql`
             SELECT 
@@ -82,32 +82,32 @@ exports.handler = async (event) => {
             WHERE p.user_id = ${userId}
             GROUP BY p.id
         `;
-        
+
         if (!result.length) {
             return {
                 statusCode: 404,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     error: 'Profile not found',
                     code: 'PROF_404'
                 })
             };
         }
-        
+
         const profile = result[0];
-        
+
         // Check for goal conflicts
         const conflicts = profile.goal_details
             .filter(g => g.conflicting_goals)
             .flatMap(g => g.conflicting_goals)
             .filter(conflictId => profile.goals.includes(conflictId));
-        
+
         // Format response based on preferred units
         const useImperial = profile.preferred_units === 'imperial';
-        
+
         const response = {
             age: profile.age,
-            height: useImperial 
+            height: useImperial
                 ? convertUnits.toFeetInches(profile.height_cm)
                 : profile.height_cm,
             weight: useImperial
@@ -120,7 +120,7 @@ exports.handler = async (event) => {
             goal_details: profile.goal_details,
             goal_conflicts: conflicts.length > 0 ? conflicts : null,
             baseline_lifts: {
-                bench_press_max: useImperial 
+                bench_press_max: useImperial
                     ? convertUnits.toLbs(profile.bench_press_max)
                     : profile.bench_press_max,
                 squat_max: useImperial
@@ -142,8 +142,8 @@ exports.handler = async (event) => {
             },
             baseline_cardio: {
                 mile_time_seconds: profile.mile_time_seconds,
-                mile_time_formatted: profile.mile_time_seconds 
-                    ? formatTime(profile.mile_time_seconds) 
+                mile_time_formatted: profile.mile_time_seconds
+                    ? formatTime(profile.mile_time_seconds)
                     : null
             },
             calculated_metrics: {
@@ -159,14 +159,14 @@ exports.handler = async (event) => {
                 )
             }
         };
-        
+
         // Log sanitized action (no PII)
         console.log('Profile retrieved:', {
             userId: sanitizeForLog(userId),
             completeness: profile.completeness_score,
             version: profile.version
         });
-        
+
         return {
             statusCode: 200,
             headers: {
@@ -176,14 +176,14 @@ exports.handler = async (event) => {
             },
             body: JSON.stringify(response)
         };
-        
+
     } catch (error) {
         console.error('Profile fetch error:', sanitizeForLog(error.message));
-        
+
         return {
             statusCode: 500,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 error: 'Internal server error',
                 code: 'SYS_001'
             })

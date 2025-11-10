@@ -1,9 +1,9 @@
-const { 
-  getDB, 
-  authenticate, 
-  checkRateLimit, 
-  errorResponse, 
-  successResponse, 
+const {
+  getDB,
+  authenticate,
+  checkRateLimit,
+  errorResponse,
+  successResponse,
   preflightResponse,
   validateSessionType,
   validateSessionSource,
@@ -36,7 +36,7 @@ exports.handler = async (event) => {
     }
 
     const body = JSON.parse(event.body || '{}');
-    
+
     // Validate required fields
     if (!body.type) {
       return errorResponse(400, 'VALIDATION_ERROR', 'Type is required');
@@ -70,13 +70,13 @@ exports.handler = async (event) => {
         AND source = ${validatedData.source} 
         AND source_id = ${validatedData.source_id}
       `;
-      
+
       if (existing.length > 0) {
         return errorResponse(409, 'DUPLICATE_SESSION', 'Session with this source_id already exists', {
           session_id: existing[0].id
         });
       }
-      
+
       // Generate hash for source_id based sessions
       const crypto = require('crypto');
       sessionHash = crypto.createHash('sha256')
@@ -90,13 +90,13 @@ exports.handler = async (event) => {
         AND start_at = ${validatedData.start_at} 
         AND type = ${validatedData.type}
       `;
-      
+
       if (existing.length > 0) {
         return errorResponse(409, 'DUPLICATE_SESSION', 'Session with this start time and type already exists', {
           session_id: existing[0].id
         });
       }
-      
+
       // Generate hash for time-based sessions
       const crypto = require('crypto');
       sessionHash = crypto.createHash('sha256')
@@ -134,7 +134,7 @@ exports.handler = async (event) => {
       source_id: validatedData.source_id,
       start_at: validatedData.start_at,
       end_at: validatedData.end_at,
-      duration: duration,
+      duration,
       payload: validatedData.payload,
       created_at: result[0].created_at,
       updated_at: result[0].updated_at
@@ -142,17 +142,17 @@ exports.handler = async (event) => {
 
   } catch (error) {
     console.error('Sessions Create API Error:', error);
-    
+
     // Handle validation errors
-    if (error.message.includes('Invalid session') || 
-        error.message.includes('must be a valid') || 
+    if (error.message.includes('Invalid session') ||
+        error.message.includes('must be a valid') ||
         error.message.includes('cannot be more than') ||
         error.message.includes('must be less than')) {
       return errorResponse(400, 'VALIDATION_ERROR', error.message);
     }
 
     // Handle database connection errors
-    if (error.message.includes('DATABASE_URL not configured') || 
+    if (error.message.includes('DATABASE_URL not configured') ||
         error.message.includes('connection') ||
         error.message.includes('timeout')) {
       return errorResponse(503, 'SERVICE_UNAVAILABLE', 'Database service unavailable');

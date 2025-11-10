@@ -14,45 +14,45 @@ class DataInspector {
             cache: {},
             system: {}
         };
-        
+
         this.init();
     }
-    
+
     /**
      * Initialize data inspector
      */
     init() {
         this.logger.debug('DataInspector initialized');
     }
-    
+
     /**
      * Open data inspector
      */
     open() {
-        if (this.isOpen) return;
-        
+        if (this.isOpen) {return;}
+
         this.createInspectorUI();
         this.loadData();
         this.isOpen = true;
-        
+
         this.logger.info('DataInspector opened');
     }
-    
+
     /**
      * Close data inspector
      */
     close() {
-        if (!this.isOpen) return;
-        
+        if (!this.isOpen) {return;}
+
         const inspector = document.getElementById('data-inspector');
         if (inspector) {
             inspector.remove();
         }
-        
+
         this.isOpen = false;
         this.logger.info('DataInspector closed');
     }
-    
+
     /**
      * Create inspector UI
      */
@@ -72,7 +72,7 @@ class DataInspector {
             align-items: center;
             justify-content: center;
         `;
-        
+
         const modal = document.createElement('div');
         modal.className = 'data-inspector-modal';
         modal.style.cssText = `
@@ -85,18 +85,18 @@ class DataInspector {
             flex-direction: column;
             box-shadow: 0 20px 40px rgba(0,0,0,0.3);
         `;
-        
+
         // Header
         const header = this.createHeader();
         modal.appendChild(header);
-        
+
         // Content
         const content = this.createContent();
         modal.appendChild(content);
-        
+
         inspector.appendChild(modal);
         document.body.appendChild(inspector);
-        
+
         // Close on backdrop click
         inspector.addEventListener('click', (e) => {
             if (e.target === inspector) {
@@ -104,7 +104,7 @@ class DataInspector {
             }
         });
     }
-    
+
     /**
      * Create header
      * @returns {HTMLElement} Header element
@@ -119,7 +119,7 @@ class DataInspector {
             justify-content: space-between;
             align-items: center;
         `;
-        
+
         const title = document.createElement('h2');
         title.textContent = 'Data Inspector';
         title.style.cssText = `
@@ -128,7 +128,7 @@ class DataInspector {
             font-size: 24px;
             font-weight: 600;
         `;
-        
+
         const closeButton = document.createElement('button');
         closeButton.innerHTML = '✕';
         closeButton.style.cssText = `
@@ -141,13 +141,13 @@ class DataInspector {
             border-radius: 4px;
         `;
         closeButton.addEventListener('click', () => this.close());
-        
+
         header.appendChild(title);
         header.appendChild(closeButton);
-        
+
         return header;
     }
-    
+
     /**
      * Create content
      * @returns {HTMLElement} Content element
@@ -160,18 +160,18 @@ class DataInspector {
             display: flex;
             overflow: hidden;
         `;
-        
+
         // Sidebar
         const sidebar = this.createSidebar();
         content.appendChild(sidebar);
-        
+
         // Main content
         const main = this.createMainContent();
         content.appendChild(main);
-        
+
         return content;
     }
-    
+
     /**
      * Create sidebar
      * @returns {HTMLElement} Sidebar element
@@ -186,7 +186,7 @@ class DataInspector {
             padding: 20px;
             overflow-y: auto;
         `;
-        
+
         const navItems = [
             { id: 'overview', label: 'Overview', icon: '📊' },
             { id: 'users', label: 'Users', icon: '👥' },
@@ -195,7 +195,7 @@ class DataInspector {
             { id: 'cache', label: 'Cache', icon: '🗄️' },
             { id: 'system', label: 'System', icon: '⚙️' }
         ];
-        
+
         navItems.forEach(item => {
             const navItem = document.createElement('div');
             navItem.className = 'nav-item';
@@ -210,22 +210,22 @@ class DataInspector {
                 gap: 12px;
                 transition: background-color 0.2s ease;
             `;
-            
+
             navItem.innerHTML = `
                 <span style="font-size: 18px;">${item.icon}</span>
                 <span style="font-weight: 500;">${item.label}</span>
             `;
-            
+
             navItem.addEventListener('click', () => {
                 this.switchView(item.id);
             });
-            
+
             sidebar.appendChild(navItem);
         });
-        
+
         return sidebar;
     }
-    
+
     /**
      * Create main content
      * @returns {HTMLElement} Main content element
@@ -238,14 +238,14 @@ class DataInspector {
             padding: 20px;
             overflow-y: auto;
         `;
-        
+
         // Overview content
         const overview = this.createOverviewContent();
         main.appendChild(overview);
-        
+
         return main;
     }
-    
+
     /**
      * Create overview content
      * @returns {HTMLElement} Overview content
@@ -259,7 +259,7 @@ class DataInspector {
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 20px;
         `;
-        
+
         // Stats cards
         const statsCards = [
             { title: 'Total Users', value: '0', icon: '👥', color: '#3b82f6' },
@@ -267,15 +267,15 @@ class DataInspector {
             { title: 'Cache Hit Rate', value: '0%', icon: '🎯', color: '#f59e0b' },
             { title: 'System Load', value: '0%', icon: '⚡', color: '#ef4444' }
         ];
-        
+
         statsCards.forEach(card => {
             const cardElement = this.createStatsCard(card);
             overview.appendChild(cardElement);
         });
-        
+
         return overview;
     }
-    
+
     /**
      * Create stats card
      * @param {Object} card - Card data
@@ -293,7 +293,7 @@ class DataInspector {
             align-items: center;
             gap: 16px;
         `;
-        
+
         const icon = document.createElement('div');
         icon.style.cssText = `
             width: 48px;
@@ -306,12 +306,12 @@ class DataInspector {
             font-size: 24px;
         `;
         icon.textContent = card.icon;
-        
+
         const content = document.createElement('div');
         content.style.cssText = `
             flex: 1;
         `;
-        
+
         const title = document.createElement('div');
         title.textContent = card.title;
         title.style.cssText = `
@@ -319,7 +319,7 @@ class DataInspector {
             color: var(--color-text-secondary);
             margin-bottom: 4px;
         `;
-        
+
         const value = document.createElement('div');
         value.textContent = card.value;
         value.style.cssText = `
@@ -327,33 +327,33 @@ class DataInspector {
             font-weight: 600;
             color: var(--color-text);
         `;
-        
+
         content.appendChild(title);
         content.appendChild(value);
-        
+
         cardElement.appendChild(icon);
         cardElement.appendChild(content);
-        
+
         return cardElement;
     }
-    
+
     /**
      * Switch view
      * @param {string} viewId - View ID
      */
     switchView(viewId) {
         this.currentView = viewId;
-        
+
         // Update sidebar selection
         document.querySelectorAll('.nav-item').forEach(item => {
-            item.style.backgroundColor = item.dataset.view === viewId ? 
+            item.style.backgroundColor = item.dataset.view === viewId ?
                 'var(--color-primary-light)' : 'transparent';
         });
-        
+
         // Update main content
         const main = document.querySelector('.data-inspector-main');
         main.innerHTML = '';
-        
+
         let content;
         switch (viewId) {
             case 'overview':
@@ -375,10 +375,10 @@ class DataInspector {
                 content = this.createSystemContent();
                 break;
         }
-        
+
         main.appendChild(content);
     }
-    
+
     /**
      * Create users content
      * @returns {HTMLElement} Users content
@@ -400,10 +400,10 @@ class DataInspector {
                 <!-- Users table will be populated here -->
             </div>
         `;
-        
+
         return content;
     }
-    
+
     /**
      * Create activities content
      * @returns {HTMLElement} Activities content
@@ -425,10 +425,10 @@ class DataInspector {
                 <!-- Activities table will be populated here -->
             </div>
         `;
-        
+
         return content;
     }
-    
+
     /**
      * Create workouts content
      * @returns {HTMLElement} Workouts content
@@ -450,10 +450,10 @@ class DataInspector {
                 <!-- Workouts table will be populated here -->
             </div>
         `;
-        
+
         return content;
     }
-    
+
     /**
      * Create cache content
      * @returns {HTMLElement} Cache content
@@ -475,10 +475,10 @@ class DataInspector {
                 <!-- Cache table will be populated here -->
             </div>
         `;
-        
+
         return content;
     }
-    
+
     /**
      * Create system content
      * @returns {HTMLElement} System content
@@ -500,10 +500,10 @@ class DataInspector {
                 <!-- System table will be populated here -->
             </div>
         `;
-        
+
         return content;
     }
-    
+
     /**
      * Load data
      */
@@ -511,26 +511,26 @@ class DataInspector {
         try {
             // Load users
             this.data.users = await this.loadUsers();
-            
+
             // Load activities
             this.data.activities = await this.loadActivities();
-            
+
             // Load workouts
             this.data.workouts = await this.loadWorkouts();
-            
+
             // Load cache data
             this.data.cache = await this.loadCacheData();
-            
+
             // Load system data
             this.data.system = await this.loadSystemData();
-            
+
             this.logger.info('Data loaded successfully');
-            
+
         } catch (error) {
             this.logger.error('Failed to load data:', error);
         }
     }
-    
+
     /**
      * Load users
      * @returns {Promise<Array>} Users data
@@ -539,7 +539,7 @@ class DataInspector {
         // This would typically fetch from an API
         return [];
     }
-    
+
     /**
      * Load activities
      * @returns {Promise<Array>} Activities data
@@ -548,7 +548,7 @@ class DataInspector {
         // This would typically fetch from an API
         return [];
     }
-    
+
     /**
      * Load workouts
      * @returns {Promise<Array>} Workouts data
@@ -557,7 +557,7 @@ class DataInspector {
         // This would typically fetch from an API
         return [];
     }
-    
+
     /**
      * Load cache data
      * @returns {Promise<Object>} Cache data
@@ -566,7 +566,7 @@ class DataInspector {
         // This would typically fetch from cache
         return {};
     }
-    
+
     /**
      * Load system data
      * @returns {Promise<Object>} System data
@@ -575,7 +575,7 @@ class DataInspector {
         // This would typically fetch from system
         return {};
     }
-    
+
     /**
      * Get inspector data
      * @returns {Object} Inspector data
@@ -583,7 +583,7 @@ class DataInspector {
     getData() {
         return this.data;
     }
-    
+
     /**
      * Destroy data inspector
      */

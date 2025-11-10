@@ -413,7 +413,7 @@ class SubstitutionEngine {
             reasons.push('Reasonable alternative option');
         }
 
-        return reasons.join('. ') + '.';
+        return `${reasons.join('. ') }.`;
     }
 
     /**

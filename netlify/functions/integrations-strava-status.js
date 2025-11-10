@@ -5,18 +5,18 @@ const jwt = require('jsonwebtoken');
 exports.handler = async (event) => {
     const { getNeonClient } = require('./utils/connection-pool');
 const sql = getNeonClient();
-    
+
     const headers = {
         'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGINS || '*',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         'Access-Control-Allow-Methods': 'GET, OPTIONS',
         'Content-Type': 'application/json'
     };
-    
+
     if (event.httpMethod === 'OPTIONS') {
         return { statusCode: 204, headers };
     }
-    
+
     try {
         // Authenticate
         const authHeader = event.headers.authorization;
@@ -32,10 +32,10 @@ const sql = getNeonClient();
                 })
             };
         }
-        
+
         const token = authHeader.substring(7);
         let userId;
-        
+
         try {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             userId = decoded.sub;
@@ -51,7 +51,7 @@ const sql = getNeonClient();
                 })
             };
         }
-        
+
         // Get sync status
         const syncState = await sql`
             SELECT 
@@ -72,7 +72,7 @@ const sql = getNeonClient();
             FROM integrations_strava
             WHERE user_id = ${userId}
         `;
-        
+
         if (!syncState.length) {
             return {
                 statusCode: 200,
@@ -92,19 +92,19 @@ const sql = getNeonClient();
                 })
             };
         }
-        
+
         const state = syncState[0];
-        
+
         // Check Strava connection
         const tokenCheck = await sql`
             SELECT expires_at 
             FROM strava_tokens 
             WHERE user_id = ${userId}
         `;
-        
+
         const connected = tokenCheck.length > 0;
         const tokenValid = connected && new Date(tokenCheck[0].expires_at) > new Date();
-        
+
         // Get recent imports
         const recentImports = await sql`
             SELECT 
@@ -124,7 +124,7 @@ const sql = getNeonClient();
             ORDER BY started_at DESC
             LIMIT 5
         `;
-        
+
         // Calculate import progress if in progress
         let importProgress = null;
         if (state.import_in_progress && state.import_started_at) {
@@ -135,7 +135,7 @@ const sql = getNeonClient();
                 has_continue_token: !!state.import_continue_token
             };
         }
-        
+
         return {
             statusCode: 200,
             headers: {
@@ -146,7 +146,7 @@ const sql = getNeonClient();
                 connected,
                 token_valid: tokenValid,
                 last_import_after: state.last_import_after,
-                last_import_date: state.last_import_after 
+                last_import_date: state.last_import_after
                     ? new Date(parseInt(state.last_import_after) * 1000).toISOString()
                     : null,
                 last_run_at: state.last_run_at,
@@ -166,7 +166,7 @@ const sql = getNeonClient();
                     run_id: imp.run_id,
                     started_at: imp.started_at,
                     completed_at: imp.completed_at,
-                    duration_ms: imp.completed_at 
+                    duration_ms: imp.completed_at
                         ? new Date(imp.completed_at) - new Date(imp.started_at)
                         : null,
                     imported: parseInt(imp.total_imported),
@@ -178,10 +178,10 @@ const sql = getNeonClient();
                 }))
             })
         };
-        
+
     } catch (error) {
         console.error('Status error:', error);
-        
+
         return {
             statusCode: 500,
             headers,

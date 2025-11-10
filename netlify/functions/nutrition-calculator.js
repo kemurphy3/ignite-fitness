@@ -32,7 +32,7 @@ exports.handler = async (event, context) => {
         }
 
         const nutrition = calculateNutrition(gender, age, weight, height, activityLevel, dayType, sport);
-        
+
         return {
             statusCode: 200,
             headers,
@@ -62,33 +62,33 @@ exports.handler = async (event, context) => {
 function calculateNutrition(gender, age, weight, height, activityLevel = 'moderate', dayType = 'training', sport = 'soccer', bodyFat = null, goals = null, weeklyLoad = null) {
     // Calculate BMR using Mifflin-St Jeor equation
     const bmr = calculateBMR(gender, age, weight, height, bodyFat);
-    
+
     // Apply activity multiplier
     const activityMultiplier = getActivityMultiplier(activityLevel);
     const maintenanceCalories = bmr * activityMultiplier;
-    
+
     // Apply goal-specific adjustments
     const goalAdjustment = getGoalAdjustment(goals, dayType);
-    
+
     // Apply day type adjustment
     const dayTypeAdjustment = getDayTypeAdjustment(dayType);
-    
+
     // Combined adjustment
     const totalAdjustment = dayTypeAdjustment * goalAdjustment;
     const targetCalories = Math.round(maintenanceCalories * totalAdjustment);
-    
+
     // Calculate macros based on goals and day type
     const macros = calculateMacrosAdaptive(targetCalories, sport, dayType, goals, weight);
-    
+
     // Get sport-specific meal examples
     const mealExamples = getMealExamples(sport, dayType);
-    
+
     // Get timing recommendations
     const timing = getTimingRecommendations(sport, dayType);
-    
+
     // Get hydration targets
     const hydration = getHydrationTargets(dayType, sport, weight);
-    
+
     return {
         bmr: Math.round(bmr),
         maintenanceCalories: Math.round(maintenanceCalories),
@@ -118,7 +118,7 @@ function calculateBMR(gender, age, weight, height, bodyFat = null) {
     const baseBMR = (10 * weight) + (6.25 * height) - (5 * age);
     const genderFactor = gender.toLowerCase() === 'male' ? 5 : -161;
     let bmr = baseBMR + genderFactor;
-    
+
     // Adjust BMR based on body fat if provided
     if (bodyFat !== null) {
         // Higher body fat reduces BMR per kg
@@ -126,7 +126,7 @@ function calculateBMR(gender, age, weight, height, bodyFat = null) {
         const adjustedBMR = 370 + (21.6 * leanMass);
         bmr = adjustedBMR; // Use Katch-McArdle when body fat known
     }
-    
+
     return bmr;
 }
 
@@ -140,34 +140,34 @@ function getGoalAdjustment(goals, dayType) {
     if (!goals || goals.length === 0) {
         return 1.0; // No adjustment if no goals specified
     }
-    
+
     // Determine primary goal
     const primaryGoal = goals[0];
-    
+
     const adjustments = {
         'muscle_building': {
-            game: 1.15,     // +15% surplus for game days
+            game: 1.15, // +15% surplus for game days
             training: 1.10, // +10% surplus
-            rest: 1.05     // +5% surplus
+            rest: 1.05 // +5% surplus
         },
         'fat_loss': {
-            game: 1.0,      // Maintenance for game days
-            training: 0.9,  // -10% deficit
-            rest: 0.85     // -15% deficit
+            game: 1.0, // Maintenance for game days
+            training: 0.9, // -10% deficit
+            rest: 0.85 // -15% deficit
         },
         'toning_maintenance': {
-            game: 1.1,     // +10%
+            game: 1.1, // +10%
             training: 1.0, // Maintenance
-            rest: 0.95     // -5%
+            rest: 0.95 // -5%
         },
         'athletic_performance': {
-            game: 1.2,     // +20% for game days
+            game: 1.2, // +20% for game days
             training: 1.1, // +10% for training
-            rest: 0.9      // -10% for rest
+            rest: 0.9 // -10% for rest
         }
     };
-    
-    const goalAdjustments = adjustments[primaryGoal] || adjustments['toning_maintenance'];
+
+    const goalAdjustments = adjustments[primaryGoal] || adjustments.toning_maintenance;
     return goalAdjustments[dayType] || 1.0;
 }
 
@@ -184,12 +184,12 @@ function calculateMacrosAdaptive(calories, sport, dayType, goals, weightKg) {
     if (!goals || goals.length === 0) {
         return calculateMacros(calories, sport, dayType);
     }
-    
+
     const primaryGoal = goals[0];
     const weightLb = weightKg * 2.20462;
-    
+
     let proteinGrams, carbGrams, fatGrams;
-    
+
     // Goal-specific protein targets
     if (primaryGoal === 'muscle_building') {
         // 0.9-1.1 g/lb
@@ -201,11 +201,11 @@ function calculateMacrosAdaptive(calories, sport, dayType, goals, weightKg) {
         // ~1.0 g/lb for maintenance/toning
         proteinGrams = Math.round(weightLb * 1.0);
     }
-    
+
     // Calculate remaining calories for carbs and fat
     const proteinCalories = proteinGrams * 4;
     const remainingCalories = calories - proteinCalories;
-    
+
     // Sport and day type determine carb/fat split
     if (dayType === 'game') {
         // High carbs for game days
@@ -220,7 +220,7 @@ function calculateMacrosAdaptive(calories, sport, dayType, goals, weightKg) {
         carbGrams = Math.round(remainingCalories * 0.40 / 4);
         fatGrams = Math.round(remainingCalories * 0.60 / 9);
     }
-    
+
     return {
         protein: proteinGrams,
         carbs: carbGrams,
@@ -240,15 +240,15 @@ function calculateMacrosAdaptive(calories, sport, dayType, goals, weightKg) {
  */
 function getHydrationTargets(dayType, sport, weightKg) {
     const baseHydration = weightKg * 35; // 35 ml per kg body weight
-    
+
     const dayMultipliers = {
         game: 1.4,
         training: 1.2,
         rest: 1.0
     };
-    
+
     const dailyTarget = Math.round(baseHydration * dayMultipliers[dayType] || 1.0);
-    
+
     return {
         daily: dailyTarget,
         unit: 'ml',
@@ -273,7 +273,7 @@ function generateRationale(dayType, goals, macros, sport) {
         training: 'training session support',
         rest: 'recovery and adaptation'
     };
-    
+
     return `High protein (${macros.protein}g) supports muscle maintenance during ${dayText[dayType]}. ${dayType === 'game' ? 'Higher carbs' : 'Balanced macros'} fuel ${goalText.replace('_', ' ')} goals for ${sport}.`;
 }
 
@@ -285,12 +285,12 @@ function generateRationale(dayType, goals, macros, sport) {
 function getActivityMultiplier(activityLevel) {
     const multipliers = {
         sedentary: 1.2,
-        light: 1.375,      // 1-3 days/week
-        moderate: 1.55,    // 3-5 days/week
-        active: 1.725,     // 6-7 days/week
-        very_active: 1.9   // 2x per day
+        light: 1.375, // 1-3 days/week
+        moderate: 1.55, // 3-5 days/week
+        active: 1.725, // 6-7 days/week
+        very_active: 1.9 // 2x per day
     };
-    
+
     return multipliers[activityLevel] || multipliers.moderate;
 }
 
@@ -301,11 +301,11 @@ function getActivityMultiplier(activityLevel) {
  */
 function getDayTypeAdjustment(dayType) {
     const adjustments = {
-        game: 1.2,      // +20% for game days
-        training: 1.1,  // +10% for training days
-        rest: 0.9       // -10% for rest days
+        game: 1.2, // +20% for game days
+        training: 1.1, // +10% for training days
+        rest: 0.9 // -10% for rest days
     };
-    
+
     return adjustments[dayType] || adjustments.training;
 }
 
@@ -340,14 +340,14 @@ function calculateMacros(targetCalories, sport, dayType) {
             rest: { protein: 0.30, carbs: 0.35, fat: 0.35 }
         }
     };
-    
+
     const ratios = macroRatios[sport] || macroRatios.default;
     const dayRatios = ratios[dayType] || ratios.training;
-    
+
     const proteinGrams = Math.round((targetCalories * dayRatios.protein) / 4);
     const carbGrams = Math.round((targetCalories * dayRatios.carbs) / 4);
     const fatGrams = Math.round((targetCalories * dayRatios.fat) / 9);
-    
+
     return {
         protein: proteinGrams,
         carbs: carbGrams,
@@ -427,7 +427,7 @@ function getMealExamples(sport, dayType) {
             ]
         }
     };
-    
+
     const sportExamples = examples[sport] || examples.soccer;
     return sportExamples[dayType] || sportExamples.pre;
 }

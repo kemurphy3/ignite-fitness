@@ -63,9 +63,9 @@ class UserDataRetentionManager {
         }
 
         const { retentionDays = 365, deleteUser = false } = options;
-        
+
         this.logger.info('Starting data retention process', { userId, retentionDays, deleteUser });
-        
+
         const results = {
             userId,
             retentionDays,
@@ -267,7 +267,7 @@ describe('UserDataRetentionManager', () => {
             };
 
             const errorManager = new UserDataRetentionManager(errorSupabase);
-            
+
             // Override the method to throw an error
             errorManager.deleteOldActivities = vi.fn().mockRejectedValue(new Error('Failed to delete old activities'));
 

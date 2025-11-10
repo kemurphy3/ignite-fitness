@@ -17,7 +17,7 @@ class LoadMath {
 
     static computeTRIMP(activity, userProfile) {
         const { durationS, avgHr, hrStream } = activity;
-        
+
         if (!durationS || durationS === 0) {
             return 0;
         }
@@ -30,7 +30,7 @@ class LoadMath {
         if (avgHr && !hrStream) {
             const hrReserve = maxHR - restHR;
             const hrReservePercent = (avgHr - restHR) / hrReserve;
-            
+
             // Banister TRIMP formula: duration × 0.64 × e^(1.92 × HRR)
             const trimpFactor = 0.64 * Math.exp(1.92 * hrReservePercent);
             return durationMinutes * trimpFactor;
@@ -39,17 +39,17 @@ class LoadMath {
         // Method 2: Using HR stream (more accurate Banister TRIMP)
         if (hrStream && hrStream.length > 0) {
             let totalTRIMP = 0;
-            
+
             for (let i = 0; i < hrStream.length; i++) {
                 const hr = hrStream[i];
                 const hrReserve = maxHR - restHR;
                 const hrReservePercent = (hr - restHR) / hrReserve;
-                
+
                 // Banister TRIMP formula: 0.64 × e^(1.92 × HRR) per minute
                 const trimpFactor = 0.64 * Math.exp(1.92 * hrReservePercent);
                 totalTRIMP += trimpFactor;
             }
-            
+
             return totalTRIMP;
         }
 
@@ -60,7 +60,7 @@ class LoadMath {
     static estimateTRIMP(activity, userProfile) {
         const { durationS, type } = activity;
         const durationMinutes = durationS / 60;
-        
+
         const trimpFactors = {
             'Run': 1.0,
             'Ride': 0.8,
@@ -72,14 +72,14 @@ class LoadMath {
             'Yoga': 0.4,
             'Other': 0.5
         };
-        
+
         const factor = trimpFactors[type] || 0.5;
         return durationMinutes * factor;
     }
 
     static calculateLoad(activity, userProfile) {
         const { durationS, avgHr, hrStream, type, date } = activity;
-        
+
         if (!durationS || durationS === 0) {
             return {
                 trimp: 0,
@@ -92,16 +92,16 @@ class LoadMath {
 
         // Calculate TRIMP using Banister formula
         const trimp = this.computeTRIMP(activity, userProfile);
-        
+
         // Calculate load score (normalized TRIMP)
         const loadScore = this.normalizeLoadScore(trimp, userProfile);
-        
+
         // Get intensity recommendation based on load
         const intensityRecommendation = this.getIntensityRecommendation(trimp, userProfile);
-        
+
         // Calculate weekly load (would typically sum daily TRIMP values)
         const weeklyLoad = this.calculateWeeklyLoad(userProfile, date);
-        
+
         return {
             trimp: Math.round(trimp * 100) / 100,
             loadScore: Math.round(loadScore * 100) / 100,
@@ -125,24 +125,24 @@ class LoadMath {
             'intermediate': 1.0,
             'advanced': 0.7
         };
-        
+
         const factor = normalizationFactors[fitnessLevel];
         const normalizedScore = (trimp * factor) / 10;
-        
+
         return Math.min(100, Math.max(0, normalizedScore));
     }
 
     static getIntensityRecommendation(trimp, userProfile) {
         const fitnessLevel = userProfile.fitnessLevel || 'intermediate';
-        
+
         const thresholds = {
             'beginner': { low: 30, moderate: 60, high: 100 },
             'intermediate': { low: 50, moderate: 100, high: 150 },
             'advanced': { low: 70, moderate: 140, high: 200 }
         };
-        
+
         const threshold = thresholds[fitnessLevel];
-        
+
         if (trimp < threshold.low) {
             return 'easy';
         } else if (trimp < threshold.moderate) {
@@ -157,7 +157,7 @@ class LoadMath {
     static calculateWeeklyLoad(userProfile, date) {
         const trainingFrequency = userProfile.trainingFrequency || 3;
         const avgTrimpPerWorkout = 80;
-        
+
         return trainingFrequency * avgTrimpPerWorkout;
     }
 }
@@ -288,7 +288,7 @@ describe('LoadMath Banister TRIMP Formula', () => {
     describe('Fitness Level Adjustments', () => {
         it('should adjust thresholds for beginner fitness level', () => {
             const beginnerProfile = { ...userProfile, fitnessLevel: 'beginner' };
-            
+
             const activity = {
                 durationS: 3600,
                 avgHr: 120, // Moderate for beginner
@@ -302,7 +302,7 @@ describe('LoadMath Banister TRIMP Formula', () => {
 
         it('should adjust thresholds for advanced fitness level', () => {
             const advancedProfile = { ...userProfile, fitnessLevel: 'advanced' };
-            
+
             const activity = {
                 durationS: 3600,
                 avgHr: 150, // Moderate for advanced
@@ -332,7 +332,7 @@ describe('LoadMath Banister TRIMP Formula', () => {
 
         it('should adjust weekly load for different training frequencies', () => {
             const highFrequencyProfile = { ...userProfile, trainingFrequency: 5 };
-            
+
             const activity = {
                 durationS: 3600,
                 avgHr: 150,
@@ -367,7 +367,7 @@ describe('LoadMath Banister TRIMP Formula', () => {
             const hrStream = Array(1800).fill(150);
             const activity = {
                 durationS: 1800,
-                hrStream: hrStream,
+                hrStream,
                 type: 'Run'
             };
 

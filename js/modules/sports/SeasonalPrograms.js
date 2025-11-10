@@ -8,7 +8,7 @@ class SeasonalPrograms {
         this.sportDefinitions = window.SportDefinitions;
         this.currentPrograms = new Map();
         this.seasonalTemplates = this.initializeSeasonalTemplates();
-        
+
         // Define seasonal phases with durations
         this.phases = {
             off: { name: 'Off-Season', duration: '3-4 months', focus: 'strength_power_development' },
@@ -30,10 +30,10 @@ class SeasonalPrograms {
             const phase = this.determinePhase(date, userProfile);
             const weekOfBlock = this.getWeekOfBlock(date);
             const deloadThisWeek = weekOfBlock === 4;
-            
+
             // Check for game proximity in-season
             const gameProximity = this.checkGameProximity(date, calendar, phase);
-            
+
             const context = {
                 phase: phase.name,
                 phaseKey: phase.key,
@@ -50,9 +50,9 @@ class SeasonalPrograms {
                 } : null,
                 rules: this.getPhaseRules(phase.key, gameProximity, phase)
             };
-            
+
             this.logger.debug('Season context', context);
-            
+
             return context;
         } catch (error) {
             this.logger.error('Failed to get season context', error);
@@ -77,7 +77,7 @@ class SeasonalPrograms {
      */
     determinePhase(date, userProfile) {
         const currentMonth = date.getMonth() + 1; // 1-12
-        
+
         // Check for custom season calendar in user profile
         if (userProfile && userProfile.seasonCalendar) {
             const customPhase = this.getPhaseFromCalendar(date, userProfile.seasonCalendar);
@@ -85,11 +85,11 @@ class SeasonalPrograms {
                 return { ...this.phases[customPhase], key: customPhase };
             }
         }
-        
+
         // Check for explicit season phase override
         if (userProfile && userProfile.seasonPhase) {
             const basePhase = { ...this.phases[userProfile.seasonPhase], key: userProfile.seasonPhase };
-            
+
             // Check if in a special sub-phase (playoffs, tournament, etc.)
             if (userProfile.seasonCalendar && userProfile.seasonCalendar.specialPhases) {
                 for (const specialPhase of userProfile.seasonCalendar.specialPhases) {
@@ -104,10 +104,10 @@ class SeasonalPrograms {
                     }
                 }
             }
-            
+
             return basePhase;
         }
-        
+
         // Auto-detect based on month
         if (currentMonth >= 12 || currentMonth <= 2) {
             return { ...this.phases.off, key: 'off' };
@@ -125,14 +125,14 @@ class SeasonalPrograms {
      * @returns {string|null} Phase key
      */
     getPhaseFromCalendar(date, calendar) {
-        if (!calendar.phases) return null;
-        
+        if (!calendar.phases) {return null;}
+
         for (const [phaseKey, phaseDates] of Object.entries(calendar.phases)) {
             if (this.isDateInRange(date, phaseDates)) {
                 return phaseKey;
             }
         }
-        
+
         return null;
     }
 
@@ -143,11 +143,11 @@ class SeasonalPrograms {
      * @returns {boolean} Is in range
      */
     isDateInRange(date, range) {
-        if (!range.start || !range.end) return false;
-        
+        if (!range.start || !range.end) {return false;}
+
         const startDate = new Date(range.start);
         const endDate = new Date(range.end);
-        
+
         return date >= startDate && date <= endDate;
     }
 
@@ -162,7 +162,7 @@ class SeasonalPrograms {
         const startDate = new Date(date.getFullYear(), 0, 1); // Jan 1
         const daysSince = Math.floor((date - startDate) / (1000 * 60 * 60 * 24));
         const weekNumber = Math.floor(daysSince / 7);
-        
+
         return (weekNumber % 4) + 1; // Returns 1-4
     }
 
@@ -181,34 +181,34 @@ class SeasonalPrograms {
             isWithin48h: false,
             suppressHeavyLower: false
         };
-        
+
         // Only check in-season
         if (phase.key !== 'in') {
             return result;
         }
-        
+
         const keyMatches = calendar.keyMatches || [];
         const games = calendar.games || [];
-        
+
         for (const game of [...keyMatches, ...games]) {
             const gameDate = new Date(game.date);
             const daysUntil = Math.floor((gameDate - date) / (1000 * 60 * 60 * 24));
-            
+
             if (daysUntil >= 0 && daysUntil <= 2) {
                 result.hasGame = true;
                 result.daysUntil = daysUntil;
                 result.isTomorrow = daysUntil === 1;
                 result.isWithin48h = daysUntil <= 1;
-                
+
                 // Suppress heavy lower body within 48h of game
                 if (result.isWithin48h) {
                     result.suppressHeavyLower = true;
                 }
-                
+
                 break;
             }
         }
-        
+
         return result;
     }
 
@@ -221,37 +221,37 @@ class SeasonalPrograms {
      */
     getPhaseRules(phaseKey, gameProximity, phaseInfo = {}) {
         const rules = [];
-        
+
         // Special phases (playoffs, tournament, etc.)
         if (phaseInfo.isSpecialPhase) {
             if (phaseInfo.peakPerformance) {
                 rules.push(`${phaseInfo.specialPhaseName}: Peak performance focus`);
                 rules.push('Maximize readiness without fatigue');
             }
-            
+
             if (phaseInfo.tapering) {
                 rules.push(`${phaseInfo.specialPhaseName}: Tapering protocol`);
                 rules.push('Reduce volume while maintaining intensity');
             }
         }
-        
+
         // Deload rule
         if (this.getWeekOfBlock(new Date()) === 4 && !phaseInfo.isSpecialPhase) {
             rules.push('Deload week: -20% volume');
         }
-        
+
         // Off-season: emphasize strength
         if (phaseKey === 'off') {
             rules.push('Off-season: Emphasize strength blocks');
             rules.push('Higher volume allowed');
         }
-        
+
         // Pre-season: sport-specific prep
         if (phaseKey === 'pre') {
             rules.push('Pre-season: Sport-specific preparation');
             rules.push('Balance strength and conditioning');
         }
-        
+
         // In-season: game proximity
         if (phaseKey === 'in' && gameProximity.hasGame) {
             if (gameProximity.isTomorrow) {
@@ -261,13 +261,13 @@ class SeasonalPrograms {
                 rules.push('Game within 48h: Suppress heavy lower');
             }
         }
-        
+
         // Post-season: recovery
         if (phaseKey === 'post') {
             rules.push('Post-season: Recovery and regeneration');
             rules.push('Reduce intensity and volume');
         }
-        
+
         return rules;
     }
 
@@ -280,29 +280,29 @@ class SeasonalPrograms {
      */
     generateMicrocycle(phase, blockNumber, keyMatches = []) {
         const weeks = [];
-        
+
         for (let week = 1; week <= 4; week++) {
             let volumeMultiplier = 1.0;
             let intensityMultiplier = 1.0;
             let isTaperWeek = false;
             let taperReason = null;
-            
+
             // Apply progressive loading for weeks 1-3
             if (week <= 3) {
-                volumeMultiplier = 0.7 + (week * 0.1);  // 0.8, 0.9, 1.0
+                volumeMultiplier = 0.7 + (week * 0.1); // 0.8, 0.9, 1.0
                 intensityMultiplier = 0.9 + (week * 0.033); // 0.933, 0.966, 1.0
-                
+
                 // Check for key matches in this week
                 const weekStart = new Date();
                 weekStart.setDate(weekStart.getDate() + (blockNumber - 1) * 28 + (week - 1) * 7);
                 const weekEnd = new Date(weekStart);
                 weekEnd.setDate(weekEnd.getDate() + 7);
-                
+
                 const hasKeyMatch = keyMatches.some(match => {
                     const matchDate = new Date(match.date);
                     return matchDate >= weekStart && matchDate <= weekEnd;
                 });
-                
+
                 // Auto-taper 10 days before key match
                 if (hasKeyMatch || this.isNearKeyMatch(weekStart, keyMatches)) {
                     volumeMultiplier *= 0.7; // -30% volume
@@ -312,10 +312,10 @@ class SeasonalPrograms {
                 }
             } else {
                 // Deload week 4
-                volumeMultiplier = 0.6;  // -40% volume
+                volumeMultiplier = 0.6; // -40% volume
                 intensityMultiplier = 0.85; // -15% intensity
             }
-            
+
             weeks.push({
                 weekNumber: week,
                 volumeMultiplier,
@@ -328,7 +328,7 @@ class SeasonalPrograms {
                 trainingLoad: this.calculateTrainingLoad(week, phase)
             });
         }
-        
+
         return {
             blockNumber,
             phase: phase.name,
@@ -339,7 +339,7 @@ class SeasonalPrograms {
             keyMatches: keyMatches.filter(m => this.isInBlock(m.date, blockNumber))
         };
     }
-    
+
     /**
      * Check if date is near a key match (within 10 days)
      * @param {Date} date - Date to check
@@ -353,7 +353,7 @@ class SeasonalPrograms {
             return daysUntil >= 0 && daysUntil <= 10;
         });
     }
-    
+
     /**
      * Get volume modifier based on deload and phase
      * @param {boolean} deloadThisWeek - Is this a deload week
@@ -370,12 +370,12 @@ class SeasonalPrograms {
                 return 0.7; // Tapering reduces volume
             }
         }
-        
+
         // Regular deload week
         if (deloadThisWeek) {
             return 0.8; // -20% volume
         }
-        
+
         return 1.0; // Normal volume
     }
 
@@ -391,7 +391,7 @@ class SeasonalPrograms {
         const match = new Date(matchDate);
         return match >= blockStart && match <= blockEnd;
     }
-    
+
     /**
      * Get weekly focus based on phase
      * @param {Object} phase - Phase configuration
@@ -409,7 +409,7 @@ class SeasonalPrograms {
             return 'recovery and regeneration';
         }
     }
-    
+
     /**
      * Flag key match
      * @param {Date} date - Match date
@@ -427,24 +427,24 @@ class SeasonalPrograms {
                 taperApplied: true,
                 taperDays: 10
             };
-            
+
             // Store flagged match
             const keyMatches = await this.getKeyMatches(userId);
             keyMatches.push(match);
             await this.saveKeyMatches(userId, keyMatches);
-            
+
             // Recalculate upcoming blocks with taper
             const updatedPlans = await this.applyTaperingToUpcomingBlocks(userId, keyMatches);
-            
+
             this.logger.audit('KEY_MATCH_FLAGGED', { match, updatedPlans });
-            
+
             return match;
         } catch (error) {
             this.logger.error('Failed to flag key match', error);
             throw error;
         }
     }
-    
+
     /**
      * Get key matches
      * @param {string} userId - User ID
@@ -459,7 +459,7 @@ class SeasonalPrograms {
             return [];
         }
     }
-    
+
     /**
      * Save key matches
      * @param {string} userId - User ID
@@ -468,7 +468,7 @@ class SeasonalPrograms {
     async saveKeyMatches(userId, matches) {
         await this.storageManager.saveData(userId, 'key_matches', matches);
     }
-    
+
     /**
      * Apply tapering to upcoming blocks
      * @param {string} userId - User ID
@@ -478,22 +478,22 @@ class SeasonalPrograms {
     async applyTaperingToUpcomingBlocks(userId, keyMatches) {
         const updatedPlans = [];
         const currentBlock = this.getCurrentBlock();
-        
+
         // Update next 2 blocks (2-4 weeks ahead)
         for (let blockOffset = 1; blockOffset <= 2; blockOffset++) {
             const blockNumber = currentBlock + blockOffset;
             const phase = this.getCurrentPhase();
             const block = this.generateMicrocycle(phase, blockNumber, keyMatches);
-            
+
             updatedPlans.push(block);
         }
-        
+
         // Store updated plans
         await this.storageManager.saveData(userId, 'updated_periodization', updatedPlans);
-        
+
         return updatedPlans;
     }
-    
+
     /**
      * Get current block number
      * @returns {number} Current block
@@ -505,7 +505,7 @@ class SeasonalPrograms {
         const daysSinceStart = Math.floor((Date.now() - startOfSeason.getTime()) / (1000 * 60 * 60 * 24));
         return Math.floor(daysSinceStart / 28) + 1; // Block number
     }
-    
+
     /**
      * Get current phase
      * @returns {Object} Phase configuration
@@ -513,13 +513,13 @@ class SeasonalPrograms {
     getCurrentPhase() {
         // Determine current season phase
         const month = new Date().getMonth();
-        
-        if (month >= 0 && month <= 2) return { name: 'Pre-Season', focus: 'strength', intensity: 'high' };
-        if (month >= 3 && month <= 8) return { name: 'In-Season', focus: 'maintenance', intensity: 'moderate' };
-        if (month >= 9 && month <= 10) return { name: 'Post-Season', focus: 'recovery', intensity: 'low' };
+
+        if (month >= 0 && month <= 2) {return { name: 'Pre-Season', focus: 'strength', intensity: 'high' };}
+        if (month >= 3 && month <= 8) {return { name: 'In-Season', focus: 'maintenance', intensity: 'moderate' };}
+        if (month >= 9 && month <= 10) {return { name: 'Post-Season', focus: 'recovery', intensity: 'low' };}
         return { name: 'Off-Season', focus: 'strength', intensity: 'high' };
     }
-    
+
     /**
      * Get user ID
      * @returns {string} User ID
@@ -535,14 +535,14 @@ class SeasonalPrograms {
      * @returns {string} Training load
      */
     calculateTrainingLoad(week, phase) {
-        if (week === 4) return 'low'; // Deload week
-        
+        if (week === 4) {return 'low';} // Deload week
+
         const intensityMap = {
             'low': ['low', 'low', 'moderate'],
             'moderate': ['moderate', 'moderate', 'moderate-high'],
             'high': ['moderate-high', 'high', 'high']
         };
-        
+
         return intensityMap[phase.intensity]?.[week - 1] || 'moderate';
     }
 
@@ -795,8 +795,8 @@ class SeasonalPrograms {
             season: seasonId,
             name: template.name,
             duration: template.duration,
-            userProfile: userProfile,
-            customizations: customizations,
+            userProfile,
+            customizations,
             createdAt: new Date().toISOString(),
             phases: this.adaptPhases(template.phases, userProfile, customizations),
             weeklyStructure: this.adaptWeeklyStructure(template.weeklyStructure, userProfile),
@@ -827,7 +827,7 @@ class SeasonalPrograms {
     adaptPhases(phases, userProfile, customizations) {
         return phases.map(phase => {
             const adaptedPhase = { ...phase };
-            
+
             // Adapt based on experience level
             if (userProfile.experience === 'beginner') {
                 adaptedPhase.intensity = this.reduceIntensity(adaptedPhase.intensity);
@@ -873,7 +873,7 @@ class SeasonalPrograms {
         // Adapt based on time constraints
         if (userProfile.timeConstraints) {
             const { sessionLength, frequency } = userProfile.timeConstraints;
-            
+
             if (sessionLength === 'short') {
                 Object.keys(adaptedStructure).forEach(day => {
                     if (adaptedStructure[day].duration > 30) {
@@ -881,13 +881,13 @@ class SeasonalPrograms {
                     }
                 });
             }
-            
+
             if (frequency === 'low') {
                 // Reduce training days
-                const trainingDays = Object.keys(adaptedStructure).filter(day => 
+                const trainingDays = Object.keys(adaptedStructure).filter(day =>
                     adaptedStructure[day].type !== 'rest' && adaptedStructure[day].type !== 'recovery'
                 );
-                
+
                 if (trainingDays.length > 4) {
                     // Remove least important training days
                     trainingDays.slice(4).forEach(day => {
@@ -1128,7 +1128,7 @@ class SeasonalPrograms {
             phase: phase.name,
             goals: [
                 `Complete ${phase.name} phase successfully`,
-                `Maintain injury-free training`,
+                'Maintain injury-free training',
                 `Improve ${phase.focus} capabilities`
             ]
         }));
@@ -1190,7 +1190,7 @@ class SeasonalPrograms {
     calculatePhaseWeek(phases, phaseIndex) {
         let week = 1;
         for (let i = 0; i < phaseIndex; i++) {
-            const duration = phases[i].duration;
+            const {duration} = phases[i];
             const weeks = parseInt(duration.split('-')[0]);
             week += weeks;
         }

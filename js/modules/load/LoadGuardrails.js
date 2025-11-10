@@ -25,27 +25,27 @@ class LoadGuardrails {
         return {
             beginner: {
                 maxWeeklyIncrease: 0.08, // 8% max increase
-                hiitReduction: 0.25,     // 25% HIIT reduction
-                consecutiveDaysLimit: 3,  // Max 3 consecutive training days
-                minRestDays: 2           // Min 2 rest days per week
+                hiitReduction: 0.25, // 25% HIIT reduction
+                consecutiveDaysLimit: 3, // Max 3 consecutive training days
+                minRestDays: 2 // Min 2 rest days per week
             },
             intermediate: {
                 maxWeeklyIncrease: 0.10, // 10% max increase
-                hiitReduction: 0.20,     // 20% HIIT reduction
-                consecutiveDaysLimit: 4,  // Max 4 consecutive training days
-                minRestDays: 1           // Min 1 rest day per week
+                hiitReduction: 0.20, // 20% HIIT reduction
+                consecutiveDaysLimit: 4, // Max 4 consecutive training days
+                minRestDays: 1 // Min 1 rest day per week
             },
             advanced: {
                 maxWeeklyIncrease: 0.12, // 12% max increase
-                hiitReduction: 0.15,     // 15% HIIT reduction
-                consecutiveDaysLimit: 5,  // Max 5 consecutive training days
-                minRestDays: 1           // Min 1 rest day per week
+                hiitReduction: 0.15, // 15% HIIT reduction
+                consecutiveDaysLimit: 5, // Max 5 consecutive training days
+                minRestDays: 1 // Min 1 rest day per week
             },
             elite: {
                 maxWeeklyIncrease: 0.15, // 15% max increase
-                hiitReduction: 0.10,     // 10% HIIT reduction
-                consecutiveDaysLimit: 6,  // Max 6 consecutive training days
-                minRestDays: 1           // Min 1 rest day per week
+                hiitReduction: 0.10, // 10% HIIT reduction
+                consecutiveDaysLimit: 6, // Max 6 consecutive training days
+                minRestDays: 1 // Min 1 rest day per week
             }
         };
     }
@@ -151,9 +151,9 @@ class LoadGuardrails {
                     this.logger.audit('GUARDRAIL_TRIGGERED', {
                         userId,
                         trigger: 'ramp_rate_exceeded',
-                        rampRate: rampRate,
+                        rampRate,
                         threshold: thresholds.maxWeeklyIncrease,
-                        actions: actions
+                        actions
                     });
 
                     return {
@@ -174,8 +174,8 @@ class LoadGuardrails {
             }
 
             // Use user object if available
-            const experienceLevel = user.personalData?.experience || 
-                                   user.experience || 
+            const experienceLevel = user.personalData?.experience ||
+                                   user.experience ||
                                    'intermediate';
             const thresholds = this.rampRateThresholds[experienceLevel];
 
@@ -203,9 +203,9 @@ class LoadGuardrails {
                 this.logger.audit('GUARDRAIL_TRIGGERED', {
                     userId,
                     trigger: 'ramp_rate_exceeded',
-                    rampRate: rampRate,
+                    rampRate,
                     threshold: thresholds.maxWeeklyIncrease,
-                    actions: actions
+                    actions
                 });
 
                 return {
@@ -241,8 +241,8 @@ class LoadGuardrails {
     async getUserExperienceLevel(userId) {
         try {
             const user = await this.storageManager?.getUser?.(userId);
-            return user?.personalData?.experience || 
-                   user?.experience || 
+            return user?.personalData?.experience ||
+                   user?.experience ||
                    'intermediate';
         } catch (error) {
             this.logger.warn('Failed to get user experience level', error);
@@ -377,7 +377,7 @@ class LoadGuardrails {
         this.recordAdjustment(userId, {
             trigger: 'ramp_rate',
             analysis: rampAnalysis,
-            actions: actions,
+            actions,
             timestamp: new Date().toISOString()
         });
 
@@ -512,7 +512,7 @@ class LoadGuardrails {
                     return {
                         valid: false,
                         reason: 'violates_adjustment',
-                        adjustment: adjustment,
+                        adjustment,
                         message: `Session conflicts with active ${adjustment.type} adjustment`
                     };
                 }
@@ -606,7 +606,7 @@ class LoadGuardrails {
             this.eventBus.emit('GUARDRAIL_APPLIED', {
                 userId,
                 type: 'hiit_reduction',
-                reduction: reduction,
+                reduction,
                 sessionsAffected: hiitSessions.slice(0, 2).length
             });
         }
@@ -640,8 +640,8 @@ class LoadGuardrails {
     async setGradualReturnProtocol(userId, reduction, duration) {
         const adjustment = {
             type: 'gradual_return',
-            reduction: reduction,
-            duration: duration,
+            reduction,
+            duration,
             startDate: new Date().toISOString(),
             endDate: new Date(Date.now() + duration * 24 * 60 * 60 * 1000).toISOString()
         };
@@ -658,8 +658,8 @@ class LoadGuardrails {
     async applyImmediateDownshift(userId, reduction, duration) {
         const adjustment = {
             type: 'immediate_downshift',
-            reduction: reduction,
-            duration: duration,
+            reduction,
+            duration,
             startDate: new Date().toISOString(),
             endDate: new Date(Date.now() + duration * 24 * 60 * 60 * 1000).toISOString()
         };
@@ -675,7 +675,7 @@ class LoadGuardrails {
     async scheduleAdditionalRecovery(userId, duration) {
         const adjustment = {
             type: 'extend_recovery',
-            duration: duration,
+            duration,
             startDate: new Date().toISOString()
         };
 
@@ -737,7 +737,7 @@ class LoadGuardrails {
             if (this.storageManager?.getUserSessions) {
                 return await this.storageManager.getUserSessions(userId);
             }
-            
+
             // Fallback: try to get from localStorage
             const stored = localStorage.getItem(`ignite_sessions_${userId}`);
             if (stored) {
@@ -802,7 +802,7 @@ class LoadGuardrails {
      * @returns {number} Consecutive days
      */
     countConsecutiveTrainingDays(sessions) {
-        if (sessions.length === 0) return 0;
+        if (sessions.length === 0) {return 0;}
 
         const sortedSessions = sessions
             .map(s => new Date(s.date || s.start_at || s.created_at))
@@ -928,7 +928,7 @@ class LoadGuardrails {
         try {
             const upcomingSessions = await this.getUpcomingSessions(userId, 30);
             const index = upcomingSessions.findIndex(s => s.id === session.id || s.template_id === session.template_id);
-            
+
             if (index >= 0) {
                 upcomingSessions[index] = session;
             } else {
@@ -994,7 +994,7 @@ class LoadGuardrails {
      */
     isHighIntensitySession(session) {
         if (session.tags && Array.isArray(session.tags)) {
-            if (session.tags.includes('HIIT') || 
+            if (session.tags.includes('HIIT') ||
                 session.tags.includes('anaerobic_capacity') ||
                 session.tags.includes('VO2')) {
                 return true;
@@ -1012,8 +1012,8 @@ class LoadGuardrails {
         if (session.structure && Array.isArray(session.structure)) {
             const mainBlock = session.structure.find(b => b.block_type === 'main');
             if (mainBlock && mainBlock.intensity) {
-                const zone = mainBlock.intensity.includes('Z') 
-                    ? mainBlock.intensity.split('-')[0] 
+                const zone = mainBlock.intensity.includes('Z')
+                    ? mainBlock.intensity.split('-')[0]
                     : mainBlock.intensity;
                 if (zone === 'Z4' || zone === 'Z5') {
                     return true;

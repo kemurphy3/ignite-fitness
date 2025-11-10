@@ -29,10 +29,10 @@ exports.handler = async (event) => {
   }
 
   const sql = getDB();
-  
+
   try {
     const userId = event.queryStringParameters?.userId;
-    
+
     if (!userId) {
       return {
         statusCode: 400,
@@ -50,20 +50,20 @@ exports.handler = async (event) => {
           'Content-Type': 'application/json',
           ...getRateLimitHeaders(rateLimitResult)
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           error: 'Rate limit exceeded',
           reason: rateLimitResult.reason,
           retryAfter: rateLimitResult.retryAfter
         })
       };
     }
-    
+
     // Check cache first
     const cached = statusCache.get(`status_${userId}`);
     if (cached && Date.now() - cached.timestamp < 30000) { // 30 second cache
       return {
         statusCode: 200,
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'X-Cache': 'HIT',
           'X-Cache-Age': Math.floor((Date.now() - cached.timestamp) / 1000)
@@ -75,7 +75,7 @@ exports.handler = async (event) => {
         })
       };
     }
-    
+
     const result = await sql`
       SELECT 
         expires_at,
@@ -94,18 +94,18 @@ exports.handler = async (event) => {
       FROM strava_tokens
       WHERE user_id = ${userId}
     `;
-    
+
     if (!result.length) {
       return {
         statusCode: 404,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           error: 'No token found for user',
           status: 'not_found'
         })
       };
     }
-    
+
     const tokenData = result[0];
     const status = {
       user_id: userId,
@@ -122,30 +122,30 @@ exports.handler = async (event) => {
       needs_refresh: tokenData.status === 'expiring_soon' || tokenData.status === 'expired',
       timestamp: new Date().toISOString()
     };
-    
+
     // Cache for 30 seconds
     statusCache.set(`status_${userId}`, {
       data: status,
       timestamp: Date.now()
     });
-    
+
     return {
       statusCode: 200,
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'X-Cache': 'MISS',
         'X-Circuit-Breaker-State': stravaCircuit.getStatus().state
       },
       body: JSON.stringify(status)
     };
-    
+
   } catch (error) {
     console.error('Status check error:', error);
-    
+
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         error: 'Status check failed',
         circuit_state: stravaCircuit.getStatus().state
       })

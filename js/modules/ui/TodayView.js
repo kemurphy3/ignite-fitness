@@ -324,7 +324,7 @@ class TodayView {
      * Start the planned workout
      */
     startWorkout() {
-        if (!this.todayData.planned_session) return;
+        if (!this.todayData.planned_session) {return;}
 
         // Emit event to start workout tracker
         if (this.eventBus) {
@@ -340,7 +340,7 @@ class TodayView {
      * Show substitution options
      */
     async showSubstitutions() {
-        if (!this.todayData.planned_session) return;
+        if (!this.todayData.planned_session) {return;}
 
         try {
             this.isLoadingSubstitutions = true;
@@ -430,7 +430,7 @@ class TodayView {
      */
     async useSubstitution(index) {
         const substitution = this.todayData.substitutions[index];
-        if (!substitution) return;
+        if (!substitution) {return;}
 
         try {
             // Replace planned session with substitution
@@ -456,7 +456,7 @@ class TodayView {
             if (this.eventBus) {
                 this.eventBus.emit('session:substituted', {
                     original: this.todayData.planned_session.original_session,
-                    substitution: substitution
+                    substitution
                 });
             }
 
@@ -471,7 +471,7 @@ class TodayView {
      */
     viewSubstitutionDetails(index) {
         const substitution = this.todayData.substitutions[index];
-        if (!substitution) return;
+        if (!substitution) {return;}
 
         // Create detailed view modal
         const modal = document.createElement('div');
@@ -710,9 +710,9 @@ class TodayView {
      * Format duration from seconds to human readable
      */
     formatDuration(seconds) {
-        if (seconds < 60) return `${seconds}s`;
+        if (seconds < 60) {return `${seconds}s`;}
         const minutes = Math.round(seconds / 60);
-        if (minutes < 60) return `${minutes}min`;
+        if (minutes < 60) {return `${minutes}min`;}
         const hours = Math.floor(minutes / 60);
         const remainingMinutes = minutes % 60;
         return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}min` : `${hours}h`;
@@ -730,9 +730,9 @@ class TodayView {
      */
     getVarianceClass(variance) {
         const absVariance = Math.abs(variance);
-        if (absVariance <= 5) return 'excellent';
-        if (absVariance <= 10) return 'good';
-        if (absVariance <= 15) return 'acceptable';
+        if (absVariance <= 5) {return 'excellent';}
+        if (absVariance <= 10) {return 'good';}
+        if (absVariance <= 15) {return 'acceptable';}
         return 'high';
     }
 

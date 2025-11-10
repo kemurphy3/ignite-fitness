@@ -135,11 +135,11 @@ class LoadCalculationEngine {
 
         // Zone intensity multipliers (relative effort)
         const zone_multipliers = {
-            Z1: 1.0,   // Recovery/easy
-            Z2: 2.0,   // Aerobic base
-            Z3: 4.0,   // Tempo/threshold
-            Z4: 7.0,   // VO2 max
-            Z5: 10.0   // Neuromuscular power
+            Z1: 1.0, // Recovery/easy
+            Z2: 2.0, // Aerobic base
+            Z3: 4.0, // Tempo/threshold
+            Z4: 7.0, // VO2 max
+            Z5: 10.0 // Neuromuscular power
         };
 
         let total_load = 0;
@@ -271,10 +271,10 @@ class LoadCalculationEngine {
      * @returns {string} Intensity category
      */
     static getRPECategory(rpe) {
-        if (rpe <= 2) return 'Very Easy';
-        if (rpe <= 4) return 'Easy';
-        if (rpe <= 6) return 'Moderate';
-        if (rpe <= 8) return 'Hard';
+        if (rpe <= 2) {return 'Very Easy';}
+        if (rpe <= 4) {return 'Easy';}
+        if (rpe <= 6) {return 'Moderate';}
+        if (rpe <= 8) {return 'Hard';}
         return 'Very Hard';
     }
 
@@ -284,8 +284,8 @@ class LoadCalculationEngine {
      * @returns {string} Intensity category
      */
     static getMETCategory(met_value) {
-        if (met_value < 6) return 'Light Intensity';
-        if (met_value < 12) return 'Moderate Intensity';
+        if (met_value < 6) {return 'Light Intensity';}
+        if (met_value < 12) {return 'Moderate Intensity';}
         return 'Vigorous Intensity';
     }
 

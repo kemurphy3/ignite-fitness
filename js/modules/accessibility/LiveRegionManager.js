@@ -29,9 +29,9 @@
     }
 
     announce(message, politeness = 'polite') {
-      if (!message) return;
+      if (!message) {return;}
       const now = Date.now();
-      if (message === this.lastMessage && now - this.lastTs < this.throttleMs) return;
+      if (message === this.lastMessage && now - this.lastTs < this.throttleMs) {return;}
       this.lastMessage = message;
       this.lastTs = now;
 
@@ -61,7 +61,7 @@ class LiveRegionManager {
             announcementDelay: 1000,
             maxAnnouncements: 3
         };
-        
+
         this.init();
     }
 
@@ -94,7 +94,7 @@ class LiveRegionManager {
             element.setAttribute('aria-atomic', 'true');
             element.className = 'sr-only';
             element.setAttribute('data-priority', region.priority);
-            
+
             document.body.appendChild(element);
             this.liveRegions.set(region.id, {
                 element,
@@ -141,7 +141,7 @@ class LiveRegionManager {
         EventBus.subscribe('announce:workout', this.handleWorkoutAnnouncement.bind(this));
         EventBus.subscribe('announce:error', this.handleErrorAnnouncement.bind(this));
         EventBus.subscribe('announce:success', this.handleSuccessAnnouncement.bind(this));
-        
+
         // Listen for preference changes
         EventBus.subscribe('accessibility:preferencesChanged', this.handlePreferencesChanged.bind(this));
     }
@@ -152,7 +152,7 @@ class LiveRegionManager {
      */
     handleTimerAnnouncement(data) {
         const { type, message, duration, exercise } = data;
-        
+
         let announcement = '';
         switch (type) {
             case 'timer-start':
@@ -176,7 +176,7 @@ class LiveRegionManager {
             default:
                 announcement = message || 'Timer update';
         }
-        
+
         this.announce('timer-announcements', announcement, 'normal');
     }
 
@@ -186,7 +186,7 @@ class LiveRegionManager {
      */
     handleStatusAnnouncement(data) {
         const { status, message, details } = data;
-        
+
         let announcement = '';
         switch (status) {
             case 'workout-started':
@@ -213,7 +213,7 @@ class LiveRegionManager {
             default:
                 announcement = message || 'Status update';
         }
-        
+
         this.announce('status-announcements', announcement, 'normal');
     }
 
@@ -223,7 +223,7 @@ class LiveRegionManager {
      */
     handleWorkoutAnnouncement(data) {
         const { type, message, details } = data;
-        
+
         let announcement = '';
         switch (type) {
             case 'pr-achieved':
@@ -244,7 +244,7 @@ class LiveRegionManager {
             default:
                 announcement = message || 'Workout update';
         }
-        
+
         this.announce('workout-announcements', announcement, 'high');
     }
 
@@ -254,7 +254,7 @@ class LiveRegionManager {
      */
     handleErrorAnnouncement(data) {
         const { error, message, context } = data;
-        
+
         let announcement = '';
         if (error) {
             switch (error.type) {
@@ -276,7 +276,7 @@ class LiveRegionManager {
         } else {
             announcement = message || 'An error occurred';
         }
-        
+
         this.announce('error-announcements', announcement, 'high');
     }
 
@@ -286,7 +286,7 @@ class LiveRegionManager {
      */
     handleSuccessAnnouncement(data) {
         const { type, message, details } = data;
-        
+
         let announcement = '';
         switch (type) {
             case 'data-saved':
@@ -304,7 +304,7 @@ class LiveRegionManager {
             default:
                 announcement = message || 'Success';
         }
-        
+
         this.announce('success-announcements', announcement, 'normal');
     }
 
@@ -360,7 +360,7 @@ class LiveRegionManager {
             const priorityOrder = { high: 3, normal: 2, low: 1 };
             const aPriority = priorityOrder[a.priority] || 2;
             const bPriority = priorityOrder[b.priority] || 2;
-            
+
             if (aPriority !== bPriority) {
                 return bPriority - aPriority;
             }
@@ -369,7 +369,7 @@ class LiveRegionManager {
 
         // Process announcements
         const announcements = this.announcementQueue.splice(0, this.userPreferences.maxAnnouncements);
-        
+
         announcements.forEach((announcement, index) => {
             setTimeout(() => {
                 this.executeAnnouncement(announcement);
@@ -391,16 +391,16 @@ class LiveRegionManager {
      */
     executeAnnouncement(announcement) {
         const region = this.liveRegions.get(announcement.regionId);
-        if (!region) return;
+        if (!region) {return;}
 
         // Clear previous content
         region.element.textContent = '';
-        
+
         // Add new content
         setTimeout(() => {
             region.element.textContent = announcement.text;
             region.lastAnnouncement = announcement;
-            
+
             this.logger.debug('Announced:', announcement.text);
         }, 100);
     }

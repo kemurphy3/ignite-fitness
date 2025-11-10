@@ -2,9 +2,9 @@
 // Database setup/teardown utilities for Neon/Postgres testing
 // This file provides the specific functions requested in Ticket 9
 
-import { 
-  setupTestDatabase, 
-  teardownTestDatabase, 
+import {
+  setupTestDatabase,
+  teardownTestDatabase,
   getTestDatabase,
   getTestPool,
   createTestUser,

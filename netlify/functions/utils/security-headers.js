@@ -166,7 +166,7 @@ exports.cspReport = async (event) => {
 
     try {
         const report = JSON.parse(event.body || '{}');
-        
+
         logger.warn('CSP violation detected', {
             violation: report,
             user_agent: event.headers['user-agent'],

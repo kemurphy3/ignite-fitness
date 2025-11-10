@@ -96,8 +96,8 @@ class LoadGuardrails {
     }
 
     isHighIntensitySession(session) {
-        return session.tags?.includes('HIIT') || 
-               session.intensity?.primary_zone === 'Z4' || 
+        return session.tags?.includes('HIIT') ||
+               session.intensity?.primary_zone === 'Z4' ||
                session.intensity?.primary_zone === 'Z5' ||
                session.rpe >= 8;
     }
@@ -112,7 +112,7 @@ class LoadGuardrails {
     }
 
     async handleMissedDays(userId, missedDays) {
-        if (missedDays < 3) return { status: 'no_action' };
+        if (missedDays < 3) {return { status: 'no_action' };}
         const protocol = this.recoveryProtocols.missedDays;
         const totalReduction = Math.min(missedDays * protocol.rampDown, protocol.maxReduction);
         return { status: 'downshift_applied', actions: [{ type: 'gradual_return', reduction: totalReduction }] };
@@ -135,8 +135,8 @@ class LoadGuardrails {
             const previous = loadHistory[i + 1];
             if (previous.totalLoad > 0) {
                 const rate = (current.totalLoad - previous.totalLoad) / previous.totalLoad;
-                if (rate > threshold) consecutive++;
-                else break;
+                if (rate > threshold) {consecutive++;}
+                else {break;}
             }
         }
         return consecutive;

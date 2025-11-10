@@ -10,7 +10,7 @@ class DashboardRenderer {
         this.authManager = window.AuthManager;
         this.workoutTracker = window.WorkoutTracker;
         this.coachingEngine = window.CoachingEngine;
-        
+
         this.dashboardModes = {
             basics: this.createBasicsMode(),
             some_metrics: this.createSomeMetricsMode(),
@@ -113,7 +113,7 @@ class DashboardRenderer {
         try {
             const dashboardMode = this.onboardingManager?.getDashboardMode() || 'some_metrics';
             const userRole = this.onboardingManager?.getUserRole() || 'athlete';
-            
+
             const config = this.dashboardModes[dashboardMode];
             if (!config) {
                 this.logger.error('Invalid dashboard mode', { mode: dashboardMode });
@@ -123,13 +123,13 @@ class DashboardRenderer {
             // Render dashboard based on mode and role
             const dashboardHTML = this.generateDashboardHTML(config, userRole);
             this.updateDashboardUI(dashboardHTML);
-            
-            this.logger.debug('Dashboard rendered', { 
-                mode: dashboardMode, 
-                role: userRole 
+
+            this.logger.debug('Dashboard rendered', {
+                mode: dashboardMode,
+                role: userRole
             });
             this.eventBus?.emit('dashboard:rendered', { mode: dashboardMode, role: userRole });
-            
+
             return { success: true, mode: dashboardMode, role: userRole };
         } catch (error) {
             this.logger.error('Failed to render dashboard', error);
@@ -147,7 +147,7 @@ class DashboardRenderer {
         const isCoach = role === 'coach';
         const user = this.authManager?.getCurrentUser();
         const recentWorkouts = this.workoutTracker?.getWorkoutHistory(5) || [];
-        
+
         let html = `
             <div class="dashboard-container" data-mode="${config.name.toLowerCase()}">
                 <div class="dashboard-header">
@@ -249,15 +249,15 @@ class DashboardRenderer {
      * @returns {string} HTML section
      */
     generateNextWorkoutSection(config, isCoach) {
-        const simple = config.simple;
-        
+        const {simple} = config;
+
         // Get today's workout plan
         const todaysPlan = this.getTodaysWorkoutPlan();
-        
+
         return `
             <div class="dashboard-card next-workout">
                 <h3>${isCoach ? 'Next Training Session' : 'Next Workout'}</h3>
-                ${simple ? 
+                ${simple ?
                     '<p>Ready for your next session? Let\'s get started!</p>' :
                     '<p>Your next workout is scheduled. Review the plan and prepare for success.</p>'
                 }
@@ -283,7 +283,7 @@ class DashboardRenderer {
         const exerciseCount = this.countExercises(plan);
         const focus = this.getWorkoutFocus(plan);
         const equipment = this.getRequiredEquipment(plan);
-        
+
         return `
             <div class="workout-preview">
                 <div class="preview-header">
@@ -336,7 +336,7 @@ class DashboardRenderer {
         }
 
         let notesHTML = '';
-        
+
         plan.notes.forEach(note => {
             // Check for recovery day override notification
             if (note.source === 'recovery_simple_mode' && note.overrideAvailable) {
@@ -427,15 +427,15 @@ class DashboardRenderer {
      * @returns {number} Duration in minutes
      */
     calculateWorkoutDuration(plan) {
-        if (!plan || !plan.blocks) return 35;
-        
+        if (!plan || !plan.blocks) {return 35;}
+
         let totalMinutes = 0;
         plan.blocks.forEach(block => {
             if (block.items) {
                 totalMinutes += block.items.length * 8; // ~8 min per exercise
             }
         });
-        
+
         return Math.max(30, totalMinutes);
     }
 
@@ -445,15 +445,15 @@ class DashboardRenderer {
      * @returns {number} Exercise count
      */
     countExercises(plan) {
-        if (!plan || !plan.blocks) return 6;
-        
+        if (!plan || !plan.blocks) {return 6;}
+
         let count = 0;
         plan.blocks.forEach(block => {
             if (block.items) {
                 count += block.items.length;
             }
         });
-        
+
         return count;
     }
 
@@ -484,19 +484,19 @@ class DashboardRenderer {
         if (!plan || !plan.blocks) {
             return 'A balanced workout focusing on strength and conditioning.';
         }
-        
-        const hasStrength = plan.blocks.some(block => 
-            block.items?.some(item => 
-                ['squat', 'deadlift', 'press', 'row'].some(movement => 
+
+        const hasStrength = plan.blocks.some(block =>
+            block.items?.some(item =>
+                ['squat', 'deadlift', 'press', 'row'].some(movement =>
                     item.name.toLowerCase().includes(movement)
                 )
             )
         );
-        
+
         if (hasStrength) {
             return 'Strength-focused session with compound movements and accessories.';
         }
-        
+
         return 'Balanced workout combining strength, conditioning, and mobility.';
     }
 
@@ -507,7 +507,7 @@ class DashboardRenderer {
      */
     generateWeeklyStreakSection(config) {
         const streak = this.calculateWeeklyStreak();
-        
+
         return `
             <div class="dashboard-card weekly-streak">
                 <h3>Weekly Streak</h3>
@@ -515,7 +515,7 @@ class DashboardRenderer {
                     <span class="streak-number">${streak}</span>
                     <span class="streak-label">days</span>
                 </div>
-                ${config.simple ? 
+                ${config.simple ?
                     '<p>Keep up the great work! <small>(Placeholder data - will update when workouts are logged)</small></p>' :
                     '<p>Your consistency is building momentum. Maintain this rhythm for optimal results.</p><p style="color: #718096; font-size: 12px; margin-top: 8px;">📝 Note: Streak data will populate as you log workouts</p>'
                 }
@@ -539,9 +539,9 @@ class DashboardRenderer {
             `;
         }
 
-        const simple = config.simple;
+        const {simple} = config;
         const date = new Date(lastWorkout.startTime).toLocaleDateString();
-        
+
         return `
             <div class="dashboard-card last-workout">
                 <h3>Last Workout</h3>
@@ -553,7 +553,7 @@ class DashboardRenderer {
                         <div class="workout-type">${lastWorkout.type || 'General'}</div>
                     ` : ''}
                 </div>
-                ${simple ? 
+                ${simple ?
                     '<p>Great job on your last session!</p>' :
                     '<p>Excellent work on your previous training. Ready for the next challenge?</p>'
                 }
@@ -567,12 +567,12 @@ class DashboardRenderer {
      * @returns {string} HTML section
      */
     generateProgressChartsSection(config) {
-        const simplified = config.simplified;
-        
+        const {simplified} = config;
+
         return `
             <div class="dashboard-card progress-charts">
                 <h3>Progress Charts</h3>
-                ${simplified ? 
+                ${simplified ?
                     '<div class="chart-placeholder">📈 Your progress over time</div>' :
                     '<div class="chart-container"><canvas id="progressChart"></canvas></div>'
                 }
@@ -587,9 +587,9 @@ class DashboardRenderer {
      * @returns {string} HTML section
      */
     generateWeeklyLoadSection(config) {
-        const simplified = config.simplified;
+        const {simplified} = config;
         const weeklyLoad = this.calculateWeeklyLoad();
-        
+
         return `
             <div class="dashboard-card weekly-load">
                 <h3>Weekly Training Load</h3>
@@ -597,7 +597,7 @@ class DashboardRenderer {
                     <span class="load-number">${weeklyLoad}</span>
                     <span class="load-unit">${simplified ? 'units' : 'arbitrary units'}</span>
                 </div>
-                ${simplified ? 
+                ${simplified ?
                     '<p>Your training intensity this week</p>' :
                     '<p>Training load represents the total stress from your workouts. Monitor for optimal recovery.</p>'
                 }
@@ -611,8 +611,8 @@ class DashboardRenderer {
      * @returns {string} HTML section
      */
     generateWeeklyLoadViewSection(config) {
-        const simple = config.simple;
-        
+        const {simple} = config;
+
         return `
             <div class="dashboard-card weekly-load-view" style="grid-column: 1 / -1;">
                 <div id="week-view-container"></div>
@@ -626,12 +626,12 @@ class DashboardRenderer {
      * @returns {string} HTML section
      */
     generateStrengthGainsSection(config) {
-        const simplified = config.simplified;
-        
+        const {simplified} = config;
+
         return `
             <div class="dashboard-card strength-gains">
                 <h3>Strength Gains</h3>
-                ${simplified ? 
+                ${simplified ?
                     '<div class="gains-summary">📈 Improving across all lifts</div>' :
                     '<div class="gains-detail">Detailed strength progression analysis</div>'
                 }
@@ -646,12 +646,12 @@ class DashboardRenderer {
      * @returns {string} HTML section
      */
     generateRPEInputSection(config) {
-        const withTooltips = config.withTooltips;
-        
+        const {withTooltips} = config;
+
         return `
             <div class="dashboard-card rpe-input">
                 <h3>Rate of Perceived Exertion</h3>
-                ${withTooltips ? 
+                ${withTooltips ?
                     '<p>Rate how hard your workout felt (1-10 scale)</p>' :
                     '<p>How hard was your last workout?</p>'
                 }
@@ -660,7 +660,7 @@ class DashboardRenderer {
                         <button class="rpe-button" data-rpe="${rpe}">${rpe}</button>
                     `).join('')}
                 </div>
-                ${withTooltips ? 
+                ${withTooltips ?
                     '<div class="rpe-tooltip">1 = Very Easy, 10 = Maximum Effort</div>' :
                     ''
                 }
@@ -772,9 +772,9 @@ class DashboardRenderer {
         const dashboardContainer = document.getElementById('userDashboard');
         if (dashboardContainer) {
             // Find the dashboard content area
-            const dashboardContent = dashboardContainer.querySelector('.dashboard-content') || 
+            const dashboardContent = dashboardContainer.querySelector('.dashboard-content') ||
                                    dashboardContainer.querySelector('.tab-content');
-            
+
             if (dashboardContent) {
                 dashboardContent.innerHTML = html;
             } else {
@@ -813,9 +813,9 @@ class DashboardRenderer {
         try {
             // Re-render dashboard with new preferences
             this.renderDashboard();
-            
-            this.logger.debug('Dashboard updated for preference change', { 
-                preferences: newPreferences 
+
+            this.logger.debug('Dashboard updated for preference change', {
+                preferences: newPreferences
             });
             this.eventBus?.emit('dashboard:preferencesUpdated', newPreferences);
         } catch (error) {
@@ -870,7 +870,7 @@ window.handleRecoveryDayOverride = function(noteId) {
                 const dashboard = window.DashboardRenderer;
                 const simple = context.preferences?.trainingMode === 'simple';
                 const planPreview = dashboard.generateWorkoutPreview(newPlan, simple);
-                
+
                 // Update workout preview in DOM
                 const previewElement = document.querySelector('.workout-preview');
                 if (previewElement) {
@@ -880,7 +880,7 @@ window.handleRecoveryDayOverride = function(noteId) {
 
             // Show success message
             window.showSuccessNotification?.('Workout plan updated. Normal workout plan generated.', 'success');
-            
+
             logger.info('RECOVERY_DAY_OVERRIDDEN', { userId, noteId });
         }).catch(error => {
             logger.error('Failed to regenerate workout plan', error);

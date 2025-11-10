@@ -81,10 +81,10 @@ class HashUtils {
 
         // Round duration to minutes for fuzzy matching
         const durationMinutes = Math.round(durationS / 60);
-        
+
         // Create normalized string for hashing
         const hashInput = `${userId}|${startTs}|${durationMinutes}|${type}`;
-        
+
         return this.sha256Sync(hashInput);
     }
 
@@ -95,7 +95,7 @@ class HashUtils {
      */
     static hashRawData(rawData) {
         let input;
-        
+
         if (typeof rawData === 'string') {
             input = rawData;
         } else if (typeof rawData === 'object') {

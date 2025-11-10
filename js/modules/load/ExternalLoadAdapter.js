@@ -18,19 +18,19 @@ class ExternalLoadAdapter {
     async adaptForExternalLoad(workout, userId) {
         try {
             const externalActivities = await this.getRecentExternalActivities(userId);
-            
+
             if (externalActivities.length === 0) {
                 return { workout, adapted: false, reason: null };
             }
-            
+
             // Check for conflicting activities
             const conflicts = this.detectConflicts(workout, externalActivities);
-            
+
             if (conflicts.length > 0) {
                 // Adapt workout based on external load
                 const adaptedWorkout = this.applyAdaptations(workout, conflicts);
                 const reason = this.generateAdaptationReason(conflicts);
-                
+
                 return {
                     workout: adaptedWorkout,
                     adapted: true,
@@ -38,7 +38,7 @@ class ExternalLoadAdapter {
                     conflicts
                 };
             }
-            
+
             return { workout, adapted: false, reason: null };
         } catch (error) {
             this.logger.error('Failed to adapt for external load', error);
@@ -54,12 +54,12 @@ class ExternalLoadAdapter {
     async getRecentExternalActivities(userId) {
         try {
             const activities = await this.storageManager.getData(userId, 'external_activities');
-            if (!activities || activities.length === 0) return [];
-            
+            if (!activities || activities.length === 0) {return [];}
+
             // Filter to last 24 hours
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
-            
+
             return activities.filter(activity => {
                 const activityDate = new Date(activity.timestamp);
                 return activityDate >= yesterday;
@@ -78,14 +78,14 @@ class ExternalLoadAdapter {
      */
     detectConflicts(workout, externalActivities) {
         const conflicts = [];
-        
+
         for (const activity of externalActivities) {
             const conflict = this.checkConflicts(workout, activity);
             if (conflict) {
                 conflicts.push(conflict);
             }
         }
-        
+
         return conflicts;
     }
 
@@ -105,7 +105,7 @@ class ExternalLoadAdapter {
                 percentage: 20 // Reduce leg volume by 20%
             };
         }
-        
+
         // Conflict: Long endurance session before sprint work
         if (activity.duration > 3600 && this.hasSprintWork(workout)) {
             return {
@@ -115,7 +115,7 @@ class ExternalLoadAdapter {
                 percentage: 15
             };
         }
-        
+
         // Conflict: High intensity external + planned high intensity
         if (activity.averageIntensity >= 7 && this.hasHighIntensityWork(workout)) {
             return {
@@ -125,7 +125,7 @@ class ExternalLoadAdapter {
                 percentage: 10
             };
         }
-        
+
         return null;
     }
 
@@ -135,12 +135,12 @@ class ExternalLoadAdapter {
      * @returns {boolean} Has leg work
      */
     hasLegWork(workout) {
-        if (!workout.exercises) return false;
-        
+        if (!workout.exercises) {return false;}
+
         const legKeywords = ['squat', 'lunge', 'deadlift', 'leg', 'calf', 'hamstring'];
-        
-        return workout.exercises.some(ex => 
-            legKeywords.some(keyword => 
+
+        return workout.exercises.some(ex =>
+            legKeywords.some(keyword =>
                 ex.name?.toLowerCase().includes(keyword)
             )
         );
@@ -152,9 +152,9 @@ class ExternalLoadAdapter {
      * @returns {boolean} Has sprint work
      */
     hasSprintWork(workout) {
-        if (!workout.exercises) return false;
-        
-        return workout.exercises.some(ex => 
+        if (!workout.exercises) {return false;}
+
+        return workout.exercises.some(ex =>
             ex.name?.toLowerCase().includes('sprint') ||
             ex.tags?.includes('sprint')
         );
@@ -166,9 +166,9 @@ class ExternalLoadAdapter {
      * @returns {boolean} Has high intensity work
      */
     hasHighIntensityWork(workout) {
-        if (!workout.exercises) return false;
-        
-        return workout.exercises.some(ex => 
+        if (!workout.exercises) {return false;}
+
+        return workout.exercises.some(ex =>
             ex.rpe > 7 ||
             ex.intensity === 'high'
         );
@@ -182,7 +182,7 @@ class ExternalLoadAdapter {
      */
     applyAdaptations(workout, conflicts) {
         const adaptedWorkout = { ...workout };
-        
+
         for (const conflict of conflicts) {
             if (conflict.modification === 'reduce_leg_volume') {
                 adaptedWorkout.exercises = adaptedWorkout.exercises.map(ex => {
@@ -204,13 +204,13 @@ class ExternalLoadAdapter {
                     intensityAdjusted: true
                 }));
             } else if (conflict.modification === 'reduce_total_load') {
-                adaptedWorkout.intensityMultiplier = 
+                adaptedWorkout.intensityMultiplier =
                     (adaptedWorkout.intensityMultiplier || 1.0) * (1 - conflict.percentage / 100);
             }
         }
-        
+
         adaptedWorkout.externalLoadAdaptations = conflicts;
-        
+
         return adaptedWorkout;
     }
 
@@ -221,7 +221,7 @@ class ExternalLoadAdapter {
      */
     isLegExercise(exercise) {
         const legKeywords = ['squat', 'lunge', 'deadlift', 'leg', 'calf'];
-        return legKeywords.some(keyword => 
+        return legKeywords.some(keyword =>
             exercise.name?.toLowerCase().includes(keyword)
         );
     }
@@ -233,7 +233,7 @@ class ExternalLoadAdapter {
      */
     generateAdaptationReason(conflicts) {
         const reasons = [];
-        
+
         for (const conflict of conflicts) {
             if (conflict.modification === 'reduce_leg_volume') {
                 reasons.push(`External ${conflict.activity.type} (${Math.round(conflict.activity.duration/60)}min) reduces today's leg volume by ${conflict.percentage}%`);
@@ -241,7 +241,7 @@ class ExternalLoadAdapter {
                 reasons.push(`Long external activity reduces intensity by ${conflict.percentage}%`);
             }
         }
-        
+
         return reasons.join('. ');
     }
 }

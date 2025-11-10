@@ -21,10 +21,10 @@ class PhysioCoach {
 
         // Check for injury flags
         const activeInjuries = history?.injuryFlags?.filter(f => f.active) || [];
-        
+
         // Corrective work based on movement screening
         const correctiveWork = this.generateCorrectiveWork(user, activeInjuries);
-        
+
         // Prehab work
         const prehabWork = this.generatePrehab(user);
 
@@ -62,14 +62,14 @@ class PhysioCoach {
     generatePrehab(user) {
         // Based on movement screening results or sport-specific needs
         const prehabExercises = [];
-        
+
         if (user.sport === 'soccer') {
             prehabExercises.push(
                 { name: 'hip_mobility', rationale: 'Prevent groin strains common in soccer' },
                 { name: 'ankle_stability', rationale: 'Prevent ankle sprains' }
             );
         }
-        
+
         return prehabExercises.map(ex => ({
             type: 'prehab',
             exercise: ex.name,

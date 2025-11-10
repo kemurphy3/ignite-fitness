@@ -22,43 +22,43 @@ class SoccerExercises {
             searchTerm = '',
             onSelect = null
         } = options;
-        
+
         // Filter exercises
         let filteredExercises = this.getAllExercises();
-        
+
         if (category) {
             filteredExercises = filteredExercises.filter(ex => ex.category === category);
         }
-        
+
         if (position) {
-            filteredExercises = filteredExercises.filter(ex => 
+            filteredExercises = filteredExercises.filter(ex =>
                 ex.positions && ex.positions.includes(position)
             );
         }
-        
+
         if (difficulty) {
             filteredExercises = filteredExercises.filter(ex => ex.difficulty === difficulty);
         }
-        
+
         if (equipment) {
-            filteredExercises = filteredExercises.filter(ex => 
+            filteredExercises = filteredExercises.filter(ex =>
                 ex.equipment && ex.equipment.includes(equipment)
             );
         }
-        
+
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
-            filteredExercises = filteredExercises.filter(ex => 
+            filteredExercises = filteredExercises.filter(ex =>
                 ex.name.toLowerCase().includes(term) ||
                 ex.description.toLowerCase().includes(term) ||
-                (ex.instructions && ex.instructions.some(inst => 
+                (ex.instructions && ex.instructions.some(inst =>
                     inst.toLowerCase().includes(term)
                 ))
             );
         }
-        
+
         this.logger.debug(`Rendering ${filteredExercises.length} exercises with virtual scrolling`);
-        
+
         // Create virtual list
         const virtualList = new VirtualList({
             container,
@@ -67,13 +67,13 @@ class SoccerExercises {
             overscan: 5,
             renderItem: (exercise, index) => this.renderExerciseItem(exercise, index, onSelect)
         });
-        
+
         // Store reference for cleanup
         container._virtualList = virtualList;
-        
+
         return virtualList;
     }
-    
+
     /**
      * Render individual exercise item
      * @param {Object} exercise - Exercise data
@@ -92,7 +92,7 @@ class SoccerExercises {
             cursor: pointer;
             transition: background-color 0.2s ease;
         `;
-        
+
         // Exercise icon
         const icon = document.createElement('div');
         icon.className = 'exercise-icon';
@@ -108,14 +108,14 @@ class SoccerExercises {
             font-size: 20px;
         `;
         icon.textContent = this.getExerciseIcon(exercise.category);
-        
+
         // Exercise content
         const content = document.createElement('div');
         content.style.cssText = `
             flex: 1;
             min-width: 0;
         `;
-        
+
         // Exercise name
         const name = document.createElement('div');
         name.className = 'exercise-name';
@@ -129,7 +129,7 @@ class SoccerExercises {
             text-overflow: ellipsis;
         `;
         name.textContent = exercise.name;
-        
+
         // Exercise details
         const details = document.createElement('div');
         details.className = 'exercise-details';
@@ -140,7 +140,7 @@ class SoccerExercises {
             gap: 12px;
             flex-wrap: wrap;
         `;
-        
+
         // Difficulty badge
         const difficulty = document.createElement('span');
         difficulty.className = 'difficulty-badge';
@@ -153,45 +153,45 @@ class SoccerExercises {
             font-weight: 500;
         `;
         difficulty.textContent = exercise.difficulty;
-        
+
         // Duration
         const duration = document.createElement('span');
         duration.textContent = exercise.duration || 'N/A';
-        
+
         // Equipment
         const equipment = document.createElement('span');
         equipment.textContent = exercise.equipment ? exercise.equipment.join(', ') : 'No equipment';
-        
+
         details.appendChild(difficulty);
         details.appendChild(duration);
         details.appendChild(equipment);
-        
+
         content.appendChild(name);
         content.appendChild(details);
-        
+
         // Add to item
         item.appendChild(icon);
         item.appendChild(content);
-        
+
         // Add click handler
         item.addEventListener('click', () => {
             if (onSelect) {
                 onSelect(exercise);
             }
         });
-        
+
         // Add hover effects
         item.addEventListener('mouseenter', () => {
             item.style.backgroundColor = 'var(--color-surface-hover)';
         });
-        
+
         item.addEventListener('mouseleave', () => {
             item.style.backgroundColor = '';
         });
-        
+
         return item;
     }
-    
+
     /**
      * Get exercise icon based on category
      * @param {string} category - Exercise category
@@ -210,10 +210,10 @@ class SoccerExercises {
             technical: '⚽',
             tactical: '🧠'
         };
-        
+
         return icons[category] || '🏃';
     }
-    
+
     /**
      * Get difficulty color
      * @param {string} difficulty - Difficulty level
@@ -226,21 +226,21 @@ class SoccerExercises {
             advanced: '#ef4444',
             expert: '#8b5cf6'
         };
-        
+
         return colors[difficulty] || '#6b7280';
     }
-    
+
     /**
      * Get all exercises as flat array
      * @returns {Array} All exercises
      */
     getAllExercises() {
         const allExercises = [];
-        
+
         Object.values(this.exercises).forEach(categoryExercises => {
             allExercises.push(...categoryExercises);
         });
-        
+
         return allExercises;
     }
     initializeSoccerExercises() {
@@ -866,7 +866,7 @@ class SoccerExercises {
      */
     getExercisesForPosition(position) {
         const exercises = [];
-        
+
         // Get general exercises
         Object.keys(this.exercises).forEach(category => {
             if (category !== 'position_specific') {
@@ -896,11 +896,11 @@ class SoccerExercises {
             if (category === 'position_specific') {
                 for (const position in this.exercises[category]) {
                     const exercise = this.exercises[category][position].find(ex => ex.id === exerciseId);
-                    if (exercise) return exercise;
+                    if (exercise) {return exercise;}
                 }
             } else {
                 const exercise = this.exercises[category].find(ex => ex.id === exerciseId);
-                if (exercise) return exercise;
+                if (exercise) {return exercise;}
             }
         }
         return null;
@@ -913,7 +913,7 @@ class SoccerExercises {
      */
     getExercisesByDifficulty(difficulty) {
         const exercises = [];
-        
+
         Object.keys(this.exercises).forEach(category => {
             if (category === 'position_specific') {
                 Object.values(this.exercises[category]).forEach(positionGroup => {
@@ -942,7 +942,7 @@ class SoccerExercises {
      */
     getExercisesByEquipment(availableEquipment) {
         const exercises = [];
-        
+
         Object.keys(this.exercises).forEach(category => {
             if (category === 'position_specific') {
                 Object.values(this.exercises[category]).forEach(positionGroup => {
@@ -971,7 +971,7 @@ class SoccerExercises {
      * @returns {boolean} Can perform exercise
      */
     canPerformExercise(exercise, availableEquipment) {
-        return exercise.equipment.every(equipment => 
+        return exercise.equipment.every(equipment =>
             availableEquipment.includes(equipment) || equipment === 'none'
         );
     }
@@ -1003,7 +1003,7 @@ class SoccerExercises {
      */
     getInjuryPreventionExercises(injuryType) {
         const exercises = [];
-        
+
         Object.keys(this.exercises).forEach(category => {
             if (category === 'position_specific') {
                 Object.values(this.exercises[category]).forEach(positionGroup => {
@@ -1033,7 +1033,7 @@ class SoccerExercises {
     searchExercises(query) {
         const exercises = [];
         const searchTerm = query.toLowerCase();
-        
+
         Object.keys(this.exercises).forEach(category => {
             if (category === 'position_specific') {
                 Object.values(this.exercises[category]).forEach(positionGroup => {
@@ -1065,7 +1065,7 @@ class SoccerExercises {
         return exercise.name.toLowerCase().includes(searchTerm) ||
                exercise.description.toLowerCase().includes(searchTerm) ||
                exercise.category.toLowerCase().includes(searchTerm) ||
-               exercise.instructions.some(instruction => 
+               exercise.instructions.some(instruction =>
                    instruction.toLowerCase().includes(searchTerm)
                );
     }

@@ -39,7 +39,7 @@ function initializeApp() {
     initializeDashboard();
     initializeGoalsAndHabits();
     initializeLoadManagement();
-    
+
     // Set up event listeners
     setupEventListeners();
 }
@@ -51,13 +51,13 @@ function setupEventListeners() {
         window.EventBus.on('auth:loggedIn', handleUserLogin);
         window.EventBus.on('auth:loggedOut', handleUserLogout);
     }
-    
+
     // Workout events
     if (window.EventBus) {
         window.EventBus.on('workout:started', handleWorkoutStart);
         window.EventBus.on('workout:completed', handleWorkoutComplete);
     }
-    
+
     // Goals and habits events
     if (window.EventBus) {
         window.EventBus.on('goal:created', handleGoalCreated);
@@ -129,7 +129,7 @@ function updateHabitUI(habitData) {
 // Safe content rendering functions
 function renderDashboard() {
     const container = document.getElementById('dashboardContent');
-    if (!container) return;
+    if (!container) {return;}
 
     const content = createHTMLTemplate`
         <div class="dashboard-grid">
@@ -147,13 +147,13 @@ function renderDashboard() {
             </div>
         </div>
     `;
-    
+
     setContentSafely(container, content);
 }
 
 function renderWorkoutPlan(workoutData) {
     const container = document.getElementById('workoutPlan');
-    if (!container) return;
+    if (!container) {return;}
 
     const content = createHTMLTemplate`
         <div class="workout-plan">
@@ -168,7 +168,7 @@ function renderWorkoutPlan(workoutData) {
             </div>
         </div>
     `;
-    
+
     setContentSafely(container, content);
 }
 
@@ -183,10 +183,10 @@ function showGoalsModal() {
 
 function renderGoals() {
     const container = document.getElementById('goalsContainer');
-    if (!container) return;
+    if (!container) {return;}
 
     const goalManager = window.GoalManager;
-    if (!goalManager) return;
+    if (!goalManager) {return;}
 
     const activeGoals = goalManager.getActiveGoals();
     const completedGoals = goalManager.getCompletedGoals();
@@ -223,13 +223,13 @@ function renderGoals() {
         </div>
         ` : ''}
     `;
-    
+
     setContentSafely(container, content);
 }
 
 function renderGoalCard(goal, isCompleted = false) {
     const progressPercentage = Math.round(goal.progress_percentage);
-    
+
     return createHTMLTemplate`
         <div class="goal-card ${isCompleted ? 'completed' : ''}">
             <div class="goal-header">
@@ -277,10 +277,10 @@ function showLoadManagementModal() {
 
 function renderLoadManagement() {
     const container = document.getElementById('loadManagementContainer');
-    if (!container) return;
+    if (!container) {return;}
 
     const loadCalculator = window.LoadCalculator;
-    if (!loadCalculator) return;
+    if (!loadCalculator) {return;}
 
     const dashboardData = loadCalculator.getLoadDashboard();
     if (dashboardData.error) {
@@ -366,20 +366,20 @@ function renderLoadManagement() {
             `).join('') : '<p>No recent activities found.</p>'}
         </div>
     `;
-    
+
     setContentSafely(container, content);
 }
 
 // Utility functions
 function getLoadStatus(totalLoad) {
-    if (totalLoad < 200) return 'low';
-    if (totalLoad < 400) return 'medium';
+    if (totalLoad < 200) {return 'low';}
+    if (totalLoad < 400) {return 'medium';}
     return 'high';
 }
 
 function getLoadStatusText(totalLoad) {
-    if (totalLoad < 200) return 'Low Load';
-    if (totalLoad < 400) return 'Moderate Load';
+    if (totalLoad < 200) {return 'Low Load';}
+    if (totalLoad < 400) {return 'Moderate Load';}
     return 'High Load';
 }
 
@@ -415,11 +415,11 @@ function initializeGoalsAndHabits() {
     if (window.GoalManager) {
         window.GoalManager.initialize();
     }
-    
+
     if (window.HabitTracker) {
         window.HabitTracker.initialize();
     }
-    
+
     // Listen for motivational messages
     if (window.EventBus) {
         window.EventBus.on('motivational:message', (data) => {
@@ -432,7 +432,7 @@ function initializeLoadManagement() {
     if (window.StravaProcessor) {
         // Strava processor initialized
     }
-    
+
     if (window.LoadCalculator) {
         // Load calculator initialized
     }
@@ -442,11 +442,11 @@ function initializeLoadManagement() {
 function showMotivationalToast(message) {
     const toast = document.getElementById('motivationalToast');
     const messageElement = document.getElementById('motivationalMessage');
-    
+
     if (toast && messageElement) {
         messageElement.textContent = message;
         toast.classList.remove('hidden');
-        
+
         // Auto-hide after 5 seconds
         setTimeout(() => {
             closeMotivationalToast();

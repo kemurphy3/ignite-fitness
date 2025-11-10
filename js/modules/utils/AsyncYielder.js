@@ -8,10 +8,10 @@ class AsyncYielder {
         this.yieldInterval = options.yieldInterval || 16; // Yield every 16ms (~60fps)
         this.useRequestIdleCallback = options.useRequestIdleCallback !== false;
         this.useMessageChannel = options.useMessageChannel !== false;
-        
+
         this.logger = window.SafeLogger || console;
     }
-    
+
     /**
      * Process array with yielding
      * @param {Array} items - Items to process
@@ -25,18 +25,18 @@ class AsyncYielder {
             onProgress = null,
             onError = null
         } = options;
-        
+
         const results = [];
         const errors = [];
-        
+
         for (let i = 0; i < items.length; i += batchSize) {
             const batch = items.slice(i, i + batchSize);
-            
+
             try {
                 // Process batch
                 const batchResults = await this.processBatch(batch, processor);
                 results.push(...batchResults);
-                
+
                 // Update progress
                 if (onProgress) {
                     onProgress({
@@ -45,23 +45,23 @@ class AsyncYielder {
                         percentage: Math.round(((i + batch.length) / items.length) * 100)
                     });
                 }
-                
+
                 // Yield to main thread
                 await this.yield();
-                
+
             } catch (error) {
                 this.logger.error('Batch processing error:', error);
                 errors.push({ batch, error });
-                
+
                 if (onError) {
                     onError(error, batch);
                 }
             }
         }
-        
+
         return { results, errors };
     }
-    
+
     /**
      * Process batch of items
      * @param {Array} batch - Batch to process
@@ -70,29 +70,29 @@ class AsyncYielder {
      */
     async processBatch(batch, processor) {
         const results = [];
-        
+
         for (const item of batch) {
             const startTime = performance.now();
-            
+
             try {
                 const result = await processor(item);
                 results.push(result);
-                
+
                 // Check if we need to yield
                 const processingTime = performance.now() - startTime;
                 if (processingTime > this.maxBlockTime) {
                     await this.yield();
                 }
-                
+
             } catch (error) {
                 this.logger.error('Item processing error:', error);
                 results.push({ error: error.message, item });
             }
         }
-        
+
         return results;
     }
-    
+
     /**
      * Yield control to main thread
      * @returns {Promise} Promise that resolves after yielding
@@ -114,7 +114,7 @@ class AsyncYielder {
             });
         }
     }
-    
+
     /**
      * Process with time slicing
      * @param {Function} task - Task to execute
@@ -126,43 +126,43 @@ class AsyncYielder {
             maxTime = this.maxBlockTime,
             onProgress = null
         } = options;
-        
+
         const startTime = performance.now();
         let result = null;
         let isComplete = false;
-        
+
         try {
             // Execute task with time monitoring
             result = await this.executeWithTimeLimit(task, maxTime);
             isComplete = true;
-            
+
         } catch (error) {
             if (error.name === 'TimeLimitExceeded') {
                 // Task exceeded time limit, yield and retry
                 await this.yield();
-                
+
                 if (onProgress) {
                     onProgress({
                         message: 'Task exceeded time limit, yielding...',
                         elapsed: performance.now() - startTime
                     });
                 }
-                
+
                 // Retry with reduced time limit
                 result = await this.processWithTimeSlicing(task, {
                     ...options,
                     maxTime: Math.max(maxTime * 0.5, 10)
                 });
                 isComplete = true;
-                
+
             } else {
                 throw error;
             }
         }
-        
+
         return result;
     }
-    
+
     /**
      * Execute task with time limit
      * @param {Function} task - Task to execute
@@ -172,12 +172,12 @@ class AsyncYielder {
     async executeWithTimeLimit(task, maxTime) {
         return new Promise((resolve, reject) => {
             const startTime = performance.now();
-            
+
             // Set up timeout
             const timeoutId = setTimeout(() => {
                 reject(new Error('TimeLimitExceeded'));
             }, maxTime);
-            
+
             // Execute task
             Promise.resolve(task())
                 .then(result => {
@@ -190,7 +190,7 @@ class AsyncYielder {
                 });
         });
     }
-    
+
     /**
      * Process with graceful degradation
      * @param {Function} primaryTask - Primary task
@@ -203,30 +203,30 @@ class AsyncYielder {
             timeout = 5000,
             onFallback = null
         } = options;
-        
+
         try {
             // Try primary task with timeout
             const result = await Promise.race([
                 primaryTask(),
-                new Promise((_, reject) => 
+                new Promise((_, reject) =>
                     setTimeout(() => reject(new Error('Primary task timeout')), timeout)
                 )
             ]);
-            
+
             return result;
-            
+
         } catch (error) {
             this.logger.warn('Primary task failed, using fallback:', error);
-            
+
             if (onFallback) {
                 onFallback(error);
             }
-            
+
             // Use fallback task
             return await fallbackTask();
         }
     }
-    
+
     /**
      * Process with progress indicators
      * @param {Array} tasks - Tasks to process
@@ -239,20 +239,20 @@ class AsyncYielder {
             onComplete = null,
             onError = null
         } = options;
-        
+
         const results = [];
         const errors = [];
-        
+
         for (let i = 0; i < tasks.length; i++) {
             try {
                 const startTime = performance.now();
-                
+
                 // Execute task with yielding
                 const result = await this.processWithTimeSlicing(tasks[i]);
                 results.push(result);
-                
+
                 const executionTime = performance.now() - startTime;
-                
+
                 // Update progress
                 if (onProgress) {
                     onProgress({
@@ -263,27 +263,27 @@ class AsyncYielder {
                         result
                     });
                 }
-                
+
                 // Yield between tasks
                 await this.yield();
-                
+
             } catch (error) {
                 this.logger.error('Task execution error:', error);
                 errors.push({ taskIndex: i, error });
-                
+
                 if (onError) {
                     onError(error, i);
                 }
             }
         }
-        
+
         if (onComplete) {
             onComplete({ results, errors });
         }
-        
+
         return { results, errors };
     }
-    
+
     /**
      * Create progress indicator
      * @param {HTMLElement} container - Container element
@@ -300,7 +300,7 @@ class AsyncYielder {
             overflow: hidden;
             margin: 8px 0;
         `;
-        
+
         const progressFill = document.createElement('div');
         progressFill.className = 'async-progress-fill';
         progressFill.style.cssText = `
@@ -310,7 +310,7 @@ class AsyncYielder {
             transition: width 0.3s ease;
             width: 0%;
         `;
-        
+
         const progressText = document.createElement('div');
         progressText.className = 'async-progress-text';
         progressText.style.cssText = `
@@ -319,11 +319,11 @@ class AsyncYielder {
             text-align: center;
             margin-top: 4px;
         `;
-        
+
         progressBar.appendChild(progressFill);
         container.appendChild(progressBar);
         container.appendChild(progressText);
-        
+
         return {
             update: (percentage, text) => {
                 progressFill.style.width = `${percentage}%`;
@@ -339,7 +339,7 @@ class AsyncYielder {
             }
         };
     }
-    
+
     /**
      * Monitor main thread blocking
      * @returns {Object} Monitoring controls
@@ -348,26 +348,26 @@ class AsyncYielder {
         let isMonitoring = false;
         let blockCount = 0;
         let maxBlockTime = 0;
-        
+
         const monitor = () => {
-            if (!isMonitoring) return;
-            
+            if (!isMonitoring) {return;}
+
             const startTime = performance.now();
-            
+
             requestAnimationFrame(() => {
                 const blockTime = performance.now() - startTime;
-                
+
                 if (blockTime > this.maxBlockTime) {
                     blockCount++;
                     maxBlockTime = Math.max(maxBlockTime, blockTime);
-                    
+
                     this.logger.warn(`Main thread blocked for ${blockTime.toFixed(2)}ms`);
                 }
-                
+
                 monitor();
             });
         };
-        
+
         return {
             start: () => {
                 isMonitoring = true;

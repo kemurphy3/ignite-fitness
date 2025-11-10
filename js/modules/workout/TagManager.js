@@ -155,13 +155,13 @@ class TagManager {
             // Check required tags
             if (requiredTags.length > 0) {
                 const hasRequired = requiredTags.every(tag => workoutTags.includes(tag));
-                if (!hasRequired) return false;
+                if (!hasRequired) {return false;}
             }
 
             // Check excluded tags
             if (excludedTags.length > 0) {
                 const hasExcluded = excludedTags.some(tag => workoutTags.includes(tag));
-                if (hasExcluded) return false;
+                if (hasExcluded) {return false;}
             }
 
             // Check intensity range
@@ -225,7 +225,7 @@ class TagManager {
      */
     validateWorkoutTags(workout) {
         const tags = workout.tags || [];
-        
+
         // Validate tag combination
         const validation = this.validateTagCombination(tags);
         if (!validation.valid) {
@@ -239,7 +239,7 @@ class TagManager {
         // Check for missing essential tags
         const warnings = [];
         const intensity = this.calculateTagIntensity(tags);
-        
+
         if (intensity >= 8 && !tags.includes('recovery') && !tags.includes('endurance')) {
             warnings.push('High intensity workout may benefit from recovery or endurance tags');
         }
@@ -266,7 +266,7 @@ class TagManager {
             const tags = workout.tags || [];
             tags.forEach(tag => {
                 tagCounts[tag] = (tagCounts[tag] || 0) + 1;
-                
+
                 if (!tagIntensities[tag]) {
                     tagIntensities[tag] = [];
                 }

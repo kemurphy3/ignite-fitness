@@ -16,7 +16,7 @@ const verifyAdmin = async (token, requestId) => {
       algorithms: ['HS256'],
       clockTolerance: 30 // 30 seconds clock skew
     });
-    
+
     // Check admin role in database
     const user = await sql`
       SELECT id, role 
@@ -25,11 +25,11 @@ const verifyAdmin = async (token, requestId) => {
         AND role = 'admin'
         AND deleted_at IS NULL
     `;
-    
+
     if (!user.length) {
       throw new Error('Unauthorized: Admin access required');
     }
-    
+
     return { adminId: user[0].id };
   } catch (error) {
     console.error(`Auth failed for request ${requestId}:`, error.message);
@@ -77,20 +77,20 @@ const errorResponse = (statusCode, code, message, requestId) => ({
 const validateDateRange = (from, to) => {
   const fromDate = new Date(from);
   const toDate = new Date(to);
-  
+
   if (isNaN(fromDate) || isNaN(toDate)) {
     throw new Error('Invalid date format');
   }
-  
+
   const maxRange = 730 * 24 * 60 * 60 * 1000; // 730 days (2 years)
   if (toDate - fromDate > maxRange) {
     throw new Error('Date range exceeds maximum (730 days)');
   }
-  
+
   if (fromDate > toDate) {
     throw new Error('From date must be before to date');
   }
-  
+
   return { fromDate, toDate };
 };
 
@@ -113,13 +113,13 @@ const hashUserId = (userId) => {
   const hash = crypto.createHash('md5')
     .update(userId + (process.env.HASH_SALT || 'default'))
     .digest('hex');
-  return 'usr_' + hash.substring(0, 6);
+  return `usr_${ hash.substring(0, 6)}`;
 };
 
 // Rate limiting check
 const checkRateLimit = async (adminId) => {
   const windowStart = new Date(Math.floor(Date.now() / 60000) * 60000); // 1-minute window
-  
+
   try {
     const result = await sql`
       INSERT INTO admin_rate_limits (admin_id, window_start, attempts)
@@ -128,7 +128,7 @@ const checkRateLimit = async (adminId) => {
       DO UPDATE SET attempts = admin_rate_limits.attempts + 1
       RETURNING attempts
     `;
-    
+
     if (result[0].attempts > 60) {
       throw new Error('Rate limit exceeded');
     }
@@ -142,7 +142,7 @@ const checkRateLimit = async (adminId) => {
 
 // Keyset pagination utilities
 const encodeCursor = (value, id) => {
-  const cursor = { v: value, id: id };
+  const cursor = { v: value, id };
   return Buffer.from(JSON.stringify(cursor)).toString('base64');
 };
 
@@ -161,7 +161,7 @@ const withTimeout = async (queryFn, timeoutMs = 5000) => {
     const timeout = setTimeout(() => {
       reject(new Error('Query timeout'));
     }, timeoutMs);
-    
+
     try {
       await sql`SET statement_timeout = '5s'`;
       const result = await queryFn();

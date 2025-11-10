@@ -6,7 +6,7 @@ class WorkoutGenerator {
         this.logger = window.SafeLogger || console;
         this.storageManager = window.StorageManager;
         this.authManager = window.AuthManager;
-        
+
         this.exerciseDatabase = this.initializeExerciseDatabase();
         this.templateLibrary = this.initializeTemplateLibrary();
     }
@@ -45,7 +45,7 @@ class WorkoutGenerator {
                     { name: 'Cable Tricep Pushdown', equipment: 'cable', difficulty: 'beginner', muscleGroups: ['triceps'] }
                 ]
             },
-            
+
             // Lower Body Exercises
             lowerBody: {
                 quadriceps: [
@@ -73,7 +73,7 @@ class WorkoutGenerator {
                     { name: 'Single-leg Calf Raises', equipment: 'bodyweight', difficulty: 'intermediate', muscleGroups: ['calves'] }
                 ]
             },
-            
+
             // Core Exercises
             core: [
                 { name: 'Plank', equipment: 'bodyweight', difficulty: 'beginner', muscleGroups: ['core'] },
@@ -83,7 +83,7 @@ class WorkoutGenerator {
                 { name: 'Hanging Leg Raises', equipment: 'bodyweight', difficulty: 'advanced', muscleGroups: ['core'] },
                 { name: 'Pallof Press', equipment: 'cable', difficulty: 'intermediate', muscleGroups: ['core'] }
             ],
-            
+
             // Cardio Exercises
             cardio: [
                 { name: 'Treadmill Running', equipment: 'treadmill', difficulty: 'beginner', muscleGroups: ['cardio'] },
@@ -92,7 +92,7 @@ class WorkoutGenerator {
                 { name: 'Burpees', equipment: 'bodyweight', difficulty: 'intermediate', muscleGroups: ['cardio', 'full-body'] },
                 { name: 'Jump Rope', equipment: 'rope', difficulty: 'intermediate', muscleGroups: ['cardio'] }
             ],
-            
+
             // Sport-Specific Exercises
             soccer: [
                 { name: 'Lateral Bounds', equipment: 'bodyweight', difficulty: 'intermediate', muscleGroups: ['glutes', 'adductors'] },
@@ -192,30 +192,30 @@ class WorkoutGenerator {
 
         // Determine workout focus based on goals
         const workoutFocus = this.determineWorkoutFocus(goals, sessionType);
-        
+
         // Get appropriate template
         const template = this.getTemplate(workoutFocus, experience);
-        
+
         // Adjust for available time
         const adjustedTemplate = this.adjustForTime(template, availableTime);
-        
+
         // Generate exercises
         const exercises = this.selectExercises(adjustedTemplate, workoutFocus, sessionType, userProfile);
-        
+
         // Apply seasonal adjustments
         const seasonalExercises = this.applySeasonalAdjustments(exercises, currentPhase);
-        
+
         // Generate warmup and cooldown
         const warmup = this.generateWarmup(sessionType, availableTime);
         const cooldown = this.generateCooldown(sessionType, availableTime);
-        
+
         return {
             type: sessionType,
             focus: workoutFocus,
             duration: availableTime,
-            warmup: warmup,
+            warmup,
             exercises: seasonalExercises,
-            cooldown: cooldown,
+            cooldown,
             notes: this.generateWorkoutNotes(workoutFocus, currentPhase, preferences)
         };
     }
@@ -231,7 +231,7 @@ class WorkoutGenerator {
         } else if (sessionType.includes('Soccer')) {
             return 'sport-specific';
         }
-        
+
         return goals.primary === 'strength' ? 'strength' : 'hypertrophy';
     }
 
@@ -243,15 +243,15 @@ class WorkoutGenerator {
 
     // Get experience level
     getExperienceLevel(experience) {
-        if (experience === 'beginner') return 'beginner';
-        if (experience === 'intermediate') return 'intermediate';
+        if (experience === 'beginner') {return 'beginner';}
+        if (experience === 'intermediate') {return 'intermediate';}
         return 'advanced';
     }
 
     // Adjust template for available time
     adjustForTime(template, availableTime) {
         const timeRatio = availableTime / template.duration;
-        
+
         return {
             ...template,
             duration: availableTime,
@@ -265,17 +265,17 @@ class WorkoutGenerator {
     selectExercises(template, focus, sessionType, userProfile) {
         const exercises = [];
         const muscleGroups = this.getMuscleGroupsForSession(sessionType);
-        
+
         // Select primary exercises
         for (const muscleGroup of muscleGroups) {
             const muscleExercises = this.getExercisesForMuscleGroup(muscleGroup);
             const selectedExercise = this.selectBestExercise(muscleExercises, userProfile, muscleGroup);
-            
+
             if (selectedExercise) {
                 exercises.push(this.createExerciseEntry(selectedExercise, template, userProfile));
             }
         }
-        
+
         // Add core exercises
         if (!sessionType.includes('Core')) {
             const coreExercise = this.selectBestExercise(this.exerciseDatabase.core, userProfile, 'core');
@@ -283,7 +283,7 @@ class WorkoutGenerator {
                 exercises.push(this.createExerciseEntry(coreExercise, template, userProfile, true));
             }
         }
-        
+
         // Add sport-specific exercises if applicable
         if (sessionType.includes('Soccer') || userProfile.goals?.secondary === 'athletic_performance') {
             const sportExercise = this.selectBestExercise(this.exerciseDatabase.soccer, userProfile, 'sport-specific');
@@ -291,7 +291,7 @@ class WorkoutGenerator {
                 exercises.push(this.createExerciseEntry(sportExercise, template, userProfile, true));
             }
         }
-        
+
         return exercises.slice(0, template.exercises);
     }
 
@@ -306,7 +306,7 @@ class WorkoutGenerator {
         } else if (sessionType.includes('Core')) {
             return ['core'];
         }
-        
+
         return ['chest', 'back', 'quadriceps', 'hamstrings'];
     }
 
@@ -315,90 +315,90 @@ class WorkoutGenerator {
         if (muscleGroup === 'core') {
             return this.exerciseDatabase.core;
         }
-        
+
         for (const category in this.exerciseDatabase.upperBody) {
             if (this.exerciseDatabase.upperBody[category].some(ex => ex.muscleGroups.includes(muscleGroup))) {
                 return this.exerciseDatabase.upperBody[category];
             }
         }
-        
+
         for (const category in this.exerciseDatabase.lowerBody) {
             if (this.exerciseDatabase.lowerBody[category].some(ex => ex.muscleGroups.includes(muscleGroup))) {
                 return this.exerciseDatabase.lowerBody[category];
             }
         }
-        
+
         return [];
     }
 
     // Select best exercise based on user profile and muscle group rotation
     selectBestExercise(exercises, userProfile, targetMuscleGroup = null) {
-        if (exercises.length === 0) return null;
-        
+        if (exercises.length === 0) {return null;}
+
         // Filter by experience level
         const experienceLevel = this.getExperienceLevel(userProfile.experience);
-        const filteredExercises = exercises.filter(ex => 
-            ex.difficulty === experienceLevel || 
+        const filteredExercises = exercises.filter(ex =>
+            ex.difficulty === experienceLevel ||
             (experienceLevel === 'advanced' && ex.difficulty === 'intermediate') ||
             (experienceLevel === 'intermediate' && ex.difficulty === 'beginner')
         );
-        
+
         if (filteredExercises.length === 0) {
             return exercises[0]; // Fallback to first exercise
         }
-        
+
         // Select based on preferences and availability
-        const availableExercises = filteredExercises.filter(ex => 
+        const availableExercises = filteredExercises.filter(ex =>
             this.isEquipmentAvailable(ex.equipment, userProfile)
         );
-        
+
         if (availableExercises.length === 0) {
             return filteredExercises[0]; // Fallback to first filtered exercise
         }
-        
+
         // Apply muscle group rotation logic
         return this.selectExerciseWithRotation(availableExercises, userProfile, targetMuscleGroup);
     }
 
     // Select exercise with muscle group rotation logic
     selectExerciseWithRotation(exercises, userProfile, targetMuscleGroup) {
-        if (exercises.length === 0) return null;
-        
+        if (exercises.length === 0) {return null;}
+
         // Get last workout's muscle groups
         const lastWorkoutMuscleGroups = this.getLastWorkoutMuscleGroups(userProfile);
-        
+
         // If no last workout, use deterministic selection based on user profile
         if (!lastWorkoutMuscleGroups || lastWorkoutMuscleGroups.length === 0) {
             return this.selectExerciseDeterministically(exercises, userProfile);
         }
-        
+
         // Find exercises that target different muscle groups than last workout
         const differentMuscleGroupExercises = exercises.filter(exercise => {
-            return !exercise.muscleGroups.some(muscleGroup => 
+            return !exercise.muscleGroups.some(muscleGroup =>
                 lastWorkoutMuscleGroups.includes(muscleGroup)
             );
         });
-        
+
         // If we have exercises targeting different muscle groups, use them
         if (differentMuscleGroupExercises.length > 0) {
             return this.selectExerciseDeterministically(differentMuscleGroupExercises, userProfile);
         }
-        
+
         // Fallback to deterministic selection from all available exercises
         return this.selectExerciseDeterministically(exercises, userProfile);
     }
-    
+
     // Get muscle groups from last workout
     getLastWorkoutMuscleGroups(userProfile) {
         if (!userProfile.recentWorkouts || userProfile.recentWorkouts.length === 0) {
             return [];
         }
-        
+
         const lastWorkout = userProfile.recentWorkouts[0];
         if (!lastWorkout.exercises) {
             return [];
         }
-        
+
         // Collect all muscle groups from last workout
         const muscleGroups = new Set();
         lastWorkout.exercises.forEach(exercise => {
@@ -408,37 +408,37 @@ class WorkoutGenerator {
                 });
             }
         });
-        
+
         return Array.from(muscleGroups);
     }
-    
+
     // Select exercise deterministically based on user profile
     selectExerciseDeterministically(exercises, userProfile) {
-        if (exercises.length === 0) return null;
-        
+        if (exercises.length === 0) {return null;}
+
         // Create a deterministic seed based on user profile
         const seed = this.createDeterministicSeed(userProfile);
-        
+
         // Use seed to select exercise (same seed = same selection)
         const index = seed % exercises.length;
         return exercises[index];
     }
-    
+
     // Create deterministic seed based on user profile
     createDeterministicSeed(userProfile) {
         // Combine user ID, experience level, and current date for deterministic but varied selection
         const userId = userProfile.id || userProfile.username || 'default';
         const experience = userProfile.experience || 'beginner';
         const currentDate = new Date().toDateString(); // Same day = same seed
-        
+
         // Create hash-like value
         let seed = 0;
         const combinedString = `${userId}-${experience}-${currentDate}`;
-        
+
         for (let i = 0; i < combinedString.length; i++) {
             seed = ((seed << 5) - seed + combinedString.charCodeAt(i)) & 0xffffffff;
         }
-        
+
         return Math.abs(seed);
     }
 
@@ -454,14 +454,14 @@ class WorkoutGenerator {
         const sets = isSecondary ? Math.max(2, template.sets - 1) : template.sets;
         const reps = this.calculateReps(template.reps, userProfile);
         const weight = this.calculateStartingWeight(exercise, userProfile);
-        
+
         return {
             name: exercise.name,
             equipment: exercise.equipment,
             muscleGroups: exercise.muscleGroups,
-            sets: sets,
-            reps: reps,
-            weight: weight,
+            sets,
+            reps,
+            weight,
             rpe: this.calculateRPE(template, userProfile),
             rest: template.rest,
             notes: this.generateExerciseNotes(exercise, userProfile)
@@ -481,11 +481,11 @@ class WorkoutGenerator {
     calculateStartingWeight(exercise, userProfile) {
         const baselineLifts = userProfile.personalData?.baselineLifts || {};
         const exerciseKey = exercise.name.toLowerCase().replace(/\s+/g, '_');
-        
+
         if (baselineLifts[exerciseKey]) {
             return baselineLifts[exerciseKey];
         }
-        
+
         // Default weights based on exercise and equipment
         const defaultWeights = {
             'barbell': 45,
@@ -495,7 +495,7 @@ class WorkoutGenerator {
             'cable': 30,
             'band': 0
         };
-        
+
         return defaultWeights[exercise.equipment] || 0;
     }
 
@@ -509,35 +509,35 @@ class WorkoutGenerator {
     // Generate exercise notes
     generateExerciseNotes(exercise, userProfile) {
         const notes = [];
-        
+
         if (exercise.difficulty === 'advanced') {
             notes.push('Focus on proper form and controlled movement');
         }
-        
+
         if (exercise.equipment === 'barbell') {
             notes.push('Use a spotter for safety');
         }
-        
+
         if (exercise.muscleGroups.includes('core')) {
             notes.push('Engage your core throughout the movement');
         }
-        
+
         return notes.join('. ');
     }
 
     // Apply seasonal adjustments
     applySeasonalAdjustments(exercises, currentPhase) {
-        if (!currentPhase) return exercises;
-        
+        if (!currentPhase) {return exercises;}
+
         const phaseAdjustments = {
             'off-season': { volumeMultiplier: 1.2, intensityMultiplier: 0.9 },
             'pre-season': { volumeMultiplier: 1.0, intensityMultiplier: 1.1 },
             'in-season': { volumeMultiplier: 0.8, intensityMultiplier: 0.9 },
             'playoffs': { volumeMultiplier: 0.6, intensityMultiplier: 1.0 }
         };
-        
+
         const adjustments = phaseAdjustments[currentPhase] || { volumeMultiplier: 1.0, intensityMultiplier: 1.0 };
-        
+
         return exercises.map(exercise => ({
             ...exercise,
             sets: Math.max(2, Math.floor(exercise.sets * adjustments.volumeMultiplier)),
@@ -548,7 +548,7 @@ class WorkoutGenerator {
     // Generate warmup
     generateWarmup(sessionType, availableTime) {
         const warmupDuration = Math.min(10, Math.floor(availableTime * 0.15));
-        
+
         return {
             duration: warmupDuration,
             exercises: [
@@ -562,7 +562,7 @@ class WorkoutGenerator {
     // Generate cooldown
     generateCooldown(sessionType, availableTime) {
         const cooldownDuration = Math.min(8, Math.floor(availableTime * 0.1));
-        
+
         return {
             duration: cooldownDuration,
             exercises: [
@@ -575,7 +575,7 @@ class WorkoutGenerator {
     // Generate workout notes
     generateWorkoutNotes(focus, currentPhase, preferences) {
         const notes = [];
-        
+
         if (focus === 'strength') {
             notes.push('Focus on progressive overload and proper form');
         } else if (focus === 'hypertrophy') {
@@ -583,13 +583,13 @@ class WorkoutGenerator {
         } else if (focus === 'endurance') {
             notes.push('Maintain steady pace throughout the workout');
         }
-        
+
         if (currentPhase === 'in-season') {
             notes.push('Reduce intensity if feeling fatigued');
         } else if (currentPhase === 'playoffs') {
             notes.push('Peak performance focus - listen to your body');
         }
-        
+
         return notes.join('. ');
     }
 
@@ -600,21 +600,21 @@ class WorkoutGenerator {
                 this.logger.warn('No user profile provided for workout generation');
                 return this.generateFallbackWorkout(sessionType || 'Full Body', duration || 60);
             }
-            
+
             if (!sessionType) {
                 this.logger.warn('No session type provided, using default');
                 sessionType = 'Full Body';
             }
-            
+
             if (!duration || duration < 15) {
                 this.logger.warn('Invalid duration provided, using default');
                 duration = 60;
             }
-            
+
             const workout = {
                 id: this.generateWorkoutId(),
                 type: sessionType,
-                duration: duration,
+                duration,
                 exercises: [],
                 warmup: this.generateWarmup(sessionType, duration),
                 cooldown: this.generateCooldown(sessionType, duration),
@@ -625,25 +625,25 @@ class WorkoutGenerator {
 
             // Select exercises based on session type and user profile
             const selectedExercises = this.selectExercises(userProfile, sessionType, duration);
-            
+
             if (!selectedExercises || selectedExercises.length === 0) {
                 this.logger.warn('No exercises selected, using fallback workout');
                 return this.generateFallbackWorkout(sessionType, duration);
             }
-            
+
             // Assign sets, reps, and weights
             workout.exercises = this.assignExerciseParameters(selectedExercises, userProfile);
-            
+
             // Calculate total volume
             workout.totalVolume = this.calculateWorkoutVolume(workout.exercises);
-            
+
             // Adjust for seasonal phase if available
             if (userProfile.currentPhase) {
                 const adjustedWorkout = this.adjustForSeasonalPhase(workout, userProfile.currentPhase);
                 workout.exercises = adjustedWorkout.exercises;
                 workout.phaseAdjustments = adjustedWorkout.phaseAdjustment;
             }
-            
+
             // Add progressive overload if previous workout exists
             if (userProfile.lastWorkout || userProfile.recentWorkouts?.[0]) {
                 const previousWorkout = userProfile.lastWorkout || userProfile.recentWorkouts[0];
@@ -652,30 +652,30 @@ class WorkoutGenerator {
                 workout.progressionApplied = progressedWorkout.progressionApplied;
                 workout.progressionSummary = progressedWorkout.progressionSummary;
             }
-            
+
             // Calculate rest periods
             workout.restPeriods = this.calculateRestPeriods(workout.exercises);
-            
+
             // Add rest periods to each exercise
             workout.exercises.forEach((exercise, index) => {
                 if (workout.restPeriods && workout.restPeriods[index]) {
                     exercise.rest = workout.restPeriods[index];
                 }
             });
-            
+
             // Generate workout notes
             workout.notes = this.generateWorkoutNotes(
                 this.determineWorkoutFocus(userProfile.goals || {}, sessionType),
                 userProfile.currentPhase,
                 userProfile.preferences
             );
-            
+
             // Validate workout has exercises
             if (workout.exercises.length === 0) {
                 this.logger.warn('Generated workout has no exercises, using fallback');
                 return this.generateFallbackWorkout(sessionType, duration);
             }
-            
+
             return workout;
         } catch (error) {
             this.logger.error('Error generating workout:', error);
@@ -690,10 +690,10 @@ class WorkoutGenerator {
                 this.logger.warn('Invalid exercises array for volume calculation');
                 return 0;
             }
-            
+
             return exercises.reduce((total, exercise) => {
-                if (!exercise) return total;
-                
+                if (!exercise) {return total;}
+
                 // Handle string reps (e.g., "8-12")
                 let reps = exercise.reps || 0;
                 if (typeof reps === 'string' && reps.includes('-')) {
@@ -702,11 +702,11 @@ class WorkoutGenerator {
                 } else {
                     reps = Number(reps) || 0;
                 }
-                
+
                 const weight = Number(exercise.weight) || 0;
                 const sets = Number(exercise.sets) || 0;
                 const volume = weight * reps * sets;
-                
+
                 return total + volume;
             }, 0);
         } catch (error) {
@@ -725,7 +725,7 @@ class WorkoutGenerator {
         };
 
         const adjustment = phaseAdjustments[phase] || phaseAdjustments['off-season'];
-        
+
         // Adjust exercise parameters
         workout.exercises.forEach(exercise => {
             exercise.sets = Math.round(exercise.sets * adjustment.volumeMultiplier);
@@ -813,7 +813,7 @@ class WorkoutGenerator {
     selectExercises(userProfile, sessionType, availableTime) {
         const exercises = [];
         const timePerExercise = Math.floor(availableTime / 6); // Roughly 6 exercises for 60 minutes
-        
+
         // Get exercise categories based on session type
         let exerciseCategories = [];
         switch (sessionType) {
@@ -871,12 +871,12 @@ class WorkoutGenerator {
                 this.logger.warn('Invalid exercises array for rest period calculation');
                 return [];
             }
-            
+
             return exercises.map(exercise => {
-                if (!exercise) return 60; // Default rest
-                
+                if (!exercise) {return 60;} // Default rest
+
                 const baseRest = 60; // 1 minute base rest
-                
+
                 // Intensity multiplier based on difficulty
                 let intensityMultiplier = 1.0;
                 if (exercise.difficulty === 'advanced') {
@@ -884,17 +884,17 @@ class WorkoutGenerator {
                 } else if (exercise.difficulty === 'intermediate') {
                     intensityMultiplier = 1.2;
                 }
-                
+
                 // Weight multiplier (heavier = more rest)
                 const weight = Number(exercise.weight) || 0;
                 const weightMultiplier = weight > 100 ? 1.3 : weight > 50 ? 1.1 : 1.0;
-                
+
                 // RPE multiplier (higher RPE = more rest)
                 const rpe = Number(exercise.rpe) || 7;
                 const rpeMultiplier = rpe >= 9 ? 1.4 : rpe >= 8 ? 1.2 : rpe >= 7 ? 1.1 : 1.0;
-                
+
                 const restPeriod = Math.round(baseRest * intensityMultiplier * weightMultiplier * rpeMultiplier);
-                
+
                 // Ensure minimum rest period
                 return Math.max(30, Math.min(restPeriod, 300)); // 30 seconds to 5 minutes
             });
@@ -922,18 +922,18 @@ class WorkoutGenerator {
             const progressionApplied = [];
 
             currentWorkout.exercises.forEach((exercise, index) => {
-                if (!exercise) return;
-                
+                if (!exercise) {return;}
+
                 // Find matching exercise by name (not just index)
                 const previousExercise = previousWorkout.exercises.find(
                     prevEx => prevEx && prevEx.name === exercise.name
                 );
-                
+
                 if (previousExercise) {
                     // Progressive overload logic
                     const currentWeight = Number(exercise.weight) || 0;
                     const previousWeight = Number(previousExercise.weight) || 0;
-                    
+
                     if (previousWeight > 0 && currentWeight >= previousWeight) {
                         // Only increase if current weight matches or exceeds previous
                         const weightIncrease = Math.min(
@@ -948,11 +948,11 @@ class WorkoutGenerator {
                             newWeight: exercise.weight
                         });
                     }
-                    
+
                     // Handle string reps (e.g., "8-12")
                     const currentReps = exercise.reps;
                     const previousReps = previousExercise.reps;
-                    
+
                     if (previousReps) {
                         if (typeof currentReps === 'string' && currentReps.includes('-')) {
                             // For range reps, increase the range
@@ -963,7 +963,7 @@ class WorkoutGenerator {
                                 ? Number(previousReps.split('-')[0])
                                 : Number(previousReps) || 0;
                             const currRepsNum = Number(currentReps) || prevRepsNum;
-                            
+
                             if (currRepsNum >= prevRepsNum) {
                                 exercise.reps = Math.max(1, currRepsNum + progression.repIncrease);
                                 progressionApplied.push({
@@ -975,10 +975,10 @@ class WorkoutGenerator {
                             }
                         }
                     }
-                    
+
                     const currentSets = Number(exercise.sets) || 0;
                     const previousSets = Number(previousExercise.sets) || 0;
-                    
+
                     if (previousSets > 0 && currentSets >= previousSets) {
                         const setIncrease = Math.round(previousSets * progression.setIncrease);
                         exercise.sets = Math.max(1, Math.round(previousSets + setIncrease));
@@ -1007,7 +1007,7 @@ class WorkoutGenerator {
 
     // Helper methods
     generateWorkoutId() {
-        return 'workout_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        return `workout_${ Date.now() }_${ Math.random().toString(36).substr(2, 9)}`;
     }
 
     getExercisesByCategory(category) {
@@ -1023,19 +1023,19 @@ class WorkoutGenerator {
                 });
             }
         });
-        
-        return allExercises.filter(exercise => 
+
+        return allExercises.filter(exercise =>
             exercise.muscleGroups && exercise.muscleGroups.includes(category)
         );
     }
 
     selectExerciseForUser(exercises, userProfile, targetMuscleGroup = null) {
-        if (exercises.length === 0) return null;
-        
+        if (exercises.length === 0) {return null;}
+
         // Filter by user experience level
         const suitableExercises = exercises.filter(exercise => {
             const experienceLevel = userProfile.experience || 'beginner';
-            return exercise.difficulty === experienceLevel || 
+            return exercise.difficulty === experienceLevel ||
                    (experienceLevel === 'advanced' && exercise.difficulty !== 'beginner') ||
                    (experienceLevel === 'intermediate' && exercise.difficulty !== 'advanced');
         });
@@ -1052,9 +1052,9 @@ class WorkoutGenerator {
         return exercises.map(exercise => {
             const experience = userProfile.experience || 'beginner';
             const baseWeight = userProfile.personalData?.weight || 70;
-            
+
             let sets, reps, weight, rpe;
-            
+
             switch (experience) {
                 case 'beginner':
                     sets = 3;
@@ -1103,7 +1103,7 @@ class WorkoutGenerator {
         return {
             id: this.generateWorkoutId(),
             type: sessionType,
-            duration: duration,
+            duration,
             exercises: [
                 {
                     name: 'Bodyweight Squats',

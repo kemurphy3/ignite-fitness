@@ -20,23 +20,23 @@ class LinkingActions {
      */
     async handleLinkDecision(activity, action, primarySource, secondarySource) {
         try {
-            this.logger.info('Handling link decision', { 
-                activityId: activity.id, 
-                action, 
-                primary: primarySource[0], 
-                secondary: secondarySource[0] 
+            this.logger.info('Handling link decision', {
+                activityId: activity.id,
+                action,
+                primary: primarySource[0],
+                secondary: secondarySource[0]
             });
 
             switch (action) {
                 case 'keep-both':
                     return await this.keepBoth(activity);
-                
+
                 case 'use-primary':
                     return await this.usePrimaryOnly(activity, primarySource, secondarySource);
-                
+
                 case 'use-secondary':
                     return await this.useSecondaryOnly(activity, primarySource, secondarySource);
-                
+
                 default:
                     return { success: false, error: 'Unknown action' };
             }
@@ -246,10 +246,10 @@ class LinkingActions {
     async triggerAggregateRecalculation(activity) {
         try {
             const activityDate = new Date(activity.start_ts).toISOString().split('T')[0];
-            
-            this.logger.info('Triggering aggregate recalculation', { 
-                activityId: activity.id, 
-                date: activityDate 
+
+            this.logger.info('Triggering aggregate recalculation', {
+                activityId: activity.id,
+                date: activityDate
             });
 
             // This would typically trigger a backend job to recalculate aggregates

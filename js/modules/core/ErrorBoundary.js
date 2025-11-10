@@ -25,7 +25,7 @@
                 onError: config.onError || null,
                 ...config
             };
-            
+
             this.errorCount = 0;
             this.isInitialized = false;
         }
@@ -34,22 +34,22 @@
          * Initialize error boundary
          */
         init() {
-            if (this.isInitialized) return;
-            
+            if (this.isInitialized) {return;}
+
             console.log('Error Boundary initialized');
-            
+
             // Catch unhandled promise rejections
             this.setupPromiseRejectionHandler();
-            
+
             // Catch JavaScript errors
             this.setupErrorHandler();
-            
+
             // Catch resource loading errors
             this.setupResourceErrorHandler();
-            
+
             // Setup error recovery
             this.setupErrorRecovery();
-            
+
             this.isInitialized = true;
         }
 
@@ -59,7 +59,7 @@
         setupPromiseRejectionHandler() {
             window.addEventListener('unhandledrejection', (event) => {
                 console.error('Unhandled promise rejection:', event.reason);
-                
+
                 this.handleError({
                     type: 'promise_rejection',
                     message: event.reason?.message || 'Unhandled Promise Rejection',
@@ -68,7 +68,7 @@
                     url: window.location.href,
                     userAgent: navigator.userAgent
                 });
-                
+
                 // Prevent default console error
                 event.preventDefault();
             });
@@ -80,7 +80,7 @@
         setupErrorHandler() {
             window.addEventListener('error', (event) => {
                 console.error('JavaScript error:', event.error);
-                
+
                 this.handleError({
                     type: 'javascript_error',
                     message: event.message || 'JavaScript Error',
@@ -103,7 +103,7 @@
                 // Check if it's a resource loading error
                 if (event.target && event.target !== window && !event.error) {
                     console.error('Resource loading error:', event.target);
-                    
+
                     this.handleError({
                         type: 'resource_error',
                         message: `Failed to load resource: ${event.target.tagName}`,
@@ -120,28 +120,28 @@
          */
         handleError(errorInfo) {
             this.errorCount++;
-            
+
             // Add to error queue
             errorQueue.push(errorInfo);
             if (errorQueue.length > MAX_ERROR_QUEUE_SIZE) {
                 errorQueue.shift();
             }
-            
+
             // Log to console
             if (this.config.logToConsole) {
                 console.group('🔴 Error Caught');
                 console.error('Type:', errorInfo.type);
                 console.error('Message:', errorInfo.message);
                 console.error('Timestamp:', errorInfo.timestamp);
-                if (errorInfo.stack) console.error('Stack:', errorInfo.stack);
+                if (errorInfo.stack) {console.error('Stack:', errorInfo.stack);}
                 console.groupEnd();
             }
-            
+
             // Show fallback UI
             if (this.config.showFallbackUI && this.errorCount === 1) {
                 this.showErrorFallbackUI(errorInfo);
             }
-            
+
             // Custom error handler
             if (this.config.onError) {
                 try {
@@ -150,7 +150,7 @@
                     console.error('Error in custom error handler:', e);
                 }
             }
-            
+
             // Log to remote endpoint if configured
             if (this.config.logToRemote && this.config.remoteEndpoint) {
                 this.logToRemote(errorInfo).catch(e => {
@@ -168,7 +168,7 @@
             if (existingErrorUI) {
                 existingErrorUI.remove();
             }
-            
+
             const errorUI = document.createElement('div');
             errorUI.id = 'error-boundary-ui';
             errorUI.innerHTML = `
@@ -197,7 +197,7 @@
                     </div>
                 </div>
             `;
-            
+
             errorUI.style.cssText = `
                 position: fixed;
                 top: 0;
@@ -211,9 +211,9 @@
                 align-items: center;
                 padding: 20px;
             `;
-            
+
             document.body.appendChild(errorUI);
-            
+
             // Add styles if not already added
             if (!document.getElementById('error-boundary-styles')) {
                 const style = document.createElement('style');
@@ -409,7 +409,7 @@
 
     // Expose globally
     window.ErrorBoundary = errorBoundary;
-    
+
     // Handle sign out from error boundary
     window.handleErrorBoundarySignOut = function() {
         if (window.AuthManager) {

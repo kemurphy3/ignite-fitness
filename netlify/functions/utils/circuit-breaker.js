@@ -7,7 +7,7 @@ class CircuitBreaker {
     this.failureThreshold = options.failureThreshold || 5;
     this.recoveryTimeout = options.recoveryTimeout || 60000;
     this.monitoringPeriod = options.monitoringPeriod || 120000;
-    
+
     this.state = 'CLOSED';
     this.failures = 0;
     this.nextAttempt = Date.now();
@@ -19,7 +19,7 @@ class CircuitBreaker {
   async execute(fn) {
     // Load state from database if available
     await this.loadState();
-    
+
     if (this.state === 'OPEN') {
       if (Date.now() < this.nextAttempt) {
         throw new Error(`Circuit breaker is OPEN for ${this.name}. Next attempt at ${new Date(this.nextAttempt).toISOString()}`);
@@ -43,7 +43,7 @@ class CircuitBreaker {
   onSuccess() {
     this.failures = 0;
     this.lastSuccess = Date.now();
-    
+
     if (this.state === 'HALF_OPEN') {
       this.successCount++;
       if (this.successCount >= 3) {
@@ -56,12 +56,12 @@ class CircuitBreaker {
 
   onFailure(error) {
     this.failures++;
-    this.lastFailure = { 
-      error: error.message, 
+    this.lastFailure = {
+      error: error.message,
       timestamp: Date.now(),
       status: error.status || 'UNKNOWN'
     };
-    
+
     if (this.failures >= this.failureThreshold) {
       this.state = 'OPEN';
       this.nextAttempt = Date.now() + this.recoveryTimeout;
@@ -96,7 +96,7 @@ class CircuitBreaker {
         this.state = state.state;
         this.failures = state.failure_count || 0;
         this.nextAttempt = state.next_attempt_at ? new Date(state.next_attempt_at).getTime() : Date.now();
-        
+
         if (state.last_failure_at) {
           this.lastFailure = {
             timestamp: new Date(state.last_failure_at).getTime(),
@@ -142,15 +142,15 @@ class CircuitBreaker {
     this.successCount = 0;
     this.lastFailure = null;
     this.lastSuccess = Date.now();
-    
+
     await this.saveState();
     console.log(`Circuit breaker ${this.name} has been reset`);
   }
 
   // Check if circuit breaker allows requests
   isAvailable() {
-    if (this.state === 'CLOSED') return true;
-    if (this.state === 'HALF_OPEN') return true;
+    if (this.state === 'CLOSED') {return true;}
+    if (this.state === 'HALF_OPEN') {return true;}
     if (this.state === 'OPEN' && Date.now() >= this.nextAttempt) {
       this.state = 'HALF_OPEN';
       return true;
@@ -172,8 +172,8 @@ const stravaOAuthCircuit = new CircuitBreaker('strava-oauth', {
   monitoringPeriod: 60000
 });
 
-module.exports = { 
-  CircuitBreaker, 
-  stravaCircuit, 
-  stravaOAuthCircuit 
+module.exports = {
+  CircuitBreaker,
+  stravaCircuit,
+  stravaOAuthCircuit
 };

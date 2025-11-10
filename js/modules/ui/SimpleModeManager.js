@@ -44,17 +44,17 @@ class SimpleModeManager {
      * @returns {boolean} True if new user
      */
     isNewUser(user) {
-        if (!user) return true;
-        
+        if (!user) {return true;}
+
         // Check if user has completed onboarding
         const hasCompletedOnboarding = localStorage.getItem('ignite.user.hasCompletedOnboarding') === 'true';
-        
+
         // Check if user has any workout data
         const hasWorkoutData = user.data && (
             (user.data.workouts && user.data.workouts.length > 0) ||
             (user.data.soccerSessions && user.data.soccerSessions.length > 0)
         );
-        
+
         // New user = no onboarding completion AND no workout data
         return !hasCompletedOnboarding && !hasWorkoutData;
     }
@@ -67,7 +67,7 @@ class SimpleModeManager {
         try {
             // Check if user has existing preference
             const existingPref = localStorage.getItem(this.storageKey);
-            
+
             if (existingPref !== null) {
                 // Existing user - keep their choice
                 this.simpleMode = existingPref === 'true';
@@ -78,7 +78,7 @@ class SimpleModeManager {
                 this.save();
                 this.logger.info('New user - defaulting to simple mode');
             }
-            
+
             return this.simpleMode;
         } catch (error) {
             this.logger.error('Failed to initialize simple mode', error);
@@ -107,12 +107,12 @@ class SimpleModeManager {
     setEnabled(enabled) {
         this.simpleMode = enabled === true;
         this.save();
-        
+
         // Emit event for UI updates
         if (this.eventBus) {
             this.eventBus.emit('simpleMode:changed', { enabled: this.simpleMode });
         }
-        
+
         this.logger.info('Simple mode updated', { enabled: this.simpleMode });
     }
 
@@ -154,7 +154,7 @@ class SimpleModeManager {
         try {
             const authManager = window.AuthManager;
             const userId = authManager?.getCurrentUsername();
-            
+
             if (!userId) {
                 this.logger.warn('Cannot save recovery day preference: user not logged in');
                 return;
@@ -162,7 +162,7 @@ class SimpleModeManager {
 
             const storageKey = 'ignite.ui.recoveryDayPreference';
             localStorage.setItem(storageKey, preference);
-            
+
             // Also save via StorageManager if available
             if (this.storageManager && typeof this.storageManager.savePreferences === 'function') {
                 await this.storageManager.savePreferences(userId, {
@@ -185,12 +185,12 @@ class SimpleModeManager {
         try {
             const storageKey = 'ignite.ui.recoveryDayPreference';
             const preference = localStorage.getItem(storageKey);
-            
+
             // Validate preference value
             if (preference && ['accept', 'override', 'ask'].includes(preference)) {
                 return preference;
             }
-            
+
             // Default: ask user each time
             return 'ask';
         } catch (error) {

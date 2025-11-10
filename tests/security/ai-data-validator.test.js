@@ -176,47 +176,47 @@ describe('AI Data Validator', () => {
 
                 validateGoal(goal) {
                     const validGoals = [
-                        'general_fitness', 'strength', 'endurance', 'muscle_gain', 
+                        'general_fitness', 'strength', 'endurance', 'muscle_gain',
                         'weight_loss', 'sport_specific', 'injury_prevention'
                     ];
-                    
+
                     if (typeof goal !== 'string' || !validGoals.includes(goal)) {
                         return this.conservativeDefaults.primaryGoal;
                     }
-                    
+
                     return goal;
                 }
 
                 validateSport(sport) {
                     const validSports = [
-                        'general_fitness', 'soccer', 'basketball', 'running', 
+                        'general_fitness', 'soccer', 'basketball', 'running',
                         'cycling', 'swimming', 'tennis', 'martial_arts'
                     ];
-                    
+
                     if (typeof sport !== 'string' || !validSports.includes(sport)) {
                         return this.conservativeDefaults.sport;
                     }
-                    
+
                     return sport;
                 }
 
                 validateSeasonPhase(phase) {
                     const validPhases = ['offseason', 'preseason', 'inseason', 'playoffs'];
-                    
+
                     if (typeof phase !== 'string' || !validPhases.includes(phase)) {
                         return this.conservativeDefaults.seasonPhase;
                     }
-                    
+
                     return phase;
                 }
 
                 validateTrend(trend) {
                     const validTrends = ['increasing', 'decreasing', 'stable', 'volatile'];
-                    
+
                     if (typeof trend !== 'string' || !validTrends.includes(trend)) {
                         return this.conservativeDefaults.energyTrend;
                     }
-                    
+
                     return trend;
                 }
 
@@ -224,11 +224,11 @@ describe('AI Data Validator', () => {
                     if (!Array.isArray(history)) {
                         return [];
                     }
-                    
-                    return history.filter(entry => 
-                        entry && 
-                        typeof entry === 'object' && 
-                        entry.date && 
+
+                    return history.filter(entry =>
+                        entry &&
+                        typeof entry === 'object' &&
+                        entry.date &&
                         entry.type
                     );
                 }
@@ -237,11 +237,11 @@ describe('AI Data Validator', () => {
                     if (!Array.isArray(workouts)) {
                         return [];
                     }
-                    
-                    return workouts.filter(workout => 
-                        workout && 
-                        typeof workout === 'object' && 
-                        workout.date && 
+
+                    return workouts.filter(workout =>
+                        workout &&
+                        typeof workout === 'object' &&
+                        workout.date &&
                         workout.duration > 0
                     );
                 }
@@ -250,45 +250,45 @@ describe('AI Data Validator', () => {
                     if (!data || typeof data !== 'object') {
                         return {};
                     }
-                    
+
                     const validated = {};
-                    
+
                     for (const [key, value] of Object.entries(data)) {
                         if (typeof value === 'number' && !isNaN(value) && value >= 0) {
                             validated[key] = value;
                         }
                     }
-                    
+
                     return validated;
                 }
 
                 applyConservativeScaling(baseIntensity, dataConfidence = 0.5) {
                     const validatedIntensity = this.validateRPE(baseIntensity);
                     const validatedConfidence = Math.min(Math.max(dataConfidence, 0), 1);
-                    
+
                     const confidenceFactor = 0.5 + (validatedConfidence * 0.5);
                     const scaledIntensity = validatedIntensity * confidenceFactor;
-                    
+
                     return Math.min(scaledIntensity, this.conservativeDefaults.maxIntensity);
                 }
 
                 generateConservativeRecommendations(context) {
                     const validatedContext = this.validateContext(context);
-                    
+
                     let intensity = 'moderate';
                     if (validatedContext.readinessScore <= 4) {
                         intensity = 'light';
                     } else if (validatedContext.readinessScore >= 8) {
                         intensity = 'moderate-high';
                     }
-                    
+
                     let volume = 'moderate';
                     if (validatedContext.atl7 > 150) {
                         volume = 'low';
                     } else if (validatedContext.atl7 < 30) {
                         volume = 'moderate-high';
                     }
-                    
+
                     return {
                         intensity,
                         volume,
@@ -301,23 +301,23 @@ describe('AI Data Validator', () => {
 
                 generateSafetyFlags(context) {
                     const flags = [];
-                    
+
                     if (context.readinessScore <= 4) {
                         flags.push('Low readiness - consider light workout or rest');
                     }
-                    
+
                     if (context.atl7 > 150) {
                         flags.push('High training load - reduce volume');
                     }
-                    
+
                     if (context.stressLevel >= 8) {
                         flags.push('High stress - prioritize recovery');
                     }
-                    
+
                     if (context.missedWorkouts >= 3) {
                         flags.push('Multiple missed workouts - ease back gradually');
                     }
-                    
+
                     return flags;
                 }
             }
@@ -505,11 +505,11 @@ describe('AI Data Validator', () => {
         });
 
         it('should generate safety flags for concerning metrics', () => {
-            const context = { 
-                readinessScore: 3, 
-                atl7: 200, 
-                stressLevel: 9, 
-                missedWorkouts: 5 
+            const context = {
+                readinessScore: 3,
+                atl7: 200,
+                stressLevel: 9,
+                missedWorkouts: 5
             };
             const recs = dataValidator.generateConservativeRecommendations(context);
             expect(recs.safetyFlags).toContain('Low readiness - consider light workout or rest');

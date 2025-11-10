@@ -449,7 +449,7 @@ class MovementScreens {
      */
     getScreensForSport(sportId) {
         const sportScreens = [];
-        
+
         Object.entries(this.screens).forEach(([id, screen]) => {
             if (screen.sportRelevance === 'High' || screen.sportRelevance === 'Critical') {
                 sportScreens.push({
@@ -475,9 +475,9 @@ class MovementScreens {
         }
 
         this.currentScreen = {
-            screenId: screenId,
-            screen: screen,
-            userProfile: userProfile,
+            screenId,
+            screen,
+            userProfile,
             startTime: new Date().toISOString(),
             checkpoints: {},
             scores: {},
@@ -485,7 +485,7 @@ class MovementScreens {
         };
 
         this.logger.audit('MOVEMENT_SCREEN_STARTED', {
-            screenId: screenId,
+            screenId,
             userId: userProfile.userId
         });
 
@@ -505,8 +505,8 @@ class MovementScreens {
 
         const key = `${view}_${checkpoint}`;
         this.currentScreen.checkpoints[key] = {
-            checkpoint: checkpoint,
-            view: view,
+            checkpoint,
+            view,
             ...observation,
             recordedAt: new Date().toISOString()
         };
@@ -520,7 +520,7 @@ class MovementScreens {
      */
     calculateScore(screenId, observations) {
         const screen = this.getScreen(screenId);
-        if (!screen) return 0;
+        if (!screen) {return 0;}
 
         // Analyze observations for compensations
         let compensationCount = 0;
@@ -535,9 +535,9 @@ class MovementScreens {
         });
 
         // Determine score based on observations
-        if (majorCompensationCount > 0) return 1;
-        if (compensationCount === 0) return 3;
-        if (compensationCount <= 2) return 2;
+        if (majorCompensationCount > 0) {return 1;}
+        if (compensationCount === 0) {return 3;}
+        if (compensationCount <= 2) {return 2;}
         return 1;
     }
 
@@ -550,14 +550,14 @@ class MovementScreens {
             throw new Error('No active screen session');
         }
 
-        const screen = this.currentScreen.screen;
+        const {screen} = this.currentScreen;
         const observations = this.currentScreen.checkpoints;
         const score = this.calculateScore(this.currentScreen.screenId, observations);
 
         const results = {
             ...this.currentScreen,
             endTime: new Date().toISOString(),
-            score: score,
+            score,
             interpretation: this.interpretScore(score, screen),
             recommendations: this.generateRecommendations(this.currentScreen.screenId, observations),
             correctiveExercises: this.getCorrectiveExercises(this.currentScreen.screenId, observations)
@@ -569,7 +569,7 @@ class MovementScreens {
 
         this.logger.audit('MOVEMENT_SCREEN_COMPLETED', {
             screenId: results.screenId,
-            score: score,
+            score,
             userId: results.userProfile.userId
         });
 
@@ -659,14 +659,14 @@ class MovementScreens {
      */
     getTrends(screenId, userId) {
         const history = this.getHistory(userId).filter(screen => screen.screenId === screenId);
-        
+
         if (history.length === 0) {
             return { available: false, message: 'No history available' };
         }
 
         const scores = history.map(screen => screen.score);
         const latest = history[history.length - 1];
-        
+
         return {
             available: true,
             trend: this.calculateTrend(scores),
@@ -683,14 +683,14 @@ class MovementScreens {
      * @returns {string} Trend direction
      */
     calculateTrend(scores) {
-        if (scores.length < 2) return 'insufficient_data';
+        if (scores.length < 2) {return 'insufficient_data';}
 
         const recentScores = scores.slice(-3);
         const isImproving = recentScores[recentScores.length - 1] > recentScores[0];
         const isDeclining = recentScores[recentScores.length - 1] < recentScores[0];
 
-        if (isImproving) return 'improving';
-        if (isDeclining) return 'declining';
+        if (isImproving) {return 'improving';}
+        if (isDeclining) {return 'declining';}
         return 'stable';
     }
 }

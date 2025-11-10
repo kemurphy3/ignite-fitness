@@ -209,7 +209,7 @@ describe('TodayView Integration', () => {
             expect(mockEventBus.emit).toHaveBeenCalledWith(
                 'session:substituted',
                 expect.objectContaining({
-                    substitution: substitution
+                    substitution
                 })
             );
         });

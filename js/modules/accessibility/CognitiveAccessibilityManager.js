@@ -18,7 +18,7 @@ class CognitiveAccessibilityManager {
             errorPrevention: true,
             confirmationDialogs: true
         };
-        
+
         this.readingLevels = {
             simple: {
                 maxWordsPerSentence: 15,
@@ -42,7 +42,7 @@ class CognitiveAccessibilityManager {
                 useActiveVoice: false
             }
         };
-        
+
         this.simpleWords = new Map([
             ['utilize', 'use'],
             ['facilitate', 'help'],
@@ -60,7 +60,7 @@ class CognitiveAccessibilityManager {
             ['appropriate', 'right'],
             ['approximately', 'about']
         ]);
-        
+
         this.init();
     }
 
@@ -81,12 +81,12 @@ class CognitiveAccessibilityManager {
         // Check for cognitive accessibility preferences
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const prefersHighContrast = window.matchMedia('(prefers-contrast: high)').matches;
-        
+
         if (prefersReducedMotion || prefersHighContrast) {
             this.userPreferences.cognitiveLoadReduction = true;
             this.userPreferences.visualCues = true;
         }
-        
+
         // Check for reading assistance needs
         const hasReadingAssistance = document.querySelector('[data-reading-assistance]');
         if (hasReadingAssistance) {
@@ -102,11 +102,11 @@ class CognitiveAccessibilityManager {
         EventBus.subscribe('cognitive:enable', this.enableCognitiveFeatures.bind(this));
         EventBus.subscribe('cognitive:disable', this.disableCognitiveFeatures.bind(this));
         EventBus.subscribe('cognitive:preferencesChanged', this.handlePreferencesChanged.bind(this));
-        
+
         // Listen for content changes
         EventBus.subscribe('content:loaded', this.processContent.bind(this));
         EventBus.subscribe('content:updated', this.processContent.bind(this));
-        
+
         // Listen for form interactions
         EventBus.subscribe('form:focus', this.handleFormFocus.bind(this));
         EventBus.subscribe('form:blur', this.handleFormBlur.bind(this));
@@ -119,13 +119,13 @@ class CognitiveAccessibilityManager {
     enableCognitiveFeatures() {
         this.isActive = true;
         document.body.classList.add('cognitive-accessibility-enabled');
-        
+
         // Apply current preferences
         this.applyPreferences();
-        
+
         // Process existing content
         this.processContent();
-        
+
         this.logger.debug('Cognitive accessibility features enabled');
     }
 
@@ -135,10 +135,10 @@ class CognitiveAccessibilityManager {
     disableCognitiveFeatures() {
         this.isActive = false;
         document.body.classList.remove('cognitive-accessibility-enabled');
-        
+
         // Remove cognitive enhancements
         this.removeCognitiveEnhancements();
-        
+
         this.logger.debug('Cognitive accessibility features disabled');
     }
 
@@ -146,33 +146,33 @@ class CognitiveAccessibilityManager {
      * Process content for cognitive accessibility
      */
     processContent() {
-        if (!this.isActive) return;
-        
+        if (!this.isActive) {return;}
+
         // Process text content
         if (this.userPreferences.plainLanguageMode) {
             this.simplifyTextContent();
         }
-        
+
         // Process reading level
         if (this.userPreferences.readingLevel !== 'normal') {
             this.adjustReadingLevel();
         }
-        
+
         // Add content summarization
         if (this.userPreferences.contentSummarization) {
             this.addContentSummaries();
         }
-        
+
         // Add attention management features
         if (this.userPreferences.attentionManagement) {
             this.addAttentionManagement();
         }
-        
+
         // Add reading assistance
         if (this.userPreferences.readingAssistance) {
             this.addReadingAssistance();
         }
-        
+
         // Reduce cognitive load
         if (this.userPreferences.cognitiveLoadReduction) {
             this.reduceCognitiveLoad();
@@ -184,13 +184,13 @@ class CognitiveAccessibilityManager {
      */
     simplifyTextContent() {
         const textElements = document.querySelectorAll('p, span, div, h1, h2, h3, h4, h5, h6');
-        
+
         textElements.forEach(element => {
-            if (element.dataset.cognitiveProcessed) return;
-            
+            if (element.dataset.cognitiveProcessed) {return;}
+
             const originalText = element.textContent;
             const simplifiedText = this.simplifyText(originalText);
-            
+
             if (simplifiedText !== originalText) {
                 element.innerHTML = simplifiedText;
                 element.dataset.cognitiveProcessed = 'true';
@@ -206,22 +206,22 @@ class CognitiveAccessibilityManager {
      */
     simplifyText(text) {
         let simplified = text;
-        
+
         // Replace complex words with simple ones
         this.simpleWords.forEach((simple, complex) => {
             const regex = new RegExp(`\\b${complex}\\b`, 'gi');
             simplified = simplified.replace(regex, simple);
         });
-        
+
         // Break long sentences
         simplified = this.breakLongSentences(simplified);
-        
+
         // Use active voice
         simplified = this.convertToActiveVoice(simplified);
-        
+
         // Remove jargon
         simplified = this.removeJargon(simplified);
-        
+
         return simplified;
     }
 
@@ -233,20 +233,20 @@ class CognitiveAccessibilityManager {
     breakLongSentences(text) {
         const sentences = text.split(/[.!?]+/);
         const maxWords = this.readingLevels[this.userPreferences.readingLevel].maxWordsPerSentence;
-        
+
         return sentences.map(sentence => {
             const words = sentence.trim().split(/\s+/);
             if (words.length <= maxWords) {
                 return sentence.trim();
             }
-            
+
             // Break long sentences
             const chunks = [];
             for (let i = 0; i < words.length; i += maxWords) {
                 chunks.push(words.slice(i, i + maxWords).join(' '));
             }
-            
-            return chunks.join('. ') + '.';
+
+            return `${chunks.join('. ') }.`;
         }).join(' ');
     }
 
@@ -263,12 +263,12 @@ class CognitiveAccessibilityManager {
             { pattern: /are (.*?) by/g, replacement: '$1' },
             { pattern: /were (.*?) by/g, replacement: '$1' }
         ];
-        
+
         let active = text;
         passivePatterns.forEach(({ pattern, replacement }) => {
             active = active.replace(pattern, replacement);
         });
-        
+
         return active;
     }
 
@@ -282,13 +282,13 @@ class CognitiveAccessibilityManager {
             'algorithm', 'API', 'database', 'framework', 'interface',
             'metadata', 'protocol', 'query', 'schema', 'syntax'
         ];
-        
+
         let clean = text;
         jargonTerms.forEach(term => {
             const regex = new RegExp(`\\b${term}\\b`, 'gi');
             clean = clean.replace(regex, 'system');
         });
-        
+
         return clean;
     }
 
@@ -298,11 +298,11 @@ class CognitiveAccessibilityManager {
     adjustReadingLevel() {
         const level = this.userPreferences.readingLevel;
         const config = this.readingLevels[level];
-        
+
         // Apply reading level styles
         document.body.className = document.body.className.replace(/reading-level-\w+/g, '');
         document.body.classList.add(`reading-level-${level}`);
-        
+
         // Adjust content based on level
         if (level === 'simple') {
             this.simplifyContent();
@@ -320,7 +320,7 @@ class CognitiveAccessibilityManager {
         complexElements.forEach(element => {
             element.style.display = 'none';
         });
-        
+
         // Show simplified versions
         const simpleElements = document.querySelectorAll('.simple, .basic');
         simpleElements.forEach(element => {
@@ -344,10 +344,10 @@ class CognitiveAccessibilityManager {
      */
     addContentSummaries() {
         const contentSections = document.querySelectorAll('section, article, .content-section');
-        
+
         contentSections.forEach(section => {
-            if (section.dataset.summaryAdded) return;
-            
+            if (section.dataset.summaryAdded) {return;}
+
             const summary = this.generateSummary(section);
             if (summary) {
                 const summaryElement = document.createElement('div');
@@ -356,7 +356,7 @@ class CognitiveAccessibilityManager {
                     <h3>Summary</h3>
                     <p>${summary}</p>
                 `;
-                
+
                 section.insertBefore(summaryElement, section.firstChild);
                 section.dataset.summaryAdded = 'true';
             }
@@ -371,13 +371,13 @@ class CognitiveAccessibilityManager {
     generateSummary(element) {
         const text = element.textContent;
         const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
-        
-        if (sentences.length < 3) return null;
-        
+
+        if (sentences.length < 3) {return null;}
+
         // Take first and last sentences as summary
         const firstSentence = sentences[0].trim();
         const lastSentence = sentences[sentences.length - 1].trim();
-        
+
         return `${firstSentence}. ${lastSentence}.`;
     }
 
@@ -387,12 +387,12 @@ class CognitiveAccessibilityManager {
     addAttentionManagement() {
         // Add focus indicators
         this.addFocusIndicators();
-        
+
         // Add progress indicators
         if (this.userPreferences.progressIndicators) {
             this.addProgressIndicators();
         }
-        
+
         // Add visual cues
         if (this.userPreferences.visualCues) {
             this.addVisualCues();
@@ -424,10 +424,10 @@ class CognitiveAccessibilityManager {
      */
     addProgressIndicators() {
         const progressElements = document.querySelectorAll('.progress, .step, .workout-step');
-        
+
         progressElements.forEach((element, index) => {
-            if (element.dataset.progressAdded) return;
-            
+            if (element.dataset.progressAdded) {return;}
+
             const progressBar = document.createElement('div');
             progressBar.className = 'cognitive-progress';
             progressBar.innerHTML = `
@@ -436,7 +436,7 @@ class CognitiveAccessibilityManager {
                 </div>
                 <span class="progress-text">Step ${index + 1}</span>
             `;
-            
+
             element.appendChild(progressBar);
             element.dataset.progressAdded = 'true';
         });
@@ -448,14 +448,14 @@ class CognitiveAccessibilityManager {
     addVisualCues() {
         // Add visual cues to important elements
         const importantElements = document.querySelectorAll('.important, .warning, .error, .success');
-        
+
         importantElements.forEach(element => {
-            if (element.dataset.visualCueAdded) return;
-            
+            if (element.dataset.visualCueAdded) {return;}
+
             const cue = document.createElement('div');
             cue.className = 'visual-cue';
             cue.innerHTML = '⚠️';
-            
+
             element.appendChild(cue);
             element.dataset.visualCueAdded = 'true';
         });
@@ -467,10 +467,10 @@ class CognitiveAccessibilityManager {
     addReadingAssistance() {
         // Add reading assistance tools
         this.addReadingTools();
-        
+
         // Add text highlighting
         this.addTextHighlighting();
-        
+
         // Add pronunciation help
         this.addPronunciationHelp();
     }
@@ -487,12 +487,12 @@ class CognitiveAccessibilityManager {
             <button class="reading-tool" data-action="define">Define</button>
             <button class="reading-tool" data-action="translate">Translate</button>
         `;
-        
+
         document.body.appendChild(readingTools);
-        
+
         // Add event listeners
         readingTools.addEventListener('click', (e) => {
-            const action = e.target.dataset.action;
+            const {action} = e.target.dataset;
             this.handleReadingToolAction(action);
         });
     }
@@ -529,7 +529,7 @@ class CognitiveAccessibilityManager {
             span.className = 'cognitive-highlight';
             span.style.backgroundColor = '#ffff00';
             span.style.color = '#000000';
-            
+
             try {
                 range.surroundContents(span);
             } catch (e) {
@@ -559,7 +559,7 @@ class CognitiveAccessibilityManager {
         if (selection.toString().trim()) {
             const word = selection.toString().trim();
             const definition = this.getDefinition(word);
-            
+
             if (definition) {
                 this.showDefinition(word, definition);
             }
@@ -581,7 +581,7 @@ class CognitiveAccessibilityManager {
             'timer': 'A device to measure time',
             'rest': 'A period of relaxation between exercises'
         };
-        
+
         return definitions[word.toLowerCase()];
     }
 
@@ -596,19 +596,19 @@ class CognitiveAccessibilityManager {
         tooltip.innerHTML = `
             <strong>${word}</strong>: ${definition}
         `;
-        
+
         document.body.appendChild(tooltip);
-        
+
         // Position tooltip
         const selection = window.getSelection();
         const range = selection.getRangeAt(0);
         const rect = range.getBoundingClientRect();
-        
+
         tooltip.style.position = 'absolute';
-        tooltip.style.left = rect.left + 'px';
-        tooltip.style.top = (rect.bottom + 5) + 'px';
+        tooltip.style.left = `${rect.left }px`;
+        tooltip.style.top = `${rect.bottom + 5 }px`;
         tooltip.style.zIndex = '1000';
-        
+
         // Remove tooltip after 3 seconds
         setTimeout(() => {
             tooltip.remove();
@@ -647,14 +647,14 @@ class CognitiveAccessibilityManager {
      */
     addPronunciationHelp() {
         const pronunciationElements = document.querySelectorAll('[data-pronunciation]');
-        
+
         pronunciationElements.forEach(element => {
-            const pronunciation = element.dataset.pronunciation;
+            const {pronunciation} = element.dataset;
             const help = document.createElement('span');
             help.className = 'pronunciation-help';
             help.textContent = ` (${pronunciation})`;
             help.setAttribute('aria-label', `Pronounced: ${pronunciation}`);
-            
+
             element.appendChild(help);
         });
     }
@@ -665,15 +665,15 @@ class CognitiveAccessibilityManager {
     reduceCognitiveLoad() {
         // Simplify navigation
         this.simplifyNavigation();
-        
+
         // Reduce visual clutter
         this.reduceVisualClutter();
-        
+
         // Add error prevention
         if (this.userPreferences.errorPrevention) {
             this.addErrorPrevention();
         }
-        
+
         // Add confirmation dialogs
         if (this.userPreferences.confirmationDialogs) {
             this.addConfirmationDialogs();
@@ -689,7 +689,7 @@ class CognitiveAccessibilityManager {
         complexNav.forEach(nav => {
             nav.style.display = 'none';
         });
-        
+
         // Show simplified navigation
         const simpleNav = document.querySelectorAll('.simple-nav, .basic-nav');
         simpleNav.forEach(nav => {
@@ -706,7 +706,7 @@ class CognitiveAccessibilityManager {
         decorativeElements.forEach(element => {
             element.style.display = 'none';
         });
-        
+
         // Simplify colors
         const style = document.createElement('style');
         style.textContent = `
@@ -753,15 +753,15 @@ class CognitiveAccessibilityManager {
      * Handle form focus
      */
     handleFormFocus(event) {
-        if (!this.isActive) return;
-        
+        if (!this.isActive) {return;}
+
         const field = event.target;
-        
+
         // Add helpful hints
         if (field.dataset.help) {
             this.showFieldHelp(field);
         }
-        
+
         // Add validation hints
         if (field.dataset.validation) {
             this.showValidationHint(field);
@@ -772,10 +772,10 @@ class CognitiveAccessibilityManager {
      * Handle form blur
      */
     handleFormBlur(event) {
-        if (!this.isActive) return;
-        
+        if (!this.isActive) {return;}
+
         const field = event.target;
-        
+
         // Hide help
         this.hideFieldHelp(field);
     }
@@ -784,10 +784,10 @@ class CognitiveAccessibilityManager {
      * Handle form error
      */
     handleFormError(event) {
-        if (!this.isActive) return;
-        
+        if (!this.isActive) {return;}
+
         const field = event.target;
-        
+
         // Show error help
         this.showErrorHelp(field);
     }
@@ -797,13 +797,13 @@ class CognitiveAccessibilityManager {
      * @param {HTMLElement} field - Form field
      */
     showFieldHelp(field) {
-        const help = field.dataset.help;
-        if (!help) return;
-        
+        const {help} = field.dataset;
+        if (!help) {return;}
+
         const helpElement = document.createElement('div');
         helpElement.className = 'field-help';
         helpElement.textContent = help;
-        
+
         field.parentNode.appendChild(helpElement);
     }
 
@@ -823,13 +823,13 @@ class CognitiveAccessibilityManager {
      * @param {HTMLElement} field - Form field
      */
     showValidationHint(field) {
-        const validation = field.dataset.validation;
-        if (!validation) return;
-        
+        const {validation} = field.dataset;
+        if (!validation) {return;}
+
         const hintElement = document.createElement('div');
         hintElement.className = 'validation-hint';
         hintElement.textContent = validation;
-        
+
         field.parentNode.appendChild(hintElement);
     }
 
@@ -841,7 +841,7 @@ class CognitiveAccessibilityManager {
         const errorElement = document.createElement('div');
         errorElement.className = 'error-help';
         errorElement.textContent = 'Please check your input and try again.';
-        
+
         field.parentNode.appendChild(errorElement);
     }
 
@@ -854,7 +854,7 @@ class CognitiveAccessibilityManager {
         enhancements.forEach(element => {
             element.removeAttribute('data-cognitive-processed');
         });
-        
+
         // Remove cognitive styles
         const cognitiveStyles = document.querySelectorAll('style[data-cognitive]');
         cognitiveStyles.forEach(style => {

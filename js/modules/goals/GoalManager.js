@@ -9,7 +9,7 @@ class GoalManager {
         this.authManager = window.AuthManager;
         this.storageManager = window.StorageManager;
         this.progressionEngine = window.ProgressionEngine;
-        
+
         this.goalTemplates = this.initializeGoalTemplates();
         this.milestoneRewards = this.initializeMilestoneRewards();
         this.motivationalMessages = this.initializeMotivationalMessages();
@@ -25,56 +25,56 @@ class GoalManager {
         return {
             strength: {
                 squat: {
-                    specific: "Squat bodyweight for 5 reps",
-                    measurable: { unit: "lbs", current: 135, target: 180 },
+                    specific: 'Squat bodyweight for 5 reps',
+                    measurable: { unit: 'lbs', current: 135, target: 180 },
                     achievable: true,
-                    relevant: "Supports overall leg strength and athletic performance",
+                    relevant: 'Supports overall leg strength and athletic performance',
                     timeBound: { weeks: 12, deadline: null }
                 },
                 deadlift: {
-                    specific: "Deadlift 1.5x bodyweight for 3 reps",
-                    measurable: { unit: "lbs", current: 185, target: 225 },
+                    specific: 'Deadlift 1.5x bodyweight for 3 reps',
+                    measurable: { unit: 'lbs', current: 185, target: 225 },
                     achievable: true,
-                    relevant: "Builds posterior chain strength for athletic performance",
+                    relevant: 'Builds posterior chain strength for athletic performance',
                     timeBound: { weeks: 16, deadline: null }
                 },
                 bench_press: {
-                    specific: "Bench press bodyweight for 5 reps",
-                    measurable: { unit: "lbs", current: 115, target: 150 },
+                    specific: 'Bench press bodyweight for 5 reps',
+                    measurable: { unit: 'lbs', current: 115, target: 150 },
                     achievable: true,
-                    relevant: "Develops upper body pushing strength",
+                    relevant: 'Develops upper body pushing strength',
                     timeBound: { weeks: 14, deadline: null }
                 }
             },
             endurance: {
                 running: {
-                    specific: "Run a 5K in under 25 minutes",
-                    measurable: { unit: "minutes", current: 35, target: 25 },
+                    specific: 'Run a 5K in under 25 minutes',
+                    measurable: { unit: 'minutes', current: 35, target: 25 },
                     achievable: true,
-                    relevant: "Improves cardiovascular fitness and endurance",
+                    relevant: 'Improves cardiovascular fitness and endurance',
                     timeBound: { weeks: 8, deadline: null }
                 },
                 cycling: {
-                    specific: "Complete a 20-mile bike ride",
-                    measurable: { unit: "miles", current: 10, target: 20 },
+                    specific: 'Complete a 20-mile bike ride',
+                    measurable: { unit: 'miles', current: 10, target: 20 },
                     achievable: true,
-                    relevant: "Builds endurance and leg strength",
+                    relevant: 'Builds endurance and leg strength',
                     timeBound: { weeks: 6, deadline: null }
                 }
             },
             body_composition: {
                 weight_loss: {
-                    specific: "Lose 15 pounds of body fat",
-                    measurable: { unit: "lbs", current: 0, target: 15 },
+                    specific: 'Lose 15 pounds of body fat',
+                    measurable: { unit: 'lbs', current: 0, target: 15 },
                     achievable: true,
-                    relevant: "Improves health markers and athletic performance",
+                    relevant: 'Improves health markers and athletic performance',
                     timeBound: { weeks: 16, deadline: null }
                 },
                 muscle_gain: {
-                    specific: "Gain 5 pounds of lean muscle",
-                    measurable: { unit: "lbs", current: 0, target: 5 },
+                    specific: 'Gain 5 pounds of lean muscle',
+                    measurable: { unit: 'lbs', current: 0, target: 5 },
                     achievable: true,
-                    relevant: "Increases strength potential and metabolism",
+                    relevant: 'Increases strength potential and metabolism',
                     timeBound: { weeks: 20, deadline: null }
                 }
             }
@@ -87,10 +87,10 @@ class GoalManager {
      */
     initializeMilestoneRewards() {
         return {
-            25: "25% complete! 🎉",
-            50: "Halfway there! 💪",
-            75: "Almost there! 🔥",
-            100: "Goal crushed! 🏆"
+            25: '25% complete! 🎉',
+            50: 'Halfway there! 💪',
+            75: 'Almost there! 🔥',
+            100: 'Goal crushed! 🏆'
         };
     }
 
@@ -100,10 +100,10 @@ class GoalManager {
      */
     initializeMotivationalMessages() {
         return {
-            streakStart: "Every journey starts with a single step! 💪",
+            streakStart: 'Every journey starts with a single step! 💪',
             weekComplete: "Week {number} complete! You're building a solid habit 🔥",
-            comeback: "Welcome back! The best time to restart is right now ⭐",
-            milestone: "New {exercise} PR! Your {muscle} strength is definitely improving 🏆",
+            comeback: 'Welcome back! The best time to restart is right now ⭐',
+            milestone: 'New {exercise} PR! Your {muscle} strength is definitely improving 🏆',
             plateauSupport: "Progress isn't always linear. Trust the process - your body is adapting 🌱",
             goalCreated: "New goal set! You've got this! 🎯",
             progressUpdate: "Great progress on {goal}! You're {percentage}% of the way there! 📈",
@@ -125,10 +125,10 @@ class GoalManager {
 
             // Add to current goals
             this.currentGoals.push(goal);
-            
+
             // Save to storage
             this.saveGoal(goal);
-            
+
             // Log event
             this.logEvent('goal_created', {
                 goalId: goal.id,
@@ -136,16 +136,16 @@ class GoalManager {
                 title: goal.title,
                 target: goal.target_value
             });
-            
+
             // Show motivational message
             this.showMotivationalMessage('goalCreated', { goal: goal.title });
-            
+
             this.logger.audit('GOAL_CREATED', {
                 goalId: goal.id,
                 type: goal.type,
                 title: goal.title
             });
-            
+
             return { success: true, goal };
         } catch (error) {
             this.logger.error('Failed to create goal', error);
@@ -160,7 +160,7 @@ class GoalManager {
      */
     validateAndFormatGoal(goalData) {
         const requiredFields = ['type', 'title', 'current_value', 'target_value', 'unit'];
-        
+
         for (const field of requiredFields) {
             if (!goalData[field]) {
                 this.logger.error(`Missing required field: ${field}`);
@@ -197,20 +197,20 @@ class GoalManager {
     calculateMilestones(current, target) {
         const milestones = [];
         const progress = target - current;
-        
+
         const milestonePercentages = [25, 50, 75, 100];
-        
+
         milestonePercentages.forEach(percentage => {
             const milestoneValue = current + (progress * percentage / 100);
             milestones.push({
                 value: milestoneValue,
-                percentage: percentage,
+                percentage,
                 reward: this.milestoneRewards[percentage],
                 achieved: false,
                 achieved_at: null
             });
         });
-        
+
         return milestones;
     }
 
@@ -229,37 +229,37 @@ class GoalManager {
 
             const oldValue = goal.current_value;
             goal.current_value = newValue;
-            
+
             // Calculate new progress percentage
             const progress = ((newValue - (goal.target_value - (goal.target_value - goal.current_value))) / (goal.target_value - (goal.target_value - goal.current_value))) * 100;
             goal.progress_percentage = Math.min(100, Math.max(0, progress));
-            
+
             // Check for milestone achievements
             const newMilestones = this.checkMilestoneAchievements(goal);
-            
+
             // Save updated goal
             this.saveGoal(goal);
-            
+
             // Log event
             this.logEvent('goal_progress_updated', {
                 goalId: goal.id,
-                oldValue: oldValue,
-                newValue: newValue,
+                oldValue,
+                newValue,
                 progress: goal.progress_percentage,
                 milestones: newMilestones
             });
-            
+
             // Show progress message
             this.showMotivationalMessage('progressUpdate', {
                 goal: goal.title,
                 percentage: Math.round(goal.progress_percentage)
             });
-            
+
             // Check if goal is completed
             if (goal.progress_percentage >= 100) {
                 this.completeGoal(goalId);
             }
-            
+
             return { success: true, goal, milestones: newMilestones };
         } catch (error) {
             this.logger.error('Failed to update goal progress', error);
@@ -274,13 +274,13 @@ class GoalManager {
      */
     checkMilestoneAchievements(goal) {
         const newMilestones = [];
-        
+
         goal.milestones.forEach(milestone => {
             if (!milestone.achieved && goal.current_value >= milestone.value) {
                 milestone.achieved = true;
                 milestone.achieved_at = new Date().toISOString();
                 newMilestones.push(milestone);
-                
+
                 // Show milestone message
                 this.showMotivationalMessage('milestone', {
                     exercise: goal.title,
@@ -289,7 +289,7 @@ class GoalManager {
                 });
             }
         });
-        
+
         return newMilestones;
     }
 
@@ -307,25 +307,25 @@ class GoalManager {
 
             goal.completed_at = new Date().toISOString();
             goal.is_active = false;
-            
+
             // Save completed goal
             this.saveGoal(goal);
-            
+
             // Log event
             this.logEvent('goal_completed', {
                 goalId: goal.id,
                 title: goal.title,
                 completed_at: goal.completed_at
             });
-            
+
             // Show completion message
             this.showMotivationalMessage('goalCompleted', { goal: goal.title });
-            
+
             this.logger.audit('GOAL_COMPLETED', {
                 goalId: goal.id,
                 title: goal.title
             });
-            
+
             return { success: true, goal };
         } catch (error) {
             this.logger.error('Failed to complete goal', error);
@@ -356,14 +356,14 @@ class GoalManager {
     getGoalProgressSummary() {
         const activeGoals = this.getActiveGoals();
         const completedGoals = this.getCompletedGoals();
-        
+
         const totalGoals = activeGoals.length + completedGoals.length;
         const completionRate = totalGoals > 0 ? (completedGoals.length / totalGoals) * 100 : 0;
-        
-        const averageProgress = activeGoals.length > 0 
-            ? activeGoals.reduce((sum, goal) => sum + goal.progress_percentage, 0) / activeGoals.length 
+
+        const averageProgress = activeGoals.length > 0
+            ? activeGoals.reduce((sum, goal) => sum + goal.progress_percentage, 0) / activeGoals.length
             : 0;
-        
+
         return {
             totalGoals,
             activeGoals: activeGoals.length,
@@ -392,7 +392,7 @@ class GoalManager {
         if (!timeBound || !timeBound.weeks) {
             return null;
         }
-        
+
         const deadline = new Date();
         deadline.setDate(deadline.getDate() + (timeBound.weeks * 7));
         return deadline.toISOString().split('T')[0];
@@ -409,7 +409,7 @@ class GoalManager {
             endurance: 'endurance',
             body_composition: 'fitness'
         };
-        
+
         return muscleGroups[type] || 'fitness';
     }
 
@@ -429,13 +429,13 @@ class GoalManager {
         try {
             const goals = this.storageManager?.get('user_goals', []);
             const existingIndex = goals.findIndex(g => g.id === goal.id);
-            
+
             if (existingIndex >= 0) {
                 goals[existingIndex] = goal;
             } else {
                 goals.push(goal);
             }
-            
+
             this.storageManager?.set('user_goals', goals);
         } catch (error) {
             this.logger.error('Failed to save goal', error);
@@ -462,17 +462,17 @@ class GoalManager {
      */
     showMotivationalMessage(messageType, data) {
         const message = this.motivationalMessages[messageType];
-        if (!message) return;
-        
+        if (!message) {return;}
+
         const formattedMessage = this.formatMessage(message, data);
-        
+
         // Emit event for UI to display
         this.eventBus?.emit('motivational:message', {
             type: messageType,
             message: formattedMessage,
-            data: data
+            data
         });
-        
+
         this.logger.info('Motivational message:', formattedMessage);
     }
 
@@ -484,11 +484,11 @@ class GoalManager {
      */
     formatMessage(message, data) {
         let formatted = message;
-        
+
         for (const [key, value] of Object.entries(data)) {
             formatted = formatted.replace(`{${key}}`, value);
         }
-        
+
         return formatted;
     }
 
@@ -505,12 +505,12 @@ class GoalManager {
                 kind: eventType,
                 payload: data
             };
-            
+
             // Save to events table (would typically be database)
             const events = this.storageManager?.get('user_events', []);
             events.push(event);
             this.storageManager?.set('user_events', events);
-            
+
             this.logger.audit('GOAL_EVENT', { eventType, data });
         } catch (error) {
             this.logger.error('Failed to log event', error);

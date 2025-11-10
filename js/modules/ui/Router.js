@@ -13,12 +13,12 @@ class Router {
         this.lastRedirectReason = null;
         this.isInitialized = false;
         this.authManager = null;
-        
+
         this.initializeRoutes();
         this.setupEventListeners();
         // DO NOT call handleInitialRoute here - wait for init() call after auth is loaded
     }
-    
+
     /**
      * Initialize router after auth state is ready
      * @param {Object} authState - Auth state from AuthManager.getAuthState()
@@ -134,8 +134,8 @@ class Router {
      */
     resolveInitialRoute(authState) {
         const { isAuthenticated, token } = authState || {};
-        const hash = window.location.hash;
-        
+        const {hash} = window.location;
+
         // Check token expiration even on initial route
         if (isAuthenticated && this.isTokenExpired(token)) {
             this.logger.warn('Token expired on initial route resolution');
@@ -145,14 +145,14 @@ class Router {
             this.navigate('#/login', { replace: true });
             return;
         }
-        
+
         // Prevent infinite loops - if already on login, stay there
         if (hash === '#/login') {
             this.logger.info('guard: already on login route, staying');
             this.navigate('#/login', { replace: true, silent: false });
             return;
         }
-        
+
         // If authenticated, check if onboarding needed
         if (isAuthenticated) {
             const needsOnboarding = window.OnboardingManager?.needsOnboarding() ?? false;
@@ -162,14 +162,14 @@ class Router {
                 this.navigate('#/onboarding', { replace: true });
                 return;
             }
-            
+
             const targetRoute = this.lastKnownRoute || '#/dashboard' || '#/';
             this.lastRedirectReason = 'guard: authed → dashboard';
             this.logger.info(this.lastRedirectReason);
             this.navigate(targetRoute, { replace: true });
             return;
         }
-        
+
         // Not authenticated - check if this is first visit (no users in storage)
         const hasUsers = localStorage.getItem('ignitefitness_users');
         if (!hasUsers && !hash) {
@@ -186,7 +186,7 @@ class Router {
             }
             return;
         }
-        
+
         // Not authenticated - route to login
         this.lastRedirectReason = 'guard: not authed → /login';
         this.logger.info(this.lastRedirectReason);
@@ -209,14 +209,14 @@ class Router {
     navigate(route, options = {}) {
         const { replace = false, silent = false } = options;
         let navigationTimeout = null;
-        
+
         try {
             // Prevent loops: if trying to navigate to login while already on login, do nothing
             if (route === '#/login' && this.currentRoute === '#/login') {
                 this.logger.debug('Already on login route, skipping navigation');
                 return;
             }
-            
+
             if (!this.routes.has(route)) {
                 this.logger.warn('Route not found:', route);
                 // Route to safe default based on auth state
@@ -228,11 +228,11 @@ class Router {
             }
 
             const routeConfig = this.routes.get(route);
-            
+
             // Check authentication requirements with guards
             if (routeConfig.requiresAuth) {
                 const authState = this.authManager?.getAuthState() || { isAuthenticated: false };
-                
+
                 // Validate token expiration
                 if (authState.isAuthenticated && this.isTokenExpired(authState.token)) {
                     this.logger.warn('Token expired during navigation');
@@ -240,7 +240,7 @@ class Router {
                     this.handleNavigationError(route, 'token_expired');
                     return;
                 }
-                
+
                 if (!authState.isAuthenticated) {
                     // Store intended route for redirect after login
                     if (route !== '#/login') {
@@ -295,7 +295,7 @@ class Router {
             this.emitRouteChange(routeConfig);
 
             this.logger.debug('Navigated to:', route, routeConfig.title);
-            
+
         } catch (error) {
             // Clear timeout on error
             if (navigationTimeout) {
@@ -312,11 +312,11 @@ class Router {
      */
     handleNavigationError(path, error) {
         this.logger.error('Navigation error:', { path, error });
-        
+
         // Fallback navigation based on auth state
         const authState = this.authManager?.getAuthState() || { isAuthenticated: false };
         const fallbackPath = authState.isAuthenticated ? '#/dashboard' : '#/login';
-        
+
         // Prevent infinite loops
         if (path !== fallbackPath && this.currentRoute !== fallbackPath) {
             this.logger.info('Falling back to:', fallbackPath);
@@ -330,15 +330,15 @@ class Router {
      * @returns {boolean} True if expired
      */
     isTokenExpired(token) {
-        if (!token) return true;
-        
+        if (!token) {return true;}
+
         // CRITICAL FIX: Use AuthManager's loginTimestamp for consistent comparison
         // This prevents inconsistent Date comparisons causing random logouts
         if (window.AuthManager && window.AuthManager.loginTimestamp) {
             const tokenAge = Date.now() - window.AuthManager.loginTimestamp;
             return tokenAge >= 86400000; // 24 hours (86400000 milliseconds)
         }
-        
+
         // Fallback: Check token metadata if AuthManager timestamp not available
         if (typeof token === 'string') {
             try {
@@ -358,7 +358,7 @@ class Router {
             }
             return true;
         }
-        
+
         // Handle token object with created_at
         if (token && typeof token === 'object' && token.created_at) {
             const createdTimestamp = new Date(token.created_at).getTime();
@@ -367,7 +367,7 @@ class Router {
                 return tokenAge >= 86400000; // 24 hours (86400000 milliseconds)
             }
         }
-        
+
         // Unknown format - assume expired for safety
         return true;
     }
@@ -390,13 +390,13 @@ class Router {
 
             // Load component
             const component = await this.getComponent(routeConfig.component);
-            
+
             // Update page title
             document.title = `${routeConfig.title} - IgniteFitness`;
 
             // Render component
             container.innerHTML = component;
-            
+
             // Initialize component if it has an init method
             const componentElement = container.querySelector('[data-component]');
             if (componentElement && window[routeConfig.component]) {
@@ -428,7 +428,7 @@ class Router {
 
         // Load component dynamically
         const componentPath = `js/modules/views/${componentName}.js`;
-        
+
         try {
             // Dynamic import for ES6 modules
             const module = await import(componentPath);
@@ -573,7 +573,7 @@ class Router {
     getDashboardHTML() {
         // Check Simple Mode
         const simpleMode = window.SimpleModeManager?.isEnabled() ?? true;
-        
+
         // Use AdaptiveDashboard if available for better Simple Mode integration
         if (window.AdaptiveDashboard) {
             const container = document.createElement('div');
@@ -581,13 +581,13 @@ class Router {
             adaptiveDashboard.render();
             return `<div data-component="DashboardView" class="dashboard-view">${container.innerHTML}</div>`;
         }
-        
+
         // Fallback: Use DashboardHero component if available
         if (window.DashboardHero) {
             const hero = window.DashboardHero.render();
-            
+
             // In Simple Mode: hide charts, seasonal panels, detailed analytics, macro cards
-            const additionalContent = simpleMode 
+            const additionalContent = simpleMode
                 ? '' // Simple Mode: no additional content
                 : `
                     <div class="dashboard-content">
@@ -597,7 +597,7 @@ class Router {
                         ${this.renderMacroCard()}
                     </div>
                 `;
-            
+
             return `
                 <div data-component="DashboardView" class="dashboard-view">
                     ${hero.outerHTML}
@@ -605,7 +605,7 @@ class Router {
                 </div>
             `;
         }
-        
+
         // Fallback
         const fallbackActions = simpleMode
             ? `
@@ -636,7 +636,7 @@ class Router {
                     <div class="action-text">Sport Training</div>
                 </button>
             `;
-        
+
         return `
             <div data-component="DashboardView" class="dashboard-view">
                 <div class="dashboard-header">
@@ -651,31 +651,31 @@ class Router {
             </div>
         `;
     }
-    
+
     /**
      * Render charts section (hidden in Simple Mode)
      */
     renderChartsSection() {
-        if (!window.Trends) return '';
+        if (!window.Trends) {return '';}
         return '<div id="charts-section" class="dashboard-charts"></div>';
     }
-    
+
     /**
      * Render seasonal panel (hidden in Simple Mode)
      */
     renderSeasonalPanel() {
-        if (!window.PeriodizationView) return '';
+        if (!window.PeriodizationView) {return '';}
         return '<div id="seasonal-panel"></div>';
     }
-    
+
     /**
      * Render macro card (hidden in Simple Mode)
      */
     renderMacroCard() {
-        if (!window.NutritionCard) return '';
+        if (!window.NutritionCard) {return '';}
         return '<div id="macro-card"></div>';
     }
-    
+
     getTrainingHTML() {
         return `
             <div data-component="TrainingView" class="training-view">
@@ -731,7 +731,7 @@ class Router {
     getProfileHTML() {
         // Check Simple Mode
         const simpleMode = window.SimpleModeManager?.isEnabled() ?? true;
-        
+
         return `
             <div data-component="ProfileView" class="profile-view">
                 <div class="view-header">
@@ -781,7 +781,7 @@ class Router {
         if (window.OnboardingManager) {
             return window.OnboardingManager.render();
         }
-        
+
         return `
             <div data-component="OnboardingView" class="onboarding-view">
                 <div class="onboarding-content">
@@ -798,7 +798,7 @@ class Router {
             loginForm.style.display = 'block';
             loginForm.classList.remove('hidden');
         }
-        
+
         // Also show login form content in main content area
         return `
             <div data-component="LoginView" class="login-view auth-view">

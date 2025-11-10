@@ -11,7 +11,7 @@ class ApiClient {
         this.logger = window.SafeLogger || console;
         this.eventBus = window.EventBus;
         this.csrfToken = null;
-        
+
         this.initializeCSRF();
     }
 
@@ -45,23 +45,23 @@ class ApiClient {
         for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
             try {
                 const response = await this.makeRequest(method, endpoint, data, options);
-                
+
                 // Log performance
                 const duration = Date.now() - startTime;
-                this.logger.performance('API_REQUEST', duration, { 
-                    method, 
-                    endpoint, 
+                this.logger.performance('API_REQUEST', duration, {
+                    method,
+                    endpoint,
                     attempt,
-                    status: response.status 
+                    status: response.status
                 });
 
                 return response;
             } catch (error) {
                 lastError = error;
-                this.logger.warn(`API request attempt ${attempt} failed`, { 
-                    method, 
-                    endpoint, 
-                    error: error.message 
+                this.logger.warn(`API request attempt ${attempt} failed`, {
+                    method,
+                    endpoint,
+                    error: error.message
                 });
 
                 // Do not retry on certain errors
@@ -77,11 +77,11 @@ class ApiClient {
         }
 
         // All retries failed
-        this.logger.error('API request failed after all retries', { 
-            method, 
-            endpoint, 
+        this.logger.error('API request failed after all retries', {
+            method,
+            endpoint,
             attempts: this.maxRetries,
-            error: lastError?.message 
+            error: lastError?.message
         });
 
         throw lastError;
@@ -155,11 +155,11 @@ class ApiClient {
      */
     getAuthHeaders() {
         const headers = {};
-        
+
         // Add JWT token if available
         const token = localStorage.getItem('ignitefitness_jwt_token');
         if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
+            headers.Authorization = `Bearer ${token}`;
         }
 
         // Add user ID if available
@@ -300,7 +300,7 @@ class ApiClient {
                 try {
                     const endpoint = this.getSyncEndpoint(item.type);
                     const response = await this.post(endpoint, item.data);
-                    
+
                     if (response.success) {
                         await window.StorageManager?.removeFromSyncQueue(item.id);
                         synced++;
@@ -331,7 +331,7 @@ class ApiClient {
             'session': '/sync-session',
             'user_data': '/sync-user-data'
         };
-        
+
         return endpoints[type] || '/sync-generic';
     }
 
@@ -341,14 +341,14 @@ class ApiClient {
      */
     handleAuthError(error) {
         this.logger.security('AUTH_ERROR', { error: error.message });
-        
+
         // Clear stored tokens
         localStorage.removeItem('ignitefitness_jwt_token');
         localStorage.removeItem('ignitefitness_current_user');
-        
+
         // Emit auth error event
         this.eventBus?.emit('auth:error', { error: error.message });
-        
+
         // Redirect to login if needed
         if (window.AuthManager?.isUserLoggedIn()) {
             window.AuthManager.logout();

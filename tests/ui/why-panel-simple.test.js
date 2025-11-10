@@ -79,7 +79,7 @@ describe('WhyPanel Component - Basic Tests', () => {
             };
 
             const result = whyPanel.render(plan);
-            
+
             expect(result).toContain('why-panel');
             expect(result).toContain('Why this plan?');
             expect(result).toContain('Reduced leg volume due to soccer game tomorrow');
@@ -91,10 +91,10 @@ describe('WhyPanel Component - Basic Tests', () => {
     describe('Toggle Functionality', () => {
         it('should toggle expansion state', () => {
             expect(whyPanel.isExpanded).toBe(false);
-            
+
             whyPanel.toggle();
             expect(whyPanel.isExpanded).toBe(true);
-            
+
             whyPanel.toggle();
             expect(whyPanel.isExpanded).toBe(false);
         });
@@ -116,7 +116,7 @@ describe('WhyPanel Component - Basic Tests', () => {
         it('should include proper CSS classes', () => {
             const plan = { why: ['Test rationale'] };
             const result = whyPanel.render(plan);
-            
+
             expect(result).toContain('why-panel');
             expect(result).toContain('why-panel-toggle');
             expect(result).toContain('why-panel-content');
@@ -129,7 +129,7 @@ describe('WhyPanel Component - Basic Tests', () => {
                 why: ['First reason', 'Second reason', 'Third reason']
             };
             const result = whyPanel.render(plan);
-            
+
             expect(result).toContain('1.');
             expect(result).toContain('2.');
             expect(result).toContain('3.');

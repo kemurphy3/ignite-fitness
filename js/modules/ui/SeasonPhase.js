@@ -9,7 +9,7 @@ class SeasonPhase {
         this.phaseStartDate = null;
         this.phaseEndDate = null;
         this.phaseHistory = [];
-        
+
         this.initializePhase();
     }
 
@@ -19,7 +19,7 @@ class SeasonPhase {
     initializePhase() {
         // Load from localStorage or set default
         const saved = this.loadFromStorage();
-        
+
         if (saved && saved.currentPhase) {
             this.currentPhase = saved.currentPhase;
             this.phaseStartDate = saved.phaseStartDate;
@@ -149,7 +149,7 @@ class SeasonPhase {
      * Check if current phase has expired
      */
     checkPhaseExpiration() {
-        if (!this.phaseEndDate) return;
+        if (!this.phaseEndDate) {return;}
 
         if (new Date() > this.phaseEndDate) {
             // Phase expired, suggest next phase
@@ -197,8 +197,8 @@ class SeasonPhase {
             return '';
         }
 
-        const config = this.currentPhase.config;
-        
+        const {config} = this.currentPhase;
+
         return `
             <div class="season-phase-pill" style="--phase-color: ${config.color}">
                 <span class="phase-emoji">${config.emoji}</span>
@@ -287,7 +287,7 @@ class SeasonPhase {
 
         const total = this.phaseEndDate - this.phaseStartDate;
         const elapsed = Date.now() - this.phaseStartDate.getTime();
-        
+
         return Math.min(100, Math.max(0, (elapsed / total) * 100));
     }
 

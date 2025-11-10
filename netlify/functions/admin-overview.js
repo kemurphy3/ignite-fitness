@@ -1,12 +1,12 @@
 // GET /api/admin/overview - Global platform metrics with privacy protection
 const { neon } = require('@neondatabase/serverless');
 const crypto = require('crypto');
-const { 
-  verifyAdmin, 
-  auditLog, 
-  errorResponse, 
-  withTimeout, 
-  successResponse 
+const {
+  verifyAdmin,
+  auditLog,
+  errorResponse,
+  withTimeout,
+  successResponse
 } = require('./utils/admin-auth');
 
 const { getNeonClient } = require('./utils/connection-pool');
@@ -15,18 +15,18 @@ const sql = getNeonClient();
 exports.handler = async (event) => {
   const startTime = Date.now();
   const requestId = crypto.randomUUID();
-  
+
   try {
     // Set query timeout
     await sql`SET statement_timeout = '5s'`;
-    
+
     const token = event.headers.authorization?.split(' ')[1];
     if (!token) {
       return errorResponse(401, 'MISSING_TOKEN', 'Authorization header required', requestId);
     }
-    
+
     const { adminId } = await verifyAdmin(token, requestId);
-    
+
     // Get metrics with privacy thresholds
     const metrics = await withTimeout(async () => {
       return await sql`
@@ -66,16 +66,16 @@ exports.handler = async (event) => {
         CROSS JOIN session_metrics s
       `;
     });
-    
+
     // Get data freshness
     const freshness = await sql`
       SELECT view_name, last_refresh, row_version
       FROM mv_refresh_log
       WHERE view_name = 'mv_sessions_daily'
     `;
-    
+
     await auditLog(adminId, '/admin/overview', 'GET', {}, 200, Date.now() - startTime, requestId);
-    
+
     return successResponse(
       {
         ...metrics[0],
@@ -88,12 +88,12 @@ exports.handler = async (event) => {
       },
       requestId
     );
-    
+
   } catch (error) {
-    await auditLog(null, '/admin/overview', 'GET', {}, 
-      error.message.includes('Admin') ? 403 : 500, 
+    await auditLog(null, '/admin/overview', 'GET', {},
+      error.message.includes('Admin') ? 403 : 500,
       Date.now() - startTime, requestId);
-    
+
     if (error.message.includes('Authentication failed')) {
       return errorResponse(401, 'UNAUTHORIZED', 'Invalid or expired token', requestId);
     }

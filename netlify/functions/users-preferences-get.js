@@ -1,10 +1,10 @@
 // GET /users/preferences - Get user preferences with atomic creation
 const { neon } = require('@neondatabase/serverless');
 const jwt = require('jsonwebtoken');
-const { 
-  errorResponse, 
-  successResponse, 
-  sanitizeForLog 
+const {
+  errorResponse,
+  successResponse,
+  sanitizeForLog
 } = require('./utils/user-preferences');
 
 const { getNeonClient } = require('./utils/connection-pool');
@@ -33,7 +33,7 @@ exports.handler = async (event) => {
 
     const token = authHeader.substring(7);
     let externalId;
-    
+
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       externalId = decoded.sub;

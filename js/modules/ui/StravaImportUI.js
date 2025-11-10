@@ -14,7 +14,7 @@ class StravaImportUI {
      * @param {HTMLElement} container - Container element
      */
     render(container) {
-        if (!container) return;
+        if (!container) {return;}
 
         const lastImportTime = this.stravaProcessor.getLastImportTime();
         const hasToken = this.hasStravaToken();
@@ -33,7 +33,7 @@ class StravaImportUI {
      * @returns {string} HTML markup
      */
     generateHTML(lastImportTime, hasToken) {
-        const lastImportText = lastImportTime 
+        const lastImportText = lastImportTime
             ? `Last import: ${this.formatImportTime(lastImportTime)}`
             : 'No imports yet';
 
@@ -124,7 +124,7 @@ class StravaImportUI {
      */
     renderRecentActivities() {
         const activities = this.stravaProcessor.getRecentActivities();
-        
+
         if (activities.length === 0) {
             return `
                 <div class="no-activities">
@@ -180,7 +180,7 @@ class StravaImportUI {
      * @param {File} file - Selected file
      */
     async handleFileSelect(file) {
-        if (!file) return;
+        if (!file) {return;}
 
         try {
             // Show loading state

@@ -94,7 +94,7 @@ class ComponentLibrary {
 
         const footerHTML = actions ? `
             <div class="card-footer">
-                ${actions.map(action => 
+                ${actions.map(action =>
                     `<button class="btn btn-${action.variant || 'secondary'}" onclick="${action.onClick}">
                         ${action.icon || ''} ${action.text}
                     </button>`
@@ -137,7 +137,7 @@ class ComponentLibrary {
 
         if (label) {
             const labelEl = document.createElement('label');
-            labelEl.className = 'label' + (required ? ' label-required' : '');
+            labelEl.className = `label${ required ? ' label-required' : ''}`;
             labelEl.textContent = label;
             labelEl.setAttribute('for', `input-${Date.now()}`);
             container.appendChild(labelEl);
@@ -276,7 +276,7 @@ class ComponentLibrary {
             </div>
             <div class="modal-body">${content}</div>
             <div class="modal-footer">
-                ${actions.map((action, idx) => 
+                ${actions.map((action, idx) =>
                     `<button class="btn btn-${action.variant || 'primary'}" onclick="modalInstance.executeAction(${idx})">
                         ${action.text}
                     </button>`
@@ -290,7 +290,7 @@ class ComponentLibrary {
         const modalInstance = {
             close: () => {
                 document.body.removeChild(backdrop);
-                if (onClose) onClose();
+                if (onClose) {onClose();}
             },
             executeAction: (index) => {
                 if (actions[index] && actions[index].onClick) {

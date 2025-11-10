@@ -19,12 +19,12 @@ describe('LoadGuardrails Integration', () => {
         // These should be available from the main app initialization
         guardrails = window.LoadGuardrails;
         loadCalculator = window.LoadCalculator;
-        
+
         // Skip tests if dependencies not available
         if (!guardrails || !loadCalculator) {
             console.warn('LoadGuardrails or LoadCalculator not available, skipping integration tests');
         }
-        
+
         // Reset localStorage
         if (typeof localStorage !== 'undefined') {
             localStorage.clear();
@@ -130,7 +130,7 @@ describe('LoadGuardrails Integration', () => {
             const stored = localStorage.getItem(`ignite_upcoming_sessions_${userId}`);
             const modifiedSessions = JSON.parse(stored);
 
-            const modifiedHIIT = modifiedSessions.filter(s => 
+            const modifiedHIIT = modifiedSessions.filter(s =>
                 s.modifications && s.modifications.some(m => m.reason === 'guardrail_ramp_rate')
             );
 

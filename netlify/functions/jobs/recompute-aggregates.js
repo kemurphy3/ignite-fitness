@@ -128,7 +128,7 @@ async function computeDailyAggregates(userId, date, supabase) {
             .from('daily_aggregates')
             .upsert({
                 user_id: userId,
-                date: date,
+                date,
                 trimp: aggregates.trimp,
                 tss: aggregates.tss,
                 load_score: aggregates.loadScore,
@@ -175,7 +175,7 @@ async function computeDailyAggregates(userId, date, supabase) {
 function estimateZoneMinutes(activity) {
     // Simplified zone estimation - would use actual HR streams in production
     const durationMinutes = (activity.duration_s || 0) / 60;
-    
+
     // Assume 30% in Z2, 40% in Z3, 20% in Z4, 10% in Z5
     return {
         z1: durationMinutes * 0,
@@ -234,7 +234,7 @@ async function computeRollingMetrics(userId, date, supabase) {
 
         // Calculate rolling metrics
         const dailyLoads = (aggregates || []).map(a => a.trimp || 0);
-        
+
         const atl7 = calculateATL(dailyLoads.slice(-7)); // Last 7 days
         const ctl28 = calculateCTL(dailyLoads.slice(-28)); // Last 28 days
         const monotony = calculateMonotony(dailyLoads.slice(-7));
@@ -243,7 +243,7 @@ async function computeRollingMetrics(userId, date, supabase) {
         // Update last day's aggregates with rolling metrics
         if (aggregates && aggregates.length > 0) {
             const lastAggregate = aggregates[aggregates.length - 1];
-            
+
             await supabase
                 .from('daily_aggregates')
                 .update({
@@ -270,16 +270,16 @@ async function computeRollingMetrics(userId, date, supabase) {
  * @returns {number} ATL score
  */
 function calculateATL(dailyLoads) {
-    if (dailyLoads.length === 0) return 0;
-    
+    if (dailyLoads.length === 0) {return 0;}
+
     const timeConstant = 7;
     let atl = 0;
-    
+
     for (let i = 0; i < dailyLoads.length; i++) {
         const alpha = 1 - Math.exp(-1 / timeConstant);
         atl = alpha * dailyLoads[i] + (1 - alpha) * atl;
     }
-    
+
     return atl;
 }
 
@@ -289,16 +289,16 @@ function calculateATL(dailyLoads) {
  * @returns {number} CTL score
  */
 function calculateCTL(dailyLoads) {
-    if (dailyLoads.length === 0) return 0;
-    
+    if (dailyLoads.length === 0) {return 0;}
+
     const timeConstant = 28;
     let ctl = 0;
-    
+
     for (let i = 0; i < dailyLoads.length; i++) {
         const alpha = 1 - Math.exp(-1 / timeConstant);
         ctl = alpha * dailyLoads[i] + (1 - alpha) * ctl;
     }
-    
+
     return ctl;
 }
 
@@ -308,12 +308,12 @@ function calculateCTL(dailyLoads) {
  * @returns {number} Monotony score
  */
 function calculateMonotony(dailyLoads) {
-    if (dailyLoads.length === 0) return 1.0;
-    
+    if (dailyLoads.length === 0) {return 1.0;}
+
     const mean = dailyLoads.reduce((sum, load) => sum + load, 0) / dailyLoads.length;
     const variance = dailyLoads.reduce((sum, load) => sum + Math.pow(load - mean, 2), 0) / dailyLoads.length;
     const stdDev = Math.sqrt(variance);
-    
+
     return mean / (stdDev + 1);
 }
 
@@ -324,8 +324,8 @@ function calculateMonotony(dailyLoads) {
  * @returns {number} Strain score
  */
 function calculateStrain(monotony, dailyLoads) {
-    if (dailyLoads.length === 0) return 0;
-    
+    if (dailyLoads.length === 0) {return 0;}
+
     const weeklyLoad = dailyLoads.reduce((sum, load) => sum + load, 0);
     return weeklyLoad * monotony;
 }

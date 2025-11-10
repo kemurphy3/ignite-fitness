@@ -13,14 +13,14 @@ class MemoryMonitor {
             enableDashboard: options.enableDashboard !== false,
             ...options
         };
-        
+
         this.logger = window.SafeLogger || console;
         this.memoryHistory = [];
         this.leakDetector = new LeakDetector();
         this.performanceObserver = null;
         this.isMonitoring = false;
         this.checkTimer = null;
-        
+
         this.stats = {
             currentMemory: 0,
             peakMemory: 0,
@@ -30,10 +30,10 @@ class MemoryMonitor {
             gcCount: 0,
             lastGC: 0
         };
-        
+
         this.init();
     }
-    
+
     /**
      * Initialize memory monitor
      */
@@ -42,21 +42,21 @@ class MemoryMonitor {
         if (!this.isMemoryAPIAvailable()) {
             this.logger.warn('Memory API not available, using fallback monitoring');
         }
-        
+
         // Set up performance observer for memory events
         this.setupPerformanceObserver();
-        
+
         // Start monitoring
         this.startMonitoring();
-        
+
         // Set up dashboard if enabled
         if (this.options.enableDashboard) {
             this.setupDashboard();
         }
-        
+
         this.logger.info('MemoryMonitor initialized');
     }
-    
+
     /**
      * Check if memory API is available
      * @returns {boolean} API availability
@@ -64,7 +64,7 @@ class MemoryMonitor {
     isMemoryAPIAvailable() {
         return 'memory' in performance && 'usedJSHeapSize' in performance.memory;
     }
-    
+
     /**
      * Setup performance observer for memory events
      */
@@ -72,7 +72,7 @@ class MemoryMonitor {
         if (!('PerformanceObserver' in window)) {
             return;
         }
-        
+
         try {
             this.performanceObserver = new PerformanceObserver((list) => {
                 list.getEntries().forEach(entry => {
@@ -81,13 +81,13 @@ class MemoryMonitor {
                     }
                 });
             });
-            
+
             this.performanceObserver.observe({ entryTypes: ['measure'] });
         } catch (error) {
             this.logger.warn('Failed to setup performance observer:', error);
         }
     }
-    
+
     /**
      * Start memory monitoring
      */
@@ -95,15 +95,15 @@ class MemoryMonitor {
         if (this.isMonitoring) {
             return;
         }
-        
+
         this.isMonitoring = true;
         this.checkTimer = setInterval(() => {
             this.checkMemory();
         }, this.options.checkInterval);
-        
+
         this.logger.info('Memory monitoring started');
     }
-    
+
     /**
      * Stop memory monitoring
      */
@@ -111,36 +111,36 @@ class MemoryMonitor {
         if (!this.isMonitoring) {
             return;
         }
-        
+
         this.isMonitoring = false;
-        
+
         if (this.checkTimer) {
             clearInterval(this.checkTimer);
             this.checkTimer = null;
         }
-        
+
         if (this.performanceObserver) {
             this.performanceObserver.disconnect();
             this.performanceObserver = null;
         }
-        
+
         this.logger.info('Memory monitoring stopped');
     }
-    
+
     /**
      * Check current memory usage
      */
     checkMemory() {
         const memoryInfo = this.getMemoryInfo();
-        
+
         if (!memoryInfo) {
             return;
         }
-        
+
         // Update stats
         this.stats.currentMemory = memoryInfo.usedJSHeapSize;
         this.stats.peakMemory = Math.max(this.stats.peakMemory, memoryInfo.totalJSHeapSize);
-        
+
         // Add to history
         this.memoryHistory.push({
             timestamp: Date.now(),
@@ -148,21 +148,21 @@ class MemoryMonitor {
             total: memoryInfo.totalJSHeapSize,
             limit: memoryInfo.jsHeapSizeLimit
         });
-        
+
         // Trim history
         if (this.memoryHistory.length > this.options.maxHistory) {
             this.memoryHistory.shift();
         }
-        
+
         // Calculate average
         this.calculateAverageMemory();
-        
+
         // Check for leaks
         this.checkForLeaks();
-        
+
         // Check for excessive growth
         this.checkForGrowth();
-        
+
         // Log memory info
         this.logger.debug('Memory check:', {
             used: this.formatBytes(memoryInfo.usedJSHeapSize),
@@ -170,7 +170,7 @@ class MemoryMonitor {
             limit: this.formatBytes(memoryInfo.jsHeapSizeLimit)
         });
     }
-    
+
     /**
      * Get memory information
      * @returns {Object|null} Memory info
@@ -179,11 +179,11 @@ class MemoryMonitor {
         if (this.isMemoryAPIAvailable()) {
             return performance.memory;
         }
-        
+
         // Fallback: estimate memory usage
         return this.estimateMemoryUsage();
     }
-    
+
     /**
      * Estimate memory usage (fallback)
      * @returns {Object} Estimated memory info
@@ -194,14 +194,14 @@ class MemoryMonitor {
         const estimatedUsed = domElements * 1000; // 1KB per element estimate
         const estimatedTotal = estimatedUsed * 2;
         const estimatedLimit = 100 * 1024 * 1024; // 100MB estimate
-        
+
         return {
             usedJSHeapSize: estimatedUsed,
             totalJSHeapSize: estimatedTotal,
             jsHeapSizeLimit: estimatedLimit
         };
     }
-    
+
     /**
      * Calculate average memory usage
      */
@@ -209,11 +209,11 @@ class MemoryMonitor {
         if (this.memoryHistory.length === 0) {
             return;
         }
-        
+
         const sum = this.memoryHistory.reduce((acc, entry) => acc + entry.used, 0);
         this.stats.averageMemory = sum / this.memoryHistory.length;
     }
-    
+
     /**
      * Check for memory leaks
      */
@@ -221,24 +221,24 @@ class MemoryMonitor {
         if (this.memoryHistory.length < 10) {
             return;
         }
-        
+
         const recent = this.memoryHistory.slice(-10);
         const older = this.memoryHistory.slice(-20, -10);
-        
+
         if (older.length === 0) {
             return;
         }
-        
+
         const recentAvg = recent.reduce((acc, entry) => acc + entry.used, 0) / recent.length;
         const olderAvg = older.reduce((acc, entry) => acc + entry.used, 0) / older.length;
-        
+
         const growth = recentAvg - olderAvg;
-        
+
         if (growth > this.options.leakThreshold) {
             this.handleLeakDetected(growth);
         }
     }
-    
+
     /**
      * Check for excessive memory growth
      */
@@ -246,47 +246,47 @@ class MemoryMonitor {
         if (this.memoryHistory.length < 2) {
             return;
         }
-        
+
         const first = this.memoryHistory[0];
         const last = this.memoryHistory[this.memoryHistory.length - 1];
         const timeDiff = (last.timestamp - first.timestamp) / (1000 * 60 * 60); // hours
-        
+
         if (timeDiff > 0) {
             const growth = last.used - first.used;
             const growthRate = growth / timeDiff;
-            
+
             this.stats.memoryGrowth = growthRate;
-            
+
             if (growthRate > this.options.growthThreshold) {
                 this.handleExcessiveGrowth(growthRate);
             }
         }
     }
-    
+
     /**
      * Handle leak detection
      * @param {number} growth - Memory growth amount
      */
     handleLeakDetected(growth) {
         this.stats.leakCount++;
-        
+
         const leakInfo = {
             timestamp: Date.now(),
-            growth: growth,
+            growth,
             currentMemory: this.stats.currentMemory,
             growthRate: this.stats.memoryGrowth
         };
-        
+
         this.logger.warn('Memory leak detected:', leakInfo);
-        
+
         if (this.options.enableAlerts) {
             this.showLeakAlert(leakInfo);
         }
-        
+
         // Trigger garbage collection if available
         this.triggerGC();
     }
-    
+
     /**
      * Handle excessive memory growth
      * @param {number} growthRate - Growth rate in bytes/hour
@@ -294,18 +294,18 @@ class MemoryMonitor {
     handleExcessiveGrowth(growthRate) {
         const growthInfo = {
             timestamp: Date.now(),
-            growthRate: growthRate,
+            growthRate,
             currentMemory: this.stats.currentMemory,
             threshold: this.options.growthThreshold
         };
-        
+
         this.logger.warn('Excessive memory growth detected:', growthInfo);
-        
+
         if (this.options.enableAlerts) {
             this.showGrowthAlert(growthInfo);
         }
     }
-    
+
     /**
      * Show leak alert
      * @param {Object} leakInfo - Leak information
@@ -325,7 +325,7 @@ class MemoryMonitor {
             max-width: 300px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         `;
-        
+
         alert.innerHTML = `
             <div style="font-weight: 600; margin-bottom: 8px;">Memory Leak Detected</div>
             <div style="font-size: 14px;">
@@ -342,9 +342,9 @@ class MemoryMonitor {
                 cursor: pointer;
             ">Dismiss</button>
         `;
-        
+
         document.body.appendChild(alert);
-        
+
         // Auto-remove after 10 seconds
         setTimeout(() => {
             if (alert.parentElement) {
@@ -352,7 +352,7 @@ class MemoryMonitor {
             }
         }, 10000);
     }
-    
+
     /**
      * Show growth alert
      * @param {Object} growthInfo - Growth information
@@ -372,7 +372,7 @@ class MemoryMonitor {
             max-width: 300px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         `;
-        
+
         alert.innerHTML = `
             <div style="font-weight: 600; margin-bottom: 8px;">Excessive Memory Growth</div>
             <div style="font-size: 14px;">
@@ -389,9 +389,9 @@ class MemoryMonitor {
                 cursor: pointer;
             ">Dismiss</button>
         `;
-        
+
         document.body.appendChild(alert);
-        
+
         // Auto-remove after 10 seconds
         setTimeout(() => {
             if (alert.parentElement) {
@@ -399,7 +399,7 @@ class MemoryMonitor {
             }
         }, 10000);
     }
-    
+
     /**
      * Trigger garbage collection
      */
@@ -411,7 +411,7 @@ class MemoryMonitor {
             this.logger.debug('Garbage collection triggered');
         }
     }
-    
+
     /**
      * Setup memory dashboard
      */
@@ -433,9 +433,9 @@ class MemoryMonitor {
             min-width: 200px;
             display: none;
         `;
-        
+
         document.body.appendChild(dashboard);
-        
+
         // Toggle dashboard with Ctrl+Shift+M
         document.addEventListener('keydown', (event) => {
             if (event.ctrlKey && event.shiftKey && event.key === 'M') {
@@ -444,7 +444,7 @@ class MemoryMonitor {
             }
         });
     }
-    
+
     /**
      * Toggle memory dashboard
      */
@@ -453,13 +453,13 @@ class MemoryMonitor {
         if (dashboard) {
             const isVisible = dashboard.style.display !== 'none';
             dashboard.style.display = isVisible ? 'none' : 'block';
-            
+
             if (!isVisible) {
                 this.updateDashboard();
             }
         }
     }
-    
+
     /**
      * Update memory dashboard
      */
@@ -468,9 +468,9 @@ class MemoryMonitor {
         if (!dashboard) {
             return;
         }
-        
+
         const memoryInfo = this.getMemoryInfo();
-        
+
         dashboard.innerHTML = `
             <div style="font-weight: 600; margin-bottom: 8px;">Memory Monitor</div>
             <div>Used: ${this.formatBytes(this.stats.currentMemory)}</div>
@@ -490,7 +490,7 @@ class MemoryMonitor {
             ">Close</button>
         `;
     }
-    
+
     /**
      * Handle memory event from performance observer
      * @param {PerformanceEntry} entry - Performance entry
@@ -498,22 +498,22 @@ class MemoryMonitor {
     handleMemoryEvent(entry) {
         this.logger.debug('Memory event:', entry);
     }
-    
+
     /**
      * Format bytes to human readable string
      * @param {number} bytes - Bytes to format
      * @returns {string} Formatted string
      */
     formatBytes(bytes) {
-        if (bytes === 0) return '0 B';
-        
+        if (bytes === 0) {return '0 B';}
+
         const k = 1024;
         const sizes = ['B', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
-        
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+
+        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2)) } ${ sizes[i]}`;
     }
-    
+
     /**
      * Get memory statistics
      * @returns {Object} Memory statistics
@@ -525,7 +525,7 @@ class MemoryMonitor {
             isMonitoring: this.isMonitoring
         };
     }
-    
+
     /**
      * Get memory history
      * @returns {Array} Memory history
@@ -533,7 +533,7 @@ class MemoryMonitor {
     getHistory() {
         return [...this.memoryHistory];
     }
-    
+
     /**
      * Clear memory history
      */
@@ -541,18 +541,18 @@ class MemoryMonitor {
         this.memoryHistory.length = 0;
         this.logger.info('Memory history cleared');
     }
-    
+
     /**
      * Destroy memory monitor
      */
     destroy() {
         this.stopMonitoring();
-        
+
         const dashboard = document.getElementById('memory-dashboard');
         if (dashboard) {
             dashboard.remove();
         }
-        
+
         this.logger.info('MemoryMonitor destroyed');
     }
 }
@@ -566,12 +566,12 @@ class LeakDetector {
         this.leakThreshold = 1000; // objects
         this.checkInterval = 30000; // 30 seconds
         this.checkTimer = null;
-        
+
         this.logger = window.SafeLogger || console;
-        
+
         this.startDetection();
     }
-    
+
     /**
      * Start leak detection
      */
@@ -580,7 +580,7 @@ class LeakDetector {
             this.checkForLeaks();
         }, this.checkInterval);
     }
-    
+
     /**
      * Add object to leak detection
      * @param {string} name - Object name
@@ -591,7 +591,7 @@ class LeakDetector {
             this.weakRefs.set(name, new WeakRef(obj));
         }
     }
-    
+
     /**
      * Check for leaks
      */
@@ -599,10 +599,10 @@ class LeakDetector {
         if (typeof WeakRef === 'undefined') {
             return;
         }
-        
+
         let aliveCount = 0;
         const deadRefs = [];
-        
+
         this.weakRefs.forEach((weakRef, name) => {
             if (weakRef.deref()) {
                 aliveCount++;
@@ -610,18 +610,18 @@ class LeakDetector {
                 deadRefs.push(name);
             }
         });
-        
+
         // Remove dead references
         deadRefs.forEach(name => {
             this.weakRefs.delete(name);
         });
-        
+
         // Check for potential leaks
         if (aliveCount > this.leakThreshold) {
             this.logger.warn(`Potential leak detected: ${aliveCount} objects alive`);
         }
     }
-    
+
     /**
      * Stop leak detection
      */

@@ -135,7 +135,7 @@ if ('PerformanceObserver' in window) {
     const observer = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
             console.log('Web Vital:', entry.name, entry.value);
-            
+
             // Send to analytics
             if (window.analytics) {
                 window.analytics.track(entry.name, {

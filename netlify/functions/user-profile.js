@@ -1,9 +1,9 @@
-const { 
-  getDB, 
-  authenticate, 
-  checkRateLimit, 
-  errorResponse, 
-  successResponse, 
+const {
+  getDB,
+  authenticate,
+  checkRateLimit,
+  errorResponse,
+  successResponse,
   preflightResponse,
   validateAge,
   validateWeight,
@@ -62,7 +62,7 @@ exports.handler = async (event) => {
     } else if (event.httpMethod === 'POST') {
       // POST create/update user profile
       const body = JSON.parse(event.body || '{}');
-      
+
       // Validate input data
       const validatedData = {
         age: validateAge(body.age),
@@ -140,19 +140,19 @@ exports.handler = async (event) => {
 
   } catch (error) {
     console.error('User Profile API Error:', error);
-    
+
     // Handle validation errors
-    if (error.message.includes('must be between') || 
-        error.message.includes('must be one of') || 
-        error.message.includes('Maximum') || 
+    if (error.message.includes('must be between') ||
+        error.message.includes('must be one of') ||
+        error.message.includes('Maximum') ||
         error.message.includes('must be less than')) {
-      return errorResponse(400, 'VALIDATION_ERROR', error.message, { 
-        field: error.message.split(' ')[0].toLowerCase() 
+      return errorResponse(400, 'VALIDATION_ERROR', error.message, {
+        field: error.message.split(' ')[0].toLowerCase()
       });
     }
 
     // Handle database connection errors
-    if (error.message.includes('DATABASE_URL not configured') || 
+    if (error.message.includes('DATABASE_URL not configured') ||
         error.message.includes('connection') ||
         error.message.includes('timeout')) {
       return errorResponse(503, 'SERVICE_UNAVAILABLE', 'Database service unavailable');

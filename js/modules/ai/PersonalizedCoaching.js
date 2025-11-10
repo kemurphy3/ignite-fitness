@@ -12,7 +12,7 @@ class PersonalizedCoaching {
         this.dailyCheckIn = window.DailyCheckIn;
         this.dataValidator = window.AIDataValidator;
         this.habitTracker = window.HabitTracker;
-        
+
         this.coachingTemplates = this.initializeCoachingTemplates();
         this.contextCache = null;
         this.personalityTraits = this.initializePersonalityTraits();
@@ -20,7 +20,7 @@ class PersonalizedCoaching {
         this.behavioralTriggers = this.initializeBehavioralTriggers();
         this.lastTriggeredStreak = 0; // Track last triggered milestone to avoid repeats
         this.lastPlateauDetection = null; // Track plateau states
-        
+
         // Listen for workout completion events
         this.setupEventListeners();
     }
@@ -34,12 +34,12 @@ class PersonalizedCoaching {
             this.eventBus.on('workout:completed', (data) => {
                 this.handleWorkoutCompletion(data);
             });
-            
+
             // Listen for progression events
             this.eventBus.on('progression:updated', (data) => {
                 this.handleProgressionUpdate(data);
             });
-            
+
             // Listen for streak milestones
             this.eventBus.on('habit:streakMilestone', (data) => {
                 this.handleStreakMilestone(data);
@@ -58,7 +58,7 @@ class PersonalizedCoaching {
             consistencyThreshold: 0.8, // 80% of planned workouts completed
             celebrationMessages: {
                 streak_7: "🎉 7 days strong! You're building a real habit. Keep this momentum going!",
-                streak_14: "🔥 2 weeks of consistency! Your body is adapting to the routine. This is where change happens!",
+                streak_14: '🔥 2 weeks of consistency! Your body is adapting to the routine. This is where change happens!',
                 streak_30: "💪 A full month! You're in the top 10% of people who start a fitness journey. You've made it a lifestyle!",
                 streak_60: "🏆 2 months straight! You've proven you can do this long-term. Your future self will thank you!",
                 streak_90: "⭐ 90 days! You've built a non-negotiable habit. This is who you are now - someone who takes care of themselves!",
@@ -70,7 +70,7 @@ class PersonalizedCoaching {
                 {
                     trigger: 'volume_plateau',
                     strategy: 'deload',
-                    message: "Time for a deload week! Drop to 70% volume but keep the movement quality high. This will supercharge your gains when you come back strong."
+                    message: 'Time for a deload week! Drop to 70% volume but keep the movement quality high. This will supercharge your gains when you come back strong.'
                 },
                 {
                     trigger: 'weight_plateau',
@@ -99,15 +99,15 @@ class PersonalizedCoaching {
                 regression: "I noticed your {exercise} weight dropped a bit. No worries - this happens when life gets busy or stress is high. Let's focus on getting back to your baseline first."
             },
             motivation: {
-                streak: "Week {number} in the books. You are building a real habit here. Consistency like this is what separates people who see results from those who do not.",
+                streak: 'Week {number} in the books. You are building a real habit here. Consistency like this is what separates people who see results from those who do not.',
                 return: "Welcome back! Taking {days} days off wasn't a setback - sometimes your body needs that reset. Let's ease back in with a lighter session.",
                 consistency: "You've been crushing it with {frequency} workouts per week! This kind of consistency is where the magic happens.",
-                comeback: "I love seeing you back in the gym! That break actually might have done you some good - fresh start, renewed motivation."
+                comeback: 'I love seeing you back in the gym! That break actually might have done you some good - fresh start, renewed motivation.'
             },
             performance: {
                 high_rpe: "You've been pushing hard lately (average RPE of {rpe}+). Your dedication is awesome, but let's add an extra recovery day this week to avoid burnout.",
                 low_energy: "I noticed your energy levels have been lower. Let's focus on sleep quality and maybe try some lighter, more enjoyable workouts.",
-                plateau: "Your progress has leveled off - this is totally normal! It means your body has adapted. Time to switch things up with some new challenges.",
+                plateau: 'Your progress has leveled off - this is totally normal! It means your body has adapted. Time to switch things up with some new challenges.',
                 breakthrough: "Your recent workouts show you're getting stronger! That extra effort is translating into real gains."
             },
             recovery: {
@@ -119,11 +119,11 @@ class PersonalizedCoaching {
             seasonal: {
                 preseason: "Since {sport} season starts in {weeks} weeks, we're focusing on explosive power and agility. Today's plyometrics will help your first step quickness - think of it as training your muscles to fire faster when you need to beat a defender.",
                 in_season: "You're in the middle of {sport} season, so we're maintaining your strength while keeping you fresh for games. Today's session will support your performance without wearing you out.",
-                offseason: "Perfect time to build that strength base! With no games to worry about, we can focus on getting you stronger for next season.",
+                offseason: 'Perfect time to build that strength base! With no games to worry about, we can focus on getting you stronger for next season.',
                 transition: "Great time to try something new! Let's explore some different training methods while you're between seasons."
             },
             nutrition: {
-                energy: "Your energy levels suggest we should look at your nutrition timing. Try having a small snack 30-60 minutes before your workout - it can make a huge difference.",
+                energy: 'Your energy levels suggest we should look at your nutrition timing. Try having a small snack 30-60 minutes before your workout - it can make a huge difference.',
                 recovery: "Your recovery seems slower than usual. Make sure you're getting enough protein and staying hydrated - your muscles need fuel to rebuild.",
                 performance: "Your performance has been solid, which suggests your nutrition is on point. Keep doing what you're doing!"
             },
@@ -176,32 +176,32 @@ class PersonalizedCoaching {
         try {
             // Get or create context
             const userContext = context || this.getUserContext();
-            
+
             // Analyze user message for intent and sentiment
             const messageAnalysis = this.analyzeUserMessage(userMessage);
-            
+
             // Determine coaching scenario
             const scenario = this.determineCoachingScenario(userContext, messageAnalysis);
-            
+
             // Generate personalized response
             const response = this.createPersonalizedResponse(scenario, userContext, messageAnalysis);
-            
+
             // Apply personality traits
             const personalizedResponse = this.applyPersonalityTraits(response, userContext);
-            
+
             // Apply safety guardrails
             const safeResponse = this.applyGuardrails(personalizedResponse, messageAnalysis);
-            
+
             // Determine response type and confidence
             const transparencyData = this.analyzeResponseTransparency(scenario, userContext, messageAnalysis);
-            
+
             this.logger.debug('Coaching response generated', {
                 scenario,
                 context: userContext,
                 response: safeResponse,
                 transparency: transparencyData
             });
-            
+
             return {
                 success: true,
                 response: safeResponse,
@@ -217,9 +217,9 @@ class PersonalizedCoaching {
             return {
                 success: false,
                 response: "I'm having trouble processing that right now. Can you try rephrasing your question?",
-                responseType: "template",
+                responseType: 'template',
                 confidence: 0,
-                rationale: "System error - using fallback template",
+                rationale: 'System error - using fallback template',
                 error: error.message
             };
         }
@@ -244,67 +244,67 @@ class PersonalizedCoaching {
      */
     analyzeResponseTransparency(scenario, context, messageAnalysis) {
         // Determine response type based on scenario and data quality
-        let responseType = "template";
+        let responseType = 'template';
         let confidence = 0;
-        let rationale = "";
+        let rationale = '';
 
         // Check data quality for confidence scoring
         const dataQuality = this.assessDataQuality(context);
-        
+
         switch (scenario) {
             case 'injury':
-                responseType = "rule-based";
+                responseType = 'rule-based';
                 confidence = Math.min(95, 60 + dataQuality);
-                rationale = "Based on safety protocols and injury prevention guidelines";
+                rationale = 'Based on safety protocols and injury prevention guidelines';
                 break;
-                
+
             case 'return':
-                responseType = "rule-based";
+                responseType = 'rule-based';
                 confidence = Math.min(90, 70 + dataQuality);
                 rationale = `Based on ${context.missedWorkouts} missed workouts and return-to-training protocols`;
                 break;
-                
+
             case 'recovery':
-                responseType = "rule-based";
+                responseType = 'rule-based';
                 confidence = Math.min(85, 65 + dataQuality);
                 rationale = `Based on readiness score (${context.readinessScore}/10) and recovery indicators`;
                 break;
-                
+
             case 'plateau':
-                responseType = "rule-based";
+                responseType = 'rule-based';
                 confidence = Math.min(80, 60 + dataQuality);
                 rationale = `Based on progression rate (${(context.progressionRate * 100).toFixed(1)}%) and workout streak (${context.workoutStreak} weeks)`;
                 break;
-                
+
             case 'seasonal':
-                responseType = "rule-based";
+                responseType = 'rule-based';
                 confidence = Math.min(90, 75 + dataQuality);
                 rationale = `Based on ${context.sport} season phase (${context.seasonPhase}) and training periodization`;
                 break;
-                
+
             case 'performance':
-                responseType = "rule-based";
+                responseType = 'rule-based';
                 confidence = Math.min(85, 70 + dataQuality);
                 rationale = `Based on average RPE (${context.averageRPE.toFixed(1)}) and performance metrics`;
                 break;
-                
+
             case 'motivation':
-                responseType = "template";
+                responseType = 'template';
                 confidence = Math.min(75, 50 + dataQuality);
-                rationale = "Based on motivational templates and user engagement patterns";
+                rationale = 'Based on motivational templates and user engagement patterns';
                 break;
-                
+
             default:
-                responseType = "template";
+                responseType = 'template';
                 confidence = Math.min(60, 40 + dataQuality);
-                rationale = "Based on general coaching templates and limited user data";
+                rationale = 'Based on general coaching templates and limited user data';
         }
 
         // Adjust confidence based on data availability
         if (dataQuality < 30) {
-            responseType = "template";
+            responseType = 'template';
             confidence = Math.max(20, confidence - 20);
-            rationale += " (Limited user data available)";
+            rationale += ' (Limited user data available)';
         }
 
         return {
@@ -321,47 +321,47 @@ class PersonalizedCoaching {
      */
     assessDataQuality(context) {
         let qualityScore = 0;
-        
+
         // Check for recent workout data
         if (context.recentWorkouts && context.recentWorkouts.length > 0) {
             qualityScore += 20;
         }
-        
+
         // Check for progression data
         if (context.progressionData && Object.keys(context.progressionData).length > 0) {
             qualityScore += 15;
         }
-        
+
         // Check for daily check-in data
         if (context.readinessScore !== 5 || context.energyLevel !== 5 || context.stressLevel !== 5) {
             qualityScore += 15;
         }
-        
+
         // Check for training history
         if (context.trainingHistory && context.trainingHistory.length > 0) {
             qualityScore += 10;
         }
-        
+
         // Check for user preferences
         if (context.preferences && Object.keys(context.preferences).length > 0) {
             qualityScore += 10;
         }
-        
+
         // Check for workout streak data
         if (context.workoutStreak > 0) {
             qualityScore += 10;
         }
-        
+
         // Check for sport-specific data
         if (context.sport && context.sport !== 'general_fitness') {
             qualityScore += 10;
         }
-        
+
         // Check for goal-specific data
         if (context.primaryGoal && context.primaryGoal !== 'general_fitness') {
             qualityScore += 10;
         }
-        
+
         return Math.min(100, qualityScore);
     }
 
@@ -374,47 +374,47 @@ class PersonalizedCoaching {
             if (this.contextCache && this.isContextValid()) {
                 return this.contextCache;
             }
-            
+
             const user = this.authManager?.getCurrentUser();
             if (!user) {
                 return this.getDefaultContext();
             }
-            
+
             const context = {
                 // Basic info
                 username: user.username,
                 athleteName: user.athleteName,
                 preferences: user.preferences || {},
-                
+
                 // Training data
                 trainingHistory: this.getTrainingHistory(),
                 recentWorkouts: this.getRecentWorkouts(7),
                 progressionData: this.getProgressionData(),
                 missedWorkouts: this.getMissedWorkouts(14),
-                
+
                 // Current state
                 readinessScore: this.getCurrentReadinessScore(),
                 energyLevel: this.getCurrentEnergyLevel(),
                 stressLevel: this.getCurrentStressLevel(),
-                
+
                 // Goals and preferences
                 primaryGoal: user.preferences?.primary_goal || 'general_fitness',
                 sport: user.preferences?.primary_sport || 'general_fitness',
                 seasonPhase: this.getSeasonPhase(),
                 trainingFrequency: this.getTrainingFrequency(),
-                
+
                 // Performance metrics
                 averageRPE: this.getAverageRPE(14),
                 progressionRate: this.getProgressionRate(),
                 consistencyScore: this.getConsistencyScore(),
-                
+
                 // Recent patterns
                 workoutStreak: this.getWorkoutStreak(),
                 lastWorkout: this.getLastWorkout(),
                 energyTrend: this.getEnergyTrend(7),
                 stressTrend: this.getStressTrend(7)
             };
-            
+
             // Validate context with conservative fallbacks
             if (this.dataValidator) {
                 const validatedContext = this.dataValidator.validateContext(context);
@@ -422,11 +422,11 @@ class PersonalizedCoaching {
                 this.contextCache.timestamp = Date.now();
                 return validatedContext;
             }
-            
+
             // Cache context for performance
             this.contextCache = context;
             this.contextCache.timestamp = Date.now();
-            
+
             return context;
         } catch (error) {
             this.logger.error('Failed to get user context', error);
@@ -441,7 +441,7 @@ class PersonalizedCoaching {
      */
     analyzeUserMessage(message) {
         const messageLower = message.toLowerCase();
-        
+
         return {
             intent: this.detectIntent(messageLower),
             sentiment: this.detectSentiment(messageLower),
@@ -457,14 +457,14 @@ class PersonalizedCoaching {
      * @returns {string} Detected intent
      */
     detectIntent(message) {
-        if (message.includes('help') || message.includes('what should')) return 'help';
-        if (message.includes('how') || message.includes('why')) return 'explanation';
-        if (message.includes('hurt') || message.includes('pain')) return 'concern';
-        if (message.includes('easy') || message.includes('hard')) return 'feedback';
-        if (message.includes('motivation') || message.includes('motivate')) return 'motivation';
-        if (message.includes('plateau') || message.includes('stuck')) return 'plateau';
-        if (message.includes('tired') || message.includes('exhausted')) return 'fatigue';
-        if (message.includes('stress') || message.includes('stressed')) return 'stress';
+        if (message.includes('help') || message.includes('what should')) {return 'help';}
+        if (message.includes('how') || message.includes('why')) {return 'explanation';}
+        if (message.includes('hurt') || message.includes('pain')) {return 'concern';}
+        if (message.includes('easy') || message.includes('hard')) {return 'feedback';}
+        if (message.includes('motivation') || message.includes('motivate')) {return 'motivation';}
+        if (message.includes('plateau') || message.includes('stuck')) {return 'plateau';}
+        if (message.includes('tired') || message.includes('exhausted')) {return 'fatigue';}
+        if (message.includes('stress') || message.includes('stressed')) {return 'stress';}
         return 'general';
     }
 
@@ -477,14 +477,14 @@ class PersonalizedCoaching {
         const positiveWords = ['great', 'awesome', 'love', 'amazing', 'excellent', 'perfect'];
         const negativeWords = ['bad', 'terrible', 'hate', 'awful', 'worst', 'sucks'];
         const neutralWords = ['okay', 'fine', 'alright', 'decent'];
-        
+
         const positiveCount = positiveWords.filter(word => message.includes(word)).length;
         const negativeCount = negativeWords.filter(word => message.includes(word)).length;
         const neutralCount = neutralWords.filter(word => message.includes(word)).length;
-        
-        if (positiveCount > negativeCount) return 'positive';
-        if (negativeCount > positiveCount) return 'negative';
-        if (neutralCount > 0) return 'neutral';
+
+        if (positiveCount > negativeCount) {return 'positive';}
+        if (negativeCount > positiveCount) {return 'negative';}
+        if (neutralCount > 0) {return 'neutral';}
         return 'neutral';
     }
 
@@ -503,13 +503,13 @@ class PersonalizedCoaching {
             'basketball', 'football', 'soccer', 'hard', 'difficult', 'intense',
             'motivate', 'hurt', 'pain', 'knee', 'shoulder', 'back'
         ];
-        
+
         commonTerms.forEach(term => {
             if (message.includes(term)) {
                 keywords.push(term);
             }
         });
-        
+
         return keywords;
     }
 
@@ -519,8 +519,8 @@ class PersonalizedCoaching {
      * @returns {string} Urgency level
      */
     detectUrgency(message) {
-        if (message.includes('urgent') || message.includes('emergency')) return 'high';
-        if (message.includes('asap') || message.includes('quickly')) return 'medium';
+        if (message.includes('urgent') || message.includes('emergency')) {return 'high';}
+        if (message.includes('asap') || message.includes('quickly')) {return 'medium';}
         return 'low';
     }
 
@@ -531,7 +531,7 @@ class PersonalizedCoaching {
      */
     detectTopics(message) {
         const topics = [];
-        
+
         if (message.includes('injury') || message.includes('pain') || message.includes('hurt')) {
             topics.push('injury');
         }
@@ -544,7 +544,7 @@ class PersonalizedCoaching {
         if (message.includes('form') || message.includes('technique') || message.includes('proper')) {
             topics.push('technique');
         }
-        
+
         return topics;
     }
 
@@ -559,31 +559,31 @@ class PersonalizedCoaching {
         if (messageAnalysis.topics.includes('injury') || messageAnalysis.intent === 'concern') {
             return 'injury';
         }
-        
+
         // Check for missed workouts based on message content
-        if (messageAnalysis.intent === 'return' || 
-            messageAnalysis.keywords.includes('away') || 
+        if (messageAnalysis.intent === 'return' ||
+            messageAnalysis.keywords.includes('away') ||
             messageAnalysis.keywords.includes('back')) {
             return 'return';
         }
-        
+
         // Check for high stress/energy issues based on message content
-        if (messageAnalysis.intent === 'fatigue' || 
+        if (messageAnalysis.intent === 'fatigue' ||
             messageAnalysis.intent === 'stress' ||
             messageAnalysis.keywords.includes('tired') ||
             messageAnalysis.keywords.includes('exhausted') ||
             messageAnalysis.keywords.includes('stress')) {
             return 'recovery';
         }
-        
+
         // Check for plateau based on message content
-        if (messageAnalysis.intent === 'plateau' || 
+        if (messageAnalysis.intent === 'plateau' ||
             messageAnalysis.keywords.includes('plateau') ||
             messageAnalysis.keywords.includes('stuck') ||
             messageAnalysis.keywords.includes('same')) {
             return 'plateau';
         }
-        
+
         // Check for seasonal training based on message content
         if (messageAnalysis.keywords.includes('season') ||
             messageAnalysis.keywords.includes('basketball') ||
@@ -591,21 +591,21 @@ class PersonalizedCoaching {
             messageAnalysis.keywords.includes('soccer')) {
             return 'seasonal';
         }
-        
+
         // Check for high RPE based on message content
         if (messageAnalysis.keywords.includes('hard') ||
             messageAnalysis.keywords.includes('difficult') ||
             messageAnalysis.keywords.includes('intense')) {
             return 'performance';
         }
-        
+
         // Check for motivation requests
         if (messageAnalysis.intent === 'motivation' ||
             messageAnalysis.keywords.includes('motivation') ||
             messageAnalysis.keywords.includes('motivate')) {
             return 'motivation';
         }
-        
+
         // Default to general coaching
         return 'general';
     }
@@ -619,7 +619,7 @@ class PersonalizedCoaching {
      */
     createPersonalizedResponse(scenario, context, messageAnalysis) {
         const templates = this.coachingTemplates;
-        
+
         switch (scenario) {
             case 'injury':
                 return this.createInjuryResponse(context, messageAnalysis);
@@ -650,7 +650,7 @@ class PersonalizedCoaching {
         if (messageAnalysis.urgency === 'high') {
             return "I'm not a doctor, but if you're experiencing significant pain, please consult a healthcare professional. For now, let's focus on gentle movement and avoid anything that causes discomfort.";
         }
-        
+
         return "I'm not qualified to give medical advice, but if something doesn't feel right during your workout, it's always better to be safe. Let's modify today's exercises to avoid any discomfort.";
     }
 
@@ -662,10 +662,10 @@ class PersonalizedCoaching {
     createReturnResponse(context) {
         const days = context.missedWorkouts;
         const template = this.coachingTemplates.motivation.return;
-        
-        return template
+
+        return `${template
             .replace('{days}', days)
-            + " Let's start with a lighter session to ease back in - maybe 25-30 minutes to get your body moving again.";
+             } Let's start with a lighter session to ease back in - maybe 25-30 minutes to get your body moving again.`;
     }
 
     /**
@@ -677,11 +677,11 @@ class PersonalizedCoaching {
         if (context.stressLevel > 7) {
             return this.coachingTemplates.recovery.stress;
         }
-        
+
         if (context.energyLevel < 4) {
             return this.coachingTemplates.recovery.fatigue;
         }
-        
+
         return this.coachingTemplates.recovery.readiness
             .replace('{score}', context.readinessScore);
     }
@@ -696,7 +696,7 @@ class PersonalizedCoaching {
         const exercise = this.getPrimaryExercise(context);
         const weight = this.getCurrentWeight(exercise);
         const weeks = Math.floor(context.workoutStreak / 3);
-        
+
         return template
             .replace('{exercise}', exercise)
             .replace('{weight}', weight)
@@ -709,21 +709,21 @@ class PersonalizedCoaching {
      * @returns {string} Seasonal response
      */
     createSeasonalResponse(context) {
-        const sport = context.sport;
+        const {sport} = context;
         const phase = context.seasonPhase;
         const weeks = this.getWeeksToSeason(sport);
-        
+
         if (phase === 'preseason') {
             return this.coachingTemplates.seasonal.preseason
                 .replace('{sport}', sport)
                 .replace('{weeks}', weeks);
         }
-        
+
         if (phase === 'in_season') {
             return this.coachingTemplates.seasonal.in_season
                 .replace('{sport}', sport);
         }
-        
+
         return this.coachingTemplates.seasonal.offseason;
     }
 
@@ -737,7 +737,7 @@ class PersonalizedCoaching {
             return this.coachingTemplates.performance.high_rpe
                 .replace('{rpe}', context.averageRPE.toFixed(1));
         }
-        
+
         return this.coachingTemplates.performance.breakthrough;
     }
 
@@ -751,7 +751,7 @@ class PersonalizedCoaching {
             return this.coachingTemplates.motivation.streak
                 .replace('{number}', Math.floor(context.workoutStreak / 7));
         }
-        
+
         return this.coachingTemplates.motivation.consistency
             .replace('{frequency}', context.trainingFrequency);
     }
@@ -764,29 +764,29 @@ class PersonalizedCoaching {
         try {
             const context = await this.buildContext();
             const streak = context.workoutStreak || 0;
-            
+
             // Check for streak milestones
-            const milestone = this.behavioralTriggers.streakMilestones.find(m => 
+            const milestone = this.behavioralTriggers.streakMilestones.find(m =>
                 streak >= m && (this.lastTriggeredStreak < m)
             );
-            
+
             if (milestone) {
                 this.triggerStreakCelebration(milestone, streak);
                 this.lastTriggeredStreak = milestone;
             }
-            
+
             // Check for consistency achievements
             const consistencyScore = context.consistencyScore || 0;
-            if (consistencyScore >= this.behavioralTriggers.consistencyThreshold && 
+            if (consistencyScore >= this.behavioralTriggers.consistencyThreshold &&
                 consistencyScore < 0.85) { // Only trigger once when crossing threshold
                 this.triggerConsistencyCelebration(consistencyScore);
             }
-            
+
             // Check for comeback after break
             if (data.comeback && context.missedWorkouts > 3) {
                 this.triggerComebackMessage(context.missedWorkouts);
             }
-            
+
         } catch (error) {
             this.logger.error('Failed to handle workout completion:', error);
         }
@@ -799,21 +799,21 @@ class PersonalizedCoaching {
     async handleProgressionUpdate(data) {
         try {
             const context = await this.buildContext();
-            
+
             // Check for plateau breakthrough
             if (data.exercise && data.previousWeight && data.currentWeight) {
                 const improvement = (data.currentWeight - data.previousWeight) / data.previousWeight;
-                
+
                 // If we were in a plateau and now see significant improvement
-                if (this.lastPlateauDetection && 
+                if (this.lastPlateauDetection &&
                     this.lastPlateauDetection.exercise === data.exercise &&
                     improvement >= this.behavioralTriggers.plateauBreakthroughThreshold) {
-                    
+
                     this.triggerBreakthroughCelebration(data);
                     this.lastPlateauDetection = null; // Clear plateau state
                 }
             }
-            
+
         } catch (error) {
             this.logger.error('Failed to handle progression update:', error);
         }
@@ -837,9 +837,9 @@ class PersonalizedCoaching {
      */
     triggerStreakCelebration(milestone, currentStreak) {
         const messageKey = `streak_${milestone}`;
-        const message = this.behavioralTriggers.celebrationMessages[messageKey] || 
+        const message = this.behavioralTriggers.celebrationMessages[messageKey] ||
                        `🎉 ${milestone} days of consistency! That's incredible!`;
-        
+
         // Emit celebration event
         if (this.eventBus) {
             this.eventBus.emit('coaching:celebration', {
@@ -849,10 +849,10 @@ class PersonalizedCoaching {
                 message
             });
         }
-        
+
         // Show notification
         this.showCelebrationNotification(message, 'streak');
-        
+
         this.logger.audit('STREAK_CELEBRATION', { milestone, currentStreak });
     }
 
@@ -864,7 +864,7 @@ class PersonalizedCoaching {
         const percentage = Math.round(consistencyScore * 100);
         const message = this.behavioralTriggers.celebrationMessages.consistency_high
             .replace('{percentage}', percentage);
-        
+
         // Emit celebration event
         if (this.eventBus) {
             this.eventBus.emit('coaching:celebration', {
@@ -873,10 +873,10 @@ class PersonalizedCoaching {
                 message
             });
         }
-        
+
         // Show notification
         this.showCelebrationNotification(message, 'consistency');
-        
+
         this.logger.audit('CONSISTENCY_CELEBRATION', { score: consistencyScore });
     }
 
@@ -886,7 +886,7 @@ class PersonalizedCoaching {
      */
     triggerBreakthroughCelebration(data) {
         const message = this.behavioralTriggers.celebrationMessages.breakthrough;
-        
+
         // Emit celebration event
         if (this.eventBus) {
             this.eventBus.emit('coaching:celebration', {
@@ -897,10 +897,10 @@ class PersonalizedCoaching {
                 message
             });
         }
-        
+
         // Show notification
         this.showCelebrationNotification(message, 'breakthrough');
-        
+
         this.logger.audit('BREAKTHROUGH_CELEBRATION', data);
     }
 
@@ -910,7 +910,7 @@ class PersonalizedCoaching {
      */
     triggerComebackMessage(missedDays) {
         const message = this.behavioralTriggers.celebrationMessages.comeback;
-        
+
         // Emit celebration event
         if (this.eventBus) {
             this.eventBus.emit('coaching:celebration', {
@@ -919,10 +919,10 @@ class PersonalizedCoaching {
                 message
             });
         }
-        
+
         // Show notification
         this.showCelebrationNotification(message, 'comeback');
-        
+
         this.logger.audit('COMEBACK_CELEBRATION', { missedDays });
     }
 
@@ -947,7 +947,7 @@ class PersonalizedCoaching {
                 };
             }
         }
-        
+
         // Check for weight plateau (no strength gains)
         if (context.progressionRate < 0.02 && context.workoutStreak > 21) {
             const strategy = this.behavioralTriggers.plateauStrategies.find(s => s.trigger === 'weight_plateau');
@@ -964,7 +964,7 @@ class PersonalizedCoaching {
                 };
             }
         }
-        
+
         return null;
     }
 
@@ -986,27 +986,27 @@ class PersonalizedCoaching {
             </div>
             <button class="celebration-close" aria-label="Close notification">&times;</button>
         `;
-        
+
         // Add to page
         document.body.appendChild(notification);
-        
+
         // Auto-dismiss after 8 seconds
         const autoDismiss = setTimeout(() => {
             notification.remove();
         }, 8000);
-        
+
         // Manual close
         const closeBtn = notification.querySelector('.celebration-close');
         closeBtn.addEventListener('click', () => {
             clearTimeout(autoDismiss);
             notification.remove();
         });
-        
+
         // Announce to screen readers
         if (window.LiveRegionManager) {
             window.LiveRegionManager.announce(message, 'assertive');
         }
-        
+
         // Add animation
         setTimeout(() => notification.classList.add('show'), 10);
     }
@@ -1038,11 +1038,11 @@ class PersonalizedCoaching {
         if (context.primaryGoal === 'strength') {
             return "I see you're focused on building strength - that's awesome! Your consistency with {frequency} workouts per week is exactly what you need to see progress.";
         }
-        
+
         if (context.primaryGoal === 'sport_performance') {
             return "Since you're training for {sport}, let's make sure every workout supports your performance goals. What specific aspect of your game are you looking to improve?";
         }
-        
+
         return "I'm here to help you reach your fitness goals! What's on your mind today?";
     }
 
@@ -1055,17 +1055,17 @@ class PersonalizedCoaching {
     applyPersonalityTraits(response, context) {
         // Add casual but competent tone
         let personalizedResponse = response;
-        
+
         // Add encouraging elements
         if (context.workoutStreak > 3) {
-            personalizedResponse = "Hey there! " + personalizedResponse;
+            personalizedResponse = `Hey there! ${ personalizedResponse}`;
         }
-        
+
         // Add technical explanations where appropriate
         if (personalizedResponse.includes('deload')) {
-            personalizedResponse += " A deload week gives your nervous system a chance to recover while maintaining your movement patterns.";
+            personalizedResponse += ' A deload week gives your nervous system a chance to recover while maintaining your movement patterns.';
         }
-        
+
         return personalizedResponse;
     }
 
@@ -1080,12 +1080,12 @@ class PersonalizedCoaching {
         if (this.guardrails.medical_advice && this.containsMedicalAdvice(response)) {
             return "I'm not qualified to give medical advice. Please consult a healthcare professional for any health concerns.";
         }
-        
+
         // Check for injury-related content
         if (messageAnalysis.topics.includes('injury') && this.guardrails.injury_diagnosis) {
-            return "I am not a doctor, so I cannot diagnose injuries. If you are experiencing pain, please consult a healthcare professional.";
+            return 'I am not a doctor, so I cannot diagnose injuries. If you are experiencing pain, please consult a healthcare professional.';
         }
-        
+
         return response;
     }
 
@@ -1286,7 +1286,7 @@ class PersonalizedCoaching {
         if (!this.contextCache || !this.contextCache.timestamp) {
             return false;
         }
-        
+
         const cacheAge = Date.now() - this.contextCache.timestamp;
         return cacheAge < 300000; // 5 minutes
     }

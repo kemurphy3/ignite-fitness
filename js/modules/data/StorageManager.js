@@ -1,7 +1,7 @@
 /**
  * StorageManager - Unified storage schema with sync queue pattern
  * Provides idempotent writes and offline-first architecture
- * 
+ *
  * Tables: user_profiles, readiness_logs, session_logs, progression_events, injury_flags, preferences
  * Each table keyed by (user_id, date) for idempotent writes
  */
@@ -12,7 +12,7 @@ class StorageManager {
         this.syncQueue = [];
         this.isOnline = navigator.onLine;
         this.syncInProgress = false;
-        
+
         // Storage key prefixes
         this.PREFIXES = {
             PROFILES: 'ignitefitness_user_profiles',
@@ -23,7 +23,7 @@ class StorageManager {
             PREFERENCES: 'ignitefitness_preferences',
             SYNC_QUEUE: 'ignitefitness_sync_queue'
         };
-        
+
         this.initializeEventListeners();
         this.loadSyncQueue();
     }
@@ -63,11 +63,11 @@ class StorageManager {
     safeGetItem(key, defaultValue = null) {
         try {
             const raw = localStorage.getItem(key);
-            if (raw === null) return defaultValue;
-            
+            if (raw === null) {return defaultValue;}
+
             // Handle empty string
-            if (raw === '') return defaultValue;
-            
+            if (raw === '') {return defaultValue;}
+
             // Try to parse as JSON
             return JSON.parse(raw);
         } catch (error) {
@@ -121,14 +121,14 @@ class StorageManager {
                 userId,
                 updatedAt: new Date().toISOString()
             };
-            
+
             if (!this.safeSetItem(this.PREFIXES.PROFILES, profiles)) {
                 throw new Error('Failed to save profile to localStorage');
             }
-            
+
             // Emit event
             this.eventBus.emit(this.eventBus.TOPICS.PROFILE_UPDATED, { userId, profile });
-            
+
             // Add to sync queue if offline
             if (!this.isOnline) {
                 this.addToSyncQueue('user_profiles', userId, profile);
@@ -168,19 +168,19 @@ class StorageManager {
         try {
             const key = this.getCompoundKey(userId, date);
             const logs = this.getReadinessLogs();
-            
+
             logs[key] = {
                 userId,
                 date,
                 ...readiness,
                 updatedAt: new Date().toISOString()
             };
-            
+
             this.setStorage(this.PREFIXES.READINESS, logs);
-            
+
             // Emit event
             this.eventBus.emit(this.eventBus.TOPICS.READINESS_UPDATED, { userId, date, readiness });
-            
+
             // Add to sync queue if offline
             if (!this.isOnline) {
                 this.addToSyncQueue('readiness_logs', key, logs[key]);
@@ -222,19 +222,19 @@ class StorageManager {
         try {
             const key = this.getCompoundKey(userId, date);
             const logs = this.getSessionLogs();
-            
+
             logs[key] = {
                 userId,
                 date,
                 ...session,
                 updatedAt: new Date().toISOString()
             };
-            
+
             this.setStorage(this.PREFIXES.SESSIONS, logs);
-            
+
             // Emit event
             this.eventBus.emit(this.eventBus.TOPICS.SESSION_COMPLETED, { userId, date, session });
-            
+
             // Add to sync queue if offline
             if (!this.isOnline) {
                 this.addToSyncQueue('session_logs', key, logs[key]);
@@ -276,16 +276,16 @@ class StorageManager {
         try {
             const key = this.getCompoundKey(userId, date);
             const events = this.getProgressionEvents();
-            
+
             events[key] = {
                 userId,
                 date,
                 ...event,
                 updatedAt: new Date().toISOString()
             };
-            
+
             this.setStorage(this.PREFIXES.PROGRESSION, events);
-            
+
             // Add to sync queue if offline
             if (!this.isOnline) {
                 this.addToSyncQueue('progression_events', key, events[key]);
@@ -315,16 +315,16 @@ class StorageManager {
         try {
             const key = this.getCompoundKey(userId, date);
             const flags = this.getInjuryFlags();
-            
+
             flags[key] = {
                 userId,
                 date,
                 ...flag,
                 updatedAt: new Date().toISOString()
             };
-            
+
             this.setStorage(this.PREFIXES.INJURY_FLAGS, flags);
-            
+
             // Add to sync queue if offline
             if (!this.isOnline) {
                 this.addToSyncQueue('injury_flags', key, flags[key]);
@@ -352,15 +352,15 @@ class StorageManager {
     async savePreferences(userId, preferences) {
         try {
             const allPreferences = this.getPreferences();
-            
+
             allPreferences[userId] = {
                 userId,
                 ...preferences,
                 updatedAt: new Date().toISOString()
             };
-            
+
             this.setStorage(this.PREFIXES.PREFERENCES, allPreferences);
-            
+
             // Add to sync queue if offline
             if (!this.isOnline) {
                 this.addToSyncQueue('preferences', userId, allPreferences[userId]);
@@ -395,10 +395,10 @@ class StorageManager {
             timestamp: Date.now(),
             attempts: 0
         };
-        
+
         this.syncQueue.push(queueItem);
         this.saveSyncQueue();
-        
+
         this.eventBus.emit(this.eventBus.TOPICS.SYNC_QUEUE_UPDATED, { queueLength: this.syncQueue.length });
     }
 
@@ -437,17 +437,17 @@ class StorageManager {
         }
 
         this.syncInProgress = true;
-        
+
         try {
             const itemsToSync = [...this.syncQueue];
             const total = itemsToSync.length;
             let completed = 0;
-            
+
             for (const item of itemsToSync) {
                 try {
                     // Attempt to sync to server
                     const success = await this.syncItem(item);
-                    
+
                     if (success) {
                         // Remove from queue on success
                         const index = this.syncQueue.findIndex(q => q === item);
@@ -472,7 +472,7 @@ class StorageManager {
                     remaining: this.syncQueue.length
                 });
             }
-            
+
             this.saveSyncQueue();
             this.eventBus.emit(this.eventBus.TOPICS.SYNC_QUEUE_UPDATED, { queueLength: this.syncQueue.length });
         } finally {
@@ -607,7 +607,7 @@ class StorageManager {
             Object.values(this.PREFIXES).forEach(prefix => {
                 localStorage.removeItem(prefix);
             });
-            
+
             this.syncQueue = [];
             this.saveSyncQueue();
         } catch (error) {
@@ -622,19 +622,19 @@ class StorageManager {
      */
     getStorageStats() {
         const stats = {};
-        
+
         Object.entries(this.PREFIXES).forEach(([name, key]) => {
             const data = this.getStorage(key, {});
             const count = typeof data === 'object' && data !== null ? Object.keys(data).length : 0;
-            const size = new Blob([JSON.stringify(data)]).size;
-            
+            const {size} = new Blob([JSON.stringify(data)]);
+
             stats[name] = {
                 count,
                 size,
                 sizeKB: (size / 1024).toFixed(2)
             };
         });
-        
+
         return stats;
     }
 }

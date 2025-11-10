@@ -1,9 +1,9 @@
-const { 
-  getDB, 
-  authenticate, 
-  checkRateLimit, 
-  errorResponse, 
-  successResponse, 
+const {
+  getDB,
+  authenticate,
+  checkRateLimit,
+  errorResponse,
+  successResponse,
   preflightResponse,
   withTransaction
 } = require('./_base');
@@ -32,7 +32,7 @@ exports.handler = async (event) => {
     }
 
     const body = JSON.parse(event.body || '{}');
-    
+
     // Validate required fields
     if (!body.session_id) {
       return errorResponse(400, 'VALIDATION_ERROR', 'session_id is required');
@@ -56,19 +56,19 @@ exports.handler = async (event) => {
     const validatedExercises = [];
     for (let i = 0; i < body.exercises.length; i++) {
       const exercise = body.exercises[i];
-      
+
       if (!exercise.name || typeof exercise.name !== 'string') {
         return errorResponse(400, 'VALIDATION_ERROR', `Exercise ${i + 1}: name is required and must be a string`);
       }
-      
+
       if (!exercise.sets || !Number.isInteger(exercise.sets) || exercise.sets < 1 || exercise.sets > 20) {
         return errorResponse(400, 'VALIDATION_ERROR', `Exercise ${i + 1}: sets must be an integer between 1 and 20`);
       }
-      
+
       if (!exercise.reps || !Number.isInteger(exercise.reps) || exercise.reps < 1 || exercise.reps > 100) {
         return errorResponse(400, 'VALIDATION_ERROR', `Exercise ${i + 1}: reps must be an integer between 1 and 100`);
       }
-      
+
       const validatedExercise = {
         name: exercise.name.trim().substring(0, 100), // Trim and limit to 100 chars
         sets: exercise.sets,
@@ -77,7 +77,7 @@ exports.handler = async (event) => {
         rpe: exercise.rpe ? Math.max(1, Math.min(10, Number(exercise.rpe))) : null,
         notes: exercise.notes ? exercise.notes.trim().substring(0, 500) : null // Trim and limit to 500 chars
       };
-      
+
       validatedExercises.push(validatedExercise);
     }
 
@@ -90,7 +90,7 @@ exports.handler = async (event) => {
         SELECT id FROM sessions 
         WHERE id = ${sessionId} AND user_id = ${userId}
       `;
-      
+
       if (session.length === 0) {
         throw new Error('Session not found or access denied');
       }
@@ -137,18 +137,18 @@ exports.handler = async (event) => {
 
   } catch (error) {
     console.error('Exercises Bulk Create API Error:', error);
-    
+
     // Handle specific errors
     if (error.message.includes('Session not found')) {
       return errorResponse(404, 'SESSION_NOT_FOUND', 'Session not found or access denied');
     }
-    
+
     if (error.message.includes('access denied')) {
       return errorResponse(403, 'ACCESS_DENIED', 'You do not have permission to add exercises to this session');
     }
 
     // Handle database connection errors
-    if (error.message.includes('DATABASE_URL not configured') || 
+    if (error.message.includes('DATABASE_URL not configured') ||
         error.message.includes('connection') ||
         error.message.includes('timeout')) {
       return errorResponse(503, 'SERVICE_UNAVAILABLE', 'Database service unavailable');

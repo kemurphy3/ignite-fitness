@@ -15,9 +15,9 @@ describe('XSS Protection', () => {
         if (!global.window.HtmlSanitizer) {
             class MockHtmlSanitizer {
                 escapeHtml(text) {
-                    if (!text) return '';
-                    if (typeof text !== 'string') return String(text);
-                    
+                    if (!text) {return '';}
+                    if (typeof text !== 'string') {return String(text);}
+
                     // Basic HTML escaping (Node.js compatible)
                     const map = {
                         '&': '&amp;',
@@ -26,7 +26,7 @@ describe('XSS Protection', () => {
                         '"': '&quot;',
                         "'": '&#039;'
                     };
-                    
+
                     return text.replace(/[&<>"']/g, m => map[m]);
                 }
 
@@ -45,8 +45,8 @@ describe('XSS Protection', () => {
                 }
 
                 escapeHtml(text) {
-                    if (!text) return '';
-                    if (typeof text !== 'string') return String(text);
+                    if (!text) {return '';}
+                    if (typeof text !== 'string') {return String(text);}
 
                     if (this.sanitizer) {
                         return this.sanitizer.escapeHtml(text);
@@ -74,7 +74,7 @@ describe('XSS Protection', () => {
         it('should escape script tags', () => {
             const malicious = '<script>alert("xss")</script>';
             const escaped = whyPanel.escapeHtml(malicious);
-            
+
             expect(escaped).toBe('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;');
             expect(escaped).not.toContain('<script>');
         });
@@ -82,7 +82,7 @@ describe('XSS Protection', () => {
         it('should escape event handler attributes', () => {
             const malicious = '<div onclick="alert(1)">Click me</div>';
             const escaped = whyPanel.escapeHtml(malicious);
-            
+
             // HTML escaping renders attributes safe
             expect(escaped).toContain('&lt;div');
             expect(escaped).toContain('&quot;');
@@ -92,7 +92,7 @@ describe('XSS Protection', () => {
         it('should escape img tags with javascript src', () => {
             const malicious = '<img src="javascript:alert(1)">';
             const escaped = whyPanel.escapeHtml(malicious);
-            
+
             // HTML escaping renders the entire tag safe
             expect(escaped).toContain('&lt;img');
             expect(escaped).not.toContain('<img src=');
@@ -101,14 +101,14 @@ describe('XSS Protection', () => {
         it('should escape iframe tags', () => {
             const malicious = '<iframe src="http://evil.com"></iframe>';
             const escaped = whyPanel.escapeHtml(malicious);
-            
+
             expect(escaped).not.toContain('<iframe>');
         });
 
         it('should preserve legitimate text', () => {
             const legitimate = 'This is safe text with 123 numbers';
             const escaped = whyPanel.escapeHtml(legitimate);
-            
+
             expect(escaped).toBe(legitimate);
         });
 
@@ -129,7 +129,7 @@ describe('XSS Protection', () => {
         it('should sanitize XSS payloads', () => {
             const malicious = '<script>alert(document.cookie)</script>';
             const sanitized = htmlSanitizer.sanitize(malicious);
-            
+
             // HTML escaping renders the script tag safe
             expect(sanitized).not.toContain('<script>');
             expect(sanitized).toContain('&lt;script&gt;');
@@ -139,7 +139,7 @@ describe('XSS Protection', () => {
         it('should sanitize SQL injection attempts', () => {
             const malicious = "'); DROP TABLE users; --";
             const sanitized = htmlSanitizer.sanitize(malicious);
-            
+
             // HTML escaping renders the quotes safe (note: SQL injection is handled at DB layer)
             expect(sanitized).toContain('&#039;');
             expect(sanitized).not.toContain("');");

@@ -6,16 +6,16 @@
 class PrivacyPanel extends BaseComponent {
     constructor(options = {}) {
         super(options);
-        
+
         this.container = options.container;
         this.userId = options.userId;
         this.consentManager = null;
-        
+
         this.logger = window.SafeLogger || console;
-        
+
         this.init();
     }
-    
+
     /**
      * Initialize privacy panel
      */
@@ -24,10 +24,10 @@ class PrivacyPanel extends BaseComponent {
         await this.loadUserPreferences();
         this.render();
         this.bindEvents();
-        
+
         this.logger.info('PrivacyPanel initialized');
     }
-    
+
     /**
      * Load consent manager
      */
@@ -41,7 +41,7 @@ class PrivacyPanel extends BaseComponent {
             this.logger.error('Failed to load ConsentManager:', error);
         }
     }
-    
+
     /**
      * Load user privacy preferences
      */
@@ -54,20 +54,20 @@ class PrivacyPanel extends BaseComponent {
                     'Content-Type': 'application/json'
                 }
             });
-            
+
             if (response.ok) {
                 const data = await response.json();
                 this.userPreferences = data.preferences;
             } else {
                 this.userPreferences = this.getDefaultPreferences();
             }
-            
+
         } catch (error) {
             this.logger.error('Failed to load privacy preferences:', error);
             this.userPreferences = this.getDefaultPreferences();
         }
     }
-    
+
     /**
      * Get default privacy preferences
      * @returns {Object} Default preferences
@@ -83,7 +83,7 @@ class PrivacyPanel extends BaseComponent {
             lastUpdated: new Date().toISOString()
         };
     }
-    
+
     /**
      * Render privacy panel
      */
@@ -117,14 +117,14 @@ class PrivacyPanel extends BaseComponent {
             </div>
         `;
     }
-    
+
     /**
      * Render data collection section
      * @returns {string} HTML for data collection controls
      */
     renderDataCollectionSection() {
         const isOptedOut = !this.userPreferences.dataCollection;
-        
+
         return `
             <div class="privacy-section">
                 <h4>Data Collection</h4>
@@ -174,7 +174,7 @@ class PrivacyPanel extends BaseComponent {
             </div>
         `;
     }
-    
+
     /**
      * Render data export section
      * @returns {string} HTML for data export controls
@@ -238,7 +238,7 @@ class PrivacyPanel extends BaseComponent {
             </div>
         `;
     }
-    
+
     /**
      * Render consent section
      * @returns {string} HTML for consent management
@@ -277,7 +277,7 @@ class PrivacyPanel extends BaseComponent {
             </div>
         `;
     }
-    
+
     /**
      * Render data retention section
      * @returns {string} HTML for data retention controls
@@ -326,7 +326,7 @@ class PrivacyPanel extends BaseComponent {
             </div>
         `;
     }
-    
+
     /**
      * Render audit section
      * @returns {string} HTML for audit trail
@@ -354,7 +354,7 @@ class PrivacyPanel extends BaseComponent {
             </div>
         `;
     }
-    
+
     /**
      * Bind event listeners
      */
@@ -365,7 +365,7 @@ class PrivacyPanel extends BaseComponent {
                 this.handlePreferenceChange(event.target);
             });
         });
-        
+
         // Retention select
         const retentionSelect = this.container.querySelector('.retention-select');
         if (retentionSelect) {
@@ -373,86 +373,86 @@ class PrivacyPanel extends BaseComponent {
                 this.handlePreferenceChange(event.target);
             });
         }
-        
+
         // Action buttons
         this.container.querySelectorAll('.save-preferences-btn').forEach(btn => {
             this.addEventListener(btn, 'click', () => this.savePreferences());
         });
-        
+
         this.container.querySelectorAll('.export-data-btn').forEach(btn => {
             this.addEventListener(btn, 'click', () => this.exportAllData());
         });
-        
+
         this.container.querySelectorAll('.delete-data-btn').forEach(btn => {
             this.addEventListener(btn, 'click', () => this.deleteAllData());
         });
-        
+
         // Export buttons
         this.container.querySelectorAll('.export-complete-btn').forEach(btn => {
             this.addEventListener(btn, 'click', () => this.exportData('all'));
         });
-        
+
         this.container.querySelectorAll('.export-workouts-btn').forEach(btn => {
             this.addEventListener(btn, 'click', () => this.exportData('sessions'));
         });
-        
+
         this.container.querySelectorAll('.export-readiness-btn').forEach(btn => {
             this.addEventListener(btn, 'click', () => this.exportData('readiness'));
         });
-        
+
         this.container.querySelectorAll('.export-progression-btn').forEach(btn => {
             this.addEventListener(btn, 'click', () => this.exportData('progression'));
         });
-        
+
         // Consent buttons
         this.container.querySelectorAll('.view-consent-history-btn').forEach(btn => {
             this.addEventListener(btn, 'click', () => this.viewConsentHistory());
         });
-        
+
         this.container.querySelectorAll('.withdraw-consent-btn').forEach(btn => {
             this.addEventListener(btn, 'click', () => this.withdrawConsent());
         });
-        
+
         // Audit buttons
         this.container.querySelectorAll('.view-audit-log-btn').forEach(btn => {
             this.addEventListener(btn, 'click', () => this.viewAuditLog());
         });
-        
+
         this.container.querySelectorAll('.download-audit-btn').forEach(btn => {
             this.addEventListener(btn, 'click', () => this.downloadAuditReport());
         });
-        
+
         // Load data stats
         this.loadDataStats();
     }
-    
+
     /**
      * Handle preference change
      * @param {HTMLElement} element - Changed element
      */
     async handlePreferenceChange(element) {
-        const preference = element.dataset.preference;
+        const {preference} = element.dataset;
         const value = element.type === 'checkbox' ? element.checked : element.value;
-        
+
         this.userPreferences[preference] = value;
-        
+
         // Handle opt-out immediately
         if (preference === 'dataCollection' && !value) {
             await this.handleOptOut();
         }
-        
+
         // Update consent if needed
         if (this.consentManager) {
             await this.consentManager.updateConsent(preference, value);
         }
-        
+
         this.logger.info('Privacy preference changed', {
-            preference: preference,
-            value: value,
+            preference,
+            value,
             user_id: this.userId
         });
     }
-    
+
     /**
      * Handle opt-out from data collection
      */
@@ -470,24 +470,24 @@ class PrivacyPanel extends BaseComponent {
                     retroactive: true
                 })
             });
-            
+
             if (response.ok) {
                 this.showSuccess('Data collection stopped. Existing data marked for deletion.');
-                
+
                 // Update UI to show opt-out status
                 this.render();
                 this.bindEvents();
-                
+
             } else {
                 throw new Error('Opt-out failed');
             }
-            
+
         } catch (error) {
             this.logger.error('Opt-out failed:', error);
             this.showError('Failed to opt out of data collection');
         }
     }
-    
+
     /**
      * Save privacy preferences
      */
@@ -504,19 +504,19 @@ class PrivacyPanel extends BaseComponent {
                     preferences: this.userPreferences
                 })
             });
-            
+
             if (response.ok) {
                 this.showSuccess('Privacy preferences saved successfully');
             } else {
                 throw new Error('Save failed');
             }
-            
+
         } catch (error) {
             this.logger.error('Failed to save preferences:', error);
             this.showError('Failed to save privacy preferences');
         }
     }
-    
+
     /**
      * Export user data
      * @param {string} type - Export type ('all', 'sessions', 'readiness', 'progression')
@@ -526,31 +526,31 @@ class PrivacyPanel extends BaseComponent {
             // Get export format from UI
             const formatSelect = this.container.querySelector('#export-format-select');
             const format = formatSelect ? formatSelect.value : 'csv';
-            
+
             this.showExportStatus('Preparing export...', 10);
-            
+
             // Try client-side export first (using DataExport module)
             if (window.DataExport) {
                 try {
                     this.showExportStatus('Collecting data...', 30);
-                    
+
                     // Map export type to DataExport options
                     const exportOptions = this.getExportOptions(type);
-                    
+
                     this.showExportStatus('Generating export file...', 60);
-                    
+
                     // Use DataExport module for client-side export
                     await window.DataExport.exportDataType(type, format, exportOptions);
-                    
+
                     this.showExportStatus('Export completed!', 100);
-                    
+
                     // Log audit trail
                     await this.logAuditEvent('data_export', {
                         export_type: type,
-                        format: format,
+                        format,
                         method: 'client-side'
                     });
-                    
+
                     setTimeout(() => this.hideExportStatus(), 2000);
                     return;
                 } catch (clientError) {
@@ -558,10 +558,10 @@ class PrivacyPanel extends BaseComponent {
                     // Fall through to server-side export
                 }
             }
-            
+
             // Fallback: Server-side export
             this.showExportStatus('Preparing server export...', 40);
-            
+
             const response = await fetch('/.netlify/functions/data-export', {
                 method: 'POST',
                 headers: {
@@ -571,50 +571,50 @@ class PrivacyPanel extends BaseComponent {
                 body: JSON.stringify({
                     user_id: this.userId,
                     export_type: type,
-                    format: format
+                    format
                 })
             });
-            
+
             if (response.ok) {
                 const data = await response.json();
-                
+
                 // Download the exported data
-                const filename = format === 'csv' 
+                const filename = format === 'csv'
                     ? `ignite-fitness-${type}-export.csv`
                     : `ignite-fitness-${type}-export.json`;
-                
+
                 // Handle both string (CSV) and object (JSON) responses
                 if (format === 'csv' && typeof data.export_data === 'string') {
                     this.downloadFileAsString(data.export_data, filename, 'text/csv');
                 } else {
                     this.downloadFile(data.export_data, filename);
                 }
-                
+
                 this.showExportStatus('Export completed!', 100);
-                
+
                 // Log audit trail
                 await this.logAuditEvent('data_export', {
                     export_type: type,
-                    format: format,
+                    format,
                     method: 'server-side',
-                    size: typeof data.export_data === 'string' 
-                        ? data.export_data.length 
+                    size: typeof data.export_data === 'string'
+                        ? data.export_data.length
                         : JSON.stringify(data.export_data).length
                 });
-                
+
             } else {
                 throw new Error('Export failed');
             }
-            
+
             setTimeout(() => this.hideExportStatus(), 2000);
-            
+
         } catch (error) {
             this.logger.error('Data export failed:', error);
-            this.showError('Failed to export data: ' + (error.message || 'Unknown error'));
+            this.showError(`Failed to export data: ${ error.message || 'Unknown error'}`);
             this.hideExportStatus();
         }
     }
-    
+
     /**
      * Get export options based on type
      * @param {string} type - Export type
@@ -628,10 +628,10 @@ class PrivacyPanel extends BaseComponent {
             includeInjuryFlags: false, // Optional, not included by default
             dateRange: null // Can be set to { start: Date, end: Date } to filter by date
         };
-        
+
         return options;
     }
-    
+
     /**
      * Download file as string (for CSV)
      * @param {string} content - File content
@@ -641,34 +641,34 @@ class PrivacyPanel extends BaseComponent {
     downloadFileAsString(content, filename, mimeType = 'text/csv') {
         const blob = new Blob([content], { type: mimeType });
         const url = URL.createObjectURL(blob);
-        
+
         const a = document.createElement('a');
         a.href = url;
         a.download = filename;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        
+
         URL.revokeObjectURL(url);
     }
-    
+
     /**
      * Export all data
      */
     async exportAllData() {
         await this.exportData('all');
     }
-    
+
     /**
      * Delete all user data
      */
     async deleteAllData() {
         const confirmed = await this.showDeleteConfirmation();
-        if (!confirmed) return;
-        
+        if (!confirmed) {return;}
+
         try {
             this.showExportStatus('Deleting data...', 0);
-            
+
             const response = await fetch('/.netlify/functions/delete-user-data', {
                 method: 'POST',
                 headers: {
@@ -680,32 +680,32 @@ class PrivacyPanel extends BaseComponent {
                     confirm_deletion: true
                 })
             });
-            
+
             if (response.ok) {
                 this.showExportStatus('Data deleted successfully', 100);
-                
+
                 // Log audit trail
                 await this.logAuditEvent('data_deletion', {
                     scope: 'complete',
                     user_confirmed: true
                 });
-                
+
                 // Redirect to logout
                 setTimeout(() => {
                     window.location.href = '/logout';
                 }, 2000);
-                
+
             } else {
                 throw new Error('Deletion failed');
             }
-            
+
         } catch (error) {
             this.logger.error('Data deletion failed:', error);
             this.showError('Failed to delete data');
             this.hideExportStatus();
         }
     }
-    
+
     /**
      * View consent history
      */
@@ -720,24 +720,24 @@ class PrivacyPanel extends BaseComponent {
             this.showError('Failed to load consent history');
         }
     }
-    
+
     /**
      * Withdraw all consent
      */
     async withdrawConsent() {
         const confirmed = await this.showWithdrawConfirmation();
-        if (!confirmed) return;
-        
+        if (!confirmed) {return;}
+
         try {
             if (this.consentManager) {
                 await this.consentManager.withdrawAllConsent();
                 this.showSuccess('All consent withdrawn successfully');
-                
+
                 // Update preferences
                 this.userPreferences.dataCollection = false;
                 this.userPreferences.analytics = false;
                 this.userPreferences.marketing = false;
-                
+
                 this.render();
                 this.bindEvents();
             }
@@ -746,7 +746,7 @@ class PrivacyPanel extends BaseComponent {
             this.showError('Failed to withdraw consent');
         }
     }
-    
+
     /**
      * View audit log
      */
@@ -759,20 +759,20 @@ class PrivacyPanel extends BaseComponent {
                     'Content-Type': 'application/json'
                 }
             });
-            
+
             if (response.ok) {
                 const data = await response.json();
                 this.renderAuditLog(data.audit_log);
             } else {
                 throw new Error('Failed to load audit log');
             }
-            
+
         } catch (error) {
             this.logger.error('Failed to load audit log:', error);
             this.showError('Failed to load audit log');
         }
     }
-    
+
     /**
      * Download audit report
      */
@@ -785,20 +785,20 @@ class PrivacyPanel extends BaseComponent {
                     'Content-Type': 'application/json'
                 }
             });
-            
+
             if (response.ok) {
                 const data = await response.json();
                 this.downloadFile(data.report, 'ignite-fitness-audit-report.json');
             } else {
                 throw new Error('Failed to generate audit report');
             }
-            
+
         } catch (error) {
             this.logger.error('Failed to download audit report:', error);
             this.showError('Failed to download audit report');
         }
     }
-    
+
     /**
      * Load data statistics
      */
@@ -811,25 +811,25 @@ class PrivacyPanel extends BaseComponent {
                     'Content-Type': 'application/json'
                 }
             });
-            
+
             if (response.ok) {
                 const data = await response.json();
-                
+
                 // Update UI with stats
                 const workoutCount = this.container.querySelector('#workout-count');
                 const activityCount = this.container.querySelector('#activity-count');
                 const oldestData = this.container.querySelector('#oldest-data');
-                
-                if (workoutCount) workoutCount.textContent = data.workout_count || 0;
-                if (activityCount) activityCount.textContent = data.activity_count || 0;
-                if (oldestData) oldestData.textContent = data.oldest_data || 'N/A';
+
+                if (workoutCount) {workoutCount.textContent = data.workout_count || 0;}
+                if (activityCount) {activityCount.textContent = data.activity_count || 0;}
+                if (oldestData) {oldestData.textContent = data.oldest_data || 'N/A';}
             }
-            
+
         } catch (error) {
             this.logger.error('Failed to load data stats:', error);
         }
     }
-    
+
     /**
      * Show export status
      * @param {string} message - Status message
@@ -839,14 +839,14 @@ class PrivacyPanel extends BaseComponent {
         const statusEl = this.container.querySelector('#export-status');
         const messageEl = statusEl.querySelector('.status-message');
         const progressEl = statusEl.querySelector('.progress-fill');
-        
+
         if (statusEl) {
             statusEl.style.display = 'block';
             messageEl.textContent = message;
             progressEl.style.width = `${progress}%`;
         }
     }
-    
+
     /**
      * Hide export status
      */
@@ -856,7 +856,7 @@ class PrivacyPanel extends BaseComponent {
             statusEl.style.display = 'none';
         }
     }
-    
+
     /**
      * Download file
      * @param {Object} data - Data to download
@@ -865,17 +865,17 @@ class PrivacyPanel extends BaseComponent {
     downloadFile(data, filename) {
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        
+
         const a = document.createElement('a');
         a.href = url;
         a.download = filename;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        
+
         URL.revokeObjectURL(url);
     }
-    
+
     /**
      * Show delete confirmation
      * @returns {Promise<boolean>} Confirmation result
@@ -896,7 +896,7 @@ class PrivacyPanel extends BaseComponent {
                 justify-content: center;
                 z-index: 10000;
             `;
-            
+
             modal.innerHTML = `
                 <div style="
                     background: var(--color-surface);
@@ -917,19 +917,19 @@ class PrivacyPanel extends BaseComponent {
                     </div>
                 </div>
             `;
-            
+
             document.body.appendChild(modal);
-            
+
             modal.querySelector('.cancel-btn').addEventListener('click', () => {
                 document.body.removeChild(modal);
                 resolve(false);
             });
-            
+
             modal.querySelector('.confirm-btn').addEventListener('click', () => {
                 document.body.removeChild(modal);
                 resolve(true);
             });
-            
+
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
                     document.body.removeChild(modal);
@@ -938,7 +938,7 @@ class PrivacyPanel extends BaseComponent {
             });
         });
     }
-    
+
     /**
      * Show withdraw confirmation
      * @returns {Promise<boolean>} Confirmation result
@@ -959,7 +959,7 @@ class PrivacyPanel extends BaseComponent {
                 justify-content: center;
                 z-index: 10000;
             `;
-            
+
             modal.innerHTML = `
                 <div style="
                     background: var(--color-surface);
@@ -980,19 +980,19 @@ class PrivacyPanel extends BaseComponent {
                     </div>
                 </div>
             `;
-            
+
             document.body.appendChild(modal);
-            
+
             modal.querySelector('.cancel-btn').addEventListener('click', () => {
                 document.body.removeChild(modal);
                 resolve(false);
             });
-            
+
             modal.querySelector('.confirm-btn').addEventListener('click', () => {
                 document.body.removeChild(modal);
                 resolve(true);
             });
-            
+
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
                     document.body.removeChild(modal);
@@ -1001,15 +1001,15 @@ class PrivacyPanel extends BaseComponent {
             });
         });
     }
-    
+
     /**
      * Render consent history
      * @param {Array} history - Consent history
      */
     renderConsentHistory(history) {
         const timeline = this.container.querySelector('.consent-timeline');
-        if (!timeline) return;
-        
+        if (!timeline) {return;}
+
         timeline.innerHTML = history.map(entry => `
             <div class="consent-entry">
                 <div class="consent-date">${new Date(entry.timestamp).toLocaleString()}</div>
@@ -1017,21 +1017,21 @@ class PrivacyPanel extends BaseComponent {
                 <div class="consent-details">${entry.details}</div>
             </div>
         `).join('');
-        
+
         const historyEl = this.container.querySelector('#consent-history');
         if (historyEl) {
             historyEl.style.display = 'block';
         }
     }
-    
+
     /**
      * Render audit log
      * @param {Array} auditLog - Audit log entries
      */
     renderAuditLog(auditLog) {
         const timeline = this.container.querySelector('.audit-timeline');
-        if (!timeline) return;
-        
+        if (!timeline) {return;}
+
         timeline.innerHTML = auditLog.map(entry => `
             <div class="audit-entry">
                 <div class="audit-date">${new Date(entry.timestamp).toLocaleString()}</div>
@@ -1039,13 +1039,13 @@ class PrivacyPanel extends BaseComponent {
                 <div class="audit-details">${entry.details}</div>
             </div>
         `).join('');
-        
+
         const logEl = this.container.querySelector('#audit-log');
         if (logEl) {
             logEl.style.display = 'block';
         }
     }
-    
+
     /**
      * Log audit event
      * @param {string} action - Audit action
@@ -1061,8 +1061,8 @@ class PrivacyPanel extends BaseComponent {
                 },
                 body: JSON.stringify({
                     user_id: this.userId,
-                    action: action,
-                    details: details,
+                    action,
+                    details,
                     timestamp: new Date().toISOString()
                 })
             });
@@ -1070,7 +1070,7 @@ class PrivacyPanel extends BaseComponent {
             this.logger.error('Failed to log audit event:', error);
         }
     }
-    
+
     /**
      * Show success message
      * @param {string} message - Success message
@@ -1078,7 +1078,7 @@ class PrivacyPanel extends BaseComponent {
     showSuccess(message) {
         this.showNotification(message, 'success');
     }
-    
+
     /**
      * Show error message
      * @param {string} message - Error message
@@ -1086,7 +1086,7 @@ class PrivacyPanel extends BaseComponent {
     showError(message) {
         this.showNotification(message, 'error');
     }
-    
+
     /**
      * Show notification
      * @param {string} message - Message
@@ -1107,17 +1107,17 @@ class PrivacyPanel extends BaseComponent {
             max-width: 300px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         `;
-        
+
         notification.textContent = message;
         document.body.appendChild(notification);
-        
+
         setTimeout(() => {
             if (notification.parentElement) {
                 notification.remove();
             }
         }, 5000);
     }
-    
+
     /**
      * Get auth token
      * @returns {string} Auth token

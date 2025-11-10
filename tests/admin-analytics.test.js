@@ -3,9 +3,9 @@
 // Tests admin-*.js endpoints and analytics features
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { 
-  setupTestDB, 
-  teardownTestDB, 
+import {
+  setupTestDB,
+  teardownTestDB,
   getTestDatabase,
   createTestUser,
   cleanupTestData
@@ -18,7 +18,7 @@ describe('Admin Analytics Tests', () => {
 
   beforeEach(async () => {
     db = getTestDatabase();
-    
+
     if (process.env.MOCK_DATABASE === 'true' || !db) {
       console.log('⚠️  Mock database mode - skipping database integration tests');
       return;
@@ -26,7 +26,7 @@ describe('Admin Analytics Tests', () => {
 
     // Clean up any existing test data
     await cleanupTestData();
-    
+
     // Create a test user
     testUser = await createTestUser({
       external_id: `test_user_${Date.now()}`,
@@ -95,13 +95,13 @@ describe('Admin Analytics Tests', () => {
       const event = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer admin-test-token` // Would need actual admin token
+          'Authorization': 'Bearer admin-test-token' // Would need actual admin token
         },
         queryStringParameters: {}
       };
 
       const response = await handler(event);
-      
+
       // May succeed (200) if admin token is valid
       // May fail (401/403) if token is invalid or user is not admin
       if (response.statusCode === 200) {
@@ -125,7 +125,7 @@ describe('Admin Analytics Tests', () => {
 
       const event1 = {
         httpMethod: 'GET',
-        headers: { 'Authorization': `Bearer admin-test-token` },
+        headers: { 'Authorization': 'Bearer admin-test-token' },
         queryStringParameters: { limit: '5' }
       };
 
@@ -139,7 +139,7 @@ describe('Admin Analytics Tests', () => {
         if (cursor) {
           const event2 = {
             httpMethod: 'GET',
-            headers: { 'Authorization': `Bearer admin-test-token` },
+            headers: { 'Authorization': 'Bearer admin-test-token' },
             queryStringParameters: { limit: '5', cursor }
           };
           const res2 = await handler(event2);
@@ -162,7 +162,7 @@ describe('Admin Analytics Tests', () => {
       const event = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer admin-test-token` // Would need actual admin token
+          'Authorization': 'Bearer admin-test-token' // Would need actual admin token
         },
         queryStringParameters: {}
       };
@@ -171,11 +171,11 @@ describe('Admin Analytics Tests', () => {
 
       if (response.statusCode === 200) {
         const responseData = JSON.parse(response.body);
-        
+
         // Verify statistics structure
         expect(responseData.data || responseData.metrics).toBeDefined();
         const stats = responseData.data || responseData.metrics || {};
-        
+
         // Statistics should include user counts
         if (stats.total_users !== undefined) {
           expect(typeof stats.total_users).toBe('number');
@@ -198,7 +198,7 @@ describe('Admin Analytics Tests', () => {
       const event = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer admin-test-token` // Would need actual admin token
+          'Authorization': 'Bearer admin-test-token' // Would need actual admin token
         },
         queryStringParameters: {
           metric: 'sessions',
@@ -210,11 +210,11 @@ describe('Admin Analytics Tests', () => {
 
       if (response.statusCode === 200) {
         const responseData = JSON.parse(response.body);
-        
+
         // Verify top users structure
         expect(responseData.data || responseData.users).toBeDefined();
         const users = responseData.data?.items || responseData.data || responseData.users || [];
-        
+
         if (Array.isArray(users) && users.length > 0) {
           // Verify users are ordered by activity
           expect(users[0]).toHaveProperty('session_count');
@@ -237,7 +237,7 @@ describe('Admin Analytics Tests', () => {
       const eventWithFilter = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer admin-test-token` // Would need actual admin token
+          'Authorization': 'Bearer admin-test-token' // Would need actual admin token
         },
         queryStringParameters: {
           limit: '10',
@@ -249,11 +249,11 @@ describe('Admin Analytics Tests', () => {
 
       if (response.statusCode === 200) {
         const responseData = JSON.parse(response.body);
-        
+
         // Verify filtered results structure
         expect(responseData.data || responseData.users).toBeDefined();
         const users = responseData.data?.items || responseData.data || responseData.users || [];
-        
+
         // If users are returned, verify filtering might be applied
         if (Array.isArray(users) && users.length > 0) {
           // Users should have status field
@@ -281,7 +281,7 @@ describe('Admin Analytics Tests', () => {
       const event = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer admin-test-token` // Would need actual admin token
+          'Authorization': 'Bearer admin-test-token' // Would need actual admin token
         },
         queryStringParameters: {}
       };
@@ -290,10 +290,10 @@ describe('Admin Analytics Tests', () => {
 
       if (response.statusCode === 200) {
         const responseData = JSON.parse(response.body);
-        
+
         // Verify session statistics are included
         const stats = responseData.data || responseData.metrics || {};
-        
+
         // Session counts should be present
         if (stats.total_sessions !== undefined) {
           expect(typeof stats.total_sessions).toBe('number');
@@ -319,7 +319,7 @@ describe('Admin Analytics Tests', () => {
       const event = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer admin-test-token` // Would need actual admin token
+          'Authorization': 'Bearer admin-test-token' // Would need actual admin token
         },
         queryStringParameters: {}
       };
@@ -328,10 +328,10 @@ describe('Admin Analytics Tests', () => {
 
       if (response.statusCode === 200) {
         const responseData = JSON.parse(response.body);
-        
+
         // Verify time series data structure
         const stats = responseData.data || responseData.metrics || {};
-        
+
         // Time series data may include daily/weekly counts
         if (stats.sessions_7d !== undefined) {
           expect(typeof stats.sessions_7d).toBe('number');
@@ -357,7 +357,7 @@ describe('Admin Analytics Tests', () => {
       const event = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer admin-test-token` // Would need actual admin token
+          'Authorization': 'Bearer admin-test-token' // Would need actual admin token
         },
         queryStringParameters: {}
       };
@@ -366,10 +366,10 @@ describe('Admin Analytics Tests', () => {
 
       if (response.statusCode === 200) {
         const responseData = JSON.parse(response.body);
-        
+
         // Verify pattern analysis data
         const stats = responseData.data || responseData.metrics || {};
-        
+
         // Pattern analysis may include active users, session trends
         if (stats.active_users_30d !== undefined) {
           expect(typeof stats.active_users_30d).toBe('number');
@@ -397,7 +397,7 @@ describe('Admin Analytics Tests', () => {
       const event = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer admin-test-token` // Would need actual admin token
+          'Authorization': 'Bearer admin-test-token' // Would need actual admin token
         },
         queryStringParameters: {}
       };
@@ -406,10 +406,10 @@ describe('Admin Analytics Tests', () => {
 
       if (response.statusCode === 200) {
         const responseData = JSON.parse(response.body);
-        
+
         // Verify system health data structure
         const stats = responseData.data || responseData.metrics || responseData.health || {};
-        
+
         // Health status may be included in response
         // Verify response is structured correctly
         expect(responseData.data || responseData.metrics || responseData.health).toBeDefined();
@@ -432,7 +432,7 @@ describe('Admin Analytics Tests', () => {
       const event = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer admin-test-token` // Would need actual admin token
+          'Authorization': 'Bearer admin-test-token' // Would need actual admin token
         },
         queryStringParameters: {}
       };
@@ -442,10 +442,10 @@ describe('Admin Analytics Tests', () => {
 
       if (response.statusCode === 200) {
         const responseData = JSON.parse(response.body);
-        
+
         // Verify response structure for performance tracking
         expect(responseData.data || responseData.metrics).toBeDefined();
-        
+
         // Response should complete within reasonable time
         expect(duration).toBeLessThan(5000); // Should complete within 5 seconds
       } else {
@@ -466,7 +466,7 @@ describe('Admin Analytics Tests', () => {
       const event = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer admin-test-token` // Would need actual admin token
+          'Authorization': 'Bearer admin-test-token' // Would need actual admin token
         },
         queryStringParameters: {}
       };
@@ -475,10 +475,10 @@ describe('Admin Analytics Tests', () => {
 
       if (response.statusCode === 200) {
         const responseData = JSON.parse(response.body);
-        
+
         // Verify response structure (error tracking may be included)
         expect(responseData.data || responseData.metrics).toBeDefined();
-        
+
         // Error rates might be included in metrics
         const stats = responseData.data || responseData.metrics || {};
         // Just verify response structure is valid
@@ -512,10 +512,10 @@ describe('Admin Analytics Tests', () => {
 
       if (response.statusCode === 200) {
         const responseData = JSON.parse(response.body);
-        
+
         // Verify export data structure
         expect(responseData.data || responseData.export).toBeDefined();
-        
+
         // Export should contain user data
         const exportData = responseData.data || responseData.export || {};
         expect(Object.keys(exportData).length).toBeGreaterThan(0);
@@ -537,7 +537,7 @@ describe('Admin Analytics Tests', () => {
       const event = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer admin-test-token` // Would need actual admin token
+          'Authorization': 'Bearer admin-test-token' // Would need actual admin token
         },
         queryStringParameters: {}
       };
@@ -546,14 +546,14 @@ describe('Admin Analytics Tests', () => {
 
       if (response.statusCode === 200) {
         const responseData = JSON.parse(response.body);
-        
+
         // Verify analytics report structure
         expect(responseData.data || responseData.metrics).toBeDefined();
-        
+
         // Report should contain analytics data
         const report = responseData.data || responseData.metrics || {};
         expect(report).toBeDefined();
-        
+
         // Analytics should include key metrics
         expect(typeof report === 'object').toBe(true);
       } else {
@@ -607,7 +607,7 @@ describe('Admin Analytics Tests', () => {
       const event = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer admin-test-token` // Would need actual admin token
+          'Authorization': 'Bearer admin-test-token' // Would need actual admin token
         },
         queryStringParameters: {}
       };
@@ -616,12 +616,12 @@ describe('Admin Analytics Tests', () => {
 
       if (response.statusCode === 200) {
         const responseData = JSON.parse(response.body);
-        
+
         // Verify real-time metrics are provided
         expect(responseData.data || responseData.metrics).toBeDefined();
-        
+
         const metrics = responseData.data || responseData.metrics || {};
-        
+
         // User counts should be included
         if (metrics.total_users !== undefined) {
           expect(typeof metrics.total_users).toBe('number');
@@ -647,7 +647,7 @@ describe('Admin Analytics Tests', () => {
       const event = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer admin-test-token` // Would need actual admin token
+          'Authorization': 'Bearer admin-test-token' // Would need actual admin token
         },
         queryStringParameters: {}
       };
@@ -656,12 +656,12 @@ describe('Admin Analytics Tests', () => {
 
       if (response.statusCode === 200) {
         const responseData = JSON.parse(response.body);
-        
+
         // Verify session tracking metrics
         expect(responseData.data || responseData.metrics).toBeDefined();
-        
+
         const metrics = responseData.data || responseData.metrics || {};
-        
+
         // Session metrics should be included
         if (metrics.total_sessions !== undefined) {
           expect(typeof metrics.total_sessions).toBe('number');
@@ -722,7 +722,7 @@ describe('Admin Analytics Tests', () => {
       const event = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer admin-test-token` // Would need actual admin token
+          'Authorization': 'Bearer admin-test-token' // Would need actual admin token
         },
         queryStringParameters: {}
       };
@@ -731,12 +731,12 @@ describe('Admin Analytics Tests', () => {
 
       if (response.statusCode === 200) {
         const responseData = JSON.parse(response.body);
-        
+
         // Verify privacy protection (thresholds applied)
         expect(responseData.data || responseData.metrics).toBeDefined();
-        
+
         const metrics = responseData.data || responseData.metrics || {};
-        
+
         // Small counts should be null (anonymized) according to privacy thresholds
         // Handler sets new_users_7d and active_users_30d to NULL if < 5
         if (metrics.new_users_7d === null || metrics.active_users_30d === null) {
@@ -761,7 +761,7 @@ describe('Admin Analytics Tests', () => {
       const event = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer admin-test-token` // Would need actual admin token
+          'Authorization': 'Bearer admin-test-token' // Would need actual admin token
         },
         queryStringParameters: {}
       };
@@ -770,12 +770,12 @@ describe('Admin Analytics Tests', () => {
 
       if (response.statusCode === 200) {
         const responseData = JSON.parse(response.body);
-        
+
         // Verify data retention policies (handler filters deleted_at IS NULL)
         expect(responseData.data || responseData.metrics).toBeDefined();
-        
+
         const metrics = responseData.data || responseData.metrics || {};
-        
+
         // Only active (non-deleted) records should be included
         // This is enforced in SQL WHERE deleted_at IS NULL
         expect(typeof metrics).toBe('object');
@@ -797,7 +797,7 @@ describe('Admin Analytics Tests', () => {
       const event = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer admin-test-token` // Would need actual admin token
+          'Authorization': 'Bearer admin-test-token' // Would need actual admin token
         },
         queryStringParameters: {}
       };
@@ -810,7 +810,7 @@ describe('Admin Analytics Tests', () => {
         // Audit logging happens in handler regardless of success/failure
         expect(response.statusCode).toBeDefined();
       }
-      
+
       // Audit trail is maintained in database (tested implicitly by handler execution)
       expect([200, 401, 403, 500]).toContain(response.statusCode);
     });
@@ -828,7 +828,7 @@ describe('Admin Analytics Tests', () => {
 
       const event = {
         httpMethod: 'GET',
-        headers: { 'Authorization': `Bearer admin-test-token` },
+        headers: { 'Authorization': 'Bearer admin-test-token' },
         queryStringParameters: {}
       };
 
@@ -840,8 +840,8 @@ describe('Admin Analytics Tests', () => {
         expect(data.data || data.metrics).toBeDefined();
         const dash = data.data || data.metrics || {};
         // Should include some key numbers typically shown on dashboards
-        if (dash.total_users !== undefined) expect(typeof dash.total_users).toBe('number');
-        if (dash.total_sessions !== undefined) expect(typeof dash.total_sessions).toBe('number');
+        if (dash.total_users !== undefined) {expect(typeof dash.total_users).toBe('number');}
+        if (dash.total_sessions !== undefined) {expect(typeof dash.total_sessions).toBe('number');}
       } else {
         expect([401, 403]).toContain(response.statusCode);
       }
@@ -859,7 +859,7 @@ describe('Admin Analytics Tests', () => {
 
       const event = {
         httpMethod: 'GET',
-        headers: { 'Authorization': `Bearer admin-test-token` },
+        headers: { 'Authorization': 'Bearer admin-test-token' },
         queryStringParameters: { view: 'custom', widgets: 'users,sessions' }
       };
 
@@ -907,7 +907,7 @@ describe('Admin Analytics Tests', () => {
 
       const event = {
         httpMethod: 'GET',
-        headers: { 'Authorization': `Bearer admin-test-token` },
+        headers: { 'Authorization': 'Bearer admin-test-token' },
         queryStringParameters: { limit: '100' }
       };
 
@@ -930,7 +930,7 @@ describe('Admin Analytics Tests', () => {
 
       const event = {
         httpMethod: 'GET',
-        headers: { 'Authorization': `Bearer admin-test-token` },
+        headers: { 'Authorization': 'Bearer admin-test-token' },
         queryStringParameters: {}
       };
 
@@ -970,7 +970,7 @@ describe('Admin Analytics Tests', () => {
 
       const event = {
         httpMethod: 'GET',
-        headers: { 'Authorization': `Bearer admin-test-token` },
+        headers: { 'Authorization': 'Bearer admin-test-token' },
         queryStringParameters: { from, to, bucket: 'day', timezone: 'UTC' }
       };
 

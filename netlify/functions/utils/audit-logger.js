@@ -39,7 +39,7 @@ const AUDIT_CONFIG = {
         'configuration_change',
         'system_access'
     ],
-    
+
     // Data types that require special handling
     sensitiveDataTypes: [
         'personal_data',
@@ -50,7 +50,7 @@ const AUDIT_CONFIG = {
         'admin_data',
         'system_data'
     ],
-    
+
     // Retention periods (in days)
     retentionPeriods: {
         default: 2555, // 7 years
@@ -59,7 +59,7 @@ const AUDIT_CONFIG = {
         user: 1095, // 3 years
         system: 365 // 1 year
     },
-    
+
     // Batch processing
     batchSize: 100,
     batchTimeout: 5000, // 5 seconds
@@ -75,25 +75,25 @@ class AuditLogger {
         this.eventBuffer = [];
         this.isProcessing = false;
         this.retryQueue = [];
-        
+
         this.logger = logger;
-        
+
         this.init();
     }
-    
+
     /**
      * Initialize audit logger
      */
     init() {
         this.startBatchProcessing();
         this.startRetryProcessing();
-        
+
         this.logger.info('AuditLogger initialized', {
             sensitive_operations: this.config.sensitiveOperations.length,
             retention_periods: this.config.retentionPeriods
         });
     }
-    
+
     /**
      * Log audit event
      * @param {string} operation - Operation type
@@ -105,14 +105,14 @@ class AuditLogger {
             // Validate operation
             if (!this.config.sensitiveOperations.includes(operation)) {
                 this.logger.warn('Non-sensitive operation logged', {
-                    operation: operation
+                    operation
                 });
             }
-            
+
             // Create audit event
             const auditEvent = {
                 id: this.generateEventId(),
-                operation: operation,
+                operation,
                 timestamp: new Date().toISOString(),
                 user_id: eventData.userId || 'system',
                 session_id: eventData.sessionId || 'unknown',
@@ -128,32 +128,32 @@ class AuditLogger {
                 retention_period: this.getRetentionPeriod(operation),
                 created_at: new Date().toISOString()
             };
-            
+
             // Add to buffer
             this.eventBuffer.push(auditEvent);
-            
+
             // Process immediately for critical events
             if (auditEvent.risk_level === 'critical') {
                 await this.processCriticalEvent(auditEvent);
             }
-            
+
             this.logger.debug('Audit event logged', {
-                operation: operation,
+                operation,
                 event_id: auditEvent.id,
                 risk_level: auditEvent.risk_level
             });
-            
+
             return auditEvent.id;
-            
+
         } catch (error) {
             this.logger.error('Failed to log audit event', {
-                operation: operation,
+                operation,
                 error: error.message
             });
             throw error;
         }
     }
-    
+
     /**
      * Log user authentication event
      * @param {string} action - Authentication action
@@ -165,7 +165,7 @@ class AuditLogger {
             sessionId: authData.sessionId,
             ipAddress: authData.ipAddress,
             userAgent: authData.userAgent,
-            action: action,
+            action,
             details: {
                 method: authData.method,
                 success: authData.success,
@@ -176,7 +176,7 @@ class AuditLogger {
             result: authData.success ? 'success' : 'failure'
         });
     }
-    
+
     /**
      * Log data access event
      * @param {string} operation - Data operation
@@ -201,7 +201,7 @@ class AuditLogger {
             result: accessData.success ? 'success' : 'failure'
         });
     }
-    
+
     /**
      * Log data modification event
      * @param {string} operation - Modification operation
@@ -226,7 +226,7 @@ class AuditLogger {
             result: modificationData.success ? 'success' : 'failure'
         });
     }
-    
+
     /**
      * Log admin action event
      * @param {string} action - Admin action
@@ -240,7 +240,7 @@ class AuditLogger {
             userAgent: adminData.userAgent,
             resourceType: adminData.resourceType,
             resourceId: adminData.resourceId,
-            action: action,
+            action,
             details: {
                 target_user: adminData.targetUserId,
                 changes: adminData.changes,
@@ -251,7 +251,7 @@ class AuditLogger {
             result: adminData.success ? 'success' : 'failure'
         });
     }
-    
+
     /**
      * Log consent change event
      * @param {string} action - Consent action
@@ -265,7 +265,7 @@ class AuditLogger {
             userAgent: consentData.userAgent,
             resourceType: 'consent',
             resourceId: consentData.consentId,
-            action: action,
+            action,
             details: {
                 consent_type: consentData.consentType,
                 old_value: consentData.oldValue,
@@ -276,7 +276,7 @@ class AuditLogger {
             result: consentData.success ? 'success' : 'failure'
         });
     }
-    
+
     /**
      * Log security event
      * @param {string} eventType - Security event type
@@ -301,7 +301,7 @@ class AuditLogger {
             result: securityData.success ? 'success' : 'failure'
         });
     }
-    
+
     /**
      * Sanitize event data
      * @param {Object} data - Event data
@@ -309,7 +309,7 @@ class AuditLogger {
      */
     sanitizeEventData(data) {
         const sanitized = {};
-        
+
         for (const [key, value] of Object.entries(data)) {
             if (typeof value === 'string') {
                 // Mask sensitive data
@@ -324,10 +324,10 @@ class AuditLogger {
                 sanitized[key] = value;
             }
         }
-        
+
         return sanitized;
     }
-    
+
     /**
      * Check if field contains sensitive data
      * @param {string} fieldName - Field name
@@ -338,12 +338,12 @@ class AuditLogger {
             'password', 'token', 'secret', 'key', 'ssn', 'credit_card',
             'email', 'phone', 'address', 'name', 'id', 'username'
         ];
-        
-        return sensitiveFields.some(field => 
+
+        return sensitiveFields.some(field =>
             fieldName.toLowerCase().includes(field)
         );
     }
-    
+
     /**
      * Mask sensitive data
      * @param {string} data - Data to mask
@@ -353,14 +353,14 @@ class AuditLogger {
         if (!data || typeof data !== 'string') {
             return '[MASKED]';
         }
-        
+
         if (data.length <= 4) {
             return '*'.repeat(data.length);
         }
-        
+
         return '*'.repeat(data.length - 4) + data.slice(-4);
     }
-    
+
     /**
      * Calculate risk level
      * @param {string} operation - Operation type
@@ -369,7 +369,7 @@ class AuditLogger {
      */
     calculateRiskLevel(operation, eventData) {
         let riskScore = 0;
-        
+
         // Base risk by operation
         const operationRisk = {
             'user_login': 1,
@@ -388,22 +388,22 @@ class AuditLogger {
             'configuration_change': 4,
             'system_access': 5
         };
-        
+
         riskScore += operationRisk[operation] || 1;
-        
+
         // Additional risk factors
-        if (eventData.result === 'failure') riskScore += 2;
-        if (eventData.details?.justification) riskScore -= 1;
-        if (eventData.details?.mfa_used) riskScore -= 1;
-        if (eventData.details?.approval_required) riskScore -= 1;
-        
+        if (eventData.result === 'failure') {riskScore += 2;}
+        if (eventData.details?.justification) {riskScore -= 1;}
+        if (eventData.details?.mfa_used) {riskScore -= 1;}
+        if (eventData.details?.approval_required) {riskScore -= 1;}
+
         // Determine risk level
-        if (riskScore >= 5) return 'critical';
-        if (riskScore >= 3) return 'high';
-        if (riskScore >= 2) return 'medium';
+        if (riskScore >= 5) {return 'critical';}
+        if (riskScore >= 3) {return 'high';}
+        if (riskScore >= 2) {return 'medium';}
         return 'low';
     }
-    
+
     /**
      * Get compliance category
      * @param {string} operation - Operation type
@@ -427,10 +427,10 @@ class AuditLogger {
             'configuration_change': 'administrative',
             'system_access': 'system'
         };
-        
+
         return categories[operation] || 'general';
     }
-    
+
     /**
      * Get retention period
      * @param {string} operation - Operation type
@@ -440,7 +440,7 @@ class AuditLogger {
         const category = this.getComplianceCategory(operation);
         return this.config.retentionPeriods[category] || this.config.retentionPeriods.default;
     }
-    
+
     /**
      * Process critical event immediately
      * @param {Object} event - Critical event
@@ -448,13 +448,13 @@ class AuditLogger {
     async processCriticalEvent(event) {
         try {
             await this.storeAuditEvent(event);
-            
+
             this.logger.warn('Critical audit event processed', {
                 event_id: event.id,
                 operation: event.operation,
                 risk_level: event.risk_level
             });
-            
+
         } catch (error) {
             this.logger.error('Failed to process critical event', {
                 event_id: event.id,
@@ -462,7 +462,7 @@ class AuditLogger {
             });
         }
     }
-    
+
     /**
      * Start batch processing
      */
@@ -473,43 +473,43 @@ class AuditLogger {
             }
         }, this.config.batchTimeout);
     }
-    
+
     /**
      * Process event batch
      */
     async processBatch() {
-        if (this.isProcessing) return;
-        
+        if (this.isProcessing) {return;}
+
         this.isProcessing = true;
-        
+
         try {
             const batch = this.eventBuffer.splice(0, this.config.batchSize);
-            
+
             if (batch.length === 0) {
                 this.isProcessing = false;
                 return;
             }
-            
+
             await this.storeAuditEvents(batch);
-            
+
             this.logger.debug('Audit batch processed', {
                 batch_size: batch.length,
                 remaining: this.eventBuffer.length
             });
-            
+
         } catch (error) {
             this.logger.error('Batch processing failed', {
                 error: error.message,
                 batch_size: this.eventBuffer.length
             });
-            
+
             // Add failed events to retry queue
             this.retryQueue.push(...this.eventBuffer.splice(0, this.config.batchSize));
         } finally {
             this.isProcessing = false;
         }
     }
-    
+
     /**
      * Start retry processing
      */
@@ -520,13 +520,13 @@ class AuditLogger {
             }
         }, 30000); // 30 seconds
     }
-    
+
     /**
      * Process retry queue
      */
     async processRetryQueue() {
         const retryBatch = this.retryQueue.splice(0, this.config.batchSize);
-        
+
         for (const event of retryBatch) {
             try {
                 await this.storeAuditEvent(event);
@@ -535,7 +535,7 @@ class AuditLogger {
                     event_id: event.id,
                     error: error.message
                 });
-                
+
                 // Add back to retry queue if retries remaining
                 if (event.retryCount < this.config.maxRetries) {
                     event.retryCount = (event.retryCount || 0) + 1;
@@ -544,7 +544,7 @@ class AuditLogger {
             }
         }
     }
-    
+
     /**
      * Store audit event
      * @param {Object} event - Audit event
@@ -554,11 +554,11 @@ class AuditLogger {
             const { error } = await supabase
                 .from('audit_logs')
                 .insert(event);
-            
+
             if (error) {
                 throw new Error(`Database error: ${error.message}`);
             }
-            
+
         } catch (error) {
             this.logger.error('Failed to store audit event', {
                 event_id: event.id,
@@ -567,7 +567,7 @@ class AuditLogger {
             throw error;
         }
     }
-    
+
     /**
      * Store audit events
      * @param {Array} events - Audit events
@@ -577,11 +577,11 @@ class AuditLogger {
             const { error } = await supabase
                 .from('audit_logs')
                 .insert(events);
-            
+
             if (error) {
                 throw new Error(`Database error: ${error.message}`);
             }
-            
+
         } catch (error) {
             this.logger.error('Failed to store audit events', {
                 batch_size: events.length,
@@ -590,7 +590,7 @@ class AuditLogger {
             throw error;
         }
     }
-    
+
     /**
      * Generate event ID
      * @returns {string} Event ID
@@ -598,7 +598,7 @@ class AuditLogger {
     generateEventId() {
         return `audit-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     }
-    
+
     /**
      * Get audit statistics
      * @returns {Object} Audit statistics
@@ -621,15 +621,15 @@ class AuditLogger {
  */
 function withAuditLogging(handler, options = {}) {
     const auditLogger = new AuditLogger(options);
-    
+
     return async (event, context) => {
         const startTime = Date.now();
         let result = null;
         let error = null;
-        
+
         try {
             result = await handler(event, context);
-            
+
             // Log successful operation
             await auditLogger.logAuditEvent('api_call', {
                 userId: context.user?.id,
@@ -647,12 +647,12 @@ function withAuditLogging(handler, options = {}) {
                 },
                 result: 'success'
             });
-            
+
             return result;
-            
+
         } catch (err) {
             error = err;
-            
+
             // Log failed operation
             await auditLogger.logAuditEvent('api_call', {
                 userId: context.user?.id,
@@ -670,7 +670,7 @@ function withAuditLogging(handler, options = {}) {
                 },
                 result: 'failure'
             });
-            
+
             throw err;
         }
     };

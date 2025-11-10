@@ -35,7 +35,7 @@ describe('SQL Injection Protection', () => {
                         /\/\*/gi,
                         /\*\//gi
                     ];
-                    
+
                     this.safeTableNames = new Set([
                         'users', 'user_preferences', 'user_profiles', 'sessions', 'exercises',
                         'sleep_sessions', 'strava_activities', 'external_sources', 'activities',
@@ -44,7 +44,7 @@ describe('SQL Injection Protection', () => {
                 }
 
                 detectSQLInjection(input) {
-                    if (typeof input !== 'string') return false;
+                    if (typeof input !== 'string') {return false;}
                     const upperInput = input.toUpperCase();
                     return this.dangerousPatterns.some(pattern => pattern.test(upperInput));
                 }
@@ -113,10 +113,10 @@ describe('SQL Injection Protection', () => {
         });
 
         it('should allow safe input', () => {
-            expect(sqlProtection.detectSQLInjection("normal text")).toBe(false);
-            expect(sqlProtection.detectSQLInjection("user@example.com")).toBe(false);
-            expect(sqlProtection.detectSQLInjection("12345")).toBe(false);
-            expect(sqlProtection.detectSQLInjection("")).toBe(false);
+            expect(sqlProtection.detectSQLInjection('normal text')).toBe(false);
+            expect(sqlProtection.detectSQLInjection('user@example.com')).toBe(false);
+            expect(sqlProtection.detectSQLInjection('12345')).toBe(false);
+            expect(sqlProtection.detectSQLInjection('')).toBe(false);
         });
     });
 
@@ -167,7 +167,7 @@ describe('SQL Injection Protection', () => {
         it('should use parameterized queries for SELECT', () => {
             const query = 'SELECT * FROM users WHERE id = $1 AND name = $2';
             const params = [123, 'john'];
-            
+
             // Verify query uses parameter placeholders
             expect(query).toContain('$1');
             expect(query).toContain('$2');
@@ -178,7 +178,7 @@ describe('SQL Injection Protection', () => {
         it('should use parameterized queries for INSERT', () => {
             const query = 'INSERT INTO users (name, email) VALUES ($1, $2) RETURNING *';
             const params = ['john', 'john@example.com'];
-            
+
             expect(query).toContain('$1');
             expect(query).toContain('$2');
             expect(query).not.toContain('${');
@@ -188,7 +188,7 @@ describe('SQL Injection Protection', () => {
         it('should use parameterized queries for UPDATE', () => {
             const query = 'UPDATE users SET name = $1 WHERE id = $2 RETURNING *';
             const params = ['jane', 123];
-            
+
             expect(query).toContain('$1');
             expect(query).toContain('$2');
             expect(query).not.toContain('${');
@@ -198,7 +198,7 @@ describe('SQL Injection Protection', () => {
         it('should use parameterized queries for DELETE', () => {
             const query = 'DELETE FROM users WHERE id = $1 RETURNING *';
             const params = [123];
-            
+
             expect(query).toContain('$1');
             expect(query).not.toContain('${');
             expect(params).toEqual([123]);

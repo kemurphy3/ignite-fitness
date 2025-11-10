@@ -33,16 +33,16 @@ describe('Activity Transaction Manager', () => {
 
                 async executeActivityDedupTransaction(normalized, userId, affectedDates) {
                     const transactionId = `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                    
+
                     try {
                         // Mock transaction execution
                         const existingActivity = await this.findActivityByDedupHash(normalized.dedupHash, userId);
-                        
+
                         if (existingActivity) {
                             return await this.handleExistingActivityInTransaction(existingActivity, normalized, userId, affectedDates, transactionId);
                         } else {
                             const likelyDuplicates = await this.findLikelyDuplicatesInTransaction(normalized, userId);
-                            
+
                             if (likelyDuplicates.length > 0) {
                                 return await this.handleLikelyDuplicateInTransaction(likelyDuplicates[0], normalized, userId, affectedDates, transactionId);
                             } else {
@@ -78,8 +78,8 @@ describe('Activity Transaction Manager', () => {
                     return data.filter(activity => {
                         const duration1 = normalized.durationS || 0;
                         const duration2 = activity.duration_s || 0;
-                        
-                        if (duration1 === 0 || duration2 === 0) return false;
+
+                        if (duration1 === 0 || duration2 === 0) {return false;}
 
                         const durationDiff = Math.abs(duration1 - duration2);
                         const durationTolerance = Math.max(duration1, duration2) * 0.1;
@@ -138,7 +138,7 @@ describe('Activity Transaction Manager', () => {
                 async attachStreamsInTransaction(streamsByActivityId, activitiesById, transactionId) {
                     for (const [externalId, streams] of Object.entries(streamsByActivityId)) {
                         const activity = Array.from(activitiesById.values()).find(a => a.externalId === externalId);
-                        if (!activity || !activity.id) continue;
+                        if (!activity || !activity.id) {continue;}
 
                         for (const [streamType, streamData] of Object.entries(streams)) {
                             const mockResult = await this.supabase.insert();
@@ -169,10 +169,10 @@ describe('Activity Transaction Manager', () => {
 
                 calculateRichness(activity) {
                     let score = 0.0;
-                    if (activity.has_heartrate || activity.average_heartrate) score += 0.4;
-                    if (activity.start_latlng || activity.distance) score += 0.2;
-                    if (activity.device_watts) score += 0.2;
-                    if (activity.device_name) score += 0.1;
+                    if (activity.has_heartrate || activity.average_heartrate) {score += 0.4;}
+                    if (activity.start_latlng || activity.distance) {score += 0.2;}
+                    if (activity.device_watts) {score += 0.2;}
+                    if (activity.device_name) {score += 0.1;}
                     return Math.min(score, 1.0);
                 }
             }
@@ -467,7 +467,7 @@ describe('Activity Transaction Manager', () => {
             ]);
 
             const streamsByActivityId = {
-                '123': { 
+                '123': {
                     hr: [{ t: 0, v: 150 }, { t: 1, v: 155 }],
                     power: [{ t: 0, v: 200 }, { t: 1, v: 210 }]
                 }
@@ -487,7 +487,7 @@ describe('Activity Transaction Manager', () => {
             ]);
 
             const streamsByActivityId = {
-                '123': { 
+                '123': {
                     hr: [{ t: 0, v: 150 }],
                     power: [{ t: 0, v: 200 }]
                 }

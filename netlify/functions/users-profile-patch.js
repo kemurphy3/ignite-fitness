@@ -40,7 +40,7 @@ const createProfileSchema = {
         },
         sex: { enum: ['male', 'female', 'other', 'prefer_not_to_say'] },
         preferred_units: { enum: ['metric', 'imperial'] },
-        goals: { 
+        goals: {
             type: 'array',
             items: { type: 'string' },
             maxItems: 10
@@ -85,7 +85,7 @@ exports.handler = async (event) => {
 
     const sql = getServerlessDB();
     const ajv = new Ajv();
-    
+
     try {
         // Authenticate user
         const userId = await verifyJWT(event.headers);
@@ -96,31 +96,31 @@ exports.handler = async (event) => {
                 body: JSON.stringify({ error: 'Unauthorized', code: 'AUTH_001' })
             };
         }
-        
+
         // Check rate limit
         const canUpdate = await sql`SELECT check_profile_rate_limit(${userId}) as allowed`;
         if (!canUpdate[0].allowed) {
             return {
                 statusCode: 429,
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
                     'Retry-After': '3600'
                 },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     error: 'Rate limit exceeded',
                     code: 'RATE_001'
                 })
             };
         }
-        
+
         // Generate request ID for tracking
         const requestId = crypto.randomUUID();
         const requestHash = generateRequestHash(
-            event.body, 
-            userId, 
+            event.body,
+            userId,
             Date.now()
         );
-        
+
         // Check for duplicate request
         try {
             await sql`
@@ -138,18 +138,18 @@ exports.handler = async (event) => {
                 return {
                     statusCode: 409,
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        error: 'Duplicate request', 
-                        code: 'DUP_001' 
+                    body: JSON.stringify({
+                        error: 'Duplicate request',
+                        code: 'DUP_001'
                     })
                 };
             }
             throw error;
         }
-        
+
         const updates = JSON.parse(event.body);
         const { version: expectedVersion, ...fieldUpdates } = updates;
-        
+
         // Validate input for security
         const inputValidation = validateInput(fieldUpdates);
         if (!inputValidation.valid) {
@@ -163,39 +163,39 @@ exports.handler = async (event) => {
                 })
             };
         }
-        
+
         // Sanitize input
         const sanitizedUpdates = sanitizeInput(fieldUpdates);
-        
+
         // Convert units if necessary
         if (sanitizedUpdates.height) {
-            sanitizedUpdates.height_cm = typeof sanitizedUpdates.height === 'object' 
+            sanitizedUpdates.height_cm = typeof sanitizedUpdates.height === 'object'
                 ? convertUnits.toCm(sanitizedUpdates.height)
                 : sanitizedUpdates.height;
             delete sanitizedUpdates.height;
         }
-        
+
         if (sanitizedUpdates.weight) {
             sanitizedUpdates.weight_kg = typeof sanitizedUpdates.weight === 'object'
                 ? convertUnits.toKg(sanitizedUpdates.weight)
                 : sanitizedUpdates.weight;
             delete sanitizedUpdates.weight;
         }
-        
+
         // Build parameterized update query
         const updateFields = [];
         const updateValues = [];
         let paramIndex = 1;
-        
+
         for (const [key, value] of Object.entries(sanitizedUpdates)) {
             // Validate each field individually
             if (createProfileSchema.properties[key]) {
-                const fieldSchema = { 
-                    type: 'object', 
-                    properties: { [key]: createProfileSchema.properties[key] } 
+                const fieldSchema = {
+                    type: 'object',
+                    properties: { [key]: createProfileSchema.properties[key] }
                 };
                 const validateField = ajv.compile(fieldSchema);
-                
+
                 if (!validateField({ [key]: value })) {
                     return {
                         statusCode: 400,
@@ -208,31 +208,31 @@ exports.handler = async (event) => {
                     };
                 }
             }
-            
+
             updateFields.push(`${key} = $${paramIndex}`);
             updateValues.push(value);
             paramIndex++;
         }
-        
+
         if (updateFields.length === 0) {
             return {
                 statusCode: 400,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     error: 'No valid fields to update',
                     code: 'VAL_004'
                 })
             };
         }
-        
+
         // Add metadata fields
         updateFields.push(`last_modified_by = $${paramIndex}`);
         updateValues.push(userId);
         paramIndex++;
-        
+
         // Set request context for trigger
         await sql`SELECT set_config('app.request_id', ${requestId}, false)`;
-        
+
         // Build parameterized query
         let query = `
             UPDATE user_profiles 
@@ -241,24 +241,24 @@ exports.handler = async (event) => {
         `;
         updateValues.push(userId);
         paramIndex++;
-        
+
         if (expectedVersion) {
             query += ` AND version = $${paramIndex}`;
             updateValues.push(expectedVersion);
         }
-        
+
         query += ' RETURNING *';
-        
+
         // Execute safe parameterized update
         const result = await sql(query, updateValues);
-        
+
         if (result.length === 0) {
             if (expectedVersion) {
                 // Check if profile exists with different version
                 const current = await sql`
                     SELECT version FROM user_profiles WHERE user_id = ${userId}
                 `;
-                
+
                 if (current.length > 0) {
                     return {
                         statusCode: 409,
@@ -272,17 +272,17 @@ exports.handler = async (event) => {
                     };
                 }
             }
-            
+
             return {
                 statusCode: 404,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     error: 'Profile not found',
                     code: 'PROF_404'
                 })
             };
         }
-        
+
         // Log sanitized action (no PII)
         console.log('Profile updated:', {
             userId: sanitizeForLog(userId),
@@ -291,7 +291,7 @@ exports.handler = async (event) => {
             newVersion: result[0].version,
             completeness: result[0].completeness_score
         });
-        
+
         return {
             statusCode: 200,
             headers: { 'Content-Type': 'application/json' },
@@ -302,14 +302,14 @@ exports.handler = async (event) => {
                 updated_fields: Object.keys(sanitizedUpdates)
             })
         };
-        
+
     } catch (error) {
         console.error('Profile update error:', sanitizeForLog(error.message));
-        
+
         return {
             statusCode: 500,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 error: 'Internal server error',
                 code: 'SYS_001'
             })

@@ -190,11 +190,11 @@ class WhyPanel {
      * @returns {string} HTML for summary
      */
     renderSummary(rationale) {
-        if (!rationale || rationale.length === 0) return '';
-        
+        if (!rationale || rationale.length === 0) {return '';}
+
         // Take first 1-2 most important points
         const summaryPoints = rationale.slice(0, Math.min(2, rationale.length));
-        
+
         return `
             <ul class="why-summary-list" role="list">
                 ${summaryPoints.map((reason, index) => `
@@ -213,8 +213,8 @@ class WhyPanel {
      * @returns {string} HTML for detailed rationale
      */
     renderDetailedRationale(rationale) {
-        if (!rationale || rationale.length === 0) return '';
-        
+        if (!rationale || rationale.length === 0) {return '';}
+
         return `
             <ul class="why-list" role="list">
                 ${rationale.map((reason, index) => `
@@ -233,8 +233,8 @@ class WhyPanel {
      * @returns {string} Simplified reason
      */
     simplifyReason(reason) {
-        if (!reason) return '';
-        
+        if (!reason) {return '';}
+
         // Remove technical jargon and focus on user benefits
         const simplified = reason
             .replace(/based on (your|the) (recent|current) (training|activity|workout)/gi, 'considering your training')
@@ -246,12 +246,12 @@ class WhyPanel {
             .replace(/due to/gi, 'because of')
             .replace(/in accordance with/gi, 'following')
             .replace(/with respect to/gi, 'for');
-            
+
         // Limit length for summary
         if (simplified.length > 120) {
-            return simplified.substring(0, 117) + '...';
+            return `${simplified.substring(0, 117) }...`;
         }
-        
+
         return simplified;
     }
 
@@ -264,7 +264,7 @@ class WhyPanel {
         const arrow = button?.querySelector('.details-arrow');
         const label = button?.querySelector('.details-label');
 
-        if (!button || !content) return;
+        if (!button || !content) {return;}
 
         const isExpanded = content.getAttribute('aria-hidden') === 'false';
         const newExpanded = !isExpanded;
@@ -272,11 +272,11 @@ class WhyPanel {
         button.setAttribute('aria-expanded', newExpanded);
         content.setAttribute('aria-hidden', !newExpanded);
         content.classList.toggle('expanded', newExpanded);
-        
+
         if (arrow) {
             arrow.classList.toggle('expanded', newExpanded);
         }
-        
+
         if (label) {
             label.textContent = newExpanded ? 'Hide technical details' : 'Show technical details';
         }
@@ -429,7 +429,7 @@ class WhyPanel {
      */
     selectAlternate(alternateName, originalName, index) {
         const plan = window.WorkoutTracker?.currentPlan;
-        
+
         if (!plan || !plan.blocks) {
             this.logger.error('No plan available for override');
             return;
@@ -475,7 +475,7 @@ class WhyPanel {
      */
     applyRegression(exerciseName, index) {
         const plan = window.WorkoutTracker?.currentPlan;
-        
+
         if (!plan || !plan.blocks) {
             this.logger.error('No plan available for regression');
             return;
@@ -485,7 +485,7 @@ class WhyPanel {
         for (const block of plan.blocks) {
             if (block.items && block.items[index]) {
                 const item = block.items[index];
-                
+
                 // Reduce sets
                 if (typeof item.sets === 'number') {
                     item.sets = Math.max(1, item.sets - 1);
@@ -493,7 +493,7 @@ class WhyPanel {
 
                 // Reduce intensity in notes
                 item.notes = `${item.notes || ''} (Regression applied)`;
-                
+
                 break;
             }
         }
@@ -521,7 +521,7 @@ class WhyPanel {
      */
     applyProgression(exerciseName, index) {
         const plan = window.WorkoutTracker?.currentPlan;
-        
+
         if (!plan || !plan.blocks) {
             this.logger.error('No plan available for progression');
             return;
@@ -531,14 +531,14 @@ class WhyPanel {
         for (const block of plan.blocks) {
             if (block.items && block.items[index]) {
                 const item = block.items[index];
-                
+
                 // Increase sets
                 if (typeof item.sets === 'number') {
                     item.sets += 1;
                 }
 
                 item.notes = `${item.notes || ''} (Progression applied)`;
-                
+
                 break;
             }
         }
@@ -566,7 +566,7 @@ class WhyPanel {
      */
     applyDifferentPattern(exerciseName, index) {
         const plan = window.WorkoutTracker?.currentPlan;
-        
+
         if (!plan || !plan.blocks) {
             this.logger.error('No plan available for pattern change');
             return;
@@ -588,7 +588,7 @@ class WhyPanel {
      */
     logOverride(overrideData) {
         this.eventBus.emit('EXERCISE_OVERRIDE', overrideData);
-        
+
         this.logger.info('Exercise override applied', overrideData);
 
         // Store for persistence
@@ -606,8 +606,8 @@ class WhyPanel {
      * @returns {string} Escaped text
      */
     escapeHtml(text) {
-        if (!text) return '';
-        if (typeof text !== 'string') return String(text);
+        if (!text) {return '';}
+        if (typeof text !== 'string') {return String(text);}
 
         // Use HtmlSanitizer if available, otherwise fall back to basic escaping
         if (this.sanitizer) {

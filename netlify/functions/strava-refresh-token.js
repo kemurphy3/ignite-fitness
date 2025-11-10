@@ -38,10 +38,10 @@ exports.handler = async (event) => {
   const sql = getDB();
   const encryption = new TokenEncryption();
   let lock = null;
-  
+
   try {
     const { userId } = JSON.parse(event.body || '{}');
-    
+
     if (!userId) {
       return {
         statusCode: 400,
@@ -59,54 +59,54 @@ exports.handler = async (event) => {
           'Content-Type': 'application/json',
           ...getRateLimitHeaders(rateLimitResult)
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           error: 'Rate limit exceeded',
           reason: rateLimitResult.reason,
           retryAfter: rateLimitResult.retryAfter
         })
       };
     }
-    
+
     // Check cache first
     const cachedToken = tokenCache.get(`token_${userId}`);
     if (cachedToken && new Date(cachedToken.expires_at) > new Date(Date.now() + 60000)) {
       return {
         statusCode: 200,
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'X-Cache': 'HIT'
         },
-        body: JSON.stringify({ 
-          success: true, 
+        body: JSON.stringify({
+          success: true,
           cached: true,
           expires_at: cachedToken.expires_at
         })
       };
     }
-    
+
     // Acquire distributed lock
     lock = await acquireRefreshLock(sql, userId);
     if (!lock.acquired) {
       return {
         statusCode: 423, // Locked
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Retry-After': '5'
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           error: 'Token refresh in progress',
           retryAfter: lock.retryAfter,
           reason: lock.reason
         })
       };
     }
-    
+
     // Get current token
     const result = await sql`
       SELECT * FROM strava_tokens 
       WHERE user_id = ${userId}
     `;
-    
+
     if (!result.length) {
       return {
         statusCode: 404,
@@ -114,30 +114,30 @@ exports.handler = async (event) => {
         body: JSON.stringify({ error: 'No token found for user' })
       };
     }
-    
+
     const token = result[0];
-    
+
     // Check if refresh is actually needed
     if (new Date(token.expires_at) > new Date(Date.now() + 300000)) { // 5 minutes buffer
       // Update cache
       tokenCache.set(`token_${userId}`, {
         expires_at: token.expires_at
       });
-      
+
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          success: true, 
+        body: JSON.stringify({
+          success: true,
           refresh_not_needed: true,
           expires_at: token.expires_at
         })
       };
     }
-    
+
     // Decrypt refresh token
     const refreshToken = await encryption.decrypt(token.encrypted_refresh_token);
-    
+
     // Refresh using circuit breaker
     const newTokens = await stravaCircuit.execute(async () => {
       const response = await fetch('https://www.strava.com/oauth/token', {
@@ -150,27 +150,27 @@ exports.handler = async (event) => {
           grant_type: 'refresh_token'
         })
       });
-      
+
       if (!response.ok) {
         const error = await response.text();
         throw new Error(`Strava refresh failed: ${response.status} - ${error}`);
       }
-      
+
       return response.json();
     });
-    
+
     // Validate new token
     const isValid = await validateStravaToken(newTokens.access_token);
     if (!isValid) {
       throw new Error('New token validation failed');
     }
-    
+
     // Encrypt and update
     const { encrypted: encryptedAccess, keyVersion } = await encryption.encrypt(newTokens.access_token);
     const { encrypted: encryptedRefresh } = await encryption.encrypt(newTokens.refresh_token, keyVersion);
-    
+
     const newExpiresAt = new Date(Date.now() + newTokens.expires_in * 1000);
-    
+
     await sql`
       UPDATE strava_tokens SET
         encrypted_access_token = ${encryptedAccess},
@@ -183,12 +183,12 @@ exports.handler = async (event) => {
         updated_at = NOW()
       WHERE user_id = ${userId}
     `;
-    
+
     // Update cache
     tokenCache.set(`token_${userId}`, {
       expires_at: newExpiresAt
     });
-    
+
     await auditLog(sql, {
       user_id: userId,
       action: 'TOKEN_REFRESH',
@@ -199,17 +199,17 @@ exports.handler = async (event) => {
         refresh_count: token.refresh_count + 1
       }
     });
-    
+
     // Log successful token refresh with safe metadata
     logger.tokenRefresh({
       userId: token.user_id,
       expiresAt: newExpiresAt,
       scope: token.scope
     });
-    
+
     return {
       statusCode: 200,
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'X-Cache': 'MISS',
         'X-Circuit-Breaker-State': stravaCircuit.getStatus().state
@@ -220,7 +220,7 @@ exports.handler = async (event) => {
         refresh_count: token.refresh_count + 1
       })
     };
-    
+
   } catch (error) {
     // Log error with sanitized data
     logger.error('Token refresh failed', {
@@ -228,7 +228,7 @@ exports.handler = async (event) => {
       error_message: error.message,
       circuit_breaker_state: stravaCircuit.getStatus().state
     });
-    
+
     // Log the error
     try {
       const { userId } = JSON.parse(event.body || '{}');
@@ -245,17 +245,17 @@ exports.handler = async (event) => {
     } catch (auditError) {
       logger.error('Failed to log audit', { error: auditError.message });
     }
-    
+
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         error: 'Token refresh failed',
         circuit_state: stravaCircuit.getStatus().state,
         retry: stravaCircuit.getStatus().state !== 'OPEN'
       })
     };
-    
+
   } finally {
     if (lock?.acquired) {
       await releaseLock(sql, lock.lockId, JSON.parse(event.body || '{}').userId);

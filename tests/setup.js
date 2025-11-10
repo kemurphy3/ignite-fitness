@@ -5,19 +5,19 @@
 if (typeof localStorage === 'undefined') {
   const localStorageMock = {
     _store: {},
-    getItem: function(key) {
+    getItem(key) {
       return this._store[key] || null;
     },
-    setItem: function(key, value) {
+    setItem(key, value) {
       this._store[key] = value.toString();
     },
-    removeItem: function(key) {
+    removeItem(key) {
       delete this._store[key];
     },
-    clear: function() {
+    clear() {
       this._store = {};
     },
-    key: function(index) {
+    key(index) {
       return Object.keys(this._store)[index] || null;
     },
     get length() {
@@ -31,9 +31,9 @@ if (typeof localStorage === 'undefined') {
 if (typeof window === 'undefined') {
   global.window = {
     location: { hash: '', href: 'http://localhost' },
-    addEventListener: function() {},
-    removeEventListener: function() {},
-    dispatchEvent: function() { return true; }
+    addEventListener() {},
+    removeEventListener() {},
+    dispatchEvent() { return true; }
   };
 }
 

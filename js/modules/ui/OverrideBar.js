@@ -6,10 +6,10 @@ class OverrideBar {
     constructor() {
         this.logger = window.SafeLogger || console;
         this.eventBus = window.EventBus;
-        
+
         this.currentPlan = null;
         this.overrideHistory = [];
-        
+
         this.createOverrideBar();
     }
 
@@ -51,14 +51,14 @@ class OverrideBar {
                 </div>
             </div>
         `;
-        
+
         // Add event listeners
         overrideBar.querySelectorAll('.override-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 this.handleOverride(e.currentTarget.dataset.action);
             });
         });
-        
+
         // Insert into body
         document.body.appendChild(overrideBar);
     }
@@ -70,42 +70,42 @@ class OverrideBar {
     async handleOverride(action) {
         try {
             this.logger.debug('Override triggered', { action });
-            
+
             switch (action) {
                 case 'change-exercise':
                     await this.showExerciseSwapper();
                     break;
-                    
+
                 case 'less-time':
                     await this.showTimeReducer();
                     break;
-                    
+
                 case 'swap-equipment':
                     await this.showEquipmentSwapper();
                     break;
-                    
+
                 case 'reduce-intensity':
                     await this.reduceCurrentIntensity();
                     break;
-                    
+
                 case 'coach-chat':
                     await this.openCoachChat();
                     break;
             }
-            
+
             // Log override
             this.overrideHistory.push({
                 action,
                 timestamp: new Date().toISOString(),
                 planBefore: this.currentPlan
             });
-            
+
             // Emit event
             this.eventBus.emit('OVERRIDE_APPLIED', {
                 action,
                 result: 'success'
             });
-            
+
         } catch (error) {
             this.logger.error('Failed to handle override', error);
         }
@@ -133,14 +133,14 @@ class OverrideBar {
                 </button>
             </div>
         `;
-        
+
         modal.querySelectorAll('.exercise-option').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 await this.swapExercise(e.target.dataset.exercise);
                 modal.remove();
             });
         });
-        
+
         document.body.appendChild(modal);
     }
 
@@ -154,7 +154,7 @@ class OverrideBar {
             { label: 'Reduce sets', reduction: '25%' },
             { label: 'Super set pairs', reduction: '30%' }
         ];
-        
+
         const modal = document.createElement('div');
         modal.className = 'override-modal';
         modal.innerHTML = `
@@ -171,14 +171,14 @@ class OverrideBar {
                 </div>
             </div>
         `;
-        
+
         modal.querySelectorAll('.time-option').forEach((btn, i) => {
             btn.addEventListener('click', () => {
                 this.applyTimeReduction(quickOptions[i].reduction);
                 modal.remove();
             });
         });
-        
+
         document.body.appendChild(modal);
     }
 
@@ -193,7 +193,7 @@ class OverrideBar {
             'Use dumbbells instead',
             'Use resistance bands'
         ];
-        
+
         const modal = document.createElement('div');
         modal.className = 'override-modal';
         modal.innerHTML = `
@@ -206,7 +206,7 @@ class OverrideBar {
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(modal);
     }
 
@@ -220,9 +220,9 @@ class OverrideBar {
             intensityMultiplier: (this.currentPlan.intensityMultiplier || 1.0) * 0.85,
             modification: 'Reduced intensity by 15% upon request'
         };
-        
+
         this.updatePlan(newPlan);
-        
+
         this.showNotification('Intensity reduced by 15%. Better safe than sorry.');
     }
 
@@ -241,15 +241,15 @@ class OverrideBar {
      */
     applyTimeReduction(reduction) {
         const reductionValue = parseFloat(reduction.replace('%', '')) / 100;
-        
+
         const newPlan = {
             ...this.currentPlan,
             volumeMultiplier: (this.currentPlan.volumeMultiplier || 1.0) * (1 - reductionValue),
             modification: `Time reduced by ${reduction}`
         };
-        
+
         this.updatePlan(newPlan);
-        
+
         this.showNotification(`Time reduced by ${reduction}. Workout shortened.`);
     }
 
@@ -264,7 +264,7 @@ class OverrideBar {
             }
             return ex;
         });
-        
+
         this.showNotification(`Swapped to ${newExercise}`);
     }
 
@@ -274,14 +274,14 @@ class OverrideBar {
      */
     updatePlan(newPlan) {
         this.currentPlan = newPlan;
-        
+
         // Emit event
         this.eventBus.emit('PLAN_UPDATED', {
             oldPlan: this.overrideHistory[this.overrideHistory.length - 1]?.planBefore,
             newPlan,
             changes: this.getChanges()
         });
-        
+
         // Update UI without reload
         this.refreshUI();
     }
@@ -317,9 +317,9 @@ class OverrideBar {
         const notification = document.createElement('div');
         notification.className = 'override-notification';
         notification.textContent = message;
-        
+
         document.body.appendChild(notification);
-        
+
         setTimeout(() => {
             notification.remove();
         }, 3000);

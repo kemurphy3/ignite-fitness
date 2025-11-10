@@ -10,7 +10,7 @@ class StravaNormalizer {
             yieldInterval: 16
         });
     }
-    
+
     /**
      * Normalize multiple Strava activities with yielding
      * @param {Array} stravaActivities - Raw Strava activities
@@ -24,10 +24,10 @@ class StravaNormalizer {
             onError = null,
             batchSize = 10
         } = options;
-        
+
         this.logger = window.SafeLogger || console;
         this.logger.info(`Normalizing ${stravaActivities.length} Strava activities`);
-        
+
         // Process activities with yielding
         const result = await this.asyncYielder.processArray(
             stravaActivities,
@@ -38,11 +38,11 @@ class StravaNormalizer {
                 onError
             }
         );
-        
+
         this.logger.info(`Normalized ${result.results.length} activities`);
         return result.results;
     }
-    
+
     /**
      * Normalize Strava activity to internal format
      * @param {Object} stravaActivity - Raw Strava activity data
@@ -51,14 +51,14 @@ class StravaNormalizer {
      */
     normalizeActivity(stravaActivity, userId) {
         const normalized = {
-            userId: userId,
+            userId,
             canonicalSource: 'strava',
             canonicalExternalId: stravaActivity.id?.toString(),
             type: this.mapActivityType(stravaActivity.type),
             name: stravaActivity.name || 'Untitled Activity',
             startTs: stravaActivity.start_date,
-            endTs: stravaActivity.start_date ? 
-                new Date(new Date(stravaActivity.start_date).getTime() + (stravaActivity.moving_time || 0) * 1000).toISOString() : 
+            endTs: stravaActivity.start_date ?
+                new Date(new Date(stravaActivity.start_date).getTime() + (stravaActivity.moving_time || 0) * 1000).toISOString() :
                 null,
             durationS: stravaActivity.moving_time || stravaActivity.elapsed_time || 0,
             device: this.extractDeviceInfo(stravaActivity),
@@ -240,23 +240,23 @@ class StravaNormalizer {
      */
     static extractDeviceInfo(stravaActivity) {
         const device = {};
-        
+
         if (stravaActivity.device_name) {
             device.name = stravaActivity.device_name;
         }
-        
+
         if (stravaActivity.device_type) {
             device.type = stravaActivity.device_type;
         }
-        
+
         if (stravaActivity.manufacturer) {
             device.manufacturer = stravaActivity.manufacturer;
         }
-        
+
         if (stravaActivity.model) {
             device.model = stravaActivity.model;
         }
-        
+
         return Object.keys(device).length > 0 ? device : null;
     }
 
@@ -320,7 +320,7 @@ class StravaNormalizer {
 
         // Process each stream type
         const streamTypes = ['heartrate', 'time', 'latlng', 'altitude', 'watts', 'cadence', 'temp'];
-        
+
         for (const streamType of streamTypes) {
             if (stravaStreams[streamType]) {
                 const normalizedStream = this.normalizeStream(stravaStreams[streamType], streamType, activityId);
@@ -349,9 +349,9 @@ class StravaNormalizer {
         const samples = this.normalizeSamples(streamData, streamType);
 
         return {
-            activityId: activityId,
+            activityId,
             streamType: normalizedType,
-            samples: samples,
+            samples,
             sampleRateHz: this.calculateSampleRate(samples),
             createdAt: new Date().toISOString()
         };
@@ -428,8 +428,8 @@ class StravaNormalizer {
      * @returns {number} Sample rate in Hz
      */
     static calculateSampleRate(samples) {
-        if (samples.length < 2) return 0;
-        
+        if (samples.length < 2) {return 0;}
+
         const timeSpan = samples[samples.length - 1].t - samples[0].t;
         return samples.length / timeSpan;
     }
@@ -444,11 +444,11 @@ class StravaNormalizer {
         const warnings = [];
 
         // Required fields
-        if (!normalizedActivity.userId) errors.push('Missing userId');
-        if (!normalizedActivity.canonicalSource) errors.push('Missing canonicalSource');
-        if (!normalizedActivity.type) errors.push('Missing type');
-        if (!normalizedActivity.startTs) errors.push('Missing startTs');
-        if (!normalizedActivity.durationS) errors.push('Missing durationS');
+        if (!normalizedActivity.userId) {errors.push('Missing userId');}
+        if (!normalizedActivity.canonicalSource) {errors.push('Missing canonicalSource');}
+        if (!normalizedActivity.type) {errors.push('Missing type');}
+        if (!normalizedActivity.startTs) {errors.push('Missing startTs');}
+        if (!normalizedActivity.durationS) {errors.push('Missing durationS');}
 
         // Data quality warnings
         if (normalizedActivity.durationS && normalizedActivity.durationS < 60) {
@@ -491,7 +491,7 @@ class StravaNormalizer {
             try {
                 const normalized = this.normalizeActivity(stravaActivity, userId);
                 const validation = this.validateNormalizedActivity(normalized);
-                
+
                 if (validation.isValid) {
                     results.normalized.push(normalized);
                 } else {

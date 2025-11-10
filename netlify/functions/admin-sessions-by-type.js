@@ -1,17 +1,17 @@
 // GET /api/admin/sessions/by-type - Distribution of session types with privacy protection
 const { neon } = require('@neondatabase/serverless');
 const crypto = require('crypto');
-const { 
-  verifyAdmin, 
-  auditLog, 
-  errorResponse, 
+const {
+  verifyAdmin,
+  auditLog,
+  errorResponse,
   withTimeout,
-  successResponse 
+  successResponse
 } = require('./utils/admin-auth');
 
-const { 
-  safeQuery, 
-  validateBucket 
+const {
+  safeQuery,
+  validateBucket
 } = require('./utils/safe-query');
 
 const { getNeonClient } = require('./utils/connection-pool');
@@ -20,37 +20,37 @@ const sql = getNeonClient();
 exports.handler = async (event) => {
   const startTime = Date.now();
   const requestId = crypto.randomUUID();
-  
+
   try {
     await sql`SET statement_timeout = '5s'`;
-    
+
     const token = event.headers.authorization?.split(' ')[1];
     if (!token) {
       return errorResponse(401, 'MISSING_TOKEN', 'Authorization header required', requestId);
     }
-    
+
     const { adminId } = await verifyAdmin(token, requestId);
-    
+
     const { from, to } = event.queryStringParameters || {};
-    
+
     // Validate and parse date parameters safely
     let fromDate = null;
     let toDate = null;
-    
+
     if (from) {
       fromDate = new Date(from);
       if (isNaN(fromDate)) {
         return errorResponse(400, 'INVALID_DATE', 'Invalid from date format', requestId);
       }
     }
-    
+
     if (to) {
       toDate = new Date(to);
       if (isNaN(toDate)) {
         return errorResponse(400, 'INVALID_DATE', 'Invalid to date format', requestId);
       }
     }
-    
+
     // Get distribution with privacy thresholds using safe parameterized queries
     const distribution = await withTimeout(async () => {
       return await safeQuery(async () => {
@@ -169,13 +169,13 @@ exports.handler = async (event) => {
         }
       });
     });
-    
+
     const total = distribution.reduce((sum, row) => sum + row.count, 0);
     const privacyApplied = distribution.some(row => !row.meets_privacy_threshold);
-    
-    await auditLog(adminId, '/admin/sessions/by-type', 'GET', 
+
+    await auditLog(adminId, '/admin/sessions/by-type', 'GET',
       { from, to }, 200, Date.now() - startTime, requestId);
-    
+
     return successResponse(
       {
         distribution: distribution.map(row => ({
@@ -194,15 +194,15 @@ exports.handler = async (event) => {
       requestId,
       'private, max-age=300'
     );
-    
+
   } catch (error) {
     const statusCode = error.message.includes('Authentication') ? 401 :
                       error.message.includes('Admin') ? 403 :
                       error.message.includes('Query timeout') ? 500 : 500;
-    
-    await auditLog(null, '/admin/sessions/by-type', 'GET', 
+
+    await auditLog(null, '/admin/sessions/by-type', 'GET',
       event.queryStringParameters, statusCode, Date.now() - startTime, requestId);
-    
+
     if (error.message.includes('Authentication failed')) {
       return errorResponse(401, 'UNAUTHORIZED', 'Invalid or expired token', requestId);
     }

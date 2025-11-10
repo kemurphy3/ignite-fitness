@@ -1,9 +1,9 @@
-const { 
-  getDB, 
-  authenticate, 
-  checkRateLimit, 
-  errorResponse, 
-  successResponse, 
+const {
+  getDB,
+  authenticate,
+  checkRateLimit,
+  errorResponse,
+  successResponse,
   preflightResponse
 } = require('./_base');
 const crypto = require('crypto');
@@ -19,7 +19,7 @@ exports.handler = async (event) => {
     // In production, you'd want proper admin authentication
     const adminKey = process.env.ADMIN_KEY;
     const providedKey = event.headers['x-api-key'] || event.headers['x-admin-key'];
-    
+
     if (!adminKey || providedKey !== adminKey) {
       return errorResponse(401, 'AUTH_ERROR', 'Admin access required');
     }
@@ -30,7 +30,7 @@ exports.handler = async (event) => {
     if (event.httpMethod === 'POST') {
       // Create new API key
       const { user_id, name, expires_in_days } = body;
-      
+
       if (!user_id) {
         return errorResponse(400, 'VALIDATION_ERROR', 'user_id is required');
       }
@@ -38,10 +38,10 @@ exports.handler = async (event) => {
       // Generate API key
       const apiKey = crypto.randomBytes(32).toString('hex');
       const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex');
-      
+
       // Calculate expiry
-      const expiresAt = expires_in_days ? 
-        new Date(Date.now() + (expires_in_days * 24 * 60 * 60 * 1000)) : 
+      const expiresAt = expires_in_days ?
+        new Date(Date.now() + (expires_in_days * 24 * 60 * 60 * 1000)) :
         null;
 
       // Insert API key
@@ -55,7 +55,7 @@ exports.handler = async (event) => {
         id: result[0].id,
         api_key: apiKey, // Only returned once during creation
         name: result[0].name,
-        user_id: user_id,
+        user_id,
         created_at: result[0].created_at,
         expires_at: result[0].expires_at
       }, 201);
@@ -63,7 +63,7 @@ exports.handler = async (event) => {
     } else if (event.httpMethod === 'GET') {
       // List API keys for a user
       const { user_id } = event.queryStringParameters || {};
-      
+
       if (!user_id) {
         return errorResponse(400, 'VALIDATION_ERROR', 'user_id query parameter is required');
       }
@@ -76,7 +76,7 @@ exports.handler = async (event) => {
       `;
 
       return successResponse({
-        user_id: user_id,
+        user_id,
         keys: keys.map(key => ({
           id: key.id,
           name: key.name,
@@ -90,7 +90,7 @@ exports.handler = async (event) => {
     } else if (event.httpMethod === 'PUT') {
       // Update API key (activate/deactivate)
       const { key_id, is_active } = body;
-      
+
       if (!key_id) {
         return errorResponse(400, 'VALIDATION_ERROR', 'key_id is required');
       }
@@ -116,7 +116,7 @@ exports.handler = async (event) => {
     } else if (event.httpMethod === 'DELETE') {
       // Delete API key
       const { key_id } = body;
-      
+
       if (!key_id) {
         return errorResponse(400, 'VALIDATION_ERROR', 'key_id is required');
       }
@@ -145,9 +145,9 @@ exports.handler = async (event) => {
 
   } catch (error) {
     console.error('API Key Manager Error:', error);
-    
+
     // Handle database connection errors
-    if (error.message.includes('DATABASE_URL not configured') || 
+    if (error.message.includes('DATABASE_URL not configured') ||
         error.message.includes('connection') ||
         error.message.includes('timeout')) {
       return errorResponse(503, 'SERVICE_UNAVAILABLE', 'Database service unavailable');

@@ -1,15 +1,15 @@
-const { 
-  getDB, 
-  authenticate, 
-  checkRateLimit, 
-  errorResponse, 
-  successResponse, 
+const {
+  getDB,
+  authenticate,
+  checkRateLimit,
+  errorResponse,
+  successResponse,
   preflightResponse,
   validateSessionType
 } = require('./_base');
-const { 
-  validatePaginationParams, 
-  createPaginatedResponse, 
+const {
+  validatePaginationParams,
+  createPaginatedResponse,
   getCursorDataForItem,
   buildCursorCondition,
   buildTimestampCondition,
@@ -65,7 +65,7 @@ exports.handler = async (event) => {
     }
 
     // Parse and validate query parameters
-    const type = requestParams.type;
+    const {type} = requestParams;
     const startDate = requestParams.start_date;
     const endDate = requestParams.end_date;
     const pagination = validatePaginationParams(requestParams);
@@ -90,14 +90,14 @@ exports.handler = async (event) => {
     // Validate dates if provided
     let startDateObj = null;
     let endDateObj = null;
-    
+
     if (startDate) {
       startDateObj = new Date(startDate);
       if (isNaN(startDateObj.getTime())) {
         return errorResponse(400, 'VALIDATION_ERROR', 'Invalid start_date format');
       }
     }
-    
+
     if (endDate) {
       endDateObj = new Date(endDate);
       if (isNaN(endDateObj.getTime())) {
@@ -106,8 +106,8 @@ exports.handler = async (event) => {
     }
 
     // Build query conditions
-    let whereConditions = [`user_id = ${userId}`];
-    let queryParams = [userId];
+    const whereConditions = [`user_id = ${userId}`];
+    const queryParams = [userId];
 
     if (type) {
       whereConditions.push(`type = $${queryParams.length + 1}`);
@@ -125,8 +125,8 @@ exports.handler = async (event) => {
     }
 
     // Add tag filtering
-    const tags = requestParams.tags;
-    const exclude_tags = requestParams.exclude_tags;
+    const {tags} = requestParams;
+    const {exclude_tags} = requestParams;
 
     if (tags) {
       const requiredTags = tags.split(',').map(t => t.trim()).filter(t => t);
@@ -171,7 +171,7 @@ exports.handler = async (event) => {
       ORDER BY start_at DESC, id ASC
       LIMIT $${queryParams.length + 1}
     `;
-    
+
     queryParams.push(Math.min(pagination.limit + 1, 101)); // Get one extra to check if there are more, but cap at 101
 
     const sessions = await sql(sessionsQuery, queryParams);
@@ -206,9 +206,9 @@ exports.handler = async (event) => {
 
   } catch (error) {
     const { handleError } = require('./utils/error-handler');
-    
+
     // Handle database connection errors with specific status codes
-    if (error.message.includes('DATABASE_URL not configured') || 
+    if (error.message.includes('DATABASE_URL not configured') ||
         error.message.includes('connection') ||
         error.message.includes('timeout')) {
       return handleError(error, {

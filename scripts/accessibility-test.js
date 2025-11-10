@@ -72,14 +72,14 @@ class AccessibilityTester {
      */
     async runTest(testName, testData) {
         console.log(`Testing: ${testName}`);
-        
+
         this.results.totalTests++;
-        
+
         if (testData.violations.length === 0) {
             this.results.passedTests++;
             console.log(`✅ PASSED: ${testName}`);
             console.log(`   Score: ${testData.score}/100`);
-            
+
             if (testData.passes.length > 0) {
                 console.log('   Passes:');
                 testData.passes.forEach(pass => {
@@ -90,14 +90,14 @@ class AccessibilityTester {
             this.results.failedTests++;
             console.log(`❌ FAILED: ${testName}`);
             console.log(`   Score: ${testData.score}/100`);
-            
+
             console.log('   Violations:');
             testData.violations.forEach(violation => {
                 console.log(`     ✗ ${violation}`);
                 this.results.violations.push(violation);
             });
         }
-        
+
         console.log('');
     }
 
@@ -192,7 +192,7 @@ class AccessibilityTester {
     validateNonTextContent() {
         // Check if ARIA labels are implemented
         const hasAriaLabels = this.checkFileContains('js/modules/ui/BottomNavigation.js', 'aria-label');
-        
+
         return {
             passed: hasAriaLabels,
             status: hasAriaLabels ? 'PASS' : 'FAIL',
@@ -206,7 +206,7 @@ class AccessibilityTester {
     validateContrast() {
         // Check if high contrast colors are implemented
         const hasHighContrast = this.checkFileContains('styles/components.css', '#0066cc');
-        
+
         return {
             passed: hasHighContrast,
             status: hasHighContrast ? 'PASS' : 'FAIL',
@@ -220,7 +220,7 @@ class AccessibilityTester {
     validateKeyboardAccess() {
         // Check if keyboard controls are implemented
         const hasKeyboardControls = this.checkFileContains('js/modules/ui/TimerOverlay.js', 'keydown');
-        
+
         return {
             passed: hasKeyboardControls,
             status: hasKeyboardControls ? 'PASS' : 'FAIL',
@@ -234,7 +234,7 @@ class AccessibilityTester {
     validatePauseControls() {
         // Check if pause controls are implemented
         const hasPauseControls = this.checkFileContains('js/modules/ui/TimerOverlay.js', 'toggleSessionPause');
-        
+
         return {
             passed: hasPauseControls,
             status: hasPauseControls ? 'PASS' : 'FAIL',
@@ -249,7 +249,7 @@ class AccessibilityTester {
         // Check if proper roles and names are implemented
         const hasRoles = this.checkFileContains('js/modules/ui/BottomNavigation.js', 'role=');
         const hasNames = this.checkFileContains('js/modules/ui/BottomNavigation.js', 'aria-label');
-        
+
         return {
             passed: hasRoles && hasNames,
             status: (hasRoles && hasNames) ? 'PASS' : 'FAIL',
@@ -274,11 +274,11 @@ class AccessibilityTester {
 // CLI interface
 if (require.main === module) {
     const tester = new AccessibilityTester();
-    
+
     tester.runTests()
         .then(() => {
             tester.validateWCAGCriteria();
-            
+
             // Exit with appropriate code
             if (tester.results.score >= 95) {
                 console.log('\n🎉 All accessibility tests passed!');

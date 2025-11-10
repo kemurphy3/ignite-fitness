@@ -9,7 +9,7 @@ class BatchProcessor {
         this.progressCallback = options.progressCallback || null;
         this.completionCallback = options.completionCallback || null;
         this.errorCallback = options.errorCallback || null;
-        
+
         this.isProcessing = false;
         this.currentBatch = 0;
         this.totalBatches = 0;
@@ -17,10 +17,10 @@ class BatchProcessor {
         this.totalItems = 0;
         this.results = [];
         this.errors = [];
-        
+
         this.logger = window.SafeLogger || console;
     }
-    
+
     /**
      * Process items in batches with progress tracking
      * @param {Array} items - Items to process
@@ -32,7 +32,7 @@ class BatchProcessor {
         if (this.isProcessing) {
             throw new Error('Batch processing already in progress');
         }
-        
+
         this.isProcessing = true;
         this.totalItems = items.length;
         this.totalBatches = Math.ceil(items.length / this.batchSize);
@@ -40,24 +40,24 @@ class BatchProcessor {
         this.processedItems = 0;
         this.results = [];
         this.errors = [];
-        
+
         this.logger.debug(`Starting batch processing: ${this.totalItems} items in ${this.totalBatches} batches`);
-        
+
         try {
             // Process items in batches
             for (let i = 0; i < items.length; i += this.batchSize) {
                 const batch = items.slice(i, i + this.batchSize);
                 const batchIndex = Math.floor(i / this.batchSize);
-                
+
                 await this.processBatchChunk(batch, batchIndex, processor, context);
-                
+
                 // Yield to main thread
                 await this.yieldToMainThread();
             }
-            
+
             // Processing completed
             this.isProcessing = false;
-            
+
             if (this.completionCallback) {
                 this.completionCallback({
                     totalItems: this.totalItems,
@@ -67,7 +67,7 @@ class BatchProcessor {
                     successRate: this.processedItems / this.totalItems
                 });
             }
-            
+
             return {
                 totalItems: this.totalItems,
                 processedItems: this.processedItems,
@@ -75,19 +75,19 @@ class BatchProcessor {
                 errors: this.errors,
                 successRate: this.processedItems / this.totalItems
             };
-            
+
         } catch (error) {
             this.isProcessing = false;
             this.logger.error('Batch processing failed:', error);
-            
+
             if (this.errorCallback) {
                 this.errorCallback(error);
             }
-            
+
             throw error;
         }
     }
-    
+
     /**
      * Process a single batch chunk
      * @param {Array} batch - Batch of items to process
@@ -97,22 +97,22 @@ class BatchProcessor {
      */
     async processBatchChunk(batch, batchIndex, processor, context) {
         this.currentBatch = batchIndex;
-        
+
         this.logger.debug(`Processing batch ${batchIndex + 1}/${this.totalBatches} (${batch.length} items)`);
-        
+
         // Process each item in the batch
         for (let i = 0; i < batch.length; i++) {
             const item = batch[i];
             const itemIndex = batchIndex * this.batchSize + i;
-            
+
             try {
                 const result = await processor(item, itemIndex, context);
                 this.results.push(result);
                 this.processedItems++;
-                
+
                 // Update progress
                 this.updateProgress(itemIndex + 1);
-                
+
             } catch (error) {
                 this.logger.error(`Error processing item ${itemIndex}:`, error);
                 this.errors.push({
@@ -123,7 +123,7 @@ class BatchProcessor {
             }
         }
     }
-    
+
     /**
      * Update progress and notify callback
      * @param {number} processed - Number of items processed
@@ -139,12 +139,12 @@ class BatchProcessor {
             estimatedTimeRemaining: this.estimateTimeRemaining(processed),
             processedPerSecond: this.calculateProcessingRate(processed)
         };
-        
+
         if (this.progressCallback) {
             this.progressCallback(progress);
         }
     }
-    
+
     /**
      * Yield control to main thread
      * @returns {Promise} Promise that resolves after yielding
@@ -154,37 +154,37 @@ class BatchProcessor {
             setTimeout(resolve, this.yieldInterval);
         });
     }
-    
+
     /**
      * Estimate time remaining based on processing rate
      * @param {number} processed - Number of items processed
      * @returns {number} Estimated seconds remaining
      */
     estimateTimeRemaining(processed) {
-        if (processed === 0) return 0;
-        
+        if (processed === 0) {return 0;}
+
         const startTime = this.startTime || (this.startTime = Date.now());
         const elapsed = (Date.now() - startTime) / 1000;
         const rate = processed / elapsed;
         const remaining = this.totalItems - processed;
-        
+
         return Math.round(remaining / rate);
     }
-    
+
     /**
      * Calculate processing rate
      * @param {number} processed - Number of items processed
      * @returns {number} Items processed per second
      */
     calculateProcessingRate(processed) {
-        if (processed === 0) return 0;
-        
+        if (processed === 0) {return 0;}
+
         const startTime = this.startTime || (this.startTime = Date.now());
         const elapsed = (Date.now() - startTime) / 1000;
-        
+
         return Math.round(processed / elapsed);
     }
-    
+
     /**
      * Cancel processing
      */
@@ -194,7 +194,7 @@ class BatchProcessor {
             this.logger.debug('Batch processing cancelled');
         }
     }
-    
+
     /**
      * Reset processor state
      */
@@ -208,7 +208,7 @@ class BatchProcessor {
         this.errors = [];
         this.startTime = null;
     }
-    
+
     /**
      * Get current processing status
      * @returns {Object} Current status

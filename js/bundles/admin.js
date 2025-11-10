@@ -41,10 +41,10 @@ class AdminBundle {
             adminLogger: null,
             adminMetrics: null
         };
-        
+
         this.init();
     }
-    
+
     /**
      * Initialize admin bundle
      */
@@ -55,24 +55,24 @@ class AdminBundle {
                 this.logger.warn('Admin permissions not found');
                 return;
             }
-            
+
             // Initialize admin modules
             await this.initializeModules();
-            
+
             // Set up admin UI
             this.setupAdminUI();
-            
+
             // Initialize admin features
             this.initializeAdminFeatures();
-            
+
             this.isInitialized = true;
             this.logger.info('Admin bundle initialized successfully');
-            
+
         } catch (error) {
             this.logger.error('Failed to initialize admin bundle:', error);
         }
     }
-    
+
     /**
      * Check admin permissions
      * @returns {Promise<boolean>} Admin permission status
@@ -87,7 +87,7 @@ class AdminBundle {
             return false;
         }
     }
-    
+
     /**
      * Get current user
      * @returns {Promise<Object>} Current user
@@ -97,7 +97,7 @@ class AdminBundle {
         const userData = localStorage.getItem('ignite_fitness_user');
         return userData ? JSON.parse(userData) : null;
     }
-    
+
     /**
      * Initialize admin modules
      */
@@ -106,20 +106,20 @@ class AdminBundle {
         this.modules.adminAuth = new AdminAuth();
         this.modules.adminLogger = new AdminLogger();
         this.modules.adminMetrics = new AdminMetrics();
-        
+
         // Initialize data management modules
         this.modules.dataInspector = new DataInspector();
         this.modules.userManager = new UserManager();
         this.modules.systemMonitor = new SystemMonitor();
         this.modules.cacheManager = new CacheManager();
         this.modules.databaseInspector = new DatabaseInspector();
-        
+
         // Initialize UI modules
         this.modules.adminDashboard = new AdminDashboard();
         this.modules.adminSidebar = new AdminSidebar();
         this.modules.adminHeader = new AdminHeader();
     }
-    
+
     /**
      * Setup admin UI
      */
@@ -138,25 +138,25 @@ class AdminBundle {
             z-index: 10000;
             display: none;
         `;
-        
+
         // Add admin header
         const header = this.modules.adminHeader.render();
         adminContainer.appendChild(header);
-        
+
         // Add admin sidebar
         const sidebar = this.modules.adminSidebar.render();
         adminContainer.appendChild(sidebar);
-        
+
         // Add admin dashboard
         const dashboard = this.modules.adminDashboard.render();
         adminContainer.appendChild(dashboard);
-        
+
         document.body.appendChild(adminContainer);
-        
+
         // Set up admin toggle
         this.setupAdminToggle();
     }
-    
+
     /**
      * Setup admin toggle
      */
@@ -182,19 +182,19 @@ class AdminBundle {
             display: none;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         `;
-        
+
         toggleButton.addEventListener('click', () => {
             this.toggleAdminPanel();
         });
-        
+
         document.body.appendChild(toggleButton);
-        
+
         // Show toggle button for admin users
         if (this.isInitialized) {
             toggleButton.style.display = 'block';
         }
     }
-    
+
     /**
      * Toggle admin panel
      */
@@ -203,27 +203,27 @@ class AdminBundle {
         if (adminContainer) {
             const isVisible = adminContainer.style.display !== 'none';
             adminContainer.style.display = isVisible ? 'none' : 'block';
-            
+
             if (!isVisible) {
                 this.modules.adminDashboard.refresh();
             }
         }
     }
-    
+
     /**
      * Initialize admin features
      */
     initializeAdminFeatures() {
         // Set up real-time monitoring
         this.setupRealTimeMonitoring();
-        
+
         // Set up admin shortcuts
         this.setupAdminShortcuts();
-        
+
         // Set up admin notifications
         this.setupAdminNotifications();
     }
-    
+
     /**
      * Setup real-time monitoring
      */
@@ -232,18 +232,18 @@ class AdminBundle {
         setInterval(() => {
             this.modules.systemMonitor.collectMetrics();
         }, 5000);
-        
+
         // Monitor user activity
         setInterval(() => {
             this.modules.userManager.updateActivityStats();
         }, 10000);
-        
+
         // Monitor cache performance
         setInterval(() => {
             this.modules.cacheManager.updateCacheStats();
         }, 30000);
     }
-    
+
     /**
      * Setup admin shortcuts
      */
@@ -254,13 +254,13 @@ class AdminBundle {
                 event.preventDefault();
                 this.toggleAdminPanel();
             }
-            
+
             // Ctrl+Shift+D to open data inspector
             if (event.ctrlKey && event.shiftKey && event.key === 'D') {
                 event.preventDefault();
                 this.modules.dataInspector.open();
             }
-            
+
             // Ctrl+Shift+S to open system monitor
             if (event.ctrlKey && event.shiftKey && event.key === 'S') {
                 event.preventDefault();
@@ -268,7 +268,7 @@ class AdminBundle {
             }
         });
     }
-    
+
     /**
      * Setup admin notifications
      */
@@ -277,16 +277,16 @@ class AdminBundle {
         window.addEventListener('admin:system:error', (event) => {
             this.modules.adminLogger.logError(event.detail);
         });
-        
+
         window.addEventListener('admin:user:activity', (event) => {
             this.modules.userManager.logActivity(event.detail);
         });
-        
+
         window.addEventListener('admin:cache:update', (event) => {
             this.modules.cacheManager.handleCacheUpdate(event.detail);
         });
     }
-    
+
     /**
      * Get admin module
      * @param {string} moduleName - Module name
@@ -295,7 +295,7 @@ class AdminBundle {
     getModule(moduleName) {
         return this.modules[moduleName];
     }
-    
+
     /**
      * Get admin statistics
      * @returns {Object} Admin statistics
@@ -310,7 +310,7 @@ class AdminBundle {
             cacheStats: this.modules.cacheManager?.getStats() || {}
         };
     }
-    
+
     /**
      * Destroy admin bundle
      */
@@ -321,18 +321,18 @@ class AdminBundle {
                 module.destroy();
             }
         });
-        
+
         // Remove admin UI
         const adminContainer = document.getElementById('admin-container');
         if (adminContainer) {
             adminContainer.remove();
         }
-        
+
         const toggleButton = document.getElementById('admin-toggle');
         if (toggleButton) {
             toggleButton.remove();
         }
-        
+
         this.isInitialized = false;
         this.logger.info('Admin bundle destroyed');
     }

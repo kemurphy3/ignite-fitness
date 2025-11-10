@@ -23,11 +23,11 @@ class MockDedupRules {
 
     static richnessScore(activity) {
         let score = 0.0;
-        if (activity.hasHr) score += 0.4;
-        if (activity.hasGps) score += 0.2;
-        if (activity.hasPower) score += 0.2;
-        if (activity.perSecondData) score += 0.1;
-        if (activity.device) score += 0.1;
+        if (activity.hasHr) {score += 0.4;}
+        if (activity.hasGps) {score += 0.2;}
+        if (activity.hasPower) {score += 0.2;}
+        if (activity.perSecondData) {score += 0.1;}
+        if (activity.device) {score += 0.1;}
         return Math.min(score, 1.0);
     }
 
@@ -38,21 +38,21 @@ class MockDedupRules {
 
         const timeDiffMs = Math.abs(new Date(activity1.startTs) - new Date(activity2.startTs));
         const timeDiffMinutes = timeDiffMs / (1000 * 60);
-        
+
         if (timeDiffMinutes > toleranceMinutes) {
             return false;
         }
 
         const duration1 = activity1.durationS || 0;
         const duration2 = activity2.durationS || 0;
-        
+
         if (duration1 === 0 || duration2 === 0) {
             return false;
         }
 
         const durationDiff = Math.abs(duration1 - duration2);
         const durationTolerance = Math.max(duration1, duration2) * tolerancePercent;
-        
+
         return durationDiff <= durationTolerance;
     }
 }
@@ -224,7 +224,7 @@ describe('Dedup Functionality', () => {
             ];
 
             const scores = activities.map(a => MockDedupRules.richnessScore(a));
-            
+
             expect(scores[0]).toBeGreaterThan(scores[1]);
             expect(scores[1]).toBeGreaterThan(scores[2]);
             expect(scores[2]).toBeGreaterThan(scores[3]);
@@ -258,9 +258,9 @@ describe('Dedup Functionality', () => {
             const stravaRichness = MockDedupRules.richnessScore(stravaActivity);
 
             // Canonical selection: Strava is richer
-            const canonicalSource = stravaRichness > manualRichness 
+            const canonicalSource = stravaRichness > manualRichness
                 ? 'strava' : 'manual';
-            
+
             // Merge sources
             const mergedActivity = {
                 canonical_source: canonicalSource,

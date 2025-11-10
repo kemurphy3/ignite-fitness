@@ -5,7 +5,7 @@
 class AuthManager {
     constructor() {
         this.authState = {
-            isAuthenticated: false,  // MUST stay false until readFromStorage() completes
+            isAuthenticated: false, // MUST stay false until readFromStorage() completes
             token: null,
             user: null
         };
@@ -21,7 +21,7 @@ class AuthManager {
             currentUser: 'ignitefitness_current_user',
             users: 'ignitefitness_users'
         };
-        
+
         // DO NOT auto-load on construction - wait for explicit readFromStorage() call
     }
 
@@ -39,7 +39,7 @@ class AuthManager {
         } catch (error) {
             this.logger.error('Auth state callback error', error);
         }
-        
+
         // Return unsubscribe function
         return () => {
             this.authStateCallbacks.delete(callback);
@@ -54,7 +54,7 @@ class AuthManager {
      */
     emitAuthChange(type, data) {
         const eventData = { type, ...data };
-        
+
         // Notify all callbacks
         this.authStateCallbacks.forEach(callback => {
             try {
@@ -68,7 +68,7 @@ class AuthManager {
         if (this.eventBus) {
             this.eventBus.emit('auth:stateChange', eventData);
         }
-        
+
         this.logger.debug('Auth state change emitted', { type, hasUser: !!data.user });
     }
 
@@ -101,17 +101,17 @@ class AuthManager {
             // Check for token
             const tokenStr = localStorage.getItem(this.storageKeys.token);
             const currentUserStr = localStorage.getItem(this.storageKeys.currentUser);
-            
+
             // Validate token if present
             if (tokenStr) {
                 try {
                     const tokenData = JSON.parse(tokenStr);
-                    
+
                     // Cheap parse/shape check
                     if (!tokenData || typeof tokenData !== 'object') {
                         throw new Error('Invalid token format');
                     }
-                    
+
                     // CRITICAL FIX: Use consistent Date.now() comparison instead of Date objects
                     // This prevents inconsistent Date comparisons causing random logouts
                     if (tokenData.created_at) {
@@ -121,7 +121,7 @@ class AuthManager {
                             this.loginTimestamp = createdTimestamp;
                         }
                     }
-                    
+
                     // Check token age using consistent Date.now() - loginTimestamp
                     // 86400000 = 24 hours in milliseconds
                     if (this.loginTimestamp) {
@@ -147,7 +147,7 @@ class AuthManager {
                             }
                         }
                     }
-                    
+
                     // Token passes validation
                     if (currentUserStr && this.users[currentUserStr]) {
                         this.authState = {
@@ -164,7 +164,7 @@ class AuthManager {
                     return;
                 }
             }
-            
+
             // No valid token or user - ensure logged out state
             this.authState = {
                 isAuthenticated: false,
@@ -172,7 +172,7 @@ class AuthManager {
                 user: null
             };
             this.logger.info('No valid auth state found, logged out');
-            
+
         } catch (error) {
             this.logger.error('Failed to read from storage', error);
             this.clearStorage();
@@ -186,11 +186,11 @@ class AuthManager {
     writeToStorage(state) {
         try {
             const { token, user } = state;
-            
+
             if (!user || !user.username) {
                 throw new Error('Invalid user data');
             }
-            
+
             // Store token with metadata
             const tokenData = {
                 value: token || `session_${Date.now()}`,
@@ -198,23 +198,23 @@ class AuthManager {
                 username: user.username
             };
             localStorage.setItem(this.storageKeys.token, JSON.stringify(tokenData));
-            
+
             // Store current user
             localStorage.setItem(this.storageKeys.currentUser, user.username);
-            
+
             // Ensure user is in users object
             if (!this.users[user.username]) {
                 this.users[user.username] = user;
             }
             localStorage.setItem(this.storageKeys.users, JSON.stringify(this.users));
-            
+
             // Update in-memory state
             this.authState = {
                 isAuthenticated: true,
                 token: tokenData.value,
                 user: this.users[user.username]
             };
-            
+
             this.logger.info('Auth state written to storage', { user: user.username });
         } catch (error) {
             this.logger.error('Failed to write to storage', error);
@@ -231,14 +231,14 @@ class AuthManager {
             localStorage.removeItem(this.storageKeys.user);
             localStorage.removeItem(this.storageKeys.prefs);
             localStorage.removeItem(this.storageKeys.currentUser);
-            
+
             // Reset auth state
             this.authState = {
                 isAuthenticated: false,
                 token: null,
                 user: null
             };
-            
+
             this.logger.info('Auth storage cleared');
         } catch (error) {
             this.logger.error('Failed to clear storage', error);
@@ -252,7 +252,7 @@ class AuthManager {
      */
     simpleHash(str) {
         let hash = 0;
-        if (str.length === 0) return hash;
+        if (str.length === 0) {return hash;}
         for (let i = 0; i < str.length; i++) {
             const char = str.charCodeAt(i);
             hash = ((hash << 5) - hash) + char;
@@ -279,25 +279,25 @@ class AuthManager {
                 if (this.users[username].passwordHash === passwordHash) {
                     // CRITICAL FIX: Set loginTimestamp for consistent token age calculation
                     this.loginTimestamp = Date.now();
-                    
+
                     // Use writeToStorage to persist auth state
                     const userData = {
                         ...this.users[username],
-                        username: username,
+                        username,
                         lastLogin: this.loginTimestamp
                     };
-                    
+
                     this.writeToStorage({
                         token: `session_${this.loginTimestamp}_${username}`,
                         user: userData
                     });
-                    
+
                     this.logger.audit('USER_LOGIN', { username });
                     this.eventBus?.emit('user:login', { username });
-                    
+
                     // Emit auth change event
                     this.emitAuthChange('login', this.getAuthState());
-                    
+
                     return { success: true, user: this.authState.user };
                 } else {
                     this.logger.security('INVALID_LOGIN_ATTEMPT', { username });
@@ -344,7 +344,7 @@ class AuthManager {
             // Create new user with hashed password
             this.users[username] = {
                 passwordHash: this.simpleHash(password),
-                athleteName: athleteName,
+                athleteName,
                 personalData: {},
                 goals: {},
                 wearableSettings: {},
@@ -362,27 +362,27 @@ class AuthManager {
 
             // Save users
             localStorage.setItem(this.storageKeys.users, JSON.stringify(this.users));
-            
+
             // Auto-login after registration
             const userData = {
                 ...this.users[username],
-                username: username
+                username
             };
-            
+
             // CRITICAL FIX: Set loginTimestamp for consistent token age calculation
             this.loginTimestamp = Date.now();
-            
+
             this.writeToStorage({
                 token: `session_${this.loginTimestamp}_${username}`,
                 user: userData
             });
-            
+
             this.logger.audit('USER_REGISTRATION', { username, athleteName });
             this.eventBus?.emit('user:registered', { username, athleteName });
-            
+
             // Emit auth change event (registration = auto-login)
             this.emitAuthChange('login', this.getAuthState());
-            
+
             return { success: true, user: this.authState.user };
         } catch (error) {
             this.logger.error('Registration failed', error);
@@ -419,10 +419,10 @@ class AuthManager {
 
                 // Save updated users
                 localStorage.setItem('ignitefitness_users', JSON.stringify(this.users));
-                
+
                 this.logger.audit('PASSWORD_RESET', { username });
                 this.eventBus?.emit('user:passwordReset', { username });
-                
+
                 return { success: true };
             } else {
                 this.logger.security('PASSWORD_RESET_INVALID', { username, athleteName });
@@ -452,8 +452,8 @@ class AuthManager {
                 this.storageKeys.user,
                 this.storageKeys.prefs,
                 this.storageKeys.currentUser,
-                'ignite.ui.simpleMode',  // Reset simple mode on logout
-                'ignite_login_time',     // Clear login timestamp
+                'ignite.ui.simpleMode', // Reset simple mode on logout
+                'ignite_login_time', // Clear login timestamp
                 'ignitefitness_last_user' // Clear legacy last user
             ];
 
@@ -471,13 +471,13 @@ class AuthManager {
                 token: null,
                 user: null
             };
-            
+
             // CRITICAL FIX: Clear loginTimestamp on logout
             this.loginTimestamp = null;
 
             // Emit logout event
             this.emitAuthChange('logout', this.authState);
-            
+
             return { success: true };
         } catch (error) {
             this.logger.error('Logout failed', error);
@@ -532,7 +532,7 @@ class AuthManager {
             if (!this.users[username]) {
                 this.users[username] = {
                     version: '2.0',
-                    username: username,
+                    username,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 };
@@ -552,10 +552,10 @@ class AuthManager {
 
             // Save to localStorage
             localStorage.setItem(this.storageKeys.users, JSON.stringify(this.users));
-            
+
             this.logger.audit('USER_DATA_UPDATED', { username });
             this.eventBus?.emit('user:dataUpdated', { username, data });
-            
+
             return { success: true, user: this.users[username] };
         } catch (error) {
             this.logger.error('Failed to update user data', error);

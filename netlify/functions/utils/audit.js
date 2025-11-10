@@ -21,10 +21,10 @@ async function auditLog(sql, data) {
 
     // Sanitize IP address
     const sanitizedIP = sanitizeIPAddress(ip_address);
-    
+
     // Sanitize user agent
     const sanitizedUserAgent = sanitizeUserAgent(user_agent);
-    
+
     // Add timestamp and additional metadata
     const auditData = {
       user_id,
@@ -59,25 +59,25 @@ async function auditLog(sql, data) {
 }
 
 function sanitizeIPAddress(ip) {
-  if (!ip) return null;
-  
+  if (!ip) {return null;}
+
   // Remove any non-IP characters and limit length
   const sanitized = ip.replace(/[^0-9.:]/g, '').substring(0, 45);
-  
+
   // Basic IP validation
   const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
   const ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
-  
+
   if (ipv4Regex.test(sanitized) || ipv6Regex.test(sanitized)) {
     return sanitized;
   }
-  
+
   return 'invalid';
 }
 
 function sanitizeUserAgent(ua) {
-  if (!ua) return null;
-  
+  if (!ua) {return null;}
+
   // Remove potentially harmful characters and limit length
   return ua
     .replace(/[<>'"&]/g, '')

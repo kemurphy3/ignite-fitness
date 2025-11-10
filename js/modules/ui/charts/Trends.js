@@ -13,7 +13,7 @@ class Trends {
             cacheTime: null,
             ttl: 5 * 60 * 1000 // 5 minutes
         };
-        
+
         // Initialize on page load
         this.init();
     }
@@ -23,7 +23,7 @@ class Trends {
      */
     async init() {
         this.logger.debug('Initializing Trends module');
-        
+
         // Initialize ChartManager
         try {
             if (typeof ChartManager === 'undefined') {
@@ -31,7 +31,7 @@ class Trends {
                 this.chartManager = null;
                 return;
             }
-            
+
             this.chartManager = new ChartManager();
             await this.chartManager.init();
             this.logger.debug('ChartManager initialized');
@@ -40,7 +40,7 @@ class Trends {
             this.chartManager = null;
             // Don't return - allow Trends to continue without charts
         }
-        
+
         // Set up intersection observer for lazy loading
         if ('IntersectionObserver' in window) {
             this.observer = new IntersectionObserver((entries) => {
@@ -74,7 +74,7 @@ class Trends {
     async loadChartForElement(element) {
         try {
             const chartId = element.id || element.getAttribute('data-chart-id');
-            
+
             if (!chartId) {
                 this.logger.warn('No chart ID found for element', element);
                 return;
@@ -99,13 +99,13 @@ class Trends {
      * Lazy load Chart.js library
      */
     async loadChartLibrary() {
-        if (this.chartLibrary) return;
+        if (this.chartLibrary) {return;}
 
         try {
             // Dynamic import of Chart.js
             const ChartModule = await import('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js');
             this.chartLibrary = ChartModule.Chart;
-            
+
             this.logger.debug('Chart.js loaded successfully');
         } catch (error) {
             this.logger.error('Failed to load Chart.js', error);
@@ -128,7 +128,7 @@ class Trends {
         // Fetch fresh data
         const userId = window.AuthManager?.getCurrentUsername() || 'anonymous';
         const sessions = await this.getLast30DaysSessions(userId);
-        
+
         // Aggregate data
         const data = this.aggregateData(sessions);
 
@@ -152,7 +152,7 @@ class Trends {
 
             // Get all session logs
             const allSessions = this.storageManager.getSessionLogs();
-            
+
             // Filter for user and date range
             const sessions = [];
             Object.entries(allSessions).forEach(([key, session]) => {
@@ -204,11 +204,11 @@ class Trends {
      */
     calculateWeeklyVolume(sessions) {
         const weeks = {};
-        
+
         sessions.forEach(session => {
             const date = new Date(session.timestamp);
             const weekKey = this.getWeekKey(date);
-            
+
             if (!weeks[weekKey]) {
                 weeks[weekKey] = {
                     upper: 0,
@@ -239,7 +239,7 @@ class Trends {
      */
     calculateReadinessTrend(sessions) {
         const readinessData = [];
-        
+
         sessions.forEach(session => {
             if (session.readinessScore !== undefined) {
                 readinessData.push({
@@ -262,20 +262,20 @@ class Trends {
 
         sessions.forEach(session => {
             session.exercises?.forEach(ex => {
-                if (!ex.name) return;
+                if (!ex.name) {return;}
 
                 const category = this.getExerciseCategory(ex.name);
-                
+
                 // Only track heavy strength lifts
-                if (category !== 'upper' && category !== 'lower') return;
+                if (category !== 'upper' && category !== 'lower') {return;}
 
                 ex.sets?.forEach(set => {
-                    if (!set.reps || !set.weight) return;
-                    
+                    if (!set.reps || !set.weight) {return;}
+
                     // 1-5 reps = strength range
                     if (set.reps >= 1 && set.reps <= 5) {
                         const oneRepMax = this.calculate1RM(set.weight, set.reps);
-                        
+
                         if (!prs[ex.name] || prs[ex.name].max < oneRepMax) {
                             prs[ex.name] = {
                                 max: oneRepMax,
@@ -312,23 +312,23 @@ class Trends {
      */
     getExerciseCategory(exerciseName) {
         const name = exerciseName.toLowerCase();
-        
-        if (name.includes('squat') || name.includes('deadlift') || name.includes('leg') || 
+
+        if (name.includes('squat') || name.includes('deadlift') || name.includes('leg') ||
             name.includes('calf') || name.includes('glute') || name.includes('hip')) {
             return 'lower';
         }
-        
-        if (name.includes('press') || name.includes('curl') || name.includes('row') || 
-            name.includes('pull') || name.includes('shoulder') || name.includes('tricep') || 
+
+        if (name.includes('press') || name.includes('curl') || name.includes('row') ||
+            name.includes('pull') || name.includes('shoulder') || name.includes('tricep') ||
             name.includes('bicep') || name.includes('chest') || name.includes('lat')) {
             return 'upper';
         }
-        
-        if (name.includes('core') || name.includes('ab') || name.includes('plank') || 
+
+        if (name.includes('core') || name.includes('ab') || name.includes('plank') ||
             name.includes('crunch') || name.includes('sit-up')) {
             return 'core';
         }
-        
+
         return 'cardio';
     }
 
@@ -340,7 +340,7 @@ class Trends {
      */
     calculate1RM(weight, reps) {
         // Brzycki formula
-        if (reps === 1) return weight;
+        if (reps === 1) {return weight;}
         return weight * (36 / (37 - reps));
     }
 
@@ -362,7 +362,7 @@ class Trends {
         canvas.dataset.chartId = chartId;
         canvas.width = element.offsetWidth || 400;
         canvas.height = element.offsetHeight || 300;
-        
+
         // Clear element and add canvas
         element.innerHTML = '';
         element.appendChild(canvas);
@@ -384,10 +384,10 @@ class Trends {
         try {
             const chart = await this.chartManager.createChart(chartId, config, canvas);
             this.charts.set(chartId, chart);
-            
+
             // Add accessibility features
             this.addChartAccessibility(element, chartId, data, config);
-            
+
         } catch (error) {
             this.logger.error('Failed to create chart:', error);
             throw error;
@@ -403,7 +403,7 @@ class Trends {
      */
     addChartAccessibility(element, chartId, data, config) {
         const canvas = element.querySelector('canvas');
-        if (!canvas) return;
+        if (!canvas) {return;}
 
         // Add ARIA attributes to canvas
         const chartDescription = this.generateChartDescription(chartId, data, config);
@@ -465,13 +465,13 @@ class Trends {
     generateStrengthDescription(data) {
         const prs = data.strengthPRs || {};
         const exercises = Object.keys(prs);
-        
+
         if (exercises.length === 0) {
             return 'No personal records recorded yet. Start tracking your strength progress.';
         }
 
         let description = `Strength progress chart showing personal records for ${exercises.length} exercises. `;
-        
+
         exercises.forEach(exercise => {
             const pr = prs[exercise];
             description += `${exercise}: ${pr.max} pounds on ${pr.date}. `;
@@ -487,7 +487,7 @@ class Trends {
      */
     generateVolumeDescription(data) {
         const volumes = data.weeklyVolumes || [];
-        
+
         if (volumes.length === 0) {
             return 'No training volume data available yet.';
         }
@@ -509,7 +509,7 @@ class Trends {
     generateConsistencyDescription(data) {
         const consistency = data.consistency || {};
         const weeks = Object.keys(consistency);
-        
+
         if (weeks.length === 0) {
             return 'No consistency data available yet.';
         }
@@ -555,7 +555,7 @@ class Trends {
      */
     createStrengthDataTable(table, data) {
         const prs = data.strengthPRs || {};
-        
+
         // Table header
         const thead = document.createElement('thead');
         thead.innerHTML = `
@@ -590,7 +590,7 @@ class Trends {
      */
     createVolumeDataTable(table, data) {
         const volumes = data.weeklyVolumes || [];
-        
+
         // Table header
         const thead = document.createElement('thead');
         thead.innerHTML = `
@@ -626,7 +626,7 @@ class Trends {
      */
     createConsistencyDataTable(table, data) {
         const consistency = data.consistency || {};
-        
+
         // Table header
         const thead = document.createElement('thead');
         thead.innerHTML = `
@@ -661,7 +661,7 @@ class Trends {
     addKeyboardNavigation(canvas, chartId) {
         canvas.setAttribute('tabindex', '0');
         canvas.setAttribute('aria-label', `Interactive chart: ${chartId}. Use arrow keys to navigate data points.`);
-        
+
         canvas.addEventListener('keydown', (e) => {
             this.handleChartKeyboardNavigation(e, chartId);
         });
@@ -674,7 +674,7 @@ class Trends {
      */
     handleChartKeyboardNavigation(e, chartId) {
         const chart = this.charts.get(chartId);
-        if (!chart) return;
+        if (!chart) {return;}
 
         switch (e.key) {
             case 'ArrowLeft':
@@ -704,7 +704,7 @@ class Trends {
      */
     announceChartData(chartId, direction) {
         const chart = this.charts.get(chartId);
-        if (!chart) return;
+        if (!chart) {return;}
 
         // This would announce specific data points
         // Implementation depends on chart data structure
@@ -718,7 +718,7 @@ class Trends {
      */
     announceChartSummary(chartId) {
         const chart = this.charts.get(chartId);
-        if (!chart) return;
+        if (!chart) {return;}
 
         const summary = `Chart summary: ${chartId} data visualization`;
         this.announceToScreenReader(summary);
@@ -747,9 +747,9 @@ class Trends {
             liveRegion.className = 'sr-only';
             document.body.appendChild(liveRegion);
         }
-        
+
         liveRegion.textContent = text;
-        
+
         // Clear announcement after a short delay
         setTimeout(() => {
             if (liveRegion) {
@@ -959,7 +959,7 @@ class Trends {
     renderStrengthChart(element, data) {
         const ctx = this.createCanvas(element);
         const prs = data.strengthPRs || {};
-        
+
         const labels = Object.keys(prs);
         const maxWeights = Object.values(prs).map(pr => pr.max);
 
@@ -1014,7 +1014,7 @@ class Trends {
     renderVolumeChart(element, data) {
         const ctx = this.createCanvas(element);
         const weeklyData = data.weeklyVolume || [];
-        
+
         const labels = weeklyData.map(d => d.date);
         const upperData = weeklyData.map(d => d.upper || 0);
         const lowerData = weeklyData.map(d => d.lower || 0);
@@ -1099,7 +1099,7 @@ class Trends {
     renderConsistencyChart(element, data) {
         const ctx = this.createCanvas(element);
         const readinessData = data.readinessTrend || [];
-        
+
         const labels = readinessData.map(d => {
             const date = new Date(d.date);
             return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -1162,12 +1162,12 @@ class Trends {
     createCanvas(element) {
         // Clear existing content
         element.innerHTML = '';
-        
+
         // Create canvas
         const canvas = document.createElement('canvas');
         canvas.style.maxHeight = '400px';
         element.appendChild(canvas);
-        
+
         // Return context
         return canvas.getContext('2d');
     }
@@ -1205,7 +1205,7 @@ class Trends {
      * @returns {boolean} True if cache is valid
      */
     isCacheValid() {
-        if (!this.cache.cacheTime) return false;
+        if (!this.cache.cacheTime) {return false;}
         return (Date.now() - this.cache.cacheTime) < this.cache.ttl;
     }
 
@@ -1215,11 +1215,11 @@ class Trends {
     destroy() {
         this.charts.forEach(chart => chart.destroy());
         this.charts.clear();
-        
+
         if (this.observer) {
             this.observer.disconnect();
         }
-        
+
         this.cache.last30Days = null;
         this.cache.cacheTime = null;
     }

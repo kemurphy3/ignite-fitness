@@ -104,7 +104,7 @@ describe('Admin Authentication', () => {
     describe('JWT Token Validation', () => {
         it('should reject requests without authorization header', async () => {
             const headers = {};
-            
+
             try {
                 await mockAdminAuth.verifyAdmin(null, 'test-request');
                 expect.fail('Should have thrown error for missing token');
@@ -137,7 +137,7 @@ describe('Admin Authentication', () => {
 
         it('should accept valid admin tokens', async () => {
             const result = await mockAdminAuth.verifyAdmin('valid-admin-token', 'test-request');
-            
+
             expect(result).toHaveProperty('adminId');
             expect(result.adminId).toBe('admin1');
         });
@@ -161,7 +161,7 @@ describe('Admin Authentication', () => {
 
         it('should return 401 for unauthenticated requests', () => {
             const response = mockAdminAuth.errorResponse(401, 'MISSING_TOKEN', 'Authorization header required', 'test-request');
-            
+
             expect(response.statusCode).toBe(401);
             expect(response.body).toContain('MISSING_TOKEN');
             expect(response.body).toContain('Authorization header required');
@@ -169,7 +169,7 @@ describe('Admin Authentication', () => {
 
         it('should return 403 for non-admin users', () => {
             const response = mockAdminAuth.errorResponse(403, 'FORBIDDEN', 'Admin access required', 'test-request');
-            
+
             expect(response.statusCode).toBe(403);
             expect(response.body).toContain('FORBIDDEN');
             expect(response.body).toContain('Admin access required');
@@ -211,7 +211,7 @@ describe('Admin Authentication', () => {
         it('should enforce rate limits for admin requests', async () => {
             // Mock rate limiting
             const mockRateLimit = vi.fn().mockResolvedValue(true);
-            
+
             const result = await mockRateLimit('admin1');
             expect(result).toBe(true);
         });
@@ -219,7 +219,7 @@ describe('Admin Authentication', () => {
         it('should reject requests that exceed rate limits', async () => {
             // Mock rate limit exceeded
             const mockRateLimit = vi.fn().mockRejectedValue(new Error('Rate limit exceeded'));
-            
+
             try {
                 await mockRateLimit('admin1');
                 expect.fail('Should have thrown rate limit error');
@@ -232,7 +232,7 @@ describe('Admin Authentication', () => {
     describe('Response Headers', () => {
         it('should include security headers in responses', () => {
             const response = mockAdminAuth.successResponse({ data: 'test' }, {}, 'test-request');
-            
+
             expect(response.headers).toHaveProperty('Content-Type', 'application/json');
             expect(response.headers).toHaveProperty('Cache-Control', 'private, max-age=60');
             expect(response.headers).toHaveProperty('Access-Control-Allow-Origin', '*');
@@ -241,7 +241,7 @@ describe('Admin Authentication', () => {
 
         it('should include no-store cache control for error responses', () => {
             const response = mockAdminAuth.errorResponse(401, 'UNAUTHORIZED', 'Access denied', 'test-request');
-            
+
             expect(response.headers).toHaveProperty('Cache-Control', 'no-store');
         });
     });
@@ -251,16 +251,16 @@ describe('Admin Authentication', () => {
             const validateDateRange = (from, to) => {
                 const fromDate = new Date(from);
                 const toDate = new Date(to);
-                
+
                 if (isNaN(fromDate) || isNaN(toDate)) {
                     throw new Error('Invalid date format');
                 }
-                
+
                 const maxRange = 730 * 24 * 60 * 60 * 1000; // 730 days
                 if (toDate - fromDate > maxRange) {
                     throw new Error('Date range exceeds maximum (730 days)');
                 }
-                
+
                 return { fromDate, toDate };
             };
 
@@ -306,7 +306,7 @@ describe('Admin Authentication', () => {
         it('should hash user IDs for privacy', () => {
             const hashUserId = (userId) => {
                 // Simple hash for testing
-                return 'usr_' + userId.substring(0, 6);
+                return `usr_${ userId.substring(0, 6)}`;
             };
 
             expect(hashUserId('user123')).toBe('usr_user12');

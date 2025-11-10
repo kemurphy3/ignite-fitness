@@ -44,7 +44,7 @@ describe('LoadCalculator Bounds Checking (T2B-1)', () => {
             const module = await import('../../js/modules/load/LoadCalculator.js');
             LoadCalculator = module.default || module.LoadCalculator;
         }
-        
+
         // Create new instance for each test
         calculator = new LoadCalculator();
     });

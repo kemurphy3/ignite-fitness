@@ -21,10 +21,10 @@ class StrengthCoach {
 
         // Determine main movement focus
         const mainMovement = this.determineMainMovement(user, history, season);
-        
+
         // Progressive overload based on readiness
         const loadAdjustment = this.calculateLoadAdjustment(readiness, history);
-        
+
         proposal.blocks = [
             {
                 type: 'warmup',
@@ -59,13 +59,13 @@ class StrengthCoach {
         // Rotation logic: squat, deadlift, bench, overhead press
         const lastMainMovement = history?.lastSession?.mainMovement || 'squat';
         const rotation = { 'squat': 'deadlift', 'deadlift': 'bench', 'bench': 'overhead', 'overhead': 'squat' };
-        
+
         return rotation[lastMainMovement] || 'squat';
     }
 
     calculateLoadAdjustment(readiness, history) {
         const baseLoad = history?.averageLoad || 100;
-        
+
         if (readiness >= 8) {
             return baseLoad * 1.05; // +5% if excellent readiness
         } else if (readiness >= 5) {
@@ -76,20 +76,20 @@ class StrengthCoach {
     }
 
     calculateSets(readiness) {
-        if (readiness >= 8) return 4;
-        if (readiness >= 5) return 3;
+        if (readiness >= 8) {return 4;}
+        if (readiness >= 5) {return 3;}
         return 3; // Minimum viable sets
     }
 
     calculateReps(user, season) {
-        if (season === 'in-season') return '5-8'; // Strength maintenance
-        if (season === 'off-season') return '8-12'; // Hypertrophy focus
+        if (season === 'in-season') {return '5-8';} // Strength maintenance
+        if (season === 'off-season') {return '8-12';} // Hypertrophy focus
         return '6-10'; // Default
     }
 
     targetRPE(readiness) {
-        if (readiness >= 8) return { target: 8, range: '7-9' };
-        if (readiness >= 5) return { target: 7, range: '6-8' };
+        if (readiness >= 8) {return { target: 8, range: '7-9' };}
+        if (readiness >= 5) {return { target: 7, range: '6-8' };}
         return { target: 6, range: '5-7' };
     }
 
@@ -101,7 +101,7 @@ class StrengthCoach {
             'overhead': ['wall_slides', 'band_pull_aparts', 'db_press_light']
         };
 
-        return movementGroup[mainMovement] || movementGroup['squat'];
+        return movementGroup[mainMovement] || movementGroup.squat;
     }
 }
 

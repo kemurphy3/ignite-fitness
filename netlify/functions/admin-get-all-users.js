@@ -1,17 +1,17 @@
 const { neon } = require('@neondatabase/serverless');
 const crypto = require('crypto');
-const { 
-  verifyAdmin, 
-  auditLog, 
-  errorResponse, 
+const {
+  verifyAdmin,
+  auditLog,
+  errorResponse,
   withTimeout,
-  successResponse 
+  successResponse
 } = require('./utils/admin-auth');
 
 const { getNeonClient } = require('./utils/connection-pool');
-const { 
-  validatePaginationParams, 
-  createPaginatedResponse, 
+const {
+  validatePaginationParams,
+  createPaginatedResponse,
   getCursorDataForItem,
   buildCursorCondition,
   validatePaginationInput
@@ -37,7 +37,7 @@ async function getTotalUsersCount(sql) {
 exports.handler = async (event) => {
     const startTime = Date.now();
     const requestId = crypto.randomUUID();
-    
+
     try {
         // Handle preflight requests
         if (event.httpMethod === 'OPTIONS') {
@@ -51,7 +51,7 @@ exports.handler = async (event) => {
                 body: ''
             };
         }
-        
+
         if (event.httpMethod !== 'GET') {
             return errorResponse(405, 'METHOD_NOT_ALLOWED', 'Method not allowed', requestId);
         }
@@ -61,7 +61,7 @@ exports.handler = async (event) => {
         if (!token) {
             return errorResponse(401, 'MISSING_TOKEN', 'Authorization header required', requestId);
         }
-        
+
         const { adminId } = await verifyAdmin(token, requestId);
 
         // Validate pagination parameters
@@ -78,7 +78,7 @@ exports.handler = async (event) => {
         try {
             // Build cursor condition for pagination
             const cursorCondition = buildCursorCondition(pagination.cursor, 'created_at DESC, id ASC', 'u');
-            
+
             // Try to get data from database with pagination
             const usersQuery = `
                 SELECT 
@@ -111,7 +111,7 @@ exports.handler = async (event) => {
                 ORDER BY u.created_at DESC, u.id ASC
                 LIMIT $${cursorCondition.values.length + 1}
             `;
-            
+
             const queryParams = [...cursorCondition.values, pagination.limit + 1];
             const users = await sql(usersQuery, queryParams);
 
@@ -176,7 +176,7 @@ exports.handler = async (event) => {
             adminData = {
                 users: sanitizedUsers,
                 pagination: paginatedUsers.pagination,
-                recentActivity: recentActivity,
+                recentActivity,
                 statistics: stats[0],
                 generatedAt: new Date().toISOString(),
                 totalUsers: sanitizedUsers.length,
@@ -225,19 +225,19 @@ exports.handler = async (event) => {
 
         // Log admin action
         await auditLog(adminId, '/api/admin/users/all', 'GET', queryParams, 200, Date.now() - startTime, requestId);
-        
+
         return successResponse(adminData, {
             totalUsers: adminData.totalUsers,
             message: `Retrieved data for ${adminData.totalUsers} users`
         }, requestId);
-        
+
     } catch (error) {
         console.error('Admin endpoint error:', {
             error: error.message,
             requestId,
             timestamp: new Date().toISOString()
         });
-        
+
         return errorResponse(500, 'INTERNAL_SERVER_ERROR', 'An unexpected error occurred', requestId);
     }
 };

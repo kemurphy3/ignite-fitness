@@ -16,7 +16,7 @@ class GoalsStep {
     render(existingData = {}) {
         const selectedGoals = existingData.goals || [];
         this.followUpData = existingData.goalFollowUps || {};
-        
+
         return `
             <div class="onboarding-step goals-step">
                 <h2>What are your training goals?</h2>
@@ -145,7 +145,7 @@ class GoalsStep {
             </div>
         `;
     }
-    
+
     /**
      * Render follow-up questions for selected goals
      * @param {Array} selectedGoals - Selected goal IDs
@@ -155,7 +155,7 @@ class GoalsStep {
         if (!selectedGoals || selectedGoals.length === 0) {
             return '';
         }
-        
+
         let html = '';
         selectedGoals.forEach(goal => {
             const followUpHtml = this.getFollowUpForGoal(goal);
@@ -163,10 +163,10 @@ class GoalsStep {
                 html += followUpHtml;
             }
         });
-        
+
         return html;
     }
-    
+
     /**
      * Get follow-up questions for a specific goal
      * @param {string} goal - Goal ID
@@ -174,7 +174,7 @@ class GoalsStep {
      */
     getFollowUpForGoal(goal) {
         const existingData = this.followUpData[goal] || {};
-        
+
         switch (goal) {
             case 'weight_loss':
                 return `
@@ -212,7 +212,7 @@ class GoalsStep {
                         </div>
                     </div>
                 `;
-                
+
             case 'muscle_gain':
                 return `
                     <div class="follow-up-section" data-goal="muscle_gain">
@@ -248,7 +248,7 @@ class GoalsStep {
                         </div>
                     </div>
                 `;
-                
+
             case 'endurance':
                 return `
                     <div class="follow-up-section" data-goal="endurance">
@@ -291,7 +291,7 @@ class GoalsStep {
                         </div>
                     </div>
                 `;
-                
+
             case 'sport_specific':
                 return `
                     <div class="follow-up-section" data-goal="sport_specific">
@@ -328,12 +328,12 @@ class GoalsStep {
                         </div>
                     </div>
                 `;
-                
+
             default:
                 return '';
         }
     }
-    
+
     /**
      * Handle goal checkbox change
      * @param {string} goal - Goal ID
@@ -341,8 +341,8 @@ class GoalsStep {
      */
     handleGoalChange(goal, checked) {
         const followUpsContainer = document.getElementById('goal-follow-ups');
-        if (!followUpsContainer) return;
-        
+        if (!followUpsContainer) {return;}
+
         if (checked) {
             // Show follow-up questions
             const followUpHtml = this.getFollowUpForGoal(goal);
@@ -362,55 +362,55 @@ class GoalsStep {
                 delete this.followUpData[goal];
             }
         }
-        
+
         // Show/hide position question based on sport selection
         if (goal === 'sport_specific') {
             this.updateSportSpecificVisibility();
         }
     }
-    
+
     /**
      * Attach event listeners to follow-up inputs
      * @param {string} goal - Goal ID
      */
     attachFollowUpListeners(goal) {
         const section = document.querySelector(`[data-goal="${goal}"]`);
-        if (!section) return;
-        
+        if (!section) {return;}
+
         // Handle select inputs
         section.querySelectorAll('select.follow-up-input').forEach(select => {
             select.addEventListener('change', (e) => {
-                const question = select.dataset.question;
-                if (!this.followUpData[goal]) this.followUpData[goal] = {};
+                const {question} = select.dataset;
+                if (!this.followUpData[goal]) {this.followUpData[goal] = {};}
                 this.followUpData[goal][question] = select.value;
             });
         });
-        
+
         // Handle text inputs
         section.querySelectorAll('input[type="text"].follow-up-input').forEach(input => {
             input.addEventListener('input', (e) => {
-                const question = input.dataset.question;
-                if (!this.followUpData[goal]) this.followUpData[goal] = {};
+                const {question} = input.dataset;
+                if (!this.followUpData[goal]) {this.followUpData[goal] = {};}
                 this.followUpData[goal][question] = input.value;
             });
         });
-        
+
         // Handle radio buttons
         section.querySelectorAll('input[type="radio"]').forEach(radio => {
             radio.addEventListener('change', (e) => {
                 const question = e.target.name.replace(`_${goal}`, '');
-                if (!this.followUpData[goal]) this.followUpData[goal] = {};
+                if (!this.followUpData[goal]) {this.followUpData[goal] = {};}
                 this.followUpData[goal][question] = e.target.value;
             });
         });
-        
+
         // Handle checkboxes
         section.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
             checkbox.addEventListener('change', (e) => {
                 const question = 'focus_areas';
-                if (!this.followUpData[goal]) this.followUpData[goal] = {};
-                if (!this.followUpData[goal][question]) this.followUpData[goal][question] = [];
-                
+                if (!this.followUpData[goal]) {this.followUpData[goal] = {};}
+                if (!this.followUpData[goal][question]) {this.followUpData[goal][question] = [];}
+
                 if (e.target.checked) {
                     this.followUpData[goal][question].push(e.target.value);
                 } else {
@@ -418,7 +418,7 @@ class GoalsStep {
                 }
             });
         });
-        
+
         // Special handling for sport-specific
         if (goal === 'sport_specific') {
             const sportSelect = section.querySelector('[data-question="sport"]');
@@ -428,14 +428,14 @@ class GoalsStep {
             this.updateSportSpecificVisibility();
         }
     }
-    
+
     /**
      * Update sport-specific visibility
      */
     updateSportSpecificVisibility() {
         const positionQuestion = document.getElementById('sport-position-question');
-        if (!positionQuestion) return;
-        
+        if (!positionQuestion) {return;}
+
         const sportSelect = document.querySelector('[data-goal="sport_specific"][data-question="sport"]');
         if (sportSelect && (sportSelect.value === 'soccer' || sportSelect.value === 'basketball' || sportSelect.value === 'football')) {
             positionQuestion.style.display = 'block';
@@ -443,19 +443,19 @@ class GoalsStep {
             positionQuestion.style.display = 'none';
         }
     }
-    
+
     /**
      * Save goals and follow-ups, then continue
      */
     saveAndContinue() {
         const selectedGoals = this.getSelectedGoals();
-        
+
         // Save goals and follow-ups to onboarding data
         if (window.OnboardingManager) {
             window.OnboardingManager.setData('goals', selectedGoals);
             window.OnboardingManager.setData('goalFollowUps', this.followUpData);
         }
-        
+
         // Continue to next step
         window.OnboardingManager.nextStep();
     }

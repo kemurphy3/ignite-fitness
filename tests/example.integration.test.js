@@ -3,9 +3,9 @@
 // This demonstrates database integration testing
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { 
-  setupTestDB, 
-  teardownTestDB, 
+import {
+  setupTestDB,
+  teardownTestDB,
   getTestDatabase,
   createTestUser,
   createTestSession,
@@ -19,15 +19,15 @@ describe('Database Integration Tests', () => {
   beforeEach(async () => {
     // Get the test database connection
     db = getTestDatabase();
-    
+
     // Skip database tests if in mock mode
     if (process.env.MOCK_DATABASE === 'true') {
       console.log('⚠️  Mock database mode - skipping database integration tests');
       return;
     }
-    
+
     expect(db).toBeDefined();
-    
+
     // Clean up any existing test data
     await cleanupTestData();
   });
@@ -54,7 +54,7 @@ describe('Database Integration Tests', () => {
       };
 
       const user = await createTestUser(userData);
-      
+
       expect(user).toBeDefined();
       expect(user.id).toBeDefined();
       expect(user.external_id).toBe(userData.external_id);

@@ -6,16 +6,16 @@
 class IntegrationPanel extends BaseComponent {
     constructor(options = {}) {
         super(options);
-        
+
         this.container = options.container;
         this.userId = options.userId;
         this.integrations = new Map();
-        
+
         this.logger = window.SafeLogger || console;
-        
+
         this.init();
     }
-    
+
     /**
      * Initialize integration panel
      */
@@ -23,10 +23,10 @@ class IntegrationPanel extends BaseComponent {
         this.loadIntegrations();
         this.render();
         this.bindEvents();
-        
+
         this.logger.info('IntegrationPanel initialized');
     }
-    
+
     /**
      * Load user integrations
      */
@@ -39,7 +39,7 @@ class IntegrationPanel extends BaseComponent {
                     'Content-Type': 'application/json'
                 }
             });
-            
+
             if (response.ok) {
                 const data = await response.json();
                 this.integrations = new Map(data.integrations.map(integration => [
@@ -47,12 +47,12 @@ class IntegrationPanel extends BaseComponent {
                     integration
                 ]));
             }
-            
+
         } catch (error) {
             this.logger.error('Failed to load integrations:', error);
         }
     }
-    
+
     /**
      * Render integration panel
      */
@@ -80,7 +80,7 @@ class IntegrationPanel extends BaseComponent {
             </div>
         `;
     }
-    
+
     /**
      * Render integration list
      * @returns {string} HTML for integration list
@@ -96,7 +96,7 @@ class IntegrationPanel extends BaseComponent {
                 data: this.integrations.get('strava')
             }
         ];
-        
+
         return integrations.map(integration => `
             <div class="integration-item ${integration.connected ? 'connected' : 'disconnected'}">
                 <div class="integration-info">
@@ -109,15 +109,15 @@ class IntegrationPanel extends BaseComponent {
                 </div>
                 
                 <div class="integration-actions">
-                    ${integration.connected ? 
-                        this.renderDisconnectButton(integration) : 
+                    ${integration.connected ?
+                        this.renderDisconnectButton(integration) :
                         this.renderConnectButton(integration)
                     }
                 </div>
             </div>
         `).join('');
     }
-    
+
     /**
      * Render connection details
      * @param {Object} data - Integration data
@@ -126,7 +126,7 @@ class IntegrationPanel extends BaseComponent {
     renderConnectionDetails(data) {
         const connectedDate = new Date(data.created_at).toLocaleDateString();
         const lastSync = data.last_sync ? new Date(data.last_sync).toLocaleDateString() : 'Never';
-        
+
         return `
             <div class="connection-details">
                 <div class="detail-item">
@@ -144,7 +144,7 @@ class IntegrationPanel extends BaseComponent {
             </div>
         `;
     }
-    
+
     /**
      * Render connect button
      * @param {Object} integration - Integration data
@@ -157,7 +157,7 @@ class IntegrationPanel extends BaseComponent {
             </button>
         `;
     }
-    
+
     /**
      * Render disconnect button
      * @param {Object} integration - Integration data
@@ -170,7 +170,7 @@ class IntegrationPanel extends BaseComponent {
             </button>
         `;
     }
-    
+
     /**
      * Bind event listeners
      */
@@ -178,20 +178,20 @@ class IntegrationPanel extends BaseComponent {
         // Connect buttons
         this.container.querySelectorAll('.connect-btn').forEach(btn => {
             this.addEventListener(btn, 'click', (event) => {
-                const provider = event.target.dataset.provider;
+                const {provider} = event.target.dataset;
                 this.handleConnect(provider);
             });
         });
-        
+
         // Disconnect buttons
         this.container.querySelectorAll('.disconnect-btn').forEach(btn => {
             this.addEventListener(btn, 'click', (event) => {
-                const provider = event.target.dataset.provider;
+                const {provider} = event.target.dataset;
                 this.handleDisconnect(provider);
             });
         });
     }
-    
+
     /**
      * Handle connect action
      * @param {string} provider - Integration provider
@@ -203,10 +203,10 @@ class IntegrationPanel extends BaseComponent {
             }
         } catch (error) {
             this.logger.error('Connect failed:', error);
-            this.showError('Failed to connect to ' + provider);
+            this.showError(`Failed to connect to ${ provider}`);
         }
     }
-    
+
     /**
      * Handle disconnect action
      * @param {string} provider - Integration provider
@@ -215,23 +215,23 @@ class IntegrationPanel extends BaseComponent {
         try {
             // Show confirmation dialog
             const confirmed = await this.showDisconnectConfirmation(provider);
-            if (!confirmed) return;
-            
+            if (!confirmed) {return;}
+
             if (provider === 'strava') {
                 await this.disconnectStrava();
             }
-            
+
             // Reload integrations
             await this.loadIntegrations();
             this.render();
             this.bindEvents();
-            
+
         } catch (error) {
             this.logger.error('Disconnect failed:', error);
-            this.showError('Failed to disconnect from ' + provider);
+            this.showError(`Failed to disconnect from ${ provider}`);
         }
     }
-    
+
     /**
      * Connect to Strava
      */
@@ -243,7 +243,7 @@ class IntegrationPanel extends BaseComponent {
             return;
         }
         window.open(stravaAuthUrl, '_blank', 'width=600,height=700');
-        
+
         // Listen for auth completion
         this.addEventListener(window, 'message', (event) => {
             if (event.data.type === 'strava_auth_complete') {
@@ -251,7 +251,7 @@ class IntegrationPanel extends BaseComponent {
             }
         });
     }
-    
+
     getStravaIntegrationConfig() {
         try {
             const integrations = typeof window !== 'undefined' && window.configLoader?.get?.('integrations')
@@ -278,7 +278,7 @@ class IntegrationPanel extends BaseComponent {
             };
         }
     }
-    
+
     /**
      * Build Strava authorization URL
      * @returns {string|null} Authorization URL or null when config missing
@@ -291,10 +291,10 @@ class IntegrationPanel extends BaseComponent {
         const encodedRedirect = encodeURIComponent(redirectUri);
         const encodedScope = encodeURIComponent(scope);
         const state = this.generateState();
-        
+
         return `https://www.strava.com/oauth/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodedRedirect}&response_type=code&scope=${encodedScope}&state=${state}`;
     }
-    
+
     /**
      * Handle Strava auth completion
      * @param {Object} data - Auth data
@@ -311,7 +311,7 @@ class IntegrationPanel extends BaseComponent {
                     state: data.state
                 })
             });
-            
+
             if (response.ok) {
                 this.showSuccess('Successfully connected to Strava!');
                 await this.loadIntegrations();
@@ -320,13 +320,13 @@ class IntegrationPanel extends BaseComponent {
             } else {
                 throw new Error('Auth failed');
             }
-            
+
         } catch (error) {
             this.logger.error('Strava auth completion failed:', error);
             this.showError('Failed to complete Strava connection');
         }
     }
-    
+
     /**
      * Disconnect from Strava
      */
@@ -335,7 +335,7 @@ class IntegrationPanel extends BaseComponent {
         if (!integration) {
             throw new Error('Strava integration not found');
         }
-        
+
         const response = await fetch('/.netlify/functions/strava-revoke-token', {
             method: 'POST',
             headers: {
@@ -348,14 +348,14 @@ class IntegrationPanel extends BaseComponent {
                 user_id: this.userId
             })
         });
-        
+
         if (!response.ok) {
             throw new Error('Token revocation failed');
         }
-        
+
         this.showSuccess('Successfully disconnected from Strava');
     }
-    
+
     /**
      * Show disconnect confirmation
      * @param {string} provider - Provider name
@@ -377,7 +377,7 @@ class IntegrationPanel extends BaseComponent {
                 justify-content: center;
                 z-index: 10000;
             `;
-            
+
             modal.innerHTML = `
                 <div style="
                     background: var(--color-surface);
@@ -397,20 +397,20 @@ class IntegrationPanel extends BaseComponent {
                     </div>
                 </div>
             `;
-            
+
             document.body.appendChild(modal);
-            
+
             // Handle button clicks
             modal.querySelector('.cancel-btn').addEventListener('click', () => {
                 document.body.removeChild(modal);
                 resolve(false);
             });
-            
+
             modal.querySelector('.confirm-btn').addEventListener('click', () => {
                 document.body.removeChild(modal);
                 resolve(true);
             });
-            
+
             // Close on backdrop click
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
@@ -420,7 +420,7 @@ class IntegrationPanel extends BaseComponent {
             });
         });
     }
-    
+
     /**
      * Show success message
      * @param {string} message - Success message
@@ -428,7 +428,7 @@ class IntegrationPanel extends BaseComponent {
     showSuccess(message) {
         this.showNotification(message, 'success');
     }
-    
+
     /**
      * Show error message
      * @param {string} message - Error message
@@ -436,7 +436,7 @@ class IntegrationPanel extends BaseComponent {
     showError(message) {
         this.showNotification(message, 'error');
     }
-    
+
     /**
      * Show notification
      * @param {string} message - Message
@@ -457,17 +457,17 @@ class IntegrationPanel extends BaseComponent {
             max-width: 300px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         `;
-        
+
         notification.textContent = message;
         document.body.appendChild(notification);
-        
+
         setTimeout(() => {
             if (notification.parentElement) {
                 notification.remove();
             }
         }, 5000);
     }
-    
+
     /**
      * Generate state parameter
      * @returns {string} State parameter
@@ -475,7 +475,7 @@ class IntegrationPanel extends BaseComponent {
     generateState() {
         return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     }
-    
+
     /**
      * Get auth token
      * @returns {string} Auth token

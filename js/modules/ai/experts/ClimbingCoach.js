@@ -7,7 +7,7 @@ class ClimbingCoach {
         this.logger = window.SafeLogger || console;
         this.authManager = window.AuthManager;
         this.storageManager = window.StorageManager;
-        
+
         // Climbing style types
         this.climbingStyles = {
             bouldering: {
@@ -31,7 +31,7 @@ class ClimbingCoach {
                 routeTypes: ['varied']
             }
         };
-        
+
         // Climbing-specific exercise database
         this.climbingExercises = this.initializeClimbingExercises();
     }
@@ -104,7 +104,7 @@ class ClimbingCoach {
         const climbingStyle = this.getClimbingStyle(user, preferences);
         const routeType = this.getRouteType(user, preferences);
         const trainingPhase = this.getTrainingPhase(season, user);
-        
+
         const proposal = {
             blocks: [],
             constraints: [],
@@ -132,17 +132,17 @@ class ClimbingCoach {
         });
 
         proposal.constraints = [
-            { 
-                type: 'finger_recovery', 
-                rule: 'Minimum 48 hours between intense finger work' 
+            {
+                type: 'finger_recovery',
+                rule: 'Minimum 48 hours between intense finger work'
             },
-            { 
-                type: 'grip_fatigue', 
-                rule: 'Prioritize form over load for grip exercises' 
+            {
+                type: 'grip_fatigue',
+                rule: 'Prioritize form over load for grip exercises'
             },
-            { 
-                type: 'volume', 
-                rule: `Total volume adjusted for readiness: ${this.calculateVolume(readiness)}` 
+            {
+                type: 'volume',
+                rule: `Total volume adjusted for readiness: ${this.calculateVolume(readiness)}`
             }
         ];
 
@@ -166,12 +166,12 @@ class ClimbingCoach {
         if (preferences?.climbingStyle) {
             return preferences.climbingStyle;
         }
-        
+
         // Check user profile
         if (user?.climbingStyle) {
             return user.climbingStyle;
         }
-        
+
         // Default to mixed for versatility
         return 'mixed';
     }
@@ -186,11 +186,11 @@ class ClimbingCoach {
         if (preferences?.routeType) {
             return preferences.routeType;
         }
-        
+
         if (user?.routeType) {
             return user.routeType;
         }
-        
+
         return 'varied';
     }
 
@@ -204,11 +204,11 @@ class ClimbingCoach {
         if (user?.trainingPhase) {
             return user.trainingPhase;
         }
-        
+
         if (season?.phase === 'in_season') {
             return 'maintenance';
         }
-        
+
         return 'build'; // Default to building phase
     }
 
@@ -225,14 +225,14 @@ class ClimbingCoach {
             'Light Hangboard (30s open hand)',
             'Finger Extensions'
         ];
-        
+
         // Style-specific additions
         if (climbingStyle === 'bouldering') {
             baseWarmup.push('Easy Campus Board Laddering', 'Dynamic Stretches');
         } else if (climbingStyle === 'sport' || climbingStyle === 'trad') {
             baseWarmup.push('Light Hangboard Repeaters', 'Shoulder Mobility');
         }
-        
+
         return baseWarmup;
     }
 
@@ -247,7 +247,7 @@ class ClimbingCoach {
     generateMainTraining(climbingStyle, routeType, trainingPhase, readiness) {
         const styleConfig = this.climbingStyles[climbingStyle] || this.climbingStyles.mixed;
         const focusAreas = styleConfig.focus;
-        
+
         const block = {
             type: 'main_training',
             exercises: [],
@@ -285,7 +285,7 @@ class ClimbingCoach {
      */
     generateBaseBuildingExercises(focusAreas, readiness) {
         const exercises = [];
-        
+
         // Always include finger strength for climbing
         if (focusAreas.includes('finger_strength')) {
             exercises.push({
@@ -298,7 +298,7 @@ class ClimbingCoach {
                 rationale: 'Building maximum finger strength'
             });
         }
-        
+
         // Grip strength work
         if (focusAreas.includes('finger_strength') || focusAreas.includes('power')) {
             exercises.push({
@@ -311,7 +311,7 @@ class ClimbingCoach {
                 rationale: 'Building grip endurance'
             });
         }
-        
+
         // Upper body pulling
         exercises.push({
             name: 'Weighted Pull-ups',
@@ -321,7 +321,7 @@ class ClimbingCoach {
             load: 'Add weight based on readiness',
             rationale: 'Building pulling strength for climbing'
         });
-        
+
         // Core work
         if (focusAreas.includes('core')) {
             exercises.push({
@@ -332,7 +332,7 @@ class ClimbingCoach {
                 rationale: 'Core strength for body tension on climbs'
             });
         }
-        
+
         return exercises;
     }
 
@@ -344,7 +344,7 @@ class ClimbingCoach {
      */
     generatePeakPhaseExercises(focusAreas, readiness) {
         const exercises = [];
-        
+
         // Maintain finger strength with lighter volume
         exercises.push({
             name: 'Hangboard - Maintenance Hangs',
@@ -355,7 +355,7 @@ class ClimbingCoach {
             load: 'Bodyweight',
             rationale: 'Maintaining finger strength without overloading'
         });
-        
+
         // Power work for peak performance
         if (readiness >= 7) {
             exercises.push({
@@ -367,7 +367,7 @@ class ClimbingCoach {
                 rationale: 'Maintaining power for hard moves'
             });
         }
-        
+
         // Maintenance pulling
         exercises.push({
             name: 'Pull-ups (Maintenance)',
@@ -377,7 +377,7 @@ class ClimbingCoach {
             load: 'Bodyweight or lighter',
             rationale: 'Maintaining pulling strength'
         });
-        
+
         return exercises;
     }
 
@@ -429,7 +429,7 @@ class ClimbingCoach {
             reps: '3-5 per side',
             rationale: 'Building shoulder stability for overhangs'
         });
-        
+
         exercises.push({
             name: 'Hanging Leg Raises',
             category: 'core',
@@ -437,7 +437,7 @@ class ClimbingCoach {
             reps: '10-15',
             rationale: 'Core strength for keeping feet on overhangs'
         });
-        
+
         return exercises;
     }
 
@@ -457,7 +457,7 @@ class ClimbingCoach {
             rest: '2min',
             rationale: 'Building pinch strength for crack jamming'
         });
-        
+
         exercises.push({
             name: 'Wrist Curls & Extensions',
             category: 'forearms',
@@ -465,7 +465,7 @@ class ClimbingCoach {
             reps: '15-20',
             rationale: 'Building wrist strength for crack techniques'
         });
-        
+
         return exercises;
     }
 
@@ -492,7 +492,7 @@ class ClimbingCoach {
                 rationale: 'Prevent rotator cuff imbalances'
             }
         ];
-        
+
         return exercises;
     }
 
@@ -510,7 +510,7 @@ class ClimbingCoach {
             core: readiness >= 8 ? 3 : readiness >= 5 ? 3 : 2,
             antagonist: 3 // Always moderate for antagonist work
         };
-        
+
         return baseSets[category] || 3;
     }
 
@@ -535,8 +535,8 @@ class ClimbingCoach {
      * @returns {string} Volume description
      */
     calculateVolume(readiness) {
-        if (readiness >= 8) return 'high';
-        if (readiness >= 5) return 'moderate';
+        if (readiness >= 8) {return 'high';}
+        if (readiness >= 5) {return 'moderate';}
         return 'low';
     }
 }

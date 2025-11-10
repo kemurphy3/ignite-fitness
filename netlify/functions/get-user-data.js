@@ -43,12 +43,12 @@ const okPreflight = () => ({
 });
 
 exports.handler = async (event) => {
-    if (event.httpMethod === 'OPTIONS') return okPreflight();
-    if (event.httpMethod !== 'GET') return methodNotAllowed();
+    if (event.httpMethod === 'OPTIONS') {return okPreflight();}
+    if (event.httpMethod !== 'GET') {return methodNotAllowed();}
 
     try {
         const { userId } = event.queryStringParameters || {};
-        
+
         if (!userId) {
             return badReq('Missing required parameter: userId');
         }
@@ -59,10 +59,10 @@ exports.handler = async (event) => {
         `;
 
         if (user.length === 0) {
-            return okJson({ 
-                success: true, 
+            return okJson({
+                success: true,
                 data: null,
-                message: 'User not found' 
+                message: 'User not found'
             });
         }
 
@@ -120,7 +120,7 @@ exports.handler = async (event) => {
                     exercises: []
                 };
             }
-            
+
             if (row.exercise_name) {
                 sessionMap[row.id].exercises.push({
                     name: row.exercise_name,
@@ -140,15 +140,15 @@ exports.handler = async (event) => {
             email: user[0].email,
             created_at: user[0].created_at,
             updated_at: user[0].updated_at,
-            
+
             // User preferences
             preferences: preferences[0] || {},
-            
+
             // Recent activity data
             sessions: Object.values(sessionMap),
-            sleepSessions: sleepSessions,
-            stravaActivities: stravaActivities,
-            
+            sleepSessions,
+            stravaActivities,
+
             // Metadata
             dataRetrieved: new Date().toISOString(),
             recordCounts: {
@@ -158,9 +158,9 @@ exports.handler = async (event) => {
             }
         };
 
-        return okJson({ 
-            success: true, 
-            data: userData 
+        return okJson({
+            success: true,
+            data: userData
         });
     } catch (error) {
         console.error('Error getting user data:', error);

@@ -36,7 +36,7 @@ describe('ExerciseAdapter Fallback System (T2B-2)', () => {
         // Load the module and get the class
         const module = await import('../../js/modules/workout/ExerciseAdapter.js');
         ExerciseAdapter = module.default || window.ExerciseAdapter?.constructor;
-        
+
         // Create new instance for each test
         adapter = new ExerciseAdapter();
     });
@@ -74,7 +74,7 @@ describe('ExerciseAdapter Fallback System (T2B-2)', () => {
 
             expect(Array.isArray(fallbacks)).toBe(true);
             expect(fallbacks.length).toBeGreaterThan(0);
-            
+
             // Verify alternatives are knee-safe
             fallbacks.forEach(alt => {
                 expect(alt.name).toBeDefined();
@@ -89,7 +89,7 @@ describe('ExerciseAdapter Fallback System (T2B-2)', () => {
 
             expect(Array.isArray(fallbacks)).toBe(true);
             expect(fallbacks.length).toBeGreaterThan(0);
-            
+
             // Verify alternatives don't stress shoulders
             fallbacks.forEach(alt => {
                 expect(alt.name).toBeDefined();
@@ -103,7 +103,7 @@ describe('ExerciseAdapter Fallback System (T2B-2)', () => {
 
             expect(Array.isArray(fallbacks)).toBe(true);
             expect(fallbacks.length).toBeGreaterThan(0);
-            
+
             // Verify alternatives are back-safe
             fallbacks.forEach(alt => {
                 expect(alt.name).toBeDefined();
@@ -126,7 +126,7 @@ describe('ExerciseAdapter Fallback System (T2B-2)', () => {
 
             expect(Array.isArray(alternatives)).toBe(true);
             expect(alternatives.length).toBeGreaterThan(0);
-            
+
             alternatives.forEach(alt => {
                 expect(alt.name).toBeDefined();
                 expect(alt.rationale).toBeDefined();
@@ -139,9 +139,9 @@ describe('ExerciseAdapter Fallback System (T2B-2)', () => {
             const alternatives = adapter.getGenericSafeAlternatives();
             const names = alternatives.map(a => a.name.toLowerCase());
 
-            expect(names.some(name => 
-                name.includes('walking') || 
-                name.includes('cardio') || 
+            expect(names.some(name =>
+                name.includes('walking') ||
+                name.includes('cardio') ||
                 name.includes('mobility')
             )).toBe(true);
         });
@@ -153,7 +153,7 @@ describe('ExerciseAdapter Fallback System (T2B-2)', () => {
 
             expect(Array.isArray(alternatives)).toBe(true);
             expect(alternatives.length).toBeGreaterThan(0);
-            
+
             alternatives.forEach(alt => {
                 expect(alt.name).toBeDefined();
                 expect(alt.rationale).toBeDefined();
@@ -164,9 +164,9 @@ describe('ExerciseAdapter Fallback System (T2B-2)', () => {
             const alternatives = adapter.getGenericBodyweightAlternatives();
             const names = alternatives.map(a => a.name.toLowerCase());
 
-            expect(names.some(name => 
-                name.includes('bodyweight') || 
-                name.includes('plank') || 
+            expect(names.some(name =>
+                name.includes('bodyweight') ||
+                name.includes('plank') ||
                 name.includes('stretch')
             )).toBe(true);
         });
@@ -217,10 +217,10 @@ describe('ExerciseAdapter Fallback System (T2B-2)', () => {
 
             // Verify logging was called
             expect(adapter.logger.info).toHaveBeenCalled();
-            const callArgs = adapter.logger.info.mock.calls.find(call => 
+            const callArgs = adapter.logger.info.mock.calls.find(call =>
                 call[0] === 'EXERCISE_FALLBACK'
             );
-            
+
             if (callArgs) {
                 expect(callArgs[1]).toHaveProperty('original', exerciseName);
                 expect(callArgs[1]).toHaveProperty('painLocation', painLocation);

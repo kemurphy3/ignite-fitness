@@ -44,8 +44,8 @@ class SecondarySports extends window.BaseComponent {
     }
 
     toggleSport(sport, selected) {
-        if (selected) this.secondarySports.add(sport);
-        else this.secondarySports.delete(sport);
+        if (selected) {this.secondarySports.add(sport);}
+        else {this.secondarySports.delete(sport);}
     }
 
     saveAndContinue() {

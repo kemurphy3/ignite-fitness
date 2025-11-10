@@ -10,7 +10,7 @@ class OnboardingManager {
         this.eventBus = window.EventBus;
         this.authManager = window.AuthManager;
         this.storageManager = window.StorageManager;
-        
+
         this.onboardingSteps = this.initializeSteps();
         this.currentStep = 0;
         this.onboardingData = {};
@@ -26,7 +26,7 @@ class OnboardingManager {
         return [
             {
                 id: 'sport_selection',
-                title: "Primary Sport Focus",
+                title: 'Primary Sport Focus',
                 component: 'SportSelection',
                 description: 'Choose your main training focus',
                 required: true,
@@ -34,7 +34,7 @@ class OnboardingManager {
             },
             {
                 id: 'secondary_sports',
-                title: "Secondary Activities",
+                title: 'Secondary Activities',
                 component: 'SecondarySports',
                 description: 'Cross-training and seasonal activities',
                 required: false,
@@ -42,7 +42,7 @@ class OnboardingManager {
             },
             {
                 id: 'current_volume',
-                title: "Current Training Volume",
+                title: 'Current Training Volume',
                 component: 'CurrentVolume',
                 description: 'Weekly training minutes by activity',
                 required: true,
@@ -50,7 +50,7 @@ class OnboardingManager {
             },
             {
                 id: 'recent_efforts',
-                title: "Recent Best Efforts",
+                title: 'Recent Best Efforts',
                 component: 'RecentEfforts',
                 description: 'Help us estimate your zones',
                 required: false,
@@ -58,7 +58,7 @@ class OnboardingManager {
             },
             {
                 id: 'equipment_access',
-                title: "Equipment & Access",
+                title: 'Equipment & Access',
                 component: 'EquipmentAccess',
                 description: 'Available training facilities',
                 required: true,
@@ -66,7 +66,7 @@ class OnboardingManager {
             },
             {
                 id: 'injury_history',
-                title: "Injury Flags",
+                title: 'Injury Flags',
                 component: 'InjuryHistory',
                 description: 'Current limitations and past issues',
                 required: false,
@@ -74,7 +74,7 @@ class OnboardingManager {
             },
             {
                 id: 'time_windows',
-                title: "Schedule Preferences",
+                title: 'Schedule Preferences',
                 component: 'TimeWindows',
                 description: 'When and how long you can train',
                 required: true,
@@ -82,7 +82,7 @@ class OnboardingManager {
             },
             {
                 id: 'review_complete',
-                title: "Review & Launch",
+                title: 'Review & Launch',
                 component: 'ReviewComplete',
                 description: 'Confirm your profile and start training',
                 required: true,
@@ -98,12 +98,12 @@ class OnboardingManager {
     needsOnboarding() {
         try {
             const user = this.authManager?.getCurrentUser();
-            if (!user) return false;
+            if (!user) {return false;}
 
             // Check if user has completed onboarding
             const preferences = user.preferences || {};
             const onboardingVersion = preferences.onboarding_version || 0;
-            
+
             return onboardingVersion < this.onboardingVersion;
         } catch (error) {
             this.logger.error('Failed to check onboarding status', error);
@@ -120,7 +120,7 @@ class OnboardingManager {
         this.onboardingData = {};
         this.isCompleted = false;
         this.logger.audit('ONBOARDING_STARTED', { userId, version: this.onboardingVersion });
-        
+
         // Navigate to onboarding route
         if (window.Router) {
             window.Router.navigate('#/onboarding');
@@ -333,21 +333,21 @@ class OnboardingManager {
     async completeOnboarding() {
         // Show generating state first
         this.showGeneratingState();
-        
+
         try {
             // Save complete user profile and preferences in single object
             await this.saveCompleteProfile();
-            
+
             // Small delay to show generating state (improves UX)
             await new Promise(resolve => setTimeout(resolve, 1500));
-            
+
             this.isCompleted = true;
-            
-            this.logger.audit('ONBOARDING_COMPLETED', { 
+
+            this.logger.audit('ONBOARDING_COMPLETED', {
                 data: this.onboardingData,
-                version: this.onboardingVersion 
+                version: this.onboardingVersion
             });
-            
+
             // Show first workout experience
             this.finishOnboarding();
         } catch (error) {
@@ -361,8 +361,8 @@ class OnboardingManager {
      */
     showGeneratingState() {
         const container = document.getElementById('app-content') || document.getElementById('main-content');
-        if (!container) return;
-        
+        if (!container) {return;}
+
         container.innerHTML = `
             <div class="onboarding-generating">
                 <div class="generating-content">
@@ -413,8 +413,8 @@ class OnboardingManager {
      */
     showError(message) {
         const container = document.getElementById('app-content') || document.getElementById('main-content');
-        if (!container) return;
-        
+        if (!container) {return;}
+
         container.innerHTML = `
             <div class="onboarding-error">
                 <div class="error-content" style="text-align: center; padding: 2rem;">
@@ -436,7 +436,7 @@ class OnboardingManager {
             </div>
         `;
     }
-    
+
     /**
      * Save step data
      * @param {string} stepId - Step ID
@@ -461,7 +461,7 @@ class OnboardingManager {
             const existingProfile = this.storageManager?.getUserProfile?.(userId);
             const programStartDate = this.determineProgramStartDate(existingProfile);
             this.onboardingData.programStartDate = programStartDate;
-            
+
             // Combine all onboarding data into single object
             const completeProfile = {
                 // User profile data (multi-sport)
@@ -486,7 +486,7 @@ class OnboardingManager {
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString()
                 },
-                
+
                 // Preferences (multi-sport)
                 preferences: {
                     equipment: this.onboardingData.equipment || [],
@@ -504,19 +504,19 @@ class OnboardingManager {
                     program_start_date: programStartDate
                 }
             };
-            
+
             // Validate required fields
             const validation = this.validateOnboardingData(completeProfile);
             if (!validation.valid) {
                 throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
             }
-            
+
             // Save to StorageManager
             await this.storageManager.saveUserProfile(userId, completeProfile);
-            
+
             // Also save preferences separately for easy access
             await this.storageManager.savePreferences(userId, completeProfile.preferences);
-            
+
             this.logger.debug('Complete profile saved', completeProfile);
         } catch (error) {
             this.logger.error('Failed to save complete profile', error);
@@ -553,10 +553,10 @@ class OnboardingManager {
 
         return {
             valid: errors.length === 0,
-            errors: errors
+            errors
         };
     }
-    
+
     determineProgramStartDate(existingProfile = {}) {
         const candidateValues = [
             this.onboardingData?.programStartDate,
@@ -583,19 +583,19 @@ class OnboardingManager {
         validDates.sort((a, b) => a - b);
         return validDates[0].toISOString();
     }
-    
+
     /**
      * Skip current step
      */
     skipStep() {
         const step = this.onboardingSteps[this.currentStep];
-        
+
         if (step.skippable) {
             this.logger.debug('Step skipped', { step: step.id });
             this.nextStep();
         }
     }
-    
+
     /**
      * Get user ID
      * @returns {string} User ID
@@ -610,27 +610,27 @@ class OnboardingManager {
     finishOnboarding() {
         // Save onboarding data
         this.saveOnboardingData();
-        
+
         // Generate first workout
         const firstWorkout = this.generateFirstWorkout();
-        
+
         // Show first workout experience instead of going straight to dashboard
         if (window.FirstWorkoutExperience) {
             const container = document.getElementById('app-content') || document.getElementById('main-content');
             if (container) {
                 const firstWorkoutView = new window.FirstWorkoutExperience();
                 container.innerHTML = firstWorkoutView.showWorkoutIntro(firstWorkout);
-                
+
                 // Mark onboarding as complete in localStorage
                 const userId = this.getUserId();
                 if (userId) {
                     localStorage.setItem('ignite.user.hasCompletedOnboarding', 'true');
-                    
+
                     // Update user preferences
                     if (window.AuthManager) {
                         const user = window.AuthManager.getCurrentUser();
                         if (user) {
-                            if (!user.preferences) user.preferences = {};
+                            if (!user.preferences) {user.preferences = {};}
                             user.preferences.onboarding_version = this.onboardingVersion;
                             user.preferences.hasCompletedOnboarding = true;
                             window.AuthManager.updateUserData({ preferences: user.preferences });
@@ -644,7 +644,7 @@ class OnboardingManager {
                 window.Router.navigate('#/');
             }
         }
-        
+
         this.logger.audit('ONBOARDING_FINISHED', { data: this.onboardingData });
     }
 
@@ -667,7 +667,7 @@ class OnboardingManager {
                     equipment_type: this.onboardingData.equipment || 'commercial_gym'
                 }
             };
-            
+
             // Try to use ExpertCoordinator for personalized workout generation
             if (window.ExpertCoordinator && typeof window.ExpertCoordinator.generateWorkout === 'function') {
                 try {
@@ -678,7 +678,7 @@ class OnboardingManager {
                         duration: userProfile.preferences.session_length || 45,
                         goals: userProfile.goals
                     };
-                    
+
                     const generatedPlan = window.ExpertCoordinator.generateWorkout(context);
                     if (generatedPlan && generatedPlan.blocks && generatedPlan.blocks.length > 0) {
                         // Convert expert plan to workout format
@@ -695,13 +695,13 @@ class OnboardingManager {
                                 });
                             }
                         });
-                        
+
                         if (exercises.length > 0) {
                             return {
                                 name: 'Your First Workout',
                                 duration: context.duration,
                                 difficulty: this.getDifficultyLevel(),
-                                exercises: exercises,
+                                exercises,
                                 rationale: generatedPlan.rationale || 'Personalized based on your goals'
                             };
                         }
@@ -710,14 +710,14 @@ class OnboardingManager {
                     this.logger.warn('Failed to generate workout with ExpertCoordinator, using fallback', error);
                 }
             }
-            
+
             // Try WorkoutGenerator as fallback
             if (window.WorkoutGenerator && typeof window.WorkoutGenerator.generateWorkout === 'function') {
                 try {
                     const sessionType = 'Full Body';
                     const duration = userProfile.preferences.session_length || 45;
                     const generatedWorkout = window.WorkoutGenerator.generateWorkout(userProfile, sessionType, duration);
-                    
+
                     if (generatedWorkout && generatedWorkout.exercises && generatedWorkout.exercises.length > 0) {
                         return {
                             name: generatedWorkout.type || 'Your First Workout',
@@ -731,7 +731,7 @@ class OnboardingManager {
                     this.logger.warn('Failed to generate workout with WorkoutGenerator, using default', error);
                 }
             }
-            
+
             // Default personalized workout based on goals
             return {
                 name: 'Your First Workout',
@@ -780,10 +780,10 @@ class OnboardingManager {
     getDefaultExercises() {
         const goals = this.onboardingData.goals || ['general_fitness'];
         const exercises = [];
-        
+
         // Add warm-up
         exercises.push({ name: 'Warm-up', sets: 1, reps: '5 min' });
-        
+
         // Add exercises based on goals
         if (goals.includes('strength') || goals.includes('build_muscle')) {
             exercises.push({ name: 'Bodyweight Squats', sets: 3, reps: 10 });
@@ -799,10 +799,10 @@ class OnboardingManager {
             exercises.push({ name: 'Push-ups', sets: 3, reps: 8 });
             exercises.push({ name: 'Plank', sets: 2, reps: '30 sec' });
         }
-        
+
         // Add cool-down
         exercises.push({ name: 'Cool-down Stretch', sets: 1, reps: '5 min' });
-        
+
         return exercises;
     }
 
@@ -822,7 +822,7 @@ class OnboardingManager {
      */
     initializeCurrentStep() {
         const step = this.onboardingSteps[this.currentStep];
-        if (!step) return;
+        if (!step) {return;}
 
         // Initialize step component
         switch (step.component) {
@@ -878,7 +878,7 @@ class OnboardingManager {
     saveOnboardingData() {
         if (this.authManager && this.authManager.getCurrentUsername()) {
             const username = this.authManager.getCurrentUsername();
-            
+
             // Save to user profile
             if (window.users && window.users[username]) {
                 window.users[username].onboardingData = {
@@ -886,12 +886,12 @@ class OnboardingManager {
                     completedAt: new Date().toISOString(),
                     version: this.onboardingVersion
                 };
-                
+
                 // Update localStorage
                 localStorage.setItem('ignitefitness_users', JSON.stringify(window.users));
             }
         }
-        
+
         this.logger.debug('Onboarding data saved');
     }
 

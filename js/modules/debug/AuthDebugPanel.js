@@ -5,17 +5,17 @@
 
 (function() {
     'use strict';
-    
+
     // Only load in development
     const isProduction = typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'production';
-    if (isProduction) return;
-    
+    if (isProduction) {return;}
+
     class AuthDebugPanel {
         constructor() {
             this.panel = null;
             this.isVisible = false;
         }
-        
+
         /**
          * Show debug panel
          */
@@ -26,7 +26,7 @@
                 this.update();
                 return;
             }
-            
+
             this.panel = document.createElement('div');
             this.panel.id = 'auth-debug-panel';
             this.panel.style.cssText = `
@@ -45,23 +45,23 @@
                 max-height: 400px;
                 overflow-y: auto;
             `;
-            
+
             this.update();
             document.body.appendChild(this.panel);
             this.isVisible = true;
         }
-        
+
         /**
          * Update debug panel content
          */
         update() {
-            if (!this.panel) return;
-            
+            if (!this.panel) {return;}
+
             const authState = window.AuthManager?.getAuthState() || { isAuthenticated: false, token: null, user: null };
             const router = window.Router;
             const currentRoute = router?.currentRoute || window.location.hash || 'none';
             const lastRedirect = router?.lastRedirectReason || 'none';
-            
+
             this.panel.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.5rem;">
                     <strong style="color: #2d3748;">Auth Debug Panel</strong>
@@ -82,7 +82,7 @@
                 </div>
             `;
         }
-        
+
         /**
          * Hide debug panel
          */
@@ -92,7 +92,7 @@
                 this.isVisible = false;
             }
         }
-        
+
         /**
          * Toggle debug panel
          */
@@ -104,10 +104,10 @@
             }
         }
     }
-    
+
     // Initialize debug panel
     const debugPanel = new AuthDebugPanel();
-    
+
     // Expose via window.__IGNITE__.auth
     if (!window.__IGNITE__) {
         window.__IGNITE__ = {};
@@ -118,7 +118,7 @@
         toggle: () => debugPanel.toggle(),
         update: () => debugPanel.update()
     };
-    
+
     // Hotkey "L" to force route to login
     document.addEventListener('keydown', (e) => {
         if (e.key === 'L' && e.shiftKey && e.altKey) {
@@ -127,23 +127,23 @@
                 window.Router.navigate('#/login');
             }
         }
-        
+
         // Ctrl+Shift+D to toggle debug panel
         if (e.ctrlKey && e.shiftKey && e.key === 'D') {
             e.preventDefault();
             debugPanel.toggle();
         }
     });
-    
+
     // Auto-update panel when auth state changes
     if (window.EventBus) {
         window.EventBus.on('user:login', () => debugPanel.update());
         window.EventBus.on('user:logout', () => debugPanel.update());
     }
-    
+
     // Log availability
     console.log('%c[DEV] Auth Debug Panel loaded. Use: window.__IGNITE__.auth.debugPanel()', 'color: #4299e1; font-weight: bold;');
     console.log('%c[DEV] Hotkeys: Alt+Shift+L = Force #/login, Ctrl+Shift+D = Toggle debug panel', 'color: #4299e1;');
-    
+
 })();
 

@@ -186,7 +186,7 @@ const LoadCalculationEngine = {
 // Equivalence rules (simplified for serverless)
 const EquivalenceRules = {
     getTimeFactor(fromModality, toModality, zone) {
-        if (fromModality === toModality) return 1.0;
+        if (fromModality === toModality) {return 1.0;}
 
         const baseFactors = {
             'running_to_cycling': 1.30,
@@ -208,7 +208,7 @@ const EquivalenceRules = {
 
         const conversionKey = `${fromModality}_to_${toModality}`;
         const baseFactor = baseFactors[conversionKey];
-        if (!baseFactor) return 1.0;
+        if (!baseFactor) {return 1.0;}
 
         const adjustment = zoneAdjustments[conversionKey]?.[zone] || 0;
         return baseFactor + adjustment;
@@ -253,9 +253,9 @@ const EquivalenceRules = {
         const zonePenalty = { Z1: 0, Z2: 0, Z3: 0, Z4: -0.05, Z5: -0.10 };
         confidence += zonePenalty[zone] || 0;
 
-        if (duration < 10) confidence -= 0.10;
-        if (duration > 120) confidence -= 0.05;
-        if (loadVariance > 0.15) confidence -= 0.10;
+        if (duration < 10) {confidence -= 0.10;}
+        if (duration > 120) {confidence -= 0.05;}
+        if (loadVariance > 0.15) {confidence -= 0.10;}
 
         return Math.max(0, Math.min(1, confidence));
     }
@@ -328,7 +328,7 @@ class SubstitutionEngine {
 
     async findCandidateTemplates(target_modality, adaptation, user_context) {
         const modalityWorkouts = await this.workoutCatalog.getWorkoutsByModality(target_modality);
-        if (!modalityWorkouts || modalityWorkouts.length === 0) return [];
+        if (!modalityWorkouts || modalityWorkouts.length === 0) {return [];}
 
         const candidates = [];
         for (const workout of modalityWorkouts) {
@@ -409,10 +409,10 @@ class SubstitutionEngine {
         const loadAccuracy = 1 - Math.min(candidate.load_variance, 0.25);
         score += loadAccuracy * 40;
         score += candidate.confidence_score * 30;
-        if (candidate.adaptation_match === 'exact') score += 20;
-        else if (candidate.adaptation_match === 'compatible') score += 10;
-        if (!candidate.equipment_required || candidate.equipment_required.length === 0) score += 5;
-        if (candidate.scaled_duration >= 15 && candidate.scaled_duration <= 120) score += 5;
+        if (candidate.adaptation_match === 'exact') {score += 20;}
+        else if (candidate.adaptation_match === 'compatible') {score += 10;}
+        if (!candidate.equipment_required || candidate.equipment_required.length === 0) {score += 5;}
+        if (candidate.scaled_duration >= 15 && candidate.scaled_duration <= 120) {score += 5;}
         return Math.round(score * 10) / 10;
     }
 
@@ -457,7 +457,7 @@ class SubstitutionEngine {
             reasons.push('Reasonable alternative option');
         }
 
-        return reasons.join('. ') + '.';
+        return `${reasons.join('. ') }.`;
     }
 }
 
@@ -471,7 +471,7 @@ EquivalenceRules.validateDurationLimits = (zone, duration) => {
     };
 
     const limit = limits[zone];
-    if (!limit) return { valid: true };
+    if (!limit) {return { valid: true };}
 
     if (duration < limit.min) {
         return { valid: false, reason: `Duration ${duration}min below minimum ${limit.min}min for ${zone}` };

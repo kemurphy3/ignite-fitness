@@ -48,7 +48,7 @@ class HealthChecker {
         ];
 
         const missing = modules.filter(module => !window[module]);
-        
+
         if (missing.length === 0) {
             this.addResult('ok', 'Core Modules', 'All core modules loaded');
         } else {
@@ -68,7 +68,7 @@ class HealthChecker {
         try {
             const testKey = 'health_check_test';
             const testValue = { test: true, timestamp: Date.now() };
-            
+
             // Test safe storage methods
             if (window.StorageManager.prototype.safeSetItem) {
                 const success = window.StorageManager.prototype.safeSetItem.call(
@@ -106,18 +106,18 @@ class HealthChecker {
         try {
             let eventReceived = false;
             const testTopic = 'health_check_test';
-            
+
             // Listen for test event
             window.EventBus.on(testTopic, () => {
                 eventReceived = true;
             });
-            
+
             // Emit test event
             window.EventBus.emit(testTopic, { test: true });
-            
+
             // Wait a bit for event to be processed
             await new Promise(resolve => setTimeout(resolve, 100));
-            
+
             if (eventReceived) {
                 this.addResult('ok', 'EventBus', 'Event system working');
             } else {
@@ -140,10 +140,10 @@ class HealthChecker {
         try {
             // Check if router has required methods
             const requiredMethods = ['navigate', 'isAuthenticated'];
-            const missing = requiredMethods.filter(method => 
+            const missing = requiredMethods.filter(method =>
                 typeof window.Router.prototype[method] !== 'function'
             );
-            
+
             if (missing.length === 0) {
                 this.addResult('ok', 'Router', 'Required methods available');
             } else {
@@ -182,11 +182,11 @@ class HealthChecker {
         try {
             const testKey = 'health_check_localStorage';
             const testValue = 'test';
-            
+
             localStorage.setItem(testKey, testValue);
             const retrieved = localStorage.getItem(testKey);
             localStorage.removeItem(testKey);
-            
+
             if (retrieved === testValue) {
                 this.addResult('ok', 'LocalStorage', 'Available and working');
             } else {
@@ -233,37 +233,37 @@ class HealthChecker {
         const container = document.getElementById('health-status');
         const detailsContainer = document.getElementById('health-details');
         const timestampElement = document.getElementById('timestamp');
-        
+
         // Clear loading message
         container.innerHTML = '';
-        
+
         // Display results
         this.results.forEach(result => {
             const statusDiv = document.createElement('div');
             statusDiv.className = `status ${result.type}`;
-            
-            const icon = result.type === 'ok' ? '✅' : 
+
+            const icon = result.type === 'ok' ? '✅' :
                         result.type === 'warning' ? '⚠️' : '❌';
-            
+
             statusDiv.innerHTML = `
                 <span class="status-icon">${icon}</span>
                 <span><strong>${result.component}:</strong> ${result.message}</span>
             `;
-            
+
             container.appendChild(statusDiv);
         });
-        
+
         // Show details
         if (this.results.some(r => r.type === 'error' || r.type === 'warning')) {
             detailsContainer.style.display = 'block';
             detailsContainer.innerHTML = `
                 <strong>Detailed Results:</strong><br>
-                ${this.results.map(r => 
+                ${this.results.map(r =>
                     `${r.type.toUpperCase()}: ${r.component} - ${r.message}`
                 ).join('<br>')}
             `;
         }
-        
+
         // Show timestamp
         const duration = Date.now() - this.startTime;
         timestampElement.textContent = `Health check completed in ${duration}ms at ${new Date().toLocaleString()}`;

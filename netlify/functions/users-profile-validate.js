@@ -39,7 +39,7 @@ const createProfileSchema = {
         },
         sex: { enum: ['male', 'female', 'other', 'prefer_not_to_say'] },
         preferred_units: { enum: ['metric', 'imperial'] },
-        goals: { 
+        goals: {
             type: 'array',
             items: { type: 'string' },
             maxItems: 10
@@ -85,7 +85,7 @@ exports.handler = async (event) => {
     const sql = getServerlessDB();
     const ajv = new Ajv();
     const validate = ajv.compile(createProfileSchema);
-    
+
     try {
         // Authenticate user
         const userId = await verifyJWT(event.headers);
@@ -96,11 +96,11 @@ exports.handler = async (event) => {
                 body: JSON.stringify({ error: 'Unauthorized', code: 'AUTH_001' })
             };
         }
-        
+
         const { fields } = JSON.parse(event.body);
         const validationResults = {};
         const warnings = [];
-        
+
         // Validate input for security
         const inputValidation = validateInput(fields);
         if (!inputValidation.valid) {
@@ -114,7 +114,7 @@ exports.handler = async (event) => {
                 })
             };
         }
-        
+
         // Convert units for validation
         const convertedFields = { ...fields };
         if (convertedFields.height && typeof convertedFields.height === 'object') {
@@ -128,7 +128,7 @@ exports.handler = async (event) => {
                 };
             }
         }
-        
+
         if (convertedFields.weight && typeof convertedFields.weight === 'object') {
             try {
                 convertedFields.weight_kg = convertUnits.toKg(convertedFields.weight);
@@ -140,16 +140,16 @@ exports.handler = async (event) => {
                 };
             }
         }
-        
+
         // Validate each field
         for (const [key, value] of Object.entries(convertedFields)) {
             if (createProfileSchema.properties[key]) {
-                const fieldSchema = { 
-                    type: 'object', 
-                    properties: { [key]: createProfileSchema.properties[key] } 
+                const fieldSchema = {
+                    type: 'object',
+                    properties: { [key]: createProfileSchema.properties[key] }
                 };
                 const validateField = ajv.compile(fieldSchema);
-                
+
                 validationResults[key] = {
                     valid: validateField({ [key]: value }),
                     errors: validateField.errors || []
@@ -161,7 +161,7 @@ exports.handler = async (event) => {
                 };
             }
         }
-        
+
         // Check physical consistency
         if (convertedFields.height_cm && convertedFields.weight_kg) {
             const bmi = convertedFields.weight_kg / Math.pow(convertedFields.height_cm / 100, 2);
@@ -173,7 +173,7 @@ exports.handler = async (event) => {
                 });
             }
         }
-        
+
         // Check lift ratios
         if (convertedFields.bench_press_max && convertedFields.weight_kg) {
             const ratio = convertedFields.bench_press_max / convertedFields.weight_kg;
@@ -185,7 +185,7 @@ exports.handler = async (event) => {
                 });
             }
         }
-        
+
         // Check deadlift vs squat ratio
         if (convertedFields.deadlift_max && convertedFields.squat_max) {
             const ratio = convertedFields.deadlift_max / convertedFields.squat_max;
@@ -197,14 +197,14 @@ exports.handler = async (event) => {
                 });
             }
         }
-        
+
         // Check goal conflicts
         if (convertedFields.goals && convertedFields.goals.length > 0) {
             try {
                 const conflicts = await sql`
                     SELECT * FROM validate_goal_conflicts(${JSON.stringify(convertedFields.goals)})
                 `;
-                
+
                 if (conflicts.length > 0) {
                     warnings.push({
                         field: 'goals',
@@ -216,7 +216,7 @@ exports.handler = async (event) => {
                 console.error('Goal conflict check failed:', error);
             }
         }
-        
+
         // Check for suspicious patterns
         const suspiciousPatterns = [];
         for (const [key, value] of Object.entries(convertedFields)) {
@@ -230,7 +230,7 @@ exports.handler = async (event) => {
                 }
             }
         }
-        
+
         if (suspiciousPatterns.length > 0) {
             warnings.push({
                 field: 'input',
@@ -238,9 +238,9 @@ exports.handler = async (event) => {
                 patterns: suspiciousPatterns
             });
         }
-        
+
         const allValid = Object.values(validationResults).every(r => r.valid);
-        
+
         // Log sanitized validation attempt
         console.log('Profile validation:', {
             userId: sanitizeForLog(userId),
@@ -248,7 +248,7 @@ exports.handler = async (event) => {
             valid: allValid,
             warnings: warnings.length
         });
-        
+
         return {
             statusCode: 200,
             headers: { 'Content-Type': 'application/json' },
@@ -259,14 +259,14 @@ exports.handler = async (event) => {
                 converted_fields: convertedFields
             })
         };
-        
+
     } catch (error) {
         console.error('Validation error:', sanitizeForLog(error.message));
-        
+
         return {
             statusCode: 500,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 error: 'Internal server error',
                 code: 'SYS_001'
             })

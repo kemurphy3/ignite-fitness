@@ -7,10 +7,10 @@ class ExerciseAdapter {
         this.logger = window.SafeLogger || console;
         this.eventBus = window.EventBus;
         this.storageManager = window.StorageManager;
-        
+
         this.aestheticFocus = null;
         this.readinessLevel = 8;
-        
+
         this.loadUserPreferences();
     }
 
@@ -21,7 +21,7 @@ class ExerciseAdapter {
         try {
             const authManager = window.AuthManager;
             const userId = authManager?.getCurrentUsername();
-            
+
             if (userId) {
                 const prefs = await this.storageManager.getPreferences(userId);
                 if (prefs) {
@@ -29,7 +29,7 @@ class ExerciseAdapter {
                     this.readinessLevel = prefs.lastReadinessScore || 8;
                 }
             }
-            
+
             // Listen for readiness updates
             this.eventBus.on(this.eventBus.TOPICS.READINESS_UPDATED, (data) => {
                 this.readinessLevel = data.readiness?.readinessScore || 8;
@@ -48,40 +48,40 @@ class ExerciseAdapter {
     adaptWorkout(workout, readinessScore = this.readinessLevel) {
         try {
             const adaptedWorkout = { ...workout };
-            
+
             // Calculate performance vs aesthetic split
             const { performanceExercises, aestheticExercises } = this.calculateSplit(workout);
-            
+
             // Add accessories based on aesthetic focus
             if (this.aestheticFocus && this.aestheticFocus !== 'functional') {
                 const accessories = this.getAccessoriesForFocus(this.aestheticFocus, readinessScore);
                 aestheticExercises.push(...accessories);
             }
-            
+
             // Apply readiness-based volume reduction to accessories
             if (readinessScore <= 6) {
                 this.reduceAccessoryVolume(aestheticExercises, readinessScore);
             }
-            
+
             adaptedWorkout.exercises = [
                 ...performanceExercises,
                 ...aestheticExercises
             ];
-            
+
             adaptedWorkout.adaptations = {
                 performancePercentage: '70%',
                 aestheticPercentage: '30%',
                 volumeReduced: readinessScore <= 6,
                 readinessLevel: readinessScore
             };
-            
+
             return adaptedWorkout;
         } catch (error) {
             this.logger.error('Failed to adapt workout', error);
             return workout;
         }
     }
-    
+
     /**
      * Substitute exercise based on dislikes or pain
      * @param {string} exerciseName - Current exercise
@@ -94,33 +94,33 @@ class ExerciseAdapter {
         try {
             const substitutionRules = this.getSubstitutionRules();
             const exerciseRules = substitutionRules[exerciseName.toLowerCase()];
-            
+
             if (!exerciseRules) {
                 // Fallback: Provide generic alternatives when specific ones don't exist
                 return this.getFallbackAlternatives(exerciseName, painLocation, constraints);
             }
-            
+
             // Filter by dislikes
             let alternatives = exerciseRules.alternatives
-                .filter(alt => !dislikes.some(dislike => 
+                .filter(alt => !dislikes.some(dislike =>
                     alt.name.toLowerCase().includes(dislike.toLowerCase())
                 ));
-            
+
             // Apply pain-based modifications
             if (painLocation) {
                 alternatives = this.applyPainModifications(alternatives, painLocation);
             }
-            
+
             // Apply constraints
             if (constraints.equipment || constraints.time) {
                 alternatives = this.applyConstraints(alternatives, constraints);
             }
-            
+
             // If no alternatives after filtering, use fallback system
             if (alternatives.length === 0) {
                 return this.getFallbackAlternatives(exerciseName, painLocation, constraints);
             }
-            
+
             // Return top 2 alternatives
             const suggestions = alternatives.slice(0, 2).map(alt => ({
                 name: alt.name,
@@ -128,10 +128,10 @@ class ExerciseAdapter {
                 restAdjustment: alt.restAdjustment || 0,
                 volumeAdjustment: alt.volumeAdjustment || 1.0
             }));
-            
+
             return {
                 alternatives: suggestions,
-                message: suggestions.length > 0 
+                message: suggestions.length > 0
                     ? `Suggested alternatives for ${exerciseName}`
                     : `No suitable alternatives found for ${exerciseName}`
             };
@@ -311,7 +311,7 @@ class ExerciseAdapter {
             }
         };
     }
-    
+
     /**
      * Apply pain-based modifications
      * @param {Array} alternatives - Alternative exercises
@@ -320,10 +320,10 @@ class ExerciseAdapter {
      */
     applyPainModifications(alternatives, painLocation) {
         const painModifications = {
-            'knee': (alt) => 
+            'knee': (alt) =>
                 !alt.name.toLowerCase().includes('squat') &&
                 !alt.name.toLowerCase().includes('lunge') &&
-                alt.name.toLowerCase().includes('hinge') || 
+                alt.name.toLowerCase().includes('hinge') ||
                 alt.name.toLowerCase().includes('press'),
             'lower back': (alt) =>
                 !alt.name.toLowerCase().includes('deadlift') &&
@@ -336,15 +336,15 @@ class ExerciseAdapter {
                 alt.name.toLowerCase().includes('pull') ||
                 alt.name.toLowerCase().includes('supported')
         };
-        
+
         const filter = painModifications[painLocation.toLowerCase()];
         if (filter) {
             return alternatives.filter(alt => filter(alt));
         }
-        
+
         return alternatives;
     }
-    
+
     /**
      * Apply additional constraints
      * @param {Array} alternatives - Alternative exercises
@@ -407,11 +407,11 @@ class ExerciseAdapter {
     getAlternates(exerciseName) {
         const rules = this.getSubstitutionRules();
         const exerciseRules = rules[exerciseName.toLowerCase()];
-        
+
         if (!exerciseRules) {
             return [];
         }
-        
+
         return exerciseRules.alternatives.map(alt => ({
             name: alt.name,
             rationale: alt.rationale,
@@ -428,17 +428,17 @@ class ExerciseAdapter {
     calculateSplit(workout) {
         const performanceExercises = [];
         const aestheticExercises = [];
-        
+
         if (!workout.exercises || !Array.isArray(workout.exercises)) {
             return { performanceExercises, aestheticExercises };
         }
-        
+
         // Performance movements take 70% of training focus
         const performanceCount = Math.ceil(workout.exercises.length * 0.7);
-        
+
         for (let i = 0; i < workout.exercises.length; i++) {
             const exercise = workout.exercises[i];
-            
+
             if (this.isPerformanceMovement(exercise.name)) {
                 performanceExercises.push(exercise);
             } else if (i < performanceCount) {
@@ -447,7 +447,7 @@ class ExerciseAdapter {
                 aestheticExercises.push(exercise);
             }
         }
-        
+
         return { performanceExercises, aestheticExercises };
     }
 
@@ -461,7 +461,7 @@ class ExerciseAdapter {
             'squat', 'deadlift', 'bench', 'overhead press', 'pull', 'dip',
             'clean', 'snatch', 'power clean', 'overhead squat'
         ];
-        
+
         const name = exerciseName.toLowerCase();
         return performanceMovements.some(movement => name.includes(movement));
     }
@@ -474,7 +474,7 @@ class ExerciseAdapter {
      */
     getAccessoriesForFocus(focus, readinessScore) {
         const accessories = this.getAccessoryMatrix()[focus] || [];
-        
+
         return accessories.map(acc => ({
             ...acc,
             sets: this.adjustSetsForReadiness(acc.sets, readinessScore),
@@ -532,7 +532,7 @@ class ExerciseAdapter {
      */
     reduceAccessoryVolume(exercises, readinessScore) {
         const reductionFactor = readinessScore <= 6 ? 0.7 : 1.0;
-        
+
         exercises.forEach(exercise => {
             if (exercise.aesthetic) {
                 exercise.sets = Math.max(1, Math.floor(exercise.sets * reductionFactor));
@@ -553,7 +553,7 @@ class ExerciseAdapter {
         if (exercise.tooltip) {
             return exercise.tooltip;
         }
-        
+
         if (exercise.aesthetic) {
             const focusDescription = {
                 v_taper: 'Building V-taper',
@@ -561,10 +561,10 @@ class ExerciseAdapter {
                 toned: 'Staying lean',
                 functional: 'Functional movement'
             };
-            
+
             return `${focusDescription[this.aestheticFocus] || 'Building physique'}: ${exercise.rationale || exercise.name}`;
         }
-        
+
         return exercise.rationale || exercise.name;
     }
 
@@ -576,7 +576,7 @@ class ExerciseAdapter {
         try {
             const authManager = window.AuthManager;
             const userId = authManager?.getCurrentUsername();
-            
+
             if (!userId) {
                 throw new Error('User not logged in');
             }
@@ -586,9 +586,9 @@ class ExerciseAdapter {
                 ...prefs,
                 aestheticFocus: focus
             });
-            
+
             this.aestheticFocus = focus;
-            
+
             this.logger.debug('Aesthetic focus updated', { focus });
         } catch (error) {
             this.logger.error('Failed to update aesthetic focus', error);
@@ -608,17 +608,17 @@ class ExerciseAdapter {
             if (!availableExercises || availableExercises.length === 0) {
                 return {
                     exercise: null,
-                    rationale: "No exercises available for selection"
+                    rationale: 'No exercises available for selection'
                 };
             }
 
             // Get user's progression data
             const progressionData = this.getUserProgressionData(userProfile);
-            
+
             // Filter exercises by target muscle group if specified
             let candidateExercises = availableExercises;
             if (targetMuscleGroup) {
-                candidateExercises = availableExercises.filter(exercise => 
+                candidateExercises = availableExercises.filter(exercise =>
                     this.exerciseTargetsMuscleGroup(exercise, targetMuscleGroup)
                 );
             }
@@ -632,8 +632,8 @@ class ExerciseAdapter {
             const scoredExercises = candidateExercises.map(exercise => {
                 const score = this.calculateProgressionScore(exercise, progressionData, userProfile);
                 return {
-                    exercise: exercise,
-                    score: score,
+                    exercise,
+                    score,
                     rationale: this.generateSelectionRationale(exercise, score, progressionData)
                 };
             });
@@ -659,7 +659,7 @@ class ExerciseAdapter {
             this.logger.error('Failed to select exercise for user', error);
             return {
                 exercise: availableExercises[0] || null,
-                rationale: "Fallback selection due to error"
+                rationale: 'Fallback selection due to error'
             };
         }
     }
@@ -683,8 +683,8 @@ class ExerciseAdapter {
         // Analyze last 30 days of training
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        
-        const recentSessions = sessions.filter(session => 
+
+        const recentSessions = sessions.filter(session =>
             new Date(session.start_at) >= thirtyDaysAgo
         );
 
@@ -695,7 +695,7 @@ class ExerciseAdapter {
             if (session.exercises) {
                 session.exercises.forEach(exercise => {
                     const exerciseName = exercise.name.toLowerCase();
-                    
+
                     if (!progressionData.exerciseProgress[exerciseName]) {
                         progressionData.exerciseProgress[exerciseName] = {
                             weights: [],
@@ -717,7 +717,7 @@ class ExerciseAdapter {
         Object.keys(progressionData.exerciseProgress).forEach(exerciseName => {
             const data = progressionData.exerciseProgress[exerciseName];
             const trend = this.calculateProgressionTrend(data);
-            
+
             if (trend.status === 'plateau') {
                 progressionData.plateauExercises.push(exerciseName);
             } else if (trend.status === 'progressing') {
@@ -726,11 +726,11 @@ class ExerciseAdapter {
         });
 
         // Calculate average RPE
-        const allRPEs = recentSessions.flatMap(session => 
+        const allRPEs = recentSessions.flatMap(session =>
             session.exercises?.map(ex => ex.rpe).filter(rpe => rpe > 0) || []
         );
-        progressionData.averageRPE = allRPEs.length > 0 
-            ? allRPEs.reduce((sum, rpe) => sum + rpe, 0) / allRPEs.length 
+        progressionData.averageRPE = allRPEs.length > 0
+            ? allRPEs.reduce((sum, rpe) => sum + rpe, 0) / allRPEs.length
             : 7;
 
         return progressionData;
@@ -743,7 +743,7 @@ class ExerciseAdapter {
      */
     calculateProgressionTrend(exerciseData) {
         const { weights, dates } = exerciseData;
-        
+
         if (weights.length < 3) {
             return { status: 'insufficient_data', trend: 0 };
         }
@@ -751,22 +751,22 @@ class ExerciseAdapter {
         // Calculate weight progression over time
         const recentWeights = weights.slice(-5); // Last 5 sessions
         const olderWeights = weights.slice(-10, -5); // Previous 5 sessions
-        
+
         if (recentWeights.length < 3 || olderWeights.length < 3) {
             return { status: 'insufficient_data', trend: 0 };
         }
 
         const recentAvg = recentWeights.reduce((sum, w) => sum + w, 0) / recentWeights.length;
         const olderAvg = olderWeights.reduce((sum, w) => sum + w, 0) / olderWeights.length;
-        
+
         const trend = (recentAvg - olderAvg) / olderAvg;
-        
+
         if (trend > 0.05) { // 5% improvement
-            return { status: 'progressing', trend: trend };
+            return { status: 'progressing', trend };
         } else if (trend < -0.05) { // 5% decline
-            return { status: 'regressing', trend: trend };
+            return { status: 'regressing', trend };
         } else {
-            return { status: 'plateau', trend: trend };
+            return { status: 'plateau', trend };
         }
     }
 
@@ -805,7 +805,7 @@ class ExerciseAdapter {
         // Factor 3: User experience level (20% weight)
         const experienceLevel = userProfile.personalData?.experience || 'intermediate';
         const complexityScore = this.getExerciseComplexityScore(exercise);
-        
+
         if (experienceLevel === 'beginner' && complexityScore > 7) {
             score -= 15; // Penalize complex exercises for beginners
         } else if (experienceLevel === 'advanced' && complexityScore < 4) {
@@ -816,7 +816,7 @@ class ExerciseAdapter {
         if (progressionStatus && progressionStatus.rpe.length > 0) {
             const recentRPE = progressionStatus.rpe.slice(-3);
             const avgRPE = recentRPE.reduce((sum, rpe) => sum + rpe, 0) / recentRPE.length;
-            
+
             if (avgRPE > 8) {
                 score -= 5; // Slightly penalize if recently very hard
             } else if (avgRPE < 6) {
@@ -842,7 +842,7 @@ class ExerciseAdapter {
         };
 
         const exerciseNameLower = exerciseName.toLowerCase();
-        
+
         // Check if this exercise can assist with any plateaued exercise
         for (const [plateauExercise, assistanceExercises] of Object.entries(assistanceMap)) {
             if (plateauExercises.includes(plateauExercise)) {
@@ -917,17 +917,17 @@ class ExerciseAdapter {
      */
     generateSelectionRationale(exercise, score, progressionData) {
         const exerciseName = exercise.name.toLowerCase();
-        
+
         if (score >= 80) {
-            return `Prioritized due to recent progress and optimal difficulty level`;
+            return 'Prioritized due to recent progress and optimal difficulty level';
         } else if (score >= 70) {
-            return `Selected based on progression data and user experience level`;
+            return 'Selected based on progression data and user experience level';
         } else if (progressionData.plateauExercises.includes(exerciseName)) {
-            return `Recommended as assistance exercise for plateaued movement pattern`;
+            return 'Recommended as assistance exercise for plateaued movement pattern';
         } else if (progressionData.exerciseProgress[exerciseName]) {
-            return `Selected based on training history and progression trends`;
+            return 'Selected based on training history and progression trends';
         } else {
-            return `New exercise introduction based on user goals and experience`;
+            return 'New exercise introduction based on user goals and experience';
         }
     }
 
@@ -940,14 +940,14 @@ class ExerciseAdapter {
     getProgressionFactors(exercise, progressionData) {
         const exerciseName = exercise.name.toLowerCase();
         const progressionStatus = progressionData.exerciseProgress[exerciseName];
-        
+
         return {
             isNewExercise: !progressionStatus,
             isProgressing: progressionData.progressingExercises.includes(exerciseName),
             isPlateaued: progressionData.plateauExercises.includes(exerciseName),
             recentSessions: progressionStatus ? progressionStatus.dates.length : 0,
-            averageRPE: progressionStatus && progressionStatus.rpe.length > 0 
-                ? progressionStatus.rpe.reduce((sum, rpe) => sum + rpe, 0) / progressionStatus.rpe.length 
+            averageRPE: progressionStatus && progressionStatus.rpe.length > 0
+                ? progressionStatus.rpe.reduce((sum, rpe) => sum + rpe, 0) / progressionStatus.rpe.length
                 : null
         };
     }
@@ -963,15 +963,15 @@ class ExerciseAdapter {
         try {
             // Progressive fallback chain: specific → body-part → generic → bodyweight
             const fallbackChain = this.getFallbackChain(exerciseName, painLocation, constraints);
-            
+
             // Log fallback decision for transparency
             this.logger.info('EXERCISE_FALLBACK', {
                 original: exerciseName,
-                painLocation: painLocation,
+                painLocation,
                 fallbackUsed: fallbackChain.level,
                 replacements: fallbackChain.alternatives.map(a => a.name)
             });
-            
+
             return {
                 alternatives: fallbackChain.alternatives,
                 message: fallbackChain.message,
@@ -989,7 +989,7 @@ class ExerciseAdapter {
             };
         }
     }
-    
+
     /**
      * Get progressive fallback chain for exercise alternatives
      * @param {string} exerciseName - Original exercise name
@@ -1010,7 +1010,7 @@ class ExerciseAdapter {
                 };
             }
         }
-        
+
         // Level 2: Generic injury-safe exercises
         const genericSafe = this.getGenericSafeAlternatives();
         if (genericSafe.length > 0) {
@@ -1021,7 +1021,7 @@ class ExerciseAdapter {
                 level: 'generic_safe'
             };
         }
-        
+
         // Level 3: Bodyweight alternatives
         const bodyweightAlternatives = this.getGenericBodyweightAlternatives();
         return {
@@ -1031,7 +1031,7 @@ class ExerciseAdapter {
             level: 'bodyweight'
         };
     }
-    
+
     /**
      * Get body-part-specific fallback exercises
      * @param {string} bodyPart - Injured body part
@@ -1128,11 +1128,11 @@ class ExerciseAdapter {
                 }
             ]
         };
-        
+
         const bodyPartLower = (bodyPart || '').toLowerCase();
         return fallbackMap[bodyPartLower] || [];
     }
-    
+
     /**
      * Get generic safe alternatives when no body-part-specific ones exist
      * @returns {Array} Generic safe alternatives
@@ -1159,7 +1159,7 @@ class ExerciseAdapter {
             }
         ];
     }
-    
+
     /**
      * Get generic bodyweight alternatives (ultimate fallback)
      * @returns {Array} Bodyweight alternatives

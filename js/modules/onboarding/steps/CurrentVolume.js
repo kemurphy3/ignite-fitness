@@ -155,13 +155,13 @@ class CurrentVolume extends window.BaseComponent {
     updateVolume(activity, minutes) {
         const value = parseInt(minutes) || 0;
         this.weeklyVolumes[activity] = value;
-        
+
         // Sync slider
         const slider = document.getElementById(`${activity}_slider`);
         if (slider) {
             slider.value = value;
         }
-        
+
         this.updateSummary();
     }
 
@@ -173,13 +173,13 @@ class CurrentVolume extends window.BaseComponent {
     updateVolumeFromSlider(activity, value) {
         const numValue = parseInt(value);
         this.weeklyVolumes[activity] = numValue;
-        
+
         // Sync input
         const input = document.getElementById(`${activity}_minutes`);
         if (input) {
             input.value = numValue;
         }
-        
+
         this.updateSummary();
     }
 
@@ -189,13 +189,13 @@ class CurrentVolume extends window.BaseComponent {
      */
     selectSessions(sessions) {
         this.weeklyVolumes.strength = sessions;
-        
+
         // Update UI
         document.querySelectorAll('.session-btn').forEach(btn => {
             btn.classList.remove('selected');
         });
         document.querySelectorAll('.session-btn')[sessions]?.classList.add('selected');
-        
+
         this.updateSummary();
     }
 
@@ -205,28 +205,28 @@ class CurrentVolume extends window.BaseComponent {
     updateSummary() {
         const totalMinutes = Object.values(this.weeklyVolumes).reduce((sum, val) => {
             // Strength sessions counted as 60 minutes each
-            if (val > 100) return sum + (val * 60); // If it's sessions
+            if (val > 100) {return sum + (val * 60);} // If it's sessions
             return sum + val;
         }, 0);
-        
+
         const strengthMinutes = (this.weeklyVolumes.strength || 0) * 60;
         const actualTotalMinutes = totalMinutes - (this.weeklyVolumes.strength * 60) + strengthMinutes;
         const totalHours = Math.round((actualTotalMinutes / 60) * 10) / 10;
 
         const totalMinutesEl = document.getElementById('total-minutes');
         const totalHoursEl = document.getElementById('total-hours');
-        
-        if (totalMinutesEl) totalMinutesEl.textContent = actualTotalMinutes;
-        if (totalHoursEl) totalHoursEl.textContent = totalHours;
+
+        if (totalMinutesEl) {totalMinutesEl.textContent = actualTotalMinutes;}
+        if (totalHoursEl) {totalHoursEl.textContent = totalHours;}
 
         // Determine training level
         let level = 'Beginner';
-        if (actualTotalMinutes > 300) level = 'Intermediate';
-        if (actualTotalMinutes > 600) level = 'Advanced';
-        if (actualTotalMinutes > 900) level = 'Elite';
+        if (actualTotalMinutes > 300) {level = 'Intermediate';}
+        if (actualTotalMinutes > 600) {level = 'Advanced';}
+        if (actualTotalMinutes > 900) {level = 'Elite';}
 
         const levelEl = document.getElementById('training-level');
-        if (levelEl) levelEl.textContent = level;
+        if (levelEl) {levelEl.textContent = level;}
     }
 
     /**
@@ -236,27 +236,27 @@ class CurrentVolume extends window.BaseComponent {
         const onboardingManager = window.OnboardingManager;
         if (onboardingManager) {
             onboardingManager.onboardingData.weeklyVolumes = this.weeklyVolumes;
-            
+
             // Calculate total for training level
             const totalMinutes = Object.values(this.weeklyVolumes).reduce((sum, val) => {
-                if (val > 100) return sum + (val * 60);
+                if (val > 100) {return sum + (val * 60);}
                 return sum + val;
             }, 0);
             const strengthMinutes = (this.weeklyVolumes.strength || 0) * 60;
             const actualTotal = totalMinutes - (this.weeklyVolumes.strength * 60) + strengthMinutes;
-            
+
             let trainingLevel = 'beginner';
-            if (actualTotal > 300) trainingLevel = 'intermediate';
-            if (actualTotal > 600) trainingLevel = 'advanced';
-            if (actualTotal > 900) trainingLevel = 'elite';
-            
+            if (actualTotal > 300) {trainingLevel = 'intermediate';}
+            if (actualTotal > 600) {trainingLevel = 'advanced';}
+            if (actualTotal > 900) {trainingLevel = 'elite';}
+
             onboardingManager.onboardingData.trainingLevel = trainingLevel;
-            
+
             onboardingManager.saveStepData('current_volume', {
                 weeklyVolumes: this.weeklyVolumes,
-                trainingLevel: trainingLevel
+                trainingLevel
             });
-            
+
             onboardingManager.nextStep();
         }
     }

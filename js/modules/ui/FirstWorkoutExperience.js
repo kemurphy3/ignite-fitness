@@ -16,7 +16,7 @@ class FirstWorkoutExperience {
      */
     showWorkoutIntro(workout) {
         this.workout = workout || this.generateDefaultWorkout();
-        
+
         return `
             <div data-component="FirstWorkoutExperience" class="workout-intro" style="
                 max-width: 600px;
@@ -190,17 +190,17 @@ class FirstWorkoutExperience {
                 color: #2d3748;
             ">💪 ${name} - ${sets}x${reps}${weight}</li>`;
         }).join('');
-        
-        const moreCount = this.workout.exercises.length > 3 
+
+        const moreCount = this.workout.exercises.length > 3
             ? `<li style="
                 padding: 0.75rem;
                 background: #edf2f7;
                 border-radius: 6px;
                 color: #4a5568;
                 font-style: italic;
-            ">+ ${this.workout.exercises.length - 3} more exercises</li>` 
+            ">+ ${this.workout.exercises.length - 3} more exercises</li>`
             : '';
-        
+
         return preview + moreCount;
     }
 
@@ -210,10 +210,10 @@ class FirstWorkoutExperience {
      */
     getEncouragementMessage() {
         const messages = [
-            "This workout is perfectly tailored to your fitness level. Take your time and focus on proper form!",
+            'This workout is perfectly tailored to your fitness level. Take your time and focus on proper form!',
             "Remember, consistency beats intensity. You're building a sustainable fitness habit!",
             "Every expert was once a beginner. You're taking the first step toward your goals!",
-            "Listen to your body and adjust as needed. The AI will learn from your feedback!"
+            'Listen to your body and adjust as needed. The AI will learn from your feedback!'
         ];
         return messages[Math.floor(Math.random() * messages.length)];
     }

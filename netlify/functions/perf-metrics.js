@@ -24,7 +24,7 @@ exports.handler = async (event, context) => {
             body: ''
         };
     }
-    
+
     // Only allow POST requests
     if (event.httpMethod !== 'POST') {
         return {
@@ -35,11 +35,11 @@ exports.handler = async (event, context) => {
             body: JSON.stringify({ error: 'Method not allowed' })
         };
     }
-    
+
     try {
         const payload = JSON.parse(event.body);
         const { metrics, timestamp, sessionId, userId } = payload;
-        
+
         if (!metrics || !Array.isArray(metrics)) {
             return {
                 statusCode: 400,
@@ -49,17 +49,17 @@ exports.handler = async (event, context) => {
                 body: JSON.stringify({ error: 'Invalid metrics data' })
             };
         }
-        
+
         console.log(`Received ${metrics.length} metrics from session ${sessionId}`);
-        
+
         // Process and store metrics
         const processedMetrics = await processMetrics(metrics, sessionId, userId);
-        
+
         // Store in database
         const { error } = await supabase
             .from('rum_metrics')
             .insert(processedMetrics);
-        
+
         if (error) {
             console.error('Database error:', error);
             return {
@@ -70,24 +70,24 @@ exports.handler = async (event, context) => {
                 body: JSON.stringify({ error: 'Failed to store metrics' })
             };
         }
-        
+
         // Check for performance regressions
         await checkPerformanceRegressions(processedMetrics);
-        
+
         return {
             statusCode: 200,
             headers: {
                 'Access-Control-Allow-Origin': '*'
             },
-            body: JSON.stringify({ 
-                success: true, 
-                processed: processedMetrics.length 
+            body: JSON.stringify({
+                success: true,
+                processed: processedMetrics.length
             })
         };
-        
+
     } catch (error) {
         console.error('Error processing metrics:', error);
-        
+
         return {
             statusCode: 500,
             headers: {
@@ -107,7 +107,7 @@ exports.handler = async (event, context) => {
  */
 async function processMetrics(metrics, sessionId, userId) {
     const processedMetrics = [];
-    
+
     for (const metric of metrics) {
         try {
             const processedMetric = {
@@ -120,59 +120,59 @@ async function processMetrics(metrics, sessionId, userId) {
                 user_agent: metric.userAgent,
                 created_at: new Date().toISOString()
             };
-            
+
             // Add specific processing based on metric type
             switch (metric.type) {
                 case 'lcp':
                     processedMetric.lcp_value = metric.data.value;
                     processedMetric.lcp_element = metric.data.element;
                     break;
-                    
+
                 case 'fid':
                     processedMetric.fid_value = metric.data.value;
                     processedMetric.fid_event_type = metric.data.eventType;
                     break;
-                    
+
                 case 'cls':
                     processedMetric.cls_value = metric.data.value;
                     processedMetric.cls_entries = metric.data.entries;
                     break;
-                    
+
                 case 'ttfb':
                     processedMetric.ttfb_value = metric.data.value;
                     processedMetric.ttfb_url = metric.data.url;
                     break;
-                    
+
                 case 'error':
                     processedMetric.error_type = metric.data.type;
                     processedMetric.error_message = metric.data.message;
                     processedMetric.error_stack = metric.data.stack;
                     break;
-                    
+
                 case 'memory':
                     processedMetric.memory_used = metric.data.usedJSHeapSize;
                     processedMetric.memory_total = metric.data.totalJSHeapSize;
                     processedMetric.memory_limit = metric.data.jsHeapSizeLimit;
                     break;
-                    
+
                 case 'device':
                     processedMetric.device_info = metric.data;
                     break;
-                    
+
                 case 'network':
                     processedMetric.network_type = metric.data.effectiveType;
                     processedMetric.network_downlink = metric.data.downlink;
                     processedMetric.network_rtt = metric.data.rtt;
                     break;
             }
-            
+
             processedMetrics.push(processedMetric);
-            
+
         } catch (error) {
             console.error('Error processing metric:', error);
         }
     }
-    
+
     return processedMetrics;
 }
 
@@ -190,26 +190,26 @@ async function checkPerformanceRegressions(metrics) {
             .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
             .order('created_at', { ascending: false })
             .limit(1000);
-        
+
         if (error) {
             console.error('Error fetching baseline metrics:', error);
             return;
         }
-        
+
         // Calculate baseline averages
         const baselines = calculateBaselines(baseline);
-        
+
         // Check current metrics against baselines
         for (const metric of metrics) {
             if (baselines[metric.metric_type]) {
                 const regression = checkRegression(metric, baselines[metric.metric_type]);
-                
+
                 if (regression.isRegression) {
                     await alertPerformanceRegression(metric, regression);
                 }
             }
         }
-        
+
     } catch (error) {
         console.error('Error checking performance regressions:', error);
     }
@@ -222,7 +222,7 @@ async function checkPerformanceRegressions(metrics) {
  */
 function calculateBaselines(metrics) {
     const baselines = {};
-    
+
     // Group by metric type
     const grouped = metrics.reduce((acc, metric) => {
         if (!acc[metric.metric_type]) {
@@ -231,7 +231,7 @@ function calculateBaselines(metrics) {
         acc[metric.metric_type].push(metric);
         return acc;
     }, {});
-    
+
     // Calculate averages
     Object.entries(grouped).forEach(([type, typeMetrics]) => {
         const values = typeMetrics.map(m => {
@@ -243,7 +243,7 @@ function calculateBaselines(metrics) {
                 default: return null;
             }
         }).filter(v => v !== null);
-        
+
         if (values.length > 0) {
             baselines[type] = {
                 average: values.reduce((a, b) => a + b, 0) / values.length,
@@ -252,7 +252,7 @@ function calculateBaselines(metrics) {
             };
         }
     });
-    
+
     return baselines;
 }
 
@@ -265,7 +265,7 @@ function calculateBaselines(metrics) {
 function checkRegression(metric, baseline) {
     const currentValue = getMetricValue(metric);
     const threshold = baseline.p95 * 1.2; // 20% above P95
-    
+
     return {
         isRegression: currentValue > threshold,
         currentValue,
@@ -310,13 +310,13 @@ async function alertPerformanceRegression(metric, regression) {
                 url: metric.url,
                 created_at: new Date().toISOString()
             });
-        
+
         if (error) {
             console.error('Error storing performance alert:', error);
         } else {
             console.warn(`Performance regression detected: ${metric.metric_type}`, regression);
         }
-        
+
     } catch (error) {
         console.error('Error alerting performance regression:', error);
     }

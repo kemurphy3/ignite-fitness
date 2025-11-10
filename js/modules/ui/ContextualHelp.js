@@ -11,7 +11,7 @@ class ContextualHelp {
         this.helpTips = this.loadHelpContent();
         this.autoShowHelp = !localStorage.getItem('ignite.help.autoShowDisabled');
         this.setupHelpSystem();
-        
+
         // Listen for Simple Mode changes
         if (this.eventBus) {
             this.eventBus.on('simpleMode:changed', (data) => {
@@ -28,74 +28,74 @@ class ContextualHelp {
         return {
             simple: {
                 dashboard: {
-                    title: "Your Fitness Dashboard",
-                    content: "This is your home base. Start workouts, check your progress, and celebrate your achievements!",
+                    title: 'Your Fitness Dashboard',
+                    content: 'This is your home base. Start workouts, check your progress, and celebrate your achievements!',
                     tips: [
                         "Tap 'Start Workout' when you're ready to exercise",
-                        "Check your streak to stay motivated",
-                        "Your progress updates automatically",
-                        "Ask the AI Coach anytime for workout advice"
+                        'Check your streak to stay motivated',
+                        'Your progress updates automatically',
+                        'Ask the AI Coach anytime for workout advice'
                     ]
                 },
                 workouts: {
-                    title: "Your Workout Plan",
-                    content: "Your AI coach has created workouts just for you. Each one adapts based on your feedback.",
+                    title: 'Your Workout Plan',
+                    content: 'Your AI coach has created workouts just for you. Each one adapts based on your feedback.',
                     tips: [
                         "Start with today's recommended workout",
-                        "Rate how you feel after each exercise (RPE)",
+                        'Rate how you feel after each exercise (RPE)',
                         "Don't worry about being perfect - focus on consistency",
-                        "You can modify exercises if needed"
+                        'You can modify exercises if needed'
                     ]
                 },
                 progress: {
-                    title: "View Your Progress",
+                    title: 'View Your Progress',
                     content: "See how you're improving over time with simple, easy-to-understand metrics.",
                     tips: [
-                        "Your workout count shows your consistency",
-                        "Track your day streak to stay motivated",
-                        "Progress updates after each completed workout"
+                        'Your workout count shows your consistency',
+                        'Track your day streak to stay motivated',
+                        'Progress updates after each completed workout'
                     ]
                 }
             },
             advanced: {
                 dashboard: {
-                    title: "Advanced Dashboard",
-                    content: "Your comprehensive fitness command center with detailed analytics and insights.",
+                    title: 'Advanced Dashboard',
+                    content: 'Your comprehensive fitness command center with detailed analytics and insights.',
                     tips: [
-                        "Use charts to track progress over time",
-                        "AI insights provide personalized recommendations",
-                        "Strava integration syncs automatically",
-                        "Customize your dashboard layout in settings"
+                        'Use charts to track progress over time',
+                        'AI insights provide personalized recommendations',
+                        'Strava integration syncs automatically',
+                        'Customize your dashboard layout in settings'
                     ]
                 },
                 analytics: {
-                    title: "Advanced Analytics",
-                    content: "Deep dive into your fitness data with detailed charts and AI insights.",
+                    title: 'Advanced Analytics',
+                    content: 'Deep dive into your fitness data with detailed charts and AI insights.',
                     tips: [
-                        "Use filters to focus on specific time periods",
-                        "Compare different metrics to find patterns",
-                        "Export data for external analysis",
-                        "Load metrics show training stress over time"
+                        'Use filters to focus on specific time periods',
+                        'Compare different metrics to find patterns',
+                        'Export data for external analysis',
+                        'Load metrics show training stress over time'
                     ]
                 },
                 workouts: {
-                    title: "Advanced Workout Management",
-                    content: "Full control over your training plan with detailed periodization and load management.",
+                    title: 'Advanced Workout Management',
+                    content: 'Full control over your training plan with detailed periodization and load management.',
                     tips: [
-                        "View periodization phases and blocks",
-                        "Monitor training load and recovery",
-                        "Adjust workouts based on readiness scores",
-                        "Track progression across multiple metrics"
+                        'View periodization phases and blocks',
+                        'Monitor training load and recovery',
+                        'Adjust workouts based on readiness scores',
+                        'Track progression across multiple metrics'
                     ]
                 },
                 integrations: {
-                    title: "External Integrations",
-                    content: "Connect external services to automatically sync your fitness data.",
+                    title: 'External Integrations',
+                    content: 'Connect external services to automatically sync your fitness data.',
                     tips: [
-                        "Strava integration syncs activities automatically",
-                        "Data is deduplicated to prevent duplicates",
-                        "Load calculations use real heart rate data",
-                        "Set up once, syncs automatically"
+                        'Strava integration syncs activities automatically',
+                        'Data is deduplicated to prevent duplicates',
+                        'Load calculations use real heart rate data',
+                        'Set up once, syncs automatically'
                     ]
                 }
             }
@@ -110,7 +110,7 @@ class ContextualHelp {
         if (!this.simpleMode) {
             this.addFloatingHelp();
         }
-        
+
         // Listen for route changes to show contextual help
         window.addEventListener('route:changed', (e) => {
             if (this.autoShowHelp) {
@@ -125,10 +125,10 @@ class ContextualHelp {
      * @param {string} page - Page identifier
      */
     showContextualHelp(page) {
-        const helpContent = this.simpleMode ? 
-            this.helpTips.simple[page] : 
+        const helpContent = this.simpleMode ?
+            this.helpTips.simple[page] :
             this.helpTips.advanced[page];
-            
+
         if (!helpContent) {
             this.logger.debug('No help content for page:', page);
             return;
@@ -150,7 +150,7 @@ class ContextualHelp {
             'analytics': 'analytics',
             'integrations': 'integrations'
         };
-        
+
         const page = routeMap[routeName];
         if (page) {
             // Delay to avoid showing help immediately on every navigation
@@ -186,7 +186,7 @@ class ContextualHelp {
             justify-content: center;
             padding: 1rem;
         `;
-        
+
         overlay.innerHTML = `
             <div class="help-modal" style="
                 background: white;
@@ -268,14 +268,14 @@ class ContextualHelp {
         `;
 
         document.body.appendChild(overlay);
-        
+
         // Add click-outside-to-close
         overlay.addEventListener('click', (e) => {
             if (e.target === overlay) {
                 this.closeHelp();
             }
         });
-        
+
         // Store reference
         this.currentOverlay = overlay;
     }
@@ -338,7 +338,7 @@ class ContextualHelp {
             justify-content: center;
             transition: transform 0.2s;
         `;
-        
+
         helpButton.addEventListener('click', () => {
             const route = window.Router?.getCurrentRoute?.() || '#/';
             const routeMap = {
@@ -353,15 +353,15 @@ class ContextualHelp {
             const page = routeMap[route] || 'dashboard';
             this.showContextualHelp(page);
         });
-        
+
         helpButton.addEventListener('mouseenter', () => {
             helpButton.style.transform = 'scale(1.1)';
         });
-        
+
         helpButton.addEventListener('mouseleave', () => {
             helpButton.style.transform = 'scale(1)';
         });
-        
+
         document.body.appendChild(helpButton);
         this.helpButton = helpButton;
     }

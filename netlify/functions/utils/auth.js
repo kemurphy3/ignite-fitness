@@ -58,20 +58,20 @@ const WEAK_SECRETS = [
  */
 function calculateEntropy(str) {
     const charCounts = {};
-    const length = str.length;
-    
+    const {length} = str;
+
     // Count character frequencies
     for (const char of str) {
         charCounts[char] = (charCounts[char] || 0) + 1;
     }
-    
+
     // Calculate entropy using Shannon's formula
     let entropy = 0;
     for (const count of Object.values(charCounts)) {
         const probability = count / length;
         entropy -= probability * Math.log2(probability);
     }
-    
+
     return entropy * length;
 }
 
@@ -89,11 +89,11 @@ function analyzeCharacterSets(str) {
         spaces: /\s/.test(str),
         unicode: /[^\x00-\x7F]/.test(str)
     };
-    
-    analysis.hasRequired = JWT_CONFIG.requiredCharacterSets.every(set => 
+
+    analysis.hasRequired = JWT_CONFIG.requiredCharacterSets.every(set =>
         analysis[set]
     );
-    
+
     return analysis;
 }
 
@@ -104,8 +104,8 @@ function analyzeCharacterSets(str) {
  */
 function isWeakSecret(secret) {
     const normalizedSecret = secret.toLowerCase().trim();
-    
-    return WEAK_SECRETS.some(weak => 
+
+    return WEAK_SECRETS.some(weak =>
         normalizedSecret === weak ||
         normalizedSecret.includes(weak) ||
         weak.includes(normalizedSecret)
@@ -126,9 +126,9 @@ function analyzePatterns(secret) {
         short: secret.length < JWT_CONFIG.minLength,
         long: secret.length > JWT_CONFIG.maxLength
     };
-    
+
     patterns.hasIssues = Object.values(patterns).some(Boolean);
-    
+
     return patterns;
 }
 
@@ -141,49 +141,49 @@ function generateSecureSecret(length = 64) {
     if (length < JWT_CONFIG.minLength) {
         throw new Error(`Secret length must be at least ${JWT_CONFIG.minLength} characters`);
     }
-    
+
     if (length > JWT_CONFIG.maxLength) {
         throw new Error(`Secret length must be at most ${JWT_CONFIG.maxLength} characters`);
     }
-    
+
     // Generate cryptographically secure random bytes
     const randomBytes = crypto.randomBytes(Math.ceil(length * 3 / 4));
     const base64Secret = randomBytes.toString('base64');
-    
+
     // Ensure it meets all requirements
     let secret = base64Secret.substring(0, length);
-    
+
     // Add required character sets if missing
     const analysis = analyzeCharacterSets(secret);
-    
+
     if (!analysis.lowercase) {
-        secret = secret.substring(0, length - 1) + 'a';
+        secret = `${secret.substring(0, length - 1) }a`;
     }
-    
+
     if (!analysis.uppercase) {
-        secret = secret.substring(0, length - 1) + 'A';
+        secret = `${secret.substring(0, length - 1) }A`;
     }
-    
+
     if (!analysis.digits) {
-        secret = secret.substring(0, length - 1) + '1';
+        secret = `${secret.substring(0, length - 1) }1`;
     }
-    
+
     if (!analysis.special) {
-        secret = secret.substring(0, length - 1) + '!';
+        secret = `${secret.substring(0, length - 1) }!`;
     }
-    
+
     // Validate the generated secret
     const validation = validateJWTSecret(secret);
     if (!validation.isValid) {
         throw new Error(`Generated secret failed validation: ${validation.errors.join(', ')}`);
     }
-    
+
     logger.info('Secure JWT secret generated', {
         length: secret.length,
         entropy: validation.entropy,
         character_sets: validation.characterSets
     });
-    
+
     return secret;
 }
 
@@ -202,67 +202,67 @@ function validateJWTSecret(secret) {
         patterns: {},
         recommendations: []
     };
-    
+
     // Check if secret exists
     if (!secret || typeof secret !== 'string') {
         result.isValid = false;
         result.errors.push('Secret is required and must be a string');
         return result;
     }
-    
+
     // Check length
     if (secret.length < JWT_CONFIG.minLength) {
         result.isValid = false;
         result.errors.push(`Secret must be at least ${JWT_CONFIG.minLength} characters long`);
     }
-    
+
     if (secret.length > JWT_CONFIG.maxLength) {
         result.isValid = false;
         result.errors.push(`Secret must be at most ${JWT_CONFIG.maxLength} characters long`);
     }
-    
+
     // Check for weak secrets
     if (isWeakSecret(secret)) {
         result.isValid = false;
         result.errors.push('Secret is in the list of common weak secrets');
     }
-    
+
     // Calculate entropy
     result.entropy = calculateEntropy(secret);
     if (result.entropy < JWT_CONFIG.minEntropyBits) {
         result.isValid = false;
         result.errors.push(`Secret entropy (${result.entropy.toFixed(1)} bits) is below minimum (${JWT_CONFIG.minEntropyBits} bits)`);
     }
-    
+
     // Analyze character sets
     result.characterSets = analyzeCharacterSets(secret);
     if (!result.characterSets.hasRequired) {
         result.isValid = false;
         result.errors.push('Secret must contain lowercase, uppercase, digits, and special characters');
     }
-    
+
     // Analyze patterns
     result.patterns = analyzePatterns(secret);
     if (result.patterns.hasIssues) {
         result.warnings.push('Secret contains potentially weak patterns');
-        
+
         if (result.patterns.sequential) {
             result.warnings.push('Secret contains sequential characters');
         }
-        
+
         if (result.patterns.repeated) {
             result.warnings.push('Secret contains repeated characters');
         }
-        
+
         if (result.patterns.keyboard) {
             result.warnings.push('Secret contains keyboard patterns');
         }
-        
+
         if (result.patterns.common) {
             result.warnings.push('Secret contains common words');
         }
     }
-    
+
     // Generate recommendations
     if (!result.isValid || result.warnings.length > 0) {
         result.recommendations.push('Use generateSecureSecret() to create a cryptographically secure secret');
@@ -270,7 +270,7 @@ function validateJWTSecret(secret) {
         result.recommendations.push('Avoid common words, patterns, and sequential characters');
         result.recommendations.push('Use a secret manager to store and rotate secrets');
     }
-    
+
     return result;
 }
 
@@ -281,12 +281,12 @@ function validateJWTSecret(secret) {
  */
 function validateEnvironmentSecret(envVar = 'JWT_SECRET') {
     const secret = process.env[envVar];
-    
+
     if (!secret) {
         logger.error('JWT secret not found in environment', {
             environment_variable: envVar
         });
-        
+
         return {
             isValid: false,
             errors: [`Environment variable ${envVar} is not set`],
@@ -297,9 +297,9 @@ function validateEnvironmentSecret(envVar = 'JWT_SECRET') {
             ]
         };
     }
-    
+
     const validation = validateJWTSecret(secret);
-    
+
     if (!validation.isValid) {
         logger.error('JWT secret validation failed', {
             environment_variable: envVar,
@@ -313,7 +313,7 @@ function validateEnvironmentSecret(envVar = 'JWT_SECRET') {
             length: secret.length
         });
     }
-    
+
     return validation;
 }
 
@@ -324,28 +324,28 @@ function validateEnvironmentSecret(envVar = 'JWT_SECRET') {
  */
 function initializeJWTValidation(envVar = 'JWT_SECRET') {
     const validation = validateEnvironmentSecret(envVar);
-    
+
     if (!validation.isValid) {
         logger.error('JWT secret validation failed on startup', {
             environment_variable: envVar,
             errors: validation.errors,
             recommendations: validation.recommendations
         });
-        
+
         // In production, fail startup
         if (process.env.NODE_ENV === 'production') {
             throw new Error(`JWT secret validation failed: ${validation.errors.join(', ')}`);
         }
-        
+
         return false;
     }
-    
+
     logger.info('JWT secret validation passed on startup', {
         environment_variable: envVar,
         entropy: validation.entropy,
         length: process.env[envVar].length
     });
-    
+
     return true;
 }
 
@@ -362,36 +362,36 @@ function rotateJWTSecret(oldSecret, envVar = 'JWT_SECRET') {
         if (!currentValidation.isValid) {
             throw new Error(`Current secret is invalid: ${currentValidation.errors.join(', ')}`);
         }
-        
+
         // Generate new secret
         const newSecret = generateSecureSecret();
-        
+
         // Validate new secret
         const newValidation = validateJWTSecret(newSecret);
         if (!newValidation.isValid) {
             throw new Error(`New secret is invalid: ${newValidation.errors.join(', ')}`);
         }
-        
+
         logger.info('JWT secret rotation completed', {
             old_entropy: currentValidation.entropy,
             new_entropy: newValidation.entropy,
             environment_variable: envVar
         });
-        
+
         return {
             success: true,
-            oldSecret: oldSecret,
-            newSecret: newSecret,
+            oldSecret,
+            newSecret,
             oldValidation: currentValidation,
-            newValidation: newValidation
+            newValidation
         };
-        
+
     } catch (error) {
         logger.error('JWT secret rotation failed', {
             error: error.message,
             environment_variable: envVar
         });
-        
+
         return {
             success: false,
             error: error.message
@@ -406,16 +406,16 @@ function rotateJWTSecret(oldSecret, envVar = 'JWT_SECRET') {
  */
 function getJWTSecretStats(envVar = 'JWT_SECRET') {
     const secret = process.env[envVar];
-    
+
     if (!secret) {
         return {
             exists: false,
             environment_variable: envVar
         };
     }
-    
+
     const validation = validateJWTSecret(secret);
-    
+
     return {
         exists: true,
         environment_variable: envVar,

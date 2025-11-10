@@ -11,7 +11,7 @@ class CoachingEngine {
         this.eventBus = window.EventBus;
         this.authManager = window.AuthManager;
         this.workoutTracker = window.WorkoutTracker;
-        
+
         this.initializeAI();
     }
 
@@ -53,14 +53,14 @@ class CoachingEngine {
             // Use PersonalizedCoaching for context-aware responses
             if (window.PersonalizedCoaching) {
                 const personalizedResponse = window.PersonalizedCoaching.generateResponse(input);
-                
+
                 if (personalizedResponse.success) {
-                    this.logger.audit('AI_INTERACTION', { 
+                    this.logger.audit('AI_INTERACTION', {
                         input: input.substring(0, 100),
                         responseLength: personalizedResponse.response.length,
                         scenario: personalizedResponse.scenario
                     });
-                    
+
                     // Emit coaching event for analytics
                     this.eventBus?.emit('coaching:responseGenerated', {
                         user: this.authManager?.getCurrentUsername(),
@@ -69,7 +69,7 @@ class CoachingEngine {
                         scenario: personalizedResponse.scenario,
                         context: personalizedResponse.context
                     });
-                    
+
                     return {
                         success: true,
                         response: personalizedResponse.response,
@@ -90,15 +90,15 @@ class CoachingEngine {
 
             // Get user context
             const context = this.buildUserContext();
-            
+
             // Process with AI
             const response = await this.contextAwareAI.processUserInput(input, context);
-            
-            this.logger.audit('AI_INTERACTION', { 
+
+            this.logger.audit('AI_INTERACTION', {
                 input: input.substring(0, 100), // Log first 100 chars only
-                responseLength: response.length 
+                responseLength: response.length
             });
-            
+
             return {
                 success: true,
                 response,
@@ -123,7 +123,7 @@ class CoachingEngine {
             const user = this.authManager?.getCurrentUser();
             const recentWorkouts = this.workoutTracker?.getWorkoutHistory(5) || [];
             const seasonalPhase = this.seasonalTraining?.getCurrentPhase() || null;
-            
+
             return {
                 user: user ? {
                     username: user.username,
@@ -178,7 +178,7 @@ class CoachingEngine {
             if (this.patternDetector && this.authManager?.isUserLoggedIn()) {
                 const user = this.authManager.getCurrentUser();
                 const analysis = this.patternDetector.analyzePatterns(user.data || {}, userProfile);
-                
+
                 if (analysis.recommendations && analysis.recommendations.length > 0) {
                     recommendations.notes += ` ${analysis.recommendations[0].message}`;
                 }
@@ -187,8 +187,8 @@ class CoachingEngine {
             // Generate exercise recommendations based on goals
             recommendations.exercises = this.getExerciseRecommendations(userProfile);
 
-            this.logger.debug('Workout recommendations generated', { 
-                exerciseCount: recommendations.exercises.length 
+            this.logger.debug('Workout recommendations generated', {
+                exerciseCount: recommendations.exercises.length
             });
 
             return recommendations;
@@ -212,7 +212,7 @@ class CoachingEngine {
     getExerciseRecommendations(userProfile) {
         const goal = userProfile.goals?.primary || 'strength';
         const experience = userProfile.personalData?.experience || 'beginner';
-        
+
         const exerciseSets = {
             strength: {
                 beginner: ['Push-ups', 'Squats', 'Plank', 'Lunges', 'Glute Bridges'],
@@ -249,9 +249,9 @@ class CoachingEngine {
 
             const user = this.authManager.getCurrentUser();
             const userProfile = this.buildUserProfile(user);
-            
+
             const analysis = this.patternDetector.analyzePatterns(user.data || {}, userProfile);
-            
+
             // Store analysis results
             if (!user.analysis) {
                 user.analysis = {};
@@ -259,15 +259,15 @@ class CoachingEngine {
             user.analysis.patterns = analysis.patterns;
             user.analysis.insights = analysis.insights;
             user.analysis.recommendations = analysis.recommendations;
-            
+
             // Save updated user data
             this.authManager.updateUserData(user);
-            
-            this.logger.audit('PATTERN_ANALYSIS_COMPLETED', { 
+
+            this.logger.audit('PATTERN_ANALYSIS_COMPLETED', {
                 insights: analysis.insights?.length || 0,
-                recommendations: analysis.recommendations?.length || 0 
+                recommendations: analysis.recommendations?.length || 0
             });
-            
+
             return {
                 success: true,
                 analysis,

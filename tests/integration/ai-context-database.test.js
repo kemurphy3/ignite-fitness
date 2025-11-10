@@ -135,17 +135,17 @@ describe('AI Context Database Integration', () => {
 
                     for (const activity of data) {
                         const date = new Date(activity.start_ts).toISOString().split('T')[0];
-                        
+
                         if (activity.has_hr || activity.avg_hr) {
                             daysWithHR.add(date);
                         }
-                        
+
                         if (activity.source_set && Object.keys(activity.source_set).length > 0) {
                             const sources = Object.values(activity.source_set);
                             const avgRichness = sources.reduce((sum, s) => sum + (s.richness || 0), 0) / sources.length;
                             totalRichness += avgRichness;
                         }
-                        
+
                         totalActivities++;
                     }
 
@@ -169,7 +169,7 @@ describe('AI Context Database Integration', () => {
 
             // Helper methods
             calculateATL(data) {
-                if (!data || data.length === 0) return 0;
+                if (!data || data.length === 0) {return 0;}
                 let weightedSum = 0;
                 let totalWeight = 0;
                 for (let i = 0; i < data.length; i++) {
@@ -182,7 +182,7 @@ describe('AI Context Database Integration', () => {
             }
 
             calculateCTL(data) {
-                if (!data || data.length === 0) return 0;
+                if (!data || data.length === 0) {return 0;}
                 let weightedSum = 0;
                 let totalWeight = 0;
                 for (let i = 0; i < data.length; i++) {
@@ -195,7 +195,7 @@ describe('AI Context Database Integration', () => {
             }
 
             calculateMonotony(data) {
-                if (!data || data.length < 2) return 1.0;
+                if (!data || data.length < 2) {return 1.0;}
                 const loads = data.map(d => (d.trimp || 0) + (d.tss || 0));
                 const mean = loads.reduce((sum, load) => sum + load, 0) / loads.length;
                 const variance = loads.reduce((sum, load) => sum + Math.pow(load - mean, 2), 0) / loads.length;
@@ -210,11 +210,11 @@ describe('AI Context Database Integration', () => {
             }
 
             calculateTrend(data) {
-                if (!data || data.length < 3) return 'flat';
+                if (!data || data.length < 3) {return 'flat';}
                 const recent = data.slice(0, 3).length;
                 const older = data.slice(3, 6).length;
-                if (recent > older * 1.2) return 'increasing';
-                if (recent < older * 0.8) return 'decreasing';
+                if (recent > older * 1.2) {return 'increasing';}
+                if (recent < older * 0.8) {return 'decreasing';}
                 return 'stable';
             }
 
@@ -236,12 +236,12 @@ describe('AI Context Database Integration', () => {
 
                 for (const activity of activities) {
                     aggregated.duration_s += activity.duration_s || 0;
-                    
+
                     if (activity.avg_hr) {
                         totalHR += activity.avg_hr;
                         hrCount++;
                     }
-                    
+
                     if (activity.max_hr && activity.max_hr > maxHR) {
                         maxHR = activity.max_hr;
                     }
@@ -264,9 +264,9 @@ describe('AI Context Database Integration', () => {
                 for (const activity of activities) {
                     typeCounts[activity.type] = (typeCounts[activity.type] || 0) + (activity.duration_s || 0);
                 }
-                
-                const primaryType = Object.keys(typeCounts).reduce((a, b) => 
-                    typeCounts[a] > typeCounts[b] ? a : b, 
+
+                const primaryType = Object.keys(typeCounts).reduce((a, b) =>
+                    typeCounts[a] > typeCounts[b] ? a : b,
                     null
                 );
                 aggregated.type = primaryType;
@@ -357,7 +357,7 @@ describe('AI Context Database Integration', () => {
 
         it('should handle empty data gracefully', async () => {
             const db = new AIContextDatabase();
-            
+
             mockSupabase.from.mockReturnValue({
                 select: vi.fn().mockReturnValue({
                     eq: vi.fn().mockReturnValue({
@@ -379,7 +379,7 @@ describe('AI Context Database Integration', () => {
 
         it('should handle database errors gracefully', async () => {
             const db = new AIContextDatabase();
-            
+
             mockSupabase.from.mockReturnValue({
                 select: vi.fn().mockReturnValue({
                     eq: vi.fn().mockReturnValue({
@@ -558,7 +558,7 @@ describe('AI Context Database Integration', () => {
     describe('Query Chain Verification', () => {
         it('should call Supabase methods in correct order for load metrics', async () => {
             const db = new AIContextDatabase();
-            
+
             mockSupabase.from.mockReturnValue({
                 select: vi.fn().mockReturnValue({
                     eq: vi.fn().mockReturnValue({
@@ -579,7 +579,7 @@ describe('AI Context Database Integration', () => {
 
         it('should call Supabase methods in correct order for activities', async () => {
             const db = new AIContextDatabase();
-            
+
             mockSupabase.from.mockReturnValue({
                 select: vi.fn().mockReturnValue({
                     eq: vi.fn().mockReturnValue({

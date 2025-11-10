@@ -69,8 +69,8 @@ class PreferencesStep {
      * @returns {string} Formatted goals
      */
     formatGoals(goals) {
-        if (!goals || goals.length === 0) return 'General fitness';
-        
+        if (!goals || goals.length === 0) {return 'General fitness';}
+
         const goalLabels = {
             'athletic_performance': 'Performance',
             'v_taper': 'V-Taper',
@@ -79,7 +79,7 @@ class PreferencesStep {
             'weight_management': 'Weight',
             'general_fitness': 'General Fitness'
         };
-        
+
         return goals.map(g => goalLabels[g] || g).join(', ');
     }
 
@@ -95,7 +95,7 @@ class PreferencesStep {
             'in-season': 'In-Season',
             'transition': 'Transition'
         };
-        
+
         return seasonMap[season] || 'In-Season';
     }
 

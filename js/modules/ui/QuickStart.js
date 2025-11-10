@@ -8,10 +8,10 @@ class QuickStart {
         this.eventBus = window.EventBus;
         this.modeManager = window.ModeManager;
         this.expertCoordinator = window.ExpertCoordinator;
-        
+
         this.currentWorkout = null;
         this.isActive = false;
-        
+
         this.initialize();
     }
 
@@ -20,7 +20,7 @@ class QuickStart {
      */
     initialize() {
         this.setupEventListeners();
-        
+
         // Create UI
         this.createQuickStartButton();
     }
@@ -35,7 +35,7 @@ class QuickStart {
                 this.refreshUI();
             }
         });
-        
+
         // Listen for workout completion
         this.eventBus.on('SESSION_COMPLETED', (data) => {
             this.isActive = false;
@@ -57,9 +57,9 @@ class QuickStart {
                 <div class="quick-start-subtitle">Warmup + Circuit + Finisher</div>
             </div>
         `;
-        
+
         quickStartButton.addEventListener('click', () => this.startQuickWorkout());
-        
+
         // Insert into dashboard
         const dashboard = document.querySelector('.dashboard-hero');
         if (dashboard) {
@@ -73,26 +73,26 @@ class QuickStart {
     async startQuickWorkout() {
         try {
             this.isActive = true;
-            
+
             // Get user context
             const context = await this.getUserContext();
-            
+
             // Get simplified plan from ExpertCoordinator
             const plan = this.expertCoordinator.getSessionPlan(context);
-            
+
             // Simplify for simple mode
             const simplifiedPlan = this.simplifyPlan(plan);
-            
+
             this.currentWorkout = simplifiedPlan;
-            
+
             // Display workout
             this.displayQuickWorkout(simplifiedPlan);
-            
+
             // Navigate to workout view
             if (window.Router) {
                 window.Router.navigate('#/workout');
             }
-            
+
         } catch (error) {
             this.logger.error('Failed to start quick workout', error);
         }
@@ -122,7 +122,7 @@ class QuickStart {
         // Take main exercises and combine into circuit
         const mainExercises = plan.mainSets || [];
         const accessories = plan.accessories || [];
-        
+
         // Combine into 3-5 exercise circuit
         return [...mainExercises.slice(0, 2), ...accessories.slice(0, 2)]
             .map(ex => ({
@@ -139,16 +139,16 @@ class QuickStart {
      */
     getKeyExercises(plan) {
         const exercises = [];
-        
+
         // Warmup
-        if (plan.warmup) exercises.push(...plan.warmup);
-        
+        if (plan.warmup) {exercises.push(...plan.warmup);}
+
         // Main work
-        if (plan.mainSets) exercises.push(...plan.mainSets);
-        
+        if (plan.mainSets) {exercises.push(...plan.mainSets);}
+
         // Finisher
-        if (plan.finishers) exercises.push(...plan.finishers.slice(0, 1));
-        
+        if (plan.finishers) {exercises.push(...plan.finishers.slice(0, 1));}
+
         return exercises;
     }
 
@@ -158,8 +158,8 @@ class QuickStart {
      */
     displayQuickWorkout(plan) {
         const workoutView = document.getElementById('workout-view');
-        if (!workoutView) return;
-        
+        if (!workoutView) {return;}
+
         workoutView.innerHTML = `
             <div class="quick-workout-container">
                 <div class="workout-header">
@@ -198,7 +198,7 @@ class QuickStart {
         if (!exercises || exercises.length === 0) {
             return '<p class="no-exercises">None</p>';
         }
-        
+
         return exercises.map((ex, i) => `
             <div class="exercise-item">
                 <span class="exercise-number">${i + 1}</span>
@@ -218,7 +218,7 @@ class QuickStart {
             plan: this.currentWorkout,
             mode: 'simple'
         });
-        
+
         // Start workout tracker
         if (window.WorkoutTracker) {
             window.WorkoutTracker.startWorkout(this.currentWorkout);
@@ -242,10 +242,10 @@ class QuickStart {
     async getUserContext() {
         const userId = this.getUserId();
         const today = new Date().toISOString().split('T')[0];
-        
+
         const readiness = await this.getReadiness();
         const preferences = await this.storageManager.getPreferences(userId);
-        
+
         return {
             user: {
                 sport: 'soccer',
@@ -269,7 +269,7 @@ class QuickStart {
         try {
             const userId = this.getUserId();
             const today = new Date().toISOString().split('T')[0];
-            
+
             return await this.storageManager.getReadinessLog(userId, today);
         } catch (error) {
             this.logger.error('Failed to get readiness', error);

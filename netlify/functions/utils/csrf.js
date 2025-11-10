@@ -35,23 +35,23 @@ const CSRF_CONFIG = {
 function generateCSRFToken(sessionId) {
     const token = crypto.randomBytes(CSRF_CONFIG.tokenLength).toString('hex');
     const expiresAt = Date.now() + CSRF_CONFIG.tokenExpiry;
-    
+
     // Store token with session mapping
     csrfTokens.set(token, {
         sessionId,
         expiresAt,
         createdAt: Date.now()
     });
-    
+
     // Clean up expired tokens
     cleanupExpiredTokens();
-    
+
     logger.debug('CSRF token generated', {
         session_id: sessionId,
-        token: token,
+        token,
         expires_at: new Date(expiresAt).toISOString()
     });
-    
+
     return token;
 }
 
@@ -69,41 +69,41 @@ function validateCSRFToken(token, sessionId) {
         });
         return false;
     }
-    
+
     const tokenData = csrfTokens.get(token);
-    
+
     if (!tokenData) {
         logger.warn('CSRF validation failed: token not found', {
-            token: token
+            token
         });
         return false;
     }
-    
+
     // Check expiration
     if (Date.now() > tokenData.expiresAt) {
         csrfTokens.delete(token);
         logger.warn('CSRF validation failed: token expired', {
-            token: token,
+            token,
             expires_at: new Date(tokenData.expiresAt).toISOString()
         });
         return false;
     }
-    
+
     // Check session match
     if (tokenData.sessionId !== sessionId) {
         logger.warn('CSRF validation failed: session mismatch', {
-            token: token,
+            token,
             expected_session: sessionId,
             actual_session: tokenData.sessionId
         });
         return false;
     }
-    
+
     logger.debug('CSRF token validated successfully', {
-        token: token,
+        token,
         session_id: sessionId
     });
-    
+
     return true;
 }
 
@@ -115,7 +115,7 @@ function revokeCSRFToken(token) {
     if (csrfTokens.has(token)) {
         csrfTokens.delete(token);
         logger.info('CSRF token revoked', {
-            token: token
+            token
         });
     }
 }
@@ -126,14 +126,14 @@ function revokeCSRFToken(token) {
 function cleanupExpiredTokens() {
     const now = Date.now();
     let cleanedCount = 0;
-    
+
     for (const [token, data] of csrfTokens.entries()) {
         if (now > data.expiresAt) {
             csrfTokens.delete(token);
             cleanedCount++;
         }
     }
-    
+
     if (cleanedCount > 0) {
         logger.debug('Cleaned up expired CSRF tokens', {
             count: cleanedCount,
@@ -154,7 +154,7 @@ function getCSRFToken(sessionId) {
             return token;
         }
     }
-    
+
     // Generate new token
     return generateCSRFToken(sessionId);
 }
@@ -171,15 +171,15 @@ function createCSRFCookie(token) {
         `SameSite=${CSRF_CONFIG.sameSite}`,
         'Max-Age=1800' // 30 minutes
     ];
-    
+
     if (CSRF_CONFIG.secure) {
         cookieParts.push('Secure');
     }
-    
+
     if (CSRF_CONFIG.httpOnly) {
         cookieParts.push('HttpOnly');
     }
-    
+
     return cookieParts.join('; ');
 }
 
@@ -198,15 +198,15 @@ function extractSessionId(event) {
         event.headers['x-session-id'],
         event.headers['X-Session-Id']
     ];
-    
+
     for (const source of sources) {
         if (source) {
             // Extract from cookie
             if (source.includes('session-id=')) {
                 const match = source.match(/session-id=([^;]+)/);
-                if (match) return match[1];
+                if (match) {return match[1];}
             }
-            
+
             // Extract from JWT token
             if (source.startsWith('Bearer ')) {
                 const token = source.substring(7);
@@ -220,14 +220,14 @@ function extractSessionId(event) {
                     });
                 }
             }
-            
+
             // Direct session ID
             if (source.length > 8 && source.length < 64) {
                 return source;
             }
         }
     }
-    
+
     // Generate fallback session ID
     return crypto.randomBytes(16).toString('hex');
 }
@@ -243,7 +243,7 @@ function withCSRFProtection(handler) {
         if (event.httpMethod === 'GET' || event.httpMethod === 'OPTIONS') {
             return handler(event, context);
         }
-        
+
         // Skip CSRF for public endpoints
         const publicEndpoints = [
             '/auth/login',
@@ -251,18 +251,18 @@ function withCSRFProtection(handler) {
             '/auth/strava-oauth',
             '/auth/strava-callback'
         ];
-        
+
         if (publicEndpoints.some(endpoint => event.path.includes(endpoint))) {
             return handler(event, context);
         }
-        
+
         try {
             const sessionId = extractSessionId(event);
-            
+
             // Get CSRF token from header
-            const csrfToken = event.headers[CSRF_CONFIG.headerName] || 
+            const csrfToken = event.headers[CSRF_CONFIG.headerName] ||
                             event.headers[CSRF_CONFIG.headerName.toLowerCase()];
-            
+
             // Validate CSRF token
             if (!validateCSRFToken(csrfToken, sessionId)) {
                 logger.warn('CSRF validation failed', {
@@ -271,7 +271,7 @@ function withCSRFProtection(handler) {
                     session_id: sessionId,
                     csrf_token: csrfToken
                 });
-                
+
                 return {
                     statusCode: 403,
                     headers: {
@@ -284,23 +284,23 @@ function withCSRFProtection(handler) {
                     })
                 };
             }
-            
+
             // Add CSRF token to response headers for subsequent requests
             const response = await handler(event, context);
-            
+
             if (response && response.headers) {
                 const newToken = getCSRFToken(sessionId);
                 response.headers['Set-Cookie'] = createCSRFCookie(newToken);
             }
-            
+
             return response;
-            
+
         } catch (error) {
             logger.error('CSRF middleware error', {
                 error: error.message,
                 stack: error.stack
             });
-            
+
             return {
                 statusCode: 500,
                 headers: {
@@ -330,16 +330,16 @@ exports.generateCSRF = async (event) => {
             body: JSON.stringify({ error: 'Method not allowed' })
         };
     }
-    
+
     try {
         const sessionId = extractSessionId(event);
         const token = getCSRFToken(sessionId);
-        
+
         logger.info('CSRF token generated for session', {
             session_id: sessionId,
-            token: token
+            token
         });
-        
+
         return {
             statusCode: 200,
             headers: {
@@ -352,12 +352,12 @@ exports.generateCSRF = async (event) => {
                 expires_in: CSRF_CONFIG.tokenExpiry / 1000
             })
         };
-        
+
     } catch (error) {
         logger.error('CSRF token generation failed', {
             error: error.message
         });
-        
+
         return {
             statusCode: 500,
             headers: {
@@ -377,7 +377,7 @@ function getCSRFStats() {
     const now = Date.now();
     let activeTokens = 0;
     let expiredTokens = 0;
-    
+
     for (const [token, data] of csrfTokens.entries()) {
         if (now < data.expiresAt) {
             activeTokens++;
@@ -385,7 +385,7 @@ function getCSRFStats() {
             expiredTokens++;
         }
     }
-    
+
     return {
         active_tokens: activeTokens,
         expired_tokens: expiredTokens,

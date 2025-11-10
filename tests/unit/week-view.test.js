@@ -146,7 +146,7 @@ describe('WeekView', () => {
             }
 
             calculateTotalLoad(sessions) {
-                if (!sessions || sessions.length === 0) return 0;
+                if (!sessions || sessions.length === 0) {return 0;}
                 return sessions.reduce((total, session) => {
                     const sessionLoad = this.loadCalculator?.calculateSessionLoad?.(session);
                     return total + (sessionLoad?.total || session.load || 0);
@@ -260,10 +260,10 @@ describe('WeekView', () => {
             }
 
             getWeekLabel(offset) {
-                if (offset === 0) return 'This Week';
-                if (offset === -1) return 'Last Week';
-                if (offset === 1) return 'Next Week';
-                if (offset < 0) return `${Math.abs(offset)} Weeks Ago`;
+                if (offset === 0) {return 'This Week';}
+                if (offset === -1) {return 'Last Week';}
+                if (offset === 1) {return 'Next Week';}
+                if (offset < 0) {return `${Math.abs(offset)} Weeks Ago`;}
                 return `${offset} Weeks Ahead`;
             }
 
@@ -417,11 +417,11 @@ describe('WeekView', () => {
             const weekStart = new Date('2024-01-07'); // Sunday
             const plannedSessions = [
                 { date: '2024-01-08', load: 50 }, // Monday
-                { date: '2024-01-10', load: 60 }  // Wednesday
+                { date: '2024-01-10', load: 60 } // Wednesday
             ];
             const completedSessions = [
                 { date: '2024-01-08', load: 45 }, // Monday
-                { date: '2024-01-09', load: 30 }  // Tuesday (unplanned)
+                { date: '2024-01-09', load: 30 } // Tuesday (unplanned)
             ];
 
             const breakdown = weekView.calculateDailyBreakdown(weekStart, plannedSessions, completedSessions);

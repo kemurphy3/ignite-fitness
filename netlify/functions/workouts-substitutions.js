@@ -8,14 +8,14 @@ const { checkRateLimit } = require('./_base');
  */
 function calculateSoccerShapeLoad(workout) {
     const baseLoad = workout.time_required * 0.8; // Base RPE of 8 for soccer-shape
-    
+
     // Get intensity multiplier from structure if available
     let intensityMultiplier = 1.0;
     if (workout.structure && Array.isArray(workout.structure)) {
         const mainBlock = workout.structure.find(b => b.block_type === 'main');
         if (mainBlock && mainBlock.intensity) {
-            const zone = mainBlock.intensity.includes('Z') 
-                ? mainBlock.intensity.split('-')[0] 
+            const zone = mainBlock.intensity.includes('Z')
+                ? mainBlock.intensity.split('-')[0]
                 : 'Z3';
             const zoneMultipliers = {
                 'Z1': 1.0,
@@ -27,10 +27,10 @@ function calculateSoccerShapeLoad(workout) {
             intensityMultiplier = zoneMultipliers[zone] || 4.0;
         }
     }
-    
+
     // Complexity factor (default 5, scaled to 0-1)
     const complexityFactor = 0.5; // Mid-range complexity
-    
+
     // Calculate final load
     return Math.round(baseLoad * intensityMultiplier * (1 + complexityFactor));
 }
@@ -45,13 +45,13 @@ function calculateSoccerShapeLoad(workout) {
 async function findSoccerShapeSubstitutions(sql, originalWorkout, constraints) {
     const { equipment, time_limit, injury_considerations } = constraints || {};
 
-    let whereConditions = [
-        `template_id != $1`,
-        `is_active = true`,
-        `(category = 'soccer_shape' OR modality IN ('running', 'cycling', 'swimming'))`,
-        `tags && $2::jsonb` // Must share at least one tag
+    const whereConditions = [
+        'template_id != $1',
+        'is_active = true',
+        '(category = \'soccer_shape\' OR modality IN (\'running\', \'cycling\', \'swimming\'))',
+        'tags && $2::jsonb' // Must share at least one tag
     ];
-    let params = [originalWorkout.template_id, JSON.stringify(originalWorkout.tags || [])];
+    const params = [originalWorkout.template_id, JSON.stringify(originalWorkout.tags || [])];
 
     if (equipment && equipment.length > 0) {
         whereConditions.push(`equipment_required && $${params.length + 1}::jsonb`);
@@ -112,8 +112,8 @@ function calculateLoadEquivalency(original, substitution) {
     const originalLoad = calculateSoccerShapeLoad(original);
     const substitutionLoad = calculateSoccerShapeLoad(substitution);
 
-    if (originalLoad === 0) return 100;
-    
+    if (originalLoad === 0) {return 100;}
+
     return Math.round((substitutionLoad / originalLoad) * 100); // Percentage match
 }
 
@@ -124,8 +124,8 @@ function calculateLoadEquivalency(original, substitution) {
  * @returns {number} Adaptation match percentage
  */
 function calculateAdaptationMatch(originalTags, substitutionTags) {
-    if (!originalTags || originalTags.length === 0) return 0;
-    if (!substitutionTags || substitutionTags.length === 0) return 0;
+    if (!originalTags || originalTags.length === 0) {return 0;}
+    if (!substitutionTags || substitutionTags.length === 0) {return 0;}
 
     const overlap = originalTags.filter(tag => substitutionTags.includes(tag));
     return Math.round((overlap.length / originalTags.length) * 100);
@@ -226,7 +226,7 @@ exports.handler = async (event) => {
         }
 
         const originalResults = await sql(originalQuery, originalParams);
-        
+
         if (!originalResults || originalResults.length === 0) {
             return errorResponse(404, 'WORKOUT_NOT_FOUND', 'Soccer-shape workout not found');
         }

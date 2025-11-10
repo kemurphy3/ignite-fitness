@@ -63,7 +63,7 @@ describe('PersonalizedCoaching Transparency Indicators', () => {
     describe('getCoachingMessage() returns transparency data', () => {
         it('should return responseType, confidence, and rationale fields', () => {
             const result = coaching.getCoachingMessage("I'm feeling tired today");
-            
+
             expect(result).toHaveProperty('responseType');
             expect(result).toHaveProperty('confidence');
             expect(result).toHaveProperty('rationale');
@@ -73,23 +73,23 @@ describe('PersonalizedCoaching Transparency Indicators', () => {
 
         it('should return responseType as "rule-based" for recovery scenarios', () => {
             const result = coaching.getCoachingMessage("I'm feeling tired and stressed");
-            
+
             expect(result.responseType).toBe('rule-based');
             expect(result.confidence).toBeGreaterThan(0);
             expect(result.rationale).toContain('readiness score');
         });
 
         it('should return responseType as "template" for motivation scenarios', () => {
-            const result = coaching.getCoachingMessage("I need motivation");
-            
+            const result = coaching.getCoachingMessage('I need motivation');
+
             expect(result.responseType).toBe('template');
             expect(result.confidence).toBeGreaterThan(0);
             expect(result.rationale).toContain('motivational templates');
         });
 
         it('should return responseType as "rule-based" for injury scenarios', () => {
-            const result = coaching.getCoachingMessage("My knee hurts during squats");
-            
+            const result = coaching.getCoachingMessage('My knee hurts during squats');
+
             expect(result.responseType).toBe('rule-based');
             expect(result.confidence).toBeGreaterThan(0);
             expect(result.rationale).toContain('safety protocols');
@@ -97,23 +97,23 @@ describe('PersonalizedCoaching Transparency Indicators', () => {
 
         it('should return responseType as "rule-based" for plateau scenarios', () => {
             const result = coaching.getCoachingMessage("I'm stuck at the same weight");
-            
+
             expect(result.responseType).toBe('rule-based');
             expect(result.confidence).toBeGreaterThan(0);
             expect(result.rationale).toContain('progression rate');
         });
 
         it('should return responseType as "rule-based" for seasonal scenarios', () => {
-            const result = coaching.getCoachingMessage("Basketball season starts soon");
-            
+            const result = coaching.getCoachingMessage('Basketball season starts soon');
+
             expect(result.responseType).toBe('rule-based');
             expect(result.confidence).toBeGreaterThan(0);
             expect(result.rationale).toContain('season phase');
         });
 
         it('should return responseType as "rule-based" for performance scenarios', () => {
-            const result = coaching.getCoachingMessage("My workouts have been really hard lately");
-            
+            const result = coaching.getCoachingMessage('My workouts have been really hard lately');
+
             expect(result.responseType).toBe('rule-based');
             expect(result.confidence).toBeGreaterThan(0);
             expect(result.rationale).toContain('average RPE');
@@ -121,7 +121,7 @@ describe('PersonalizedCoaching Transparency Indicators', () => {
 
         it('should return responseType as "rule-based" for return scenarios', () => {
             const result = coaching.getCoachingMessage("I've been away from the gym for a while");
-            
+
             expect(result.responseType).toBe('rule-based');
             expect(result.confidence).toBeGreaterThan(0);
             expect(result.rationale).toContain('missed workouts');
@@ -130,16 +130,16 @@ describe('PersonalizedCoaching Transparency Indicators', () => {
 
     describe('Confidence scoring', () => {
         it('should return confidence between 0 and 100', () => {
-            const result = coaching.getCoachingMessage("I need help");
-            
+            const result = coaching.getCoachingMessage('I need help');
+
             expect(result.confidence).toBeGreaterThanOrEqual(0);
             expect(result.confidence).toBeLessThanOrEqual(100);
         });
 
         it('should return higher confidence for rule-based responses', () => {
-            const ruleBasedResult = coaching.getCoachingMessage("My knee hurts");
-            const templateResult = coaching.getCoachingMessage("I need motivation");
-            
+            const ruleBasedResult = coaching.getCoachingMessage('My knee hurts');
+            const templateResult = coaching.getCoachingMessage('I need motivation');
+
             expect(ruleBasedResult.confidence).toBeGreaterThan(templateResult.confidence);
         });
 
@@ -170,11 +170,11 @@ describe('PersonalizedCoaching Transparency Indicators', () => {
                 stressTrend: 'stable'
             });
 
-            const result = coaching.getCoachingMessage("I need help");
-            
+            const result = coaching.getCoachingMessage('I need help');
+
             expect(result.confidence).toBeLessThan(50);
             expect(result.rationale).toContain('Limited user data available');
-            
+
             // Restore original method
             coaching.getUserContext = originalGetUserContext;
         });
@@ -183,13 +183,13 @@ describe('PersonalizedCoaching Transparency Indicators', () => {
     describe('Rationale explanations', () => {
         it('should provide specific rationale for each scenario type', () => {
             const scenarios = [
-                { message: "My knee hurts", expectedRationale: "safety protocols" },
-                { message: "I've been away", expectedRationale: "missed workouts" },
-                { message: "I'm tired", expectedRationale: "readiness score" },
-                { message: "I'm stuck", expectedRationale: "progression rate" },
-                { message: "Season starts soon", expectedRationale: "season phase" },
-                { message: "Workouts are hard", expectedRationale: "average RPE" },
-                { message: "I need motivation", expectedRationale: "motivational templates" }
+                { message: 'My knee hurts', expectedRationale: 'safety protocols' },
+                { message: "I've been away", expectedRationale: 'missed workouts' },
+                { message: "I'm tired", expectedRationale: 'readiness score' },
+                { message: "I'm stuck", expectedRationale: 'progression rate' },
+                { message: 'Season starts soon', expectedRationale: 'season phase' },
+                { message: 'Workouts are hard', expectedRationale: 'average RPE' },
+                { message: 'I need motivation', expectedRationale: 'motivational templates' }
             ];
 
             scenarios.forEach(({ message, expectedRationale }) => {
@@ -199,8 +199,8 @@ describe('PersonalizedCoaching Transparency Indicators', () => {
         });
 
         it('should include data quality indicators in rationale', () => {
-            const result = coaching.getCoachingMessage("I need help");
-            
+            const result = coaching.getCoachingMessage('I need help');
+
             expect(result.rationale).toBeTruthy();
             expect(typeof result.rationale).toBe('string');
             expect(result.rationale.length).toBeGreaterThan(10);
@@ -215,13 +215,13 @@ describe('PersonalizedCoaching Transparency Indicators', () => {
                 throw new Error('Test error');
             };
 
-            const result = coaching.getCoachingMessage("I need help");
-            
+            const result = coaching.getCoachingMessage('I need help');
+
             expect(result.success).toBe(false);
             expect(result.responseType).toBe('template');
             expect(result.confidence).toBe(0);
             expect(result.rationale).toBe('System error - using fallback template');
-            
+
             // Restore original method
             coaching.getUserContext = originalGetUserContext;
         });
@@ -229,15 +229,15 @@ describe('PersonalizedCoaching Transparency Indicators', () => {
 
     describe('Backward compatibility', () => {
         it('should maintain backward compatibility with existing response structure', () => {
-            const result = coaching.getCoachingMessage("I need help");
-            
+            const result = coaching.getCoachingMessage('I need help');
+
             // Check that all existing fields are still present
             expect(result).toHaveProperty('success');
             expect(result).toHaveProperty('response');
             expect(result).toHaveProperty('scenario');
             expect(result).toHaveProperty('context');
             expect(result).toHaveProperty('timestamp');
-            
+
             // Check that new fields are added
             expect(result).toHaveProperty('responseType');
             expect(result).toHaveProperty('confidence');

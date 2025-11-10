@@ -26,7 +26,7 @@ exports.handler = async (event) => {
 
   try {
     const token = event.headers.authorization?.split(' ')[1];
-    if (!token) return errorResponse(401, 'MISSING_TOKEN', 'Authorization required');
+    if (!token) {return errorResponse(401, 'MISSING_TOKEN', 'Authorization required');}
 
     const { userId } = await verifyUser(token);
 
@@ -61,7 +61,7 @@ exports.handler = async (event) => {
       // Compound key is provided in 'key' as userId_date; extract date
       const parts = String(key).split('_');
       const date = parts.length > 1 ? parts.slice(1).join('_') : data.date || data.logged_at || null;
-      if (!date) return errorResponse(422, 'INVALID_KEY', 'Date missing in key');
+      if (!date) {return errorResponse(422, 'INVALID_KEY', 'Date missing in key');}
 
       const base = { user_id: userId, date, ...data };
 

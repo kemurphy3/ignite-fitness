@@ -7,7 +7,7 @@ class PassiveReadiness {
         this.logger = window.SafeLogger || console;
         this.storageManager = window.StorageManager;
         this.eventBus = window.EventBus;
-        
+
         this.cache = {
             lastReadiness: null,
             lastCalculation: null
@@ -22,14 +22,14 @@ class PassiveReadiness {
     async inferReadiness(context = {}) {
         try {
             const userId = context.userId || this.getUserId();
-            
+
             // Gather all passive inputs
             const priorSession = await this.getLastSession(userId);
             const volumeChange = await this.calculateVolumeChange(userId);
             const hardDaysStreak = await this.getHardDaysStreak(userId);
             const injuryFlags = await this.getRecentInjuryFlags(userId);
             const externalActivities = await this.getExternalActivities(userId);
-            
+
             // Calculate inferred readiness
             const inferredReadiness = this.calculateInferredReadiness({
                 priorSession,
@@ -38,13 +38,13 @@ class PassiveReadiness {
                 injuryFlags,
                 externalActivities
             });
-            
+
             // Cache result
             this.cache = {
                 lastReadiness: inferredReadiness,
                 lastCalculation: new Date()
             };
-            
+
             // Log inference
             await this.logInference(userId, inferredReadiness, {
                 priorSession,
@@ -53,13 +53,13 @@ class PassiveReadiness {
                 injuryFlags,
                 externalActivities
             });
-            
+
             // Emit event
             this.eventBus?.emit(this.eventBus?.TOPICS?.READINESS_UPDATED, {
                 readiness: inferredReadiness,
                 source: 'passive_inference'
             });
-            
+
             return inferredReadiness;
         } catch (error) {
             this.logger.error('Failed to infer readiness', error);
@@ -75,10 +75,10 @@ class PassiveReadiness {
     async getLastSession(userId) {
         try {
             const sessionLogs = await this.storageManager.getSessionLogs(userId);
-            if (!sessionLogs || sessionLogs.length === 0) return null;
-            
+            if (!sessionLogs || sessionLogs.length === 0) {return null;}
+
             const lastSession = sessionLogs[sessionLogs.length - 1];
-            
+
             return {
                 rpe: lastSession.averageRPE || null,
                 volume: lastSession.totalVolume || 0,
@@ -99,13 +99,13 @@ class PassiveReadiness {
     async calculateVolumeChange(userId) {
         try {
             const sessionLogs = await this.storageManager.getSessionLogs(userId);
-            if (!sessionLogs || sessionLogs.length < 2) return 0;
-            
+            if (!sessionLogs || sessionLogs.length < 2) {return 0;}
+
             const last = sessionLogs[sessionLogs.length - 1];
             const previous = sessionLogs[sessionLogs.length - 2];
-            
-            if (!last.totalVolume || !previous.totalVolume) return 0;
-            
+
+            if (!last.totalVolume || !previous.totalVolume) {return 0;}
+
             const change = ((last.totalVolume - previous.totalVolume) / previous.totalVolume) * 100;
             return Math.round(change);
         } catch (error) {
@@ -122,15 +122,15 @@ class PassiveReadiness {
     async getHardDaysStreak(userId) {
         try {
             const sessionLogs = await this.storageManager.getSessionLogs(userId);
-            if (!sessionLogs || sessionLogs.length === 0) return 0;
-            
+            if (!sessionLogs || sessionLogs.length === 0) {return 0;}
+
             let streak = 0;
-            
+
             // Go backwards from most recent session
             for (let i = sessionLogs.length - 1; i >= 0; i--) {
                 const session = sessionLogs[i];
                 const rpe = session.averageRPE || 0;
-                
+
                 // Hard day = RPE >= 8 OR volume increase > 20%
                 if (rpe >= 8 || (session.volumeIncrease && session.volumeIncrease > 0.2)) {
                     streak++;
@@ -138,7 +138,7 @@ class PassiveReadiness {
                     break;
                 }
             }
-            
+
             return streak;
         } catch (error) {
             this.logger.error('Failed to get hard days streak', error);
@@ -154,12 +154,12 @@ class PassiveReadiness {
     async getRecentInjuryFlags(userId) {
         try {
             const flags = await this.storageManager.getInjuryFlags(userId);
-            if (!flags) return [];
-            
+            if (!flags) {return [];}
+
             // Filter to last 7 days
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-            
+
             return flags.filter(flag => {
                 const flagDate = new Date(flag.timestamp);
                 return flagDate >= sevenDaysAgo;
@@ -178,12 +178,12 @@ class PassiveReadiness {
     async getExternalActivities(userId) {
         try {
             const activities = await this.storageManager.getData(userId, 'external_activities');
-            if (!activities || activities.length === 0) return [];
-            
+            if (!activities || activities.length === 0) {return [];}
+
             // Filter to last 24 hours
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
-            
+
             return activities.filter(activity => {
                 const activityDate = new Date(activity.timestamp);
                 return activityDate >= yesterday;
@@ -202,10 +202,10 @@ class PassiveReadiness {
     calculateInferredReadiness(inputs) {
         let readinessScore = 8; // Default optimistic
         const reasons = [];
-        
+
         // Factor 1: Prior session RPE (30% weight)
         if (inputs.priorSession?.rpe) {
-            const rpe = inputs.priorSession.rpe;
+            const {rpe} = inputs.priorSession;
             if (rpe >= 9) {
                 readinessScore -= 2; // Hard session yesterday
                 reasons.push(`Yesterday's session was very hard (RPE ${rpe})`);
@@ -217,7 +217,7 @@ class PassiveReadiness {
                 reasons.push(`Yesterday's session was light (RPE ${rpe})`);
             }
         }
-        
+
         // Factor 2: Volume change (25% weight)
         if (inputs.volumeChange) {
             const change = inputs.volumeChange;
@@ -231,7 +231,7 @@ class PassiveReadiness {
                 reasons.push('Volume decreased - well recovered');
             }
         }
-        
+
         // Factor 3: Hard days streak (20% weight)
         if (inputs.hardDaysStreak >= 3) {
             readinessScore -= 2;
@@ -240,28 +240,28 @@ class PassiveReadiness {
             readinessScore -= 1;
             reasons.push(`${inputs.hardDaysStreak} consecutive hard days`);
         }
-        
+
         // Factor 4: Recent injury flags (15% weight)
         if (inputs.injuryFlags && inputs.injuryFlags.length > 0) {
             const recentFlag = inputs.injuryFlags[inputs.injuryFlags.length - 1];
             readinessScore -= 1.5;
             reasons.push(`Recent injury flag: ${recentFlag.location} (${recentFlag.severity}/10)`);
         }
-        
+
         // Factor 5: External activities (10% weight)
         if (inputs.externalActivities && inputs.externalActivities.length > 0) {
             const totalDuration = inputs.externalActivities.reduce((sum, act) => sum + (act.duration || 0), 0);
             const totalIntensity = inputs.externalActivities.reduce((sum, act) => sum + (act.intensity || 0), 0);
-            
+
             if (totalDuration > 60 && totalIntensity > 5) {
                 readinessScore -= 1;
                 reasons.push(`External activity today: ${totalDuration}min at intensity ${totalIntensity}/10`);
             }
         }
-        
+
         // Normalize to 1-10 scale
         readinessScore = Math.max(1, Math.min(10, Math.round(readinessScore)));
-        
+
         return {
             score: readinessScore,
             reasons: reasons.join('. '),
@@ -284,15 +284,15 @@ class PassiveReadiness {
      */
     calculateConfidence(inputs) {
         let dataPoints = 0;
-        
-        if (inputs.priorSession?.rpe) dataPoints++;
-        if (inputs.volumeChange !== 0) dataPoints++;
-        if (inputs.hardDaysStreak > 0) dataPoints++;
-        if (inputs.injuryFlags && inputs.injuryFlags.length > 0) dataPoints++;
-        if (inputs.externalActivities && inputs.externalActivities.length > 0) dataPoints++;
-        
-        if (dataPoints >= 4) return 'high';
-        if (dataPoints >= 2) return 'medium';
+
+        if (inputs.priorSession?.rpe) {dataPoints++;}
+        if (inputs.volumeChange !== 0) {dataPoints++;}
+        if (inputs.hardDaysStreak > 0) {dataPoints++;}
+        if (inputs.injuryFlags && inputs.injuryFlags.length > 0) {dataPoints++;}
+        if (inputs.externalActivities && inputs.externalActivities.length > 0) {dataPoints++;}
+
+        if (dataPoints >= 4) {return 'high';}
+        if (dataPoints >= 2) {return 'medium';}
         return 'low';
     }
 
@@ -314,7 +314,7 @@ class PassiveReadiness {
                     reasonCount: inferredReadiness.reasons.split('. ').length
                 }
             });
-            
+
             this.logger.debug('Passive readiness inferred', { userId, readiness: inferredReadiness });
         } catch (error) {
             this.logger.error('Failed to log inference', error);

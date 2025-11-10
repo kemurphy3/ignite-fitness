@@ -21,10 +21,10 @@ class NutritionCoach {
 
         // Day type detection
         const dayType = this.detectDayType(schedule, readiness);
-        
+
         // Pre-workout fueling
         const preWorkout = this.generatePreWorkoutFuel(dayType);
-        
+
         // Post-workout recovery
         const postWorkout = this.generatePostWorkoutFuel(dayType, readiness);
 
@@ -33,7 +33,7 @@ class NutritionCoach {
                 type: 'nutrition_timing',
                 pre: preWorkout,
                 post: postWorkout,
-                dayType: dayType,
+                dayType,
                 rationale: `Fueling strategy for ${dayType} day based on readiness ${readiness}/10`
             }
         ];
@@ -51,10 +51,10 @@ class NutritionCoach {
     }
 
     detectDayType(schedule, readiness) {
-        if (schedule?.isGameDay) return 'game';
-        if (schedule?.isRestDay) return 'rest';
-        if (readiness >= 8) return 'training_high_intensity';
-        if (readiness >= 5) return 'training_moderate';
+        if (schedule?.isGameDay) {return 'game';}
+        if (schedule?.isRestDay) {return 'rest';}
+        if (readiness >= 8) {return 'training_high_intensity';}
+        if (readiness >= 5) {return 'training_moderate';}
         return 'training_recovery';
     }
 
@@ -86,7 +86,7 @@ class NutritionCoach {
             }
         };
 
-        return fuelMap[dayType] || fuelMap['training_moderate'];
+        return fuelMap[dayType] || fuelMap.training_moderate;
     }
 
     generatePostWorkoutFuel(dayType, readiness) {
@@ -106,7 +106,7 @@ class NutritionCoach {
 
         return {
             ...baseRecovery,
-            rationale: `Standard recovery meal to replenish glycogen and support muscle repair`
+            rationale: 'Standard recovery meal to replenish glycogen and support muscle repair'
         };
     }
 }

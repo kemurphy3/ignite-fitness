@@ -21,7 +21,7 @@ const COMPLIANCE_CONFIG = {
         privacyByDesign: true,
         breachNotification: true
     },
-    
+
     // Security Controls
     security: {
         encryptionAtRest: true,
@@ -33,7 +33,7 @@ const COMPLIANCE_CONFIG = {
         securityHeaders: true,
         vulnerabilityScanning: true
     },
-    
+
     // Data Handling
     dataHandling: {
         dataClassification: true,
@@ -44,7 +44,7 @@ const COMPLIANCE_CONFIG = {
         dataIntegrity: true,
         dataAvailability: true
     },
-    
+
     // Compliance thresholds
     thresholds: {
         minComplianceScore: 80,
@@ -65,16 +65,16 @@ class ComplianceChecker {
             score: 0,
             timestamp: new Date().toISOString()
         };
-        
+
         this.logger = console;
     }
-    
+
     /**
      * Run comprehensive compliance check
      */
     async runComplianceCheck() {
         this.logger.log('🔍 Starting automated compliance check...');
-        
+
         try {
             // Run all compliance checks
             await Promise.all([
@@ -84,37 +84,37 @@ class ComplianceChecker {
                 this.checkCodeCompliance(),
                 this.checkConfigurationCompliance()
             ]);
-            
+
             // Calculate overall compliance score
             this.calculateComplianceScore();
-            
+
             // Generate compliance report
             this.generateComplianceReport();
-            
+
             // Check if compliance thresholds are met
             const isCompliant = this.checkComplianceThresholds();
-            
+
             this.logger.log(`✅ Compliance check completed. Score: ${this.results.score}%`);
             this.logger.log(`📊 Compliance status: ${isCompliant ? 'COMPLIANT' : 'NON-COMPLIANT'}`);
-            
+
             return {
                 compliant: isCompliant,
                 score: this.results.score,
                 results: this.results
             };
-            
+
         } catch (error) {
             this.logger.error('❌ Compliance check failed:', error.message);
             throw error;
         }
     }
-    
+
     /**
      * Check GDPR compliance
      */
     async checkGDPRCompliance() {
         this.logger.log('🔒 Checking GDPR compliance...');
-        
+
         const gdprChecks = {
             dataMinimization: await this.checkDataMinimization(),
             consentManagement: await this.checkConsentManagement(),
@@ -124,21 +124,21 @@ class ComplianceChecker {
             privacyByDesign: await this.checkPrivacyByDesign(),
             breachNotification: await this.checkBreachNotification()
         };
-        
+
         this.results.gdpr = gdprChecks;
-        
+
         const passedChecks = Object.values(gdprChecks).filter(check => check.passed).length;
         const totalChecks = Object.keys(gdprChecks).length;
-        
+
         this.logger.log(`📋 GDPR: ${passedChecks}/${totalChecks} checks passed`);
     }
-    
+
     /**
      * Check security controls
      */
     async checkSecurityControls() {
         this.logger.log('🛡️ Checking security controls...');
-        
+
         const securityChecks = {
             encryptionAtRest: await this.checkEncryptionAtRest(),
             encryptionInTransit: await this.checkEncryptionInTransit(),
@@ -149,21 +149,21 @@ class ComplianceChecker {
             securityHeaders: await this.checkSecurityHeaders(),
             vulnerabilityScanning: await this.checkVulnerabilityScanning()
         };
-        
+
         this.results.security = securityChecks;
-        
+
         const passedChecks = Object.values(securityChecks).filter(check => check.passed).length;
         const totalChecks = Object.keys(securityChecks).length;
-        
+
         this.logger.log(`🔐 Security: ${passedChecks}/${totalChecks} checks passed`);
     }
-    
+
     /**
      * Check data handling
      */
     async checkDataHandling() {
         this.logger.log('📊 Checking data handling...');
-        
+
         const dataHandlingChecks = {
             dataClassification: await this.checkDataClassification(),
             dataRetention: await this.checkDataRetention(),
@@ -173,21 +173,21 @@ class ComplianceChecker {
             dataIntegrity: await this.checkDataIntegrity(),
             dataAvailability: await this.checkDataAvailability()
         };
-        
+
         this.results.dataHandling = dataHandlingChecks;
-        
+
         const passedChecks = Object.values(dataHandlingChecks).filter(check => check.passed).length;
         const totalChecks = Object.keys(dataHandlingChecks).length;
-        
+
         this.logger.log(`💾 Data Handling: ${passedChecks}/${totalChecks} checks passed`);
     }
-    
+
     /**
      * Check code compliance
      */
     async checkCodeCompliance() {
         this.logger.log('💻 Checking code compliance...');
-        
+
         try {
             // Check for security vulnerabilities in code
             const codeChecks = {
@@ -200,26 +200,26 @@ class ComplianceChecker {
                 insecureCrypto: await this.checkInsecureCrypto(),
                 hardcodedSecrets: await this.checkHardcodedSecrets()
             };
-            
+
             // Add code checks to results
             Object.assign(this.results, codeChecks);
-            
+
             const passedChecks = Object.values(codeChecks).filter(check => check.passed).length;
             const totalChecks = Object.keys(codeChecks).length;
-            
+
             this.logger.log(`🔍 Code Security: ${passedChecks}/${totalChecks} checks passed`);
-            
+
         } catch (error) {
             this.logger.error('Code compliance check failed:', error.message);
         }
     }
-    
+
     /**
      * Check configuration compliance
      */
     async checkConfigurationCompliance() {
         this.logger.log('⚙️ Checking configuration compliance...');
-        
+
         try {
             const configChecks = {
                 environmentVariables: await this.checkEnvironmentVariables(),
@@ -228,28 +228,28 @@ class ComplianceChecker {
                 loggingConfiguration: await this.checkLoggingConfiguration(),
                 monitoringConfiguration: await this.checkMonitoringConfiguration()
             };
-            
+
             // Add config checks to results
             Object.assign(this.results, configChecks);
-            
+
             const passedChecks = Object.values(configChecks).filter(check => check.passed).length;
             const totalChecks = Object.keys(configChecks).length;
-            
+
             this.logger.log(`🔧 Configuration: ${passedChecks}/${totalChecks} checks passed`);
-            
+
         } catch (error) {
             this.logger.error('Configuration compliance check failed:', error.message);
         }
     }
-    
+
     // GDPR Compliance Checks
-    
+
     async checkDataMinimization() {
         try {
             // Check if data collection is minimized
             const hasDataMinimization = this.checkFileExists('js/modules/data/DataMinimizer.js');
             const hasPrivacyPolicy = this.checkFileExists('docs/PRIVACY_POLICY.md');
-            
+
             return {
                 passed: hasDataMinimization && hasPrivacyPolicy,
                 details: {
@@ -262,12 +262,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkConsentManagement() {
         try {
             const hasConsentManager = this.checkFileExists('js/modules/settings/ConsentManager.js');
             const hasConsentAPI = this.checkFileExists('netlify/functions/record-consent.js');
-            
+
             return {
                 passed: hasConsentManager && hasConsentAPI,
                 details: {
@@ -280,12 +280,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkDataRetention() {
         try {
             const hasRetentionPolicy = this.checkFileExists('netlify/functions/jobs/data-cleanup.js');
             const hasRetentionConfig = this.checkFileExists('env.example');
-            
+
             return {
                 passed: hasRetentionPolicy && hasRetentionConfig,
                 details: {
@@ -298,12 +298,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkDataPortability() {
         try {
             const hasDataExport = this.checkFileExists('netlify/functions/data-export.js');
             const hasExportUI = this.checkFileExists('js/modules/settings/PrivacyPanel.js');
-            
+
             return {
                 passed: hasDataExport && hasExportUI,
                 details: {
@@ -316,12 +316,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkRightToErasure() {
         try {
             const hasDataDeletion = this.checkFileExists('netlify/functions/data-deletion.js');
             const hasDeletionUI = this.checkFileExists('js/modules/settings/PrivacyPanel.js');
-            
+
             return {
                 passed: hasDataDeletion && hasDeletionUI,
                 details: {
@@ -334,12 +334,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkPrivacyByDesign() {
         try {
             const hasPrivacyPanel = this.checkFileExists('js/modules/settings/PrivacyPanel.js');
             const hasDataProtection = this.checkFileExists('docs/DATA_PROTECTION_IMPLEMENTATION.md');
-            
+
             return {
                 passed: hasPrivacyPanel && hasDataProtection,
                 details: {
@@ -352,12 +352,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkBreachNotification() {
         try {
             const hasIncidentResponse = this.checkFileExists('docs/SECURITY.md');
             const hasNotificationSystem = this.checkFileExists('js/modules/security/SecurityMonitor.js');
-            
+
             return {
                 passed: hasIncidentResponse && hasNotificationSystem,
                 details: {
@@ -370,14 +370,14 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     // Security Control Checks
-    
+
     async checkEncryptionAtRest() {
         try {
             const hasEncryption = this.checkFileExists('netlify/functions/utils/encryption.js');
             const hasSecureStorage = this.checkFileExists('js/modules/data/SecureStorage.js');
-            
+
             return {
                 passed: hasEncryption && hasSecureStorage,
                 details: {
@@ -390,12 +390,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkEncryptionInTransit() {
         try {
             const hasHTTPS = this.checkFileExists('netlify.toml');
             const hasSecurityHeaders = this.checkFileExists('netlify/functions/utils/security-headers.js');
-            
+
             return {
                 passed: hasHTTPS && hasSecurityHeaders,
                 details: {
@@ -408,12 +408,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkAccessControls() {
         try {
             const hasAuth = this.checkFileExists('netlify/functions/utils/auth.js');
             const hasSessionManager = this.checkFileExists('js/modules/auth/SessionManager.js');
-            
+
             return {
                 passed: hasAuth && hasSessionManager,
                 details: {
@@ -426,12 +426,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkAuditLogging() {
         try {
             const hasAuditLogger = this.checkFileExists('netlify/functions/utils/audit-logger.js');
             const hasSecurityMonitor = this.checkFileExists('js/modules/security/SecurityMonitor.js');
-            
+
             return {
                 passed: hasAuditLogger && hasSecurityMonitor,
                 details: {
@@ -444,12 +444,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkInputValidation() {
         try {
             const hasSanitizer = this.checkFileExists('netlify/functions/utils/sanitizer.js');
             const hasValidation = this.checkFileExists('js/modules/validation/InputValidator.js');
-            
+
             return {
                 passed: hasSanitizer && hasValidation,
                 details: {
@@ -462,12 +462,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkSessionManagement() {
         try {
             const hasSessionManager = this.checkFileExists('js/modules/auth/SessionManager.js');
             const hasCSRF = this.checkFileExists('netlify/functions/utils/csrf.js');
-            
+
             return {
                 passed: hasSessionManager && hasCSRF,
                 details: {
@@ -480,12 +480,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkSecurityHeaders() {
         try {
             const hasSecurityHeaders = this.checkFileExists('netlify/functions/utils/security-headers.js');
             const hasCSP = this.checkFileExists('netlify/functions/csp-report.js');
-            
+
             return {
                 passed: hasSecurityHeaders && hasCSP,
                 details: {
@@ -498,12 +498,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkVulnerabilityScanning() {
         try {
             const hasSecurityScan = this.checkFileExists('.github/workflows/security-scan.yml');
             const hasDependencyScan = this.checkFileExists('package.json');
-            
+
             return {
                 passed: hasSecurityScan && hasDependencyScan,
                 details: {
@@ -516,14 +516,14 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     // Data Handling Checks
-    
+
     async checkDataClassification() {
         try {
             const hasClassification = this.checkFileExists('js/modules/data/DataClassifier.js');
             const hasDataProtection = this.checkFileExists('docs/DATA_PROTECTION_IMPLEMENTATION.md');
-            
+
             return {
                 passed: hasClassification && hasDataProtection,
                 details: {
@@ -536,12 +536,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkDataDisposal() {
         try {
             const hasDataCleanup = this.checkFileExists('netlify/functions/jobs/data-cleanup.js');
             const hasRetentionPolicy = this.checkFileExists('docs/DATA_PROTECTION_IMPLEMENTATION.md');
-            
+
             return {
                 passed: hasDataCleanup && hasRetentionPolicy,
                 details: {
@@ -554,12 +554,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkDataBackup() {
         try {
             const hasBackupStrategy = this.checkFileExists('docs/BACKUP_STRATEGY.md');
             const hasRecoveryPlan = this.checkFileExists('docs/DISASTER_RECOVERY.md');
-            
+
             return {
                 passed: hasBackupStrategy && hasRecoveryPlan,
                 details: {
@@ -572,12 +572,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkDataRecovery() {
         try {
             const hasRecoveryPlan = this.checkFileExists('docs/DISASTER_RECOVERY.md');
             const hasBackupStrategy = this.checkFileExists('docs/BACKUP_STRATEGY.md');
-            
+
             return {
                 passed: hasRecoveryPlan && hasBackupStrategy,
                 details: {
@@ -590,12 +590,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkDataIntegrity() {
         try {
             const hasIntegrityChecks = this.checkFileExists('js/modules/data/DataIntegrity.js');
             const hasValidation = this.checkFileExists('js/modules/validation/DataValidator.js');
-            
+
             return {
                 passed: hasIntegrityChecks && hasValidation,
                 details: {
@@ -608,12 +608,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkDataAvailability() {
         try {
             const hasMonitoring = this.checkFileExists('js/modules/monitoring/SystemMonitor.js');
             const hasUptimeTracking = this.checkFileExists('netlify/functions/health-check.js');
-            
+
             return {
                 passed: hasMonitoring && hasUptimeTracking,
                 details: {
@@ -626,14 +626,14 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     // Code Security Checks
-    
+
     async checkSQLInjection() {
         try {
             const hasSanitizer = this.checkFileExists('netlify/functions/utils/sanitizer.js');
             const hasParameterizedQueries = this.checkFileExists('netlify/functions/utils/database.js');
-            
+
             return {
                 passed: hasSanitizer && hasParameterizedQueries,
                 details: {
@@ -646,12 +646,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkXSSVulnerabilities() {
         try {
             const hasSanitizer = this.checkFileExists('netlify/functions/utils/sanitizer.js');
             const hasDOMPurify = this.checkFileExists('package.json');
-            
+
             return {
                 passed: hasSanitizer && hasDOMPurify,
                 details: {
@@ -664,12 +664,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkCSRFProtection() {
         try {
             const hasCSRF = this.checkFileExists('netlify/functions/utils/csrf.js');
             const hasCSRFMiddleware = this.checkFileExists('netlify/functions/utils/csrf.js');
-            
+
             return {
                 passed: hasCSRF && hasCSRFMiddleware,
                 details: {
@@ -682,12 +682,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkAuthenticationBypass() {
         try {
             const hasAuth = this.checkFileExists('netlify/functions/utils/auth.js');
             const hasSessionManager = this.checkFileExists('js/modules/auth/SessionManager.js');
-            
+
             return {
                 passed: hasAuth && hasSessionManager,
                 details: {
@@ -700,12 +700,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkAuthorizationIssues() {
         try {
             const hasAuth = this.checkFileExists('netlify/functions/utils/auth.js');
             const hasRBAC = this.checkFileExists('js/modules/auth/RoleManager.js');
-            
+
             return {
                 passed: hasAuth && hasRBAC,
                 details: {
@@ -718,12 +718,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkDataExposure() {
         try {
             const hasAuditLogger = this.checkFileExists('netlify/functions/utils/audit-logger.js');
             const hasDataProtection = this.checkFileExists('docs/DATA_PROTECTION_IMPLEMENTATION.md');
-            
+
             return {
                 passed: hasAuditLogger && hasDataProtection,
                 details: {
@@ -736,12 +736,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkInsecureCrypto() {
         try {
             const hasSecureCrypto = this.checkFileExists('netlify/functions/utils/crypto.js');
             const hasJWTValidation = this.checkFileExists('netlify/functions/utils/auth.js');
-            
+
             return {
                 passed: hasSecureCrypto && hasJWTValidation,
                 details: {
@@ -754,12 +754,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkHardcodedSecrets() {
         try {
             const hasEnvTemplate = this.checkFileExists('env.example');
             const hasSecretsManagement = this.checkFileExists('docs/SECURITY.md');
-            
+
             return {
                 passed: hasEnvTemplate && hasSecretsManagement,
                 details: {
@@ -772,14 +772,14 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     // Configuration Checks
-    
+
     async checkEnvironmentVariables() {
         try {
             const hasEnvTemplate = this.checkFileExists('env.example');
             const hasEnvValidation = this.checkFileExists('netlify/functions/utils/env-validator.js');
-            
+
             return {
                 passed: hasEnvTemplate && hasEnvValidation,
                 details: {
@@ -792,12 +792,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkDatabaseConfiguration() {
         try {
             const hasDatabaseConfig = this.checkFileExists('netlify/functions/utils/database.js');
             const hasConnectionPooling = this.checkFileExists('netlify/functions/utils/connection-pool.js');
-            
+
             return {
                 passed: hasDatabaseConfig && hasConnectionPooling,
                 details: {
@@ -810,12 +810,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkAPIConfiguration() {
         try {
             const hasRateLimiting = this.checkFileExists('netlify/functions/utils/rate-limiter.js');
             const hasAPISecurity = this.checkFileExists('netlify/functions/utils/api-security.js');
-            
+
             return {
                 passed: hasRateLimiting && hasAPISecurity,
                 details: {
@@ -828,12 +828,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkLoggingConfiguration() {
         try {
             const hasSafeLogging = this.checkFileExists('netlify/functions/utils/safe-logging.js');
             const hasAuditLogger = this.checkFileExists('netlify/functions/utils/audit-logger.js');
-            
+
             return {
                 passed: hasSafeLogging && hasAuditLogger,
                 details: {
@@ -846,12 +846,12 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     async checkMonitoringConfiguration() {
         try {
             const hasSecurityMonitor = this.checkFileExists('js/modules/security/SecurityMonitor.js');
             const hasSystemMonitor = this.checkFileExists('js/modules/monitoring/SystemMonitor.js');
-            
+
             return {
                 passed: hasSecurityMonitor && hasSystemMonitor,
                 details: {
@@ -864,21 +864,21 @@ class ComplianceChecker {
             return { passed: false, error: error.message };
         }
     }
-    
+
     /**
      * Calculate overall compliance score
      */
     calculateComplianceScore() {
         let totalChecks = 0;
         let passedChecks = 0;
-        
+
         // Count all checks
         const allChecks = [
             this.results.gdpr,
             this.results.security,
             this.results.dataHandling
         ];
-        
+
         allChecks.forEach(category => {
             Object.values(category).forEach(check => {
                 totalChecks++;
@@ -887,59 +887,59 @@ class ComplianceChecker {
                 }
             });
         });
-        
+
         // Calculate score
         this.results.score = totalChecks > 0 ? Math.round((passedChecks / totalChecks) * 100) : 0;
-        
+
         this.logger.log(`📊 Compliance Score: ${this.results.score}% (${passedChecks}/${totalChecks} checks passed)`);
     }
-    
+
     /**
      * Check compliance thresholds
      */
     checkComplianceThresholds() {
-        const thresholds = this.config.thresholds;
-        
+        const {thresholds} = this.config;
+
         // Check minimum compliance score
         if (this.results.score < thresholds.minComplianceScore) {
             this.addViolation('compliance_score', 'Compliance score below threshold', 'high');
         }
-        
+
         // Check violation counts
-        const violations = this.results.violations;
+        const {violations} = this.results;
         const criticalViolations = violations.filter(v => v.severity === 'critical').length;
         const highViolations = violations.filter(v => v.severity === 'high').length;
-        
+
         if (criticalViolations > thresholds.maxCriticalViolations) {
             this.addViolation('critical_violations', 'Too many critical violations', 'critical');
         }
-        
+
         if (highViolations > thresholds.maxHighRiskViolations) {
             this.addViolation('high_violations', 'Too many high-risk violations', 'high');
         }
-        
+
         if (violations.length > thresholds.maxViolations) {
             this.addViolation('total_violations', 'Too many total violations', 'medium');
         }
-        
-        return this.results.score >= thresholds.minComplianceScore && 
+
+        return this.results.score >= thresholds.minComplianceScore &&
                criticalViolations <= thresholds.maxCriticalViolations &&
                highViolations <= thresholds.maxHighRiskViolations &&
                violations.length <= thresholds.maxViolations;
     }
-    
+
     /**
      * Add compliance violation
      */
     addViolation(type, description, severity) {
         this.results.violations.push({
-            type: type,
-            description: description,
-            severity: severity,
+            type,
+            description,
+            severity,
             timestamp: new Date().toISOString()
         });
     }
-    
+
     /**
      * Generate compliance report
      */
@@ -956,29 +956,29 @@ class ComplianceChecker {
             violations: this.results.violations,
             recommendations: this.generateRecommendations()
         };
-        
+
         // Save report to file
         const reportPath = path.join(process.cwd(), 'compliance-report.json');
         fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
-        
+
         this.logger.log(`📄 Compliance report saved to: ${reportPath}`);
-        
+
         return report;
     }
-    
+
     /**
      * Generate recommendations
      */
     generateRecommendations() {
         const recommendations = [];
-        
+
         // Collect recommendations from all checks
         const allChecks = [
             this.results.gdpr,
             this.results.security,
             this.results.dataHandling
         ];
-        
+
         allChecks.forEach(category => {
             Object.values(category).forEach(check => {
                 if (check.recommendations) {
@@ -986,10 +986,10 @@ class ComplianceChecker {
                 }
             });
         });
-        
+
         return [...new Set(recommendations)]; // Remove duplicates
     }
-    
+
     /**
      * Check if file exists
      */
@@ -1005,7 +1005,7 @@ class ComplianceChecker {
 // CLI interface
 if (require.main === module) {
     const checker = new ComplianceChecker();
-    
+
     checker.runComplianceCheck()
         .then(result => {
             if (result.compliant) {

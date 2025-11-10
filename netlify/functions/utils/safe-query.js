@@ -1,6 +1,6 @@
 /**
  * Safe Query Execution Utilities
- * 
+ *
  * Provides helper functions for secure database query execution
  * with built-in SQL injection protection and validation.
  */
@@ -60,25 +60,25 @@ async function safeQuery(queryFn, options = {}) {
         // Execute query with timeout
         const timeout = options.timeout || 30000; // 30 seconds default
         const startTime = Date.now();
-        
+
         const result = await Promise.race([
             queryFn(),
-            new Promise((_, reject) => 
+            new Promise((_, reject) =>
                 setTimeout(() => reject(new Error('Query timeout')), timeout)
             )
         ]);
-        
+
         const executionTime = Date.now() - startTime;
-        
+
         // Log query execution (without sensitive data)
         console.log('Safe query executed:', {
             executionTime,
             resultCount: Array.isArray(result) ? result.length : 0,
             timestamp: new Date().toISOString()
         });
-        
+
         return result;
-        
+
     } catch (error) {
         console.error('Safe query error:', {
             error: error.message,
@@ -100,10 +100,10 @@ async function safeSelect(table, conditions = {}, options = {}) {
     if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(table)) {
         throw new Error('Invalid table name');
     }
-    
+
     let query = `SELECT * FROM ${table}`;
     const params = [];
-    
+
     // Build WHERE clause
     if (Object.keys(conditions).length > 0) {
         const whereClause = Object.entries(conditions)
@@ -114,13 +114,13 @@ async function safeSelect(table, conditions = {}, options = {}) {
             .join(' AND ');
         query += ` WHERE ${whereClause}`;
     }
-    
+
     // Add ORDER BY if specified
     if (options.orderBy) {
         const orderBy = options.orderBy.replace(/[^a-zA-Z0-9_,\s]/g, '');
         query += ` ORDER BY ${orderBy}`;
     }
-    
+
     // Add LIMIT if specified
     if (options.limit) {
         const limit = parseInt(options.limit);
@@ -128,7 +128,7 @@ async function safeSelect(table, conditions = {}, options = {}) {
             query += ` LIMIT ${limit}`;
         }
     }
-    
+
     return safeQuery(query, params, options);
 }
 
@@ -144,13 +144,13 @@ async function safeInsert(table, data, options = {}) {
     if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(table)) {
         throw new Error('Invalid table name');
     }
-    
+
     const columns = Object.keys(data);
     const values = Object.values(data);
     const placeholders = columns.map((_, index) => `$${index + 1}`).join(', ');
-    
+
     const query = `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders}) RETURNING *`;
-    
+
     return safeQuery(query, values, options);
 }
 
@@ -167,22 +167,22 @@ async function safeUpdate(table, data, conditions, options = {}) {
     if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(table)) {
         throw new Error('Invalid table name');
     }
-    
+
     const updateClause = Object.entries(data)
         .map(([key, value], index) => {
             return `${key} = $${index + 1}`;
         })
         .join(', ');
-    
+
     const whereClause = Object.entries(conditions)
         .map(([key, value], index) => {
             return `${key} = $${index + Object.keys(data).length + 1}`;
         })
         .join(' AND ');
-    
+
     const query = `UPDATE ${table} SET ${updateClause} WHERE ${whereClause} RETURNING *`;
     const params = [...Object.values(data), ...Object.values(conditions)];
-    
+
     return safeQuery(query, params, options);
 }
 
@@ -198,16 +198,16 @@ async function safeDelete(table, conditions, options = {}) {
     if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(table)) {
         throw new Error('Invalid table name');
     }
-    
+
     const whereClause = Object.entries(conditions)
         .map(([key, value], index) => {
             return `${key} = $${index + 1}`;
         })
         .join(' AND ');
-    
+
     const query = `DELETE FROM ${table} WHERE ${whereClause} RETURNING *`;
     const params = Object.values(conditions);
-    
+
     return safeQuery(query, params, options);
 }
 

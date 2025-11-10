@@ -33,16 +33,16 @@ exports.handler = async (event) => {
 
   const sql = getDB();
   const encryption = new TokenEncryption();
-  
+
   try {
     const { code, userId } = JSON.parse(event.body || '{}');
-    
+
     // Input validation
     if (!code || !userId) {
       return {
         statusCode: 400,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           error: 'Missing required parameters',
           details: { code: !!code, userId: !!userId }
         })
@@ -58,14 +58,14 @@ exports.handler = async (event) => {
           'Content-Type': 'application/json',
           ...getRateLimitHeaders(rateLimitResult)
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           error: 'Rate limit exceeded',
           reason: rateLimitResult.reason,
           retryAfter: rateLimitResult.retryAfter
         })
       };
     }
-    
+
     // Exchange code for tokens using circuit breaker
     const tokens = await stravaOAuthCircuit.execute(async () => {
       const response = await fetch('https://www.strava.com/oauth/token', {
@@ -78,25 +78,25 @@ exports.handler = async (event) => {
           grant_type: 'authorization_code'
         })
       });
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Strava API error: ${response.status} - ${errorText}`);
       }
-      
+
       return response.json();
     });
-    
+
     // Validate token immediately
     const isValid = await validateStravaToken(tokens.access_token);
     if (!isValid) {
       throw new Error('Token validation failed');
     }
-    
+
     // Encrypt tokens
     const { encrypted: encryptedAccess, keyVersion } = await encryption.encrypt(tokens.access_token);
     const { encrypted: encryptedRefresh } = await encryption.encrypt(tokens.refresh_token, keyVersion);
-    
+
     // Store with transaction
     await withTransaction(sql, async (tx) => {
       await tx`
@@ -120,7 +120,7 @@ exports.handler = async (event) => {
           last_validated_at = NOW(),
           updated_at = NOW()
       `;
-      
+
       await auditLog(tx, {
         user_id: userId,
         action: 'OAUTH_EXCHANGE',
@@ -134,14 +134,14 @@ exports.handler = async (event) => {
         }
       });
     });
-    
+
     // Log successful OAuth exchange with safe metadata
     logger.oauthExchange({
-      userId: userId,
+      userId,
       athleteId: tokens.athlete?.id,
       scope: tokens.scope
     });
-    
+
     return {
       statusCode: 200,
       headers: {
@@ -156,7 +156,7 @@ exports.handler = async (event) => {
         scope: tokens.scope
       })
     };
-    
+
   } catch (error) {
     // Log error with sanitized data
     logger.error('OAuth exchange failed', {
@@ -164,7 +164,7 @@ exports.handler = async (event) => {
       error_message: error.message,
       circuit_breaker_state: stravaOAuthCircuit.getStatus().state
     });
-    
+
     // Log the error
     try {
       const { userId } = JSON.parse(event.body || '{}');
@@ -183,11 +183,11 @@ exports.handler = async (event) => {
     } catch (auditError) {
       logger.error('Failed to log audit', { error: auditError.message });
     }
-    
+
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         error: 'Token exchange failed',
         retry: stravaOAuthCircuit.getStatus().state !== 'OPEN',
         circuit_state: stravaOAuthCircuit.getStatus().state

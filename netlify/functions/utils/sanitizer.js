@@ -94,7 +94,7 @@ function sanitizeString(str, config) {
     const threats = detectThreats(str);
     if (threats.length > 0) {
         logger.warn('Dangerous patterns detected', {
-            threats: threats,
+            threats,
             input: str.substring(0, 100)
         });
         throw new Error(`Dangerous input detected: ${threats.join(', ')}`);

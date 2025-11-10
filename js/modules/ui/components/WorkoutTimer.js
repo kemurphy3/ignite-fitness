@@ -6,9 +6,9 @@
 class WorkoutTimer extends BaseComponent {
     constructor() {
         super();
-        
+
         this.storageManager = window.StorageManager;
-        
+
         this.sessionTimer = null;
         this.restTimer = null;
         this.sessionStartTime = null;
@@ -17,19 +17,19 @@ class WorkoutTimer extends BaseComponent {
         this.restDuration = null;
         this.restCallback = null;
         this.currentExercise = null;
-        
+
         this.isSessionActive = false;
         this.isRestActive = false;
         this.isPaused = false;
-        
+
         this.sessionElapsed = 0; // in seconds
         this.restRemaining = 0; // in seconds
-        
+
         // Audio settings
         this.audioEnabled = this.loadAudioSetting();
         this.audioVolume = this.loadAudioVolume();
         this.audioContext = null;
-        
+
         // Rest period configurations by exercise type/category
         this.restPeriods = {
             // Compound movements (heavy, full body)
@@ -206,7 +206,7 @@ class WorkoutTimer extends BaseComponent {
         } else {
             // Otherwise treat as duration
             duration = durationOrExercise || this.getDefaultRestPeriod(options);
-            
+
             // If exercise info provided in options
             if (options.exercise) {
                 exerciseInfo = options.exercise;
@@ -275,11 +275,11 @@ class WorkoutTimer extends BaseComponent {
 
         // Get base rest period for category
         const categoryConfig = this.restPeriods[categoryKey] || this.restPeriods.default;
-        
+
         // Try to find specific exercise match
         let restConfig = categoryConfig.default;
         for (const [key, config] of Object.entries(categoryConfig)) {
-            if (exerciseName.includes(key.replace('_', ' ')) || 
+            if (exerciseName.includes(key.replace('_', ' ')) ||
                 exerciseName.includes(key.replace('_', '-'))) {
                 restConfig = config;
                 break;
@@ -287,7 +287,7 @@ class WorkoutTimer extends BaseComponent {
         }
 
         // Adjust based on RPE
-        let recommended = restConfig.recommended;
+        let {recommended} = restConfig;
         if (rpe >= 9) {
             // High intensity - extend rest
             recommended = Math.min(restConfig.max, recommended * 1.2);
@@ -324,7 +324,7 @@ class WorkoutTimer extends BaseComponent {
      */
     isCompoundMovement(exerciseName, category) {
         const compoundKeywords = ['squat', 'deadlift', 'press', 'row', 'pull', 'dip', 'chin', 'pull-up'];
-        return compoundKeywords.some(keyword => 
+        return compoundKeywords.some(keyword =>
             exerciseName.includes(keyword) || category.includes(keyword)
         );
     }
@@ -337,7 +337,7 @@ class WorkoutTimer extends BaseComponent {
      */
     isPowerMovement(exerciseName, category) {
         const powerKeywords = ['clean', 'snatch', 'jerk', 'power', 'olympic'];
-        return powerKeywords.some(keyword => 
+        return powerKeywords.some(keyword =>
             exerciseName.includes(keyword) || category.includes(keyword)
         );
     }
@@ -350,7 +350,7 @@ class WorkoutTimer extends BaseComponent {
      */
     isIsolationMovement(exerciseName, category) {
         const isolationKeywords = ['curl', 'extension', 'raise', 'fly', 'shrug'];
-        return isolationKeywords.some(keyword => 
+        return isolationKeywords.some(keyword =>
             exerciseName.includes(keyword) || category.includes(keyword)
         );
     }
@@ -363,7 +363,7 @@ class WorkoutTimer extends BaseComponent {
      */
     updateRestGuidance(exercise, duration, options) {
         const guidanceEl = document.getElementById('rest-guidance');
-        if (!guidanceEl) return;
+        if (!guidanceEl) {return;}
 
         if (exercise) {
             const exerciseName = exercise.name || exercise.exercise || 'Exercise';
@@ -424,11 +424,11 @@ class WorkoutTimer extends BaseComponent {
         const restDisplay = document.getElementById('rest-timer-display');
         if (restDisplay) {
             restDisplay.textContent = this.formatDuration(this.restRemaining);
-            
+
             // Update visual indicator
             const percentage = (this.restRemaining / this.restDuration) * 100;
             restDisplay.style.setProperty('--rest-percentage', `${percentage}%`);
-            
+
             // Add warning color when time is low
             if (this.restRemaining <= 10) {
                 restDisplay.classList.add('warning');
@@ -482,7 +482,7 @@ class WorkoutTimer extends BaseComponent {
             animation: pulse 0.5s ease-in-out;
         `;
         notification.textContent = 'Rest Complete! Ready for next set.';
-        
+
         document.body.appendChild(notification);
 
         // Remove after 2 seconds
@@ -872,11 +872,11 @@ class WorkoutTimer extends BaseComponent {
     reset() {
         this.stopSession();
         this.stopRest();
-        
+
         this.sessionStartTime = null;
         this.sessionPausedTime = null;
         this.restStartTime = null;
-        
+
         this.sessionElapsed = 0;
         this.restRemaining = 0;
     }

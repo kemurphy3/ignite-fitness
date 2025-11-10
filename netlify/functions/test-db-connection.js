@@ -17,13 +17,13 @@ const securityHeaders = {
 
 // JWT verification with admin role check
 function verifyAdminJWT(headers) {
-    const authHeader = headers['authorization'];
+    const authHeader = headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return { error: 'MISSING_TOKEN', statusCode: 401 };
     }
-    
+
     const token = authHeader.substring(7);
-    
+
     try {
         const jwtSecret = process.env.JWT_SECRET || 'your-super-secure-jwt-secret-at-least-32-characters';
         const decoded = jwt.verify(token, jwtSecret, {
@@ -31,26 +31,26 @@ function verifyAdminJWT(headers) {
             maxAge: '24h',
             clockTolerance: 30
         });
-        
+
         if (!decoded.sub || typeof decoded.sub !== 'string') {
             return { error: 'INVALID_SUBJECT', statusCode: 401 };
         }
-        
+
         if (!decoded.exp || typeof decoded.exp !== 'number') {
             return { error: 'INVALID_EXPIRATION', statusCode: 401 };
         }
-        
+
         // Check admin role from JWT claims
         if (decoded.role !== 'admin') {
             return { error: 'INSUFFICIENT_PERMISSIONS', statusCode: 403 };
         }
-        
-        return { 
-            success: true, 
-            userId: decoded.sub, 
-            role: decoded.role 
+
+        return {
+            success: true,
+            userId: decoded.sub,
+            role: decoded.role
         };
-        
+
     } catch (error) {
         if (error.name === 'TokenExpiredError') {
             return { error: 'TOKEN_EXPIRED', statusCode: 401 };
@@ -76,7 +76,7 @@ const okJson = (data) => ({
 const unauthorized = (message = 'Unauthorized - Valid JWT token required') => ({
     statusCode: 401,
     headers: securityHeaders,
-    body: JSON.stringify({ 
+    body: JSON.stringify({
         error: 'UNAUTHORIZED',
         message,
         code: 'AUTH_REQUIRED'
@@ -86,7 +86,7 @@ const unauthorized = (message = 'Unauthorized - Valid JWT token required') => ({
 const forbidden = (message = 'Forbidden - Admin role required') => ({
     statusCode: 403,
     headers: securityHeaders,
-    body: JSON.stringify({ 
+    body: JSON.stringify({
         error: 'FORBIDDEN',
         message,
         code: 'ADMIN_REQUIRED'
@@ -96,7 +96,7 @@ const forbidden = (message = 'Forbidden - Admin role required') => ({
 const methodNotAllowed = () => ({
     statusCode: 405,
     headers: securityHeaders,
-    body: JSON.stringify({ 
+    body: JSON.stringify({
         error: 'METHOD_NOT_ALLOWED',
         message: 'Only GET requests are allowed',
         code: 'INVALID_METHOD'
@@ -118,7 +118,7 @@ exports.handler = async (event) => {
     if (event.httpMethod === 'OPTIONS') {
         return okPreflight();
     }
-    
+
     // Only allow GET requests
     if (event.httpMethod !== 'GET') {
         return methodNotAllowed();
@@ -135,7 +135,7 @@ exports.handler = async (event) => {
         }
         // Test basic connection
         const result = await sql`SELECT NOW() as current_time, version() as postgres_version`;
-        
+
         // Test if tables exist
         const tables = await sql`
             SELECT table_name 
@@ -143,10 +143,10 @@ exports.handler = async (event) => {
             WHERE table_schema = 'public'
             ORDER BY table_name
         `;
-        
+
         // Test user count
         const userCount = await sql`SELECT COUNT(*) as user_count FROM users`;
-        
+
         return okJson({
             success: true,
             message: 'Database connection successful',
@@ -169,12 +169,12 @@ exports.handler = async (event) => {
         return {
             statusCode: 500,
             headers: securityHeaders,
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 success: false,
                 error: 'INTERNAL_SERVER_ERROR',
                 message: 'Database connection failed',
                 code: 'DATABASE_ERROR',
-                details: error.message 
+                details: error.message
             })
         };
     }

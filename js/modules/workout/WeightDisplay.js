@@ -9,7 +9,7 @@ class WeightDisplay {
         this.userPreferences = null;
         this.mode = 'us'; // Default to US
         this.availablePlates = null;
-        
+
         this.loadUserPreferences();
     }
 
@@ -20,7 +20,7 @@ class WeightDisplay {
         try {
             const authManager = window.AuthManager;
             const userId = authManager?.getCurrentUsername();
-            
+
             if (userId) {
                 const prefs = await this.storageManager.getPreferences(userId);
                 if (prefs) {
@@ -29,7 +29,7 @@ class WeightDisplay {
                     this.availablePlates = prefs.availablePlates || this.getDefaultPlates();
                 }
             }
-            
+
             // Set defaults if no preferences
             if (!this.availablePlates) {
                 this.availablePlates = this.getDefaultPlates();
@@ -66,7 +66,7 @@ class WeightDisplay {
                 unit: 'kg'
             }
         };
-        
+
         return configs[this.mode] || configs.us;
     }
 
@@ -77,11 +77,11 @@ class WeightDisplay {
      */
     calculateLoad(targetWeight) {
         const config = this.getConfig();
-        const barWeight = config.barWeight;
-        
+        const {barWeight} = config;
+
         // Calculate weight needed per side
         const weightPerSide = (targetWeight - barWeight) / 2;
-        
+
         if (weightPerSide <= 0) {
             return {
                 totalWeight: barWeight,
@@ -136,7 +136,7 @@ class WeightDisplay {
 
         for (const plateWeight of sortedPlates) {
             const count = Math.floor(remainingWeight / plateWeight);
-            
+
             if (count > 0) {
                 for (let i = 0; i < count; i++) {
                     plates.push({
@@ -147,7 +147,7 @@ class WeightDisplay {
                 }
             }
 
-            if (remainingWeight < 0.1) break;
+            if (remainingWeight < 0.1) {break;}
         }
 
         // Round to nearest plate if very close
@@ -212,10 +212,10 @@ class WeightDisplay {
     generateFallback(targetWeight, config) {
         const smallestPlate = this.availablePlates[this.availablePlates.length - 1];
         const smallerTarget = targetWeight - smallestPlate;
-        
+
         const { plates } = this.calculatePlateCombination(smallerTarget, this.availablePlates);
         const fallbackTotal = config.barWeight + (plates.reduce((sum, p) => sum + p.weight * 2, 0));
-        
+
         return {
             totalWeight: fallbackTotal,
             instruction: `If missing ${smallestPlate} ${config.unit} plates, use ${Math.floor(fallbackTotal)} ${config.unit} and add 2-3 reps per set`,
@@ -236,7 +236,7 @@ class WeightDisplay {
         } = options;
 
         const loadResult = this.calculateLoad(targetWeight);
-        
+
         if (!showInstructions) {
             return `${loadResult.totalWeight} ${loadResult.unit}`;
         }
@@ -268,7 +268,7 @@ class WeightDisplay {
         try {
             const authManager = window.AuthManager;
             const userId = authManager?.getCurrentUsername();
-            
+
             if (!userId) {
                 throw new Error('User not logged in');
             }
@@ -284,7 +284,7 @@ class WeightDisplay {
             this.userPreferences = updatedPrefs;
             this.mode = updatedPrefs.weightUnit;
             this.availablePlates = updatedPrefs.availablePlates;
-            
+
             this.logger.debug('Equipment preferences updated', updatedPrefs);
         } catch (error) {
             this.logger.error('Failed to update preferences', error);
@@ -300,18 +300,18 @@ class WeightDisplay {
      * @returns {number} Converted weight
      */
     convertWeight(weight, from, to) {
-        if (from === to) return weight;
-        
+        if (from === to) {return weight;}
+
         const conversions = {
             'lb_kg': 0.453592,
             'kg_lb': 2.20462
         };
-        
+
         const key = `${from}_${to}`;
         if (conversions[key]) {
             return parseFloat((weight * conversions[key]).toFixed(2));
         }
-        
+
         return weight;
     }
 

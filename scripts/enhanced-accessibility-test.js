@@ -86,14 +86,14 @@ class EnhancedAccessibilityTester {
      */
     async runTest(testName, testData) {
         console.log(`Testing: ${testName}`);
-        
+
         this.results.totalTests++;
-        
+
         if (testData.violations.length === 0) {
             this.results.passedTests++;
             console.log(`✅ PASSED: ${testName}`);
             console.log(`   Score: ${testData.score}/100`);
-            
+
             if (testData.passes.length > 0) {
                 console.log('   Passes:');
                 testData.passes.forEach(pass => {
@@ -104,14 +104,14 @@ class EnhancedAccessibilityTester {
             this.results.failedTests++;
             console.log(`❌ FAILED: ${testName}`);
             console.log(`   Score: ${testData.score}/100`);
-            
+
             console.log('   Violations:');
             testData.violations.forEach(violation => {
                 console.log(`     ✗ ${violation}`);
                 this.results.violations.push(violation);
             });
         }
-        
+
         console.log('');
     }
 
@@ -207,7 +207,7 @@ class EnhancedAccessibilityTester {
     validateHighContrast() {
         const hasHighContrast = this.checkFileContains('styles/design-tokens.css', 'prefers-contrast: high');
         const hasForcedColors = this.checkFileContains('styles/design-tokens.css', 'forced-colors: active');
-        
+
         return {
             passed: hasHighContrast && hasForcedColors,
             status: (hasHighContrast && hasForcedColors) ? 'PASS' : 'FAIL',
@@ -221,7 +221,7 @@ class EnhancedAccessibilityTester {
     validateFocusTrapping() {
         const hasFocusTrap = this.checkFileContains('js/modules/accessibility/FocusTrapManager.js', 'trapFocus');
         const hasEscapeKey = this.checkFileContains('js/modules/accessibility/FocusTrapManager.js', 'Escape');
-        
+
         return {
             passed: hasFocusTrap && hasEscapeKey,
             status: (hasFocusTrap && hasEscapeKey) ? 'PASS' : 'FAIL',
@@ -235,7 +235,7 @@ class EnhancedAccessibilityTester {
     validateFormValidation() {
         const hasFormValidation = this.checkFileContains('js/modules/accessibility/FormValidationManager.js', 'validateField');
         const hasErrorAnnouncements = this.checkFileContains('js/modules/accessibility/FormValidationManager.js', 'announceFieldErrors');
-        
+
         return {
             passed: hasFormValidation && hasErrorAnnouncements,
             status: (hasFormValidation && hasErrorAnnouncements) ? 'PASS' : 'FAIL',
@@ -249,7 +249,7 @@ class EnhancedAccessibilityTester {
     validateLiveRegions() {
         const hasLiveRegions = this.checkFileContains('js/modules/accessibility/LiveRegionManager.js', 'aria-live');
         const hasAnnouncements = this.checkFileContains('js/modules/accessibility/LiveRegionManager.js', 'announce');
-        
+
         return {
             passed: hasLiveRegions && hasAnnouncements,
             status: (hasLiveRegions && hasAnnouncements) ? 'PASS' : 'FAIL',
@@ -263,7 +263,7 @@ class EnhancedAccessibilityTester {
     validateNonTextContrast() {
         const hasFocusIndicators = this.checkFileContains('styles/design-tokens.css', 'focus-outline');
         const hasBorderContrast = this.checkFileContains('styles/design-tokens.css', 'border-width');
-        
+
         return {
             passed: hasFocusIndicators && hasBorderContrast,
             status: (hasFocusIndicators && hasBorderContrast) ? 'PASS' : 'FAIL',
@@ -290,7 +290,7 @@ class EnhancedAccessibilityTester {
     generateTestingChecklist() {
         console.log('\n📋 Enhanced Accessibility Testing Checklist');
         console.log('==========================================');
-        
+
         const checklist = [
             'Live Region Announcements',
             '  □ Timer updates announced to screen readers',
@@ -358,12 +358,12 @@ class EnhancedAccessibilityTester {
 // CLI interface
 if (require.main === module) {
     const tester = new EnhancedAccessibilityTester();
-    
+
     tester.runTests()
         .then(() => {
             tester.validateEnhancedAccessibilityCriteria();
             tester.generateTestingChecklist();
-            
+
             // Exit with appropriate code
             if (tester.results.score >= 95) {
                 console.log('\n🎉 All enhanced accessibility tests passed!');

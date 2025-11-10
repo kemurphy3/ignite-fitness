@@ -72,7 +72,7 @@ class ErrorAlert {
         } = options;
 
         const alertId = `alert_${expertType}_${Date.now()}`;
-        
+
         // In test mode or when container is not available, just track the alert
         if (!this.container) {
             this.alerts.set(alertId, {
@@ -82,7 +82,7 @@ class ErrorAlert {
                 severity
             });
 
-            this.logger.info(`Expert failure alert shown (test mode)`, {
+            this.logger.info('Expert failure alert shown (test mode)', {
                 expertType,
                 severity,
                 alertId
@@ -90,7 +90,7 @@ class ErrorAlert {
 
             return alertId;
         }
-        
+
         const alertElement = this.createAlertElement({
             id: alertId,
             expertType,
@@ -114,7 +114,7 @@ class ErrorAlert {
             }, duration);
         }
 
-        this.logger.info(`Expert failure alert shown`, {
+        this.logger.info('Expert failure alert shown', {
             expertType,
             severity,
             alertId
@@ -130,7 +130,7 @@ class ErrorAlert {
      */
     createAlertElement(options) {
         const { id, expertType, errorMessage, fallbackMessage, severity } = options;
-        
+
         const alert = document.createElement('div');
         alert.id = id;
         alert.className = `error-alert error-alert--${severity}`;
@@ -258,22 +258,22 @@ class ErrorAlert {
      */
     dismissAlert(alertId) {
         const alert = this.alerts.get(alertId);
-        if (!alert) return;
+        if (!alert) {return;}
 
-        const element = alert.element;
+        const {element} = alert;
         if (element && element.parentNode) {
             element.style.animation = 'slideOutRight 0.3s ease-in';
-            
+
             setTimeout(() => {
                 if (element.parentNode) {
                     element.parentNode.removeChild(element);
                 }
             }, 300);
         }
-        
+
         this.alerts.delete(alertId);
 
-        this.logger.info(`Alert dismissed`, { alertId });
+        this.logger.info('Alert dismissed', { alertId });
     }
 
     /**

@@ -1,6 +1,6 @@
 /**
  * Error Handler Utility
- * 
+ *
  * Provides secure error handling that:
  * - Strips sensitive data from errors
  * - Generates unique error IDs for debugging
@@ -69,28 +69,28 @@ function sanitizeErrorMessage(message) {
     if (!message || typeof message !== 'string') {
         return 'An error occurred';
     }
-    
+
     let sanitized = message;
-    
+
     // Remove sensitive patterns
     SENSITIVE_PATTERNS.forEach(pattern => {
         sanitized = sanitized.replace(pattern, '[REDACTED]');
     });
-    
+
     // Remove stack traces
     sanitized = sanitized.replace(/\s+at\s+.*$/gm, '');
-    
+
     // Remove file paths
     sanitized = sanitized.replace(/\/[^\s]+/g, '[PATH]');
-    
+
     // Remove line numbers
     sanitized = sanitized.replace(/:\d+:\d+/g, ':[LINE]');
-    
+
     // Truncate if too long
     if (sanitized.length > 200) {
-        sanitized = sanitized.substring(0, 200) + '...';
+        sanitized = `${sanitized.substring(0, 200) }...`;
     }
-    
+
     return sanitized || 'An error occurred';
 }
 
@@ -103,17 +103,17 @@ function shouldSanitizeError(error) {
     if (!error || typeof error !== 'object') {
         return true;
     }
-    
+
     // Always sanitize generic errors
     if (SANITIZE_ERROR_TYPES.includes(error.constructor.name)) {
         return true;
     }
-    
+
     // Sanitize if message contains sensitive patterns
     if (error.message) {
         return SENSITIVE_PATTERNS.some(pattern => pattern.test(error.message));
     }
-    
+
     return true;
 }
 
@@ -127,7 +127,7 @@ function shouldSanitizeError(error) {
  */
 function createSafeErrorResponse(error, errorId, statusCode = 500, customMessage = null) {
     const safeMessage = customMessage || sanitizeErrorMessage(error.message);
-    
+
     return {
         statusCode,
         headers: {
@@ -163,7 +163,7 @@ function logDetailedError(error, errorId, context = {}) {
             functionName: context.functionName || 'unknown'
         }
     };
-    
+
     console.error('Detailed Error Log:', JSON.stringify(logData, null, 2));
 }
 
@@ -180,16 +180,16 @@ function handleError(error, options = {}) {
         context = {},
         functionName = 'unknown'
     } = options;
-    
+
     // Generate unique error ID
     const errorId = generateErrorId();
-    
+
     // Log detailed error server-side
     logDetailedError(error, errorId, {
         ...context,
         functionName
     });
-    
+
     // Create safe response for client
     return createSafeErrorResponse(error, errorId, statusCode, customMessage);
 }
@@ -224,44 +224,44 @@ function withErrorHandling(fn, options = {}) {
 const ErrorResponses = {
     // Authentication errors
     unauthorized: (errorId) => createSafeErrorResponse(
-        new Error('Unauthorized'), 
-        errorId, 
-        401, 
+        new Error('Unauthorized'),
+        errorId,
+        401,
         'Authentication required'
     ),
-    
+
     forbidden: (errorId) => createSafeErrorResponse(
-        new Error('Forbidden'), 
-        errorId, 
-        403, 
+        new Error('Forbidden'),
+        errorId,
+        403,
         'Access denied'
     ),
-    
+
     notFound: (errorId) => createSafeErrorResponse(
-        new Error('Not Found'), 
-        errorId, 
-        404, 
+        new Error('Not Found'),
+        errorId,
+        404,
         'Resource not found'
     ),
-    
+
     validationError: (errorId, message = 'Invalid input') => createSafeErrorResponse(
-        new Error('Validation Error'), 
-        errorId, 
-        400, 
+        new Error('Validation Error'),
+        errorId,
+        400,
         message
     ),
-    
+
     serviceUnavailable: (errorId) => createSafeErrorResponse(
-        new Error('Service Unavailable'), 
-        errorId, 
-        503, 
+        new Error('Service Unavailable'),
+        errorId,
+        503,
         'Service temporarily unavailable'
     ),
-    
+
     rateLimited: (errorId) => createSafeErrorResponse(
-        new Error('Rate Limited'), 
-        errorId, 
-        429, 
+        new Error('Rate Limited'),
+        errorId,
+        429,
         'Too many requests'
     )
 };
@@ -274,11 +274,11 @@ const ErrorResponses = {
 function validateErrorResponse(response) {
     // Ensure no sensitive data in response
     const body = typeof response.body === 'string' ? JSON.parse(response.body) : response.body;
-    
+
     // Check for sensitive patterns in response
     const bodyStr = JSON.stringify(body);
     const hasSensitiveData = SENSITIVE_PATTERNS.some(pattern => pattern.test(bodyStr));
-    
+
     if (hasSensitiveData) {
         console.warn('Sensitive data detected in error response, sanitizing...');
         return createSafeErrorResponse(
@@ -287,7 +287,7 @@ function validateErrorResponse(response) {
             response.statusCode || 500
         );
     }
-    
+
     return response;
 }
 

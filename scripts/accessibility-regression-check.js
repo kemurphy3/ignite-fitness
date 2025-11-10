@@ -27,23 +27,23 @@ class AccessibilityRegressionChecker {
         try {
             // Load current results
             await this.loadCurrentResults();
-            
+
             // Load baseline results
             await this.loadBaselineResults();
-            
+
             // Compare results
             this.compareResults();
-            
+
             // Generate report
             this.generateReport();
-            
+
             // Save critical issues if any
             if (this.regressions.length > 0) {
                 this.saveCriticalIssues();
             }
-            
+
             this.logger.log('\n✅ Accessibility regression check completed');
-            
+
         } catch (error) {
             this.logger.error('❌ Error during accessibility regression check:', error.message);
             process.exit(1);
@@ -119,10 +119,10 @@ class AccessibilityRegressionChecker {
     compareResults() {
         // Compare axe-core results
         this.compareAxeResults();
-        
+
         // Compare Pa11y results
         this.comparePa11yResults();
-        
+
         // Compare Lighthouse results
         this.compareLighthouseResults();
     }
@@ -133,26 +133,26 @@ class AccessibilityRegressionChecker {
     compareAxeResults() {
         const current = this.currentResults.axe_results;
         const baseline = this.baselineResults.axe_results;
-        
-        if (!current || !baseline) return;
-        
+
+        if (!current || !baseline) {return;}
+
         const currentViolations = current.violations || [];
         const baselineViolations = baseline.violations || [];
-        
+
         // Check for new violations
-        const newViolations = currentViolations.filter(currentViolation => 
-            !baselineViolations.some(baselineViolation => 
+        const newViolations = currentViolations.filter(currentViolation =>
+            !baselineViolations.some(baselineViolation =>
                 this.violationsEqual(currentViolation, baselineViolation)
             )
         );
-        
+
         // Check for resolved violations
-        const resolvedViolations = baselineViolations.filter(baselineViolation => 
-            !currentViolations.some(currentViolation => 
+        const resolvedViolations = baselineViolations.filter(baselineViolation =>
+            !currentViolations.some(currentViolation =>
                 this.violationsEqual(currentViolation, baselineViolation)
             )
         );
-        
+
         // Record regressions
         newViolations.forEach(violation => {
             this.regressions.push({
@@ -165,7 +165,7 @@ class AccessibilityRegressionChecker {
                 nodes: violation.nodes?.length || 0
             });
         });
-        
+
         // Record improvements
         resolvedViolations.forEach(violation => {
             this.improvements.push({
@@ -183,26 +183,26 @@ class AccessibilityRegressionChecker {
     comparePa11yResults() {
         const current = this.currentResults.pa11y_results;
         const baseline = this.baselineResults.pa11y_results;
-        
-        if (!current || !baseline) return;
-        
+
+        if (!current || !baseline) {return;}
+
         const currentIssues = Array.isArray(current) ? current : [];
         const baselineIssues = Array.isArray(baseline) ? baseline : [];
-        
+
         // Check for new issues
-        const newIssues = currentIssues.filter(currentIssue => 
-            !baselineIssues.some(baselineIssue => 
+        const newIssues = currentIssues.filter(currentIssue =>
+            !baselineIssues.some(baselineIssue =>
                 this.issuesEqual(currentIssue, baselineIssue)
             )
         );
-        
+
         // Check for resolved issues
-        const resolvedIssues = baselineIssues.filter(baselineIssue => 
-            !currentIssues.some(currentIssue => 
+        const resolvedIssues = baselineIssues.filter(baselineIssue =>
+            !currentIssues.some(currentIssue =>
                 this.issuesEqual(currentIssue, baselineIssue)
             )
         );
-        
+
         // Record regressions
         newIssues.forEach(issue => {
             this.regressions.push({
@@ -214,7 +214,7 @@ class AccessibilityRegressionChecker {
                 context: issue.context
             });
         });
-        
+
         // Record improvements
         resolvedIssues.forEach(issue => {
             this.improvements.push({
@@ -232,14 +232,14 @@ class AccessibilityRegressionChecker {
     compareLighthouseResults() {
         const current = this.currentResults.lighthouse_results;
         const baseline = this.baselineResults.lighthouse_results;
-        
-        if (!current || !baseline) return;
-        
+
+        if (!current || !baseline) {return;}
+
         const currentScore = current.categories?.accessibility?.score || 0;
         const baselineScore = baseline.categories?.accessibility?.score || 0;
-        
+
         const scoreDifference = currentScore - baselineScore;
-        
+
         if (scoreDifference < -0.1) { // 10% decrease
             this.regressions.push({
                 tool: 'lighthouse',
@@ -264,7 +264,7 @@ class AccessibilityRegressionChecker {
      * Check if two violations are equal
      */
     violationsEqual(violation1, violation2) {
-        return violation1.id === violation2.id && 
+        return violation1.id === violation2.id &&
                violation1.description === violation2.description &&
                violation1.impact === violation2.impact;
     }
@@ -273,7 +273,7 @@ class AccessibilityRegressionChecker {
      * Check if two issues are equal
      */
     issuesEqual(issue1, issue2) {
-        return issue1.code === issue2.code && 
+        return issue1.code === issue2.code &&
                issue1.message === issue2.message &&
                issue1.context === issue2.context;
     }
@@ -282,7 +282,7 @@ class AccessibilityRegressionChecker {
      * Get violation severity
      */
     getViolationSeverity(violation) {
-        const impact = violation.impact;
+        const {impact} = violation;
         switch (impact) {
             case 'critical':
             case 'serious':
@@ -300,7 +300,7 @@ class AccessibilityRegressionChecker {
      * Get issue severity
      */
     getIssueSeverity(issue) {
-        const code = issue.code;
+        const {code} = issue;
         if (code.includes('WCAG2AA')) {
             return 'high';
         } else if (code.includes('WCAG2A')) {
@@ -316,15 +316,15 @@ class AccessibilityRegressionChecker {
     generateReport() {
         this.logger.log('\n📊 Accessibility Regression Report');
         this.logger.log('================================');
-        
+
         // Summary
-        this.logger.log(`\n📈 Summary:`);
+        this.logger.log('\n📈 Summary:');
         this.logger.log(`- Regressions: ${this.regressions.length}`);
         this.logger.log(`- Improvements: ${this.improvements.length}`);
-        
+
         // Regressions
         if (this.regressions.length > 0) {
-            this.logger.log(`\n🚨 Regressions Found:`);
+            this.logger.log('\n🚨 Regressions Found:');
             this.regressions.forEach((regression, index) => {
                 this.logger.log(`${index + 1}. [${regression.tool}] ${regression.type}`);
                 this.logger.log(`   Severity: ${regression.severity}`);
@@ -340,10 +340,10 @@ class AccessibilityRegressionChecker {
                 this.logger.log('');
             });
         }
-        
+
         // Improvements
         if (this.improvements.length > 0) {
-            this.logger.log(`\n✅ Improvements Found:`);
+            this.logger.log('\n✅ Improvements Found:');
             this.improvements.forEach((improvement, index) => {
                 this.logger.log(`${index + 1}. [${improvement.tool}] ${improvement.type}`);
                 if (improvement.description) {
@@ -355,9 +355,9 @@ class AccessibilityRegressionChecker {
                 this.logger.log('');
             });
         }
-        
+
         // Recommendations
-        this.logger.log(`\n📋 Recommendations:`);
+        this.logger.log('\n📋 Recommendations:');
         if (this.regressions.length > 0) {
             this.logger.log('- Fix critical accessibility regressions');
             this.logger.log('- Review new violations and issues');
@@ -367,7 +367,7 @@ class AccessibilityRegressionChecker {
             this.logger.log('- No regressions found');
             this.logger.log('- Continue monitoring accessibility');
         }
-        
+
         if (this.improvements.length > 0) {
             this.logger.log('- Great job on accessibility improvements!');
         }
@@ -377,10 +377,10 @@ class AccessibilityRegressionChecker {
      * Save critical accessibility issues
      */
     saveCriticalIssues() {
-        const criticalIssues = this.regressions.filter(regression => 
+        const criticalIssues = this.regressions.filter(regression =>
             regression.severity === 'high'
         );
-        
+
         if (criticalIssues.length > 0) {
             const criticalIssuesFile = 'critical-accessibility-issues.json';
             try {
@@ -396,7 +396,7 @@ class AccessibilityRegressionChecker {
 // CLI interface
 if (require.main === module) {
     const checker = new AccessibilityRegressionChecker();
-    
+
     checker.runCheck()
         .then(() => {
             // Exit with error code if critical regressions found

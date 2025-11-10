@@ -16,7 +16,7 @@ class BeginnerUI {
         </div>
         `;
     }
-    
+
     static createQuickStartGuide() {
         return `
         <div class="quick-start-guide" style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
@@ -38,7 +38,7 @@ class BeginnerUI {
         </div>
         `;
     }
-    
+
     static createProgressCard(title, value, icon, color = '#4299e1') {
         return `
         <div class="progress-card" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 15px;">
@@ -50,7 +50,7 @@ class BeginnerUI {
         </div>
         `;
     }
-    
+
     static createSimpleWorkoutCard(workout) {
         return `
         <div class="workout-card" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 15px;">

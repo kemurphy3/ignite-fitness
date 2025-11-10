@@ -31,24 +31,24 @@ class AccessibilityReportGenerator {
         try {
             // Load test results
             await this.loadTestResults();
-            
+
             // Analyze compliance
             this.analyzeCompliance();
-            
+
             // Generate recommendations
             this.generateRecommendations();
-            
+
             // Generate markdown report
             this.generateMarkdownReport();
-            
+
             // Generate compliance report
             this.generateComplianceReport();
-            
+
             // Generate testing guide
             this.generateTestingGuide();
-            
+
             this.logger.log('✅ Accessibility report generated successfully');
-            
+
         } catch (error) {
             this.logger.error('❌ Error generating accessibility report:', error.message);
             process.exit(1);
@@ -124,10 +124,10 @@ class AccessibilityReportGenerator {
         const passes = axeResults.passes || [];
 
         // Calculate WCAG 2.1 AA compliance
-        const wcag21AAViolations = violations.filter(v => 
+        const wcag21AAViolations = violations.filter(v =>
             v.tags && v.tags.some(tag => tag.includes('wcag2a'))
         );
-        const wcag21AAPasses = passes.filter(p => 
+        const wcag21AAPasses = passes.filter(p =>
             p.tags && p.tags.some(tag => tag.includes('wcag2a'))
         );
 
@@ -142,10 +142,10 @@ class AccessibilityReportGenerator {
         }));
 
         // Calculate WCAG 2.1 AAA compliance
-        const wcag21AAAViolations = violations.filter(v => 
+        const wcag21AAAViolations = violations.filter(v =>
             v.tags && v.tags.some(tag => tag.includes('wcag2aaa'))
         );
-        const wcag21AAAPasses = passes.filter(p => 
+        const wcag21AAAPasses = passes.filter(p =>
             p.tags && p.tags.some(tag => tag.includes('wcag2aaa'))
         );
 
@@ -168,7 +168,7 @@ class AccessibilityReportGenerator {
         const issues = Array.isArray(pa11yResults) ? pa11yResults : [];
 
         // Calculate Section 508 compliance
-        const section508Issues = issues.filter(issue => 
+        const section508Issues = issues.filter(issue =>
             issue.code && issue.code.includes('Section508')
         );
 
@@ -200,10 +200,10 @@ class AccessibilityReportGenerator {
      * Get compliance status
      */
     getComplianceStatus(score) {
-        if (score >= 95) return 'excellent';
-        if (score >= 85) return 'good';
-        if (score >= 70) return 'fair';
-        if (score >= 50) return 'poor';
+        if (score >= 95) {return 'excellent';}
+        if (score >= 85) {return 'good';}
+        if (score >= 70) {return 'fair';}
+        if (score >= 50) {return 'poor';}
         return 'critical';
     }
 
@@ -255,7 +255,7 @@ class AccessibilityReportGenerator {
      */
     generateAxeRecommendations(recommendations) {
         const violations = this.reportData.axeresults.violations || [];
-        
+
         violations.forEach(violation => {
             recommendations.push({
                 category: 'axe-core',
@@ -274,7 +274,7 @@ class AccessibilityReportGenerator {
      */
     generatePa11yRecommendations(recommendations) {
         const issues = Array.isArray(this.reportData.pa11yresults) ? this.reportData.pa11yresults : [];
-        
+
         issues.forEach(issue => {
             recommendations.push({
                 category: 'pa11y',
@@ -308,8 +308,8 @@ class AccessibilityReportGenerator {
      * Get priority from code
      */
     getPriorityFromCode(code) {
-        if (code.includes('WCAG2AA')) return 'high';
-        if (code.includes('WCAG2A')) return 'medium';
+        if (code.includes('WCAG2AA')) {return 'high';}
+        if (code.includes('WCAG2A')) {return 'medium';}
         return 'low';
     }
 
@@ -319,13 +319,13 @@ class AccessibilityReportGenerator {
     generateMarkdownReport() {
         const report = this.generateMarkdownContent();
         const reportPath = path.join(process.cwd(), 'docs', 'ACCESSIBILITY_REPORT.md');
-        
+
         // Ensure docs directory exists
         const docsDir = path.dirname(reportPath);
         if (!fs.existsSync(docsDir)) {
             fs.mkdirSync(docsDir, { recursive: true });
         }
-        
+
         fs.writeFileSync(reportPath, report);
         this.logger.log(`📄 Accessibility report saved to: ${reportPath}`);
     }
@@ -334,8 +334,8 @@ class AccessibilityReportGenerator {
      * Generate markdown content
      */
     generateMarkdownContent() {
-        const compliance = this.reportData.compliance;
-        
+        const {compliance} = this.reportData;
+
         return `# 🔍 Accessibility Report
 
 **Generated**: ${new Date(this.reportData.timestamp).toLocaleString()}  
@@ -395,7 +395,7 @@ ${this.generateRecommendationsSection()}
      */
     generateAxeResultsSection() {
         const axeResults = this.reportData.axeresults;
-        if (!axeResults) return 'No axe-core results available.';
+        if (!axeResults) {return 'No axe-core results available.';}
 
         const violations = axeResults.violations || [];
         const passes = axeResults.passes || [];
@@ -418,7 +418,7 @@ ${violations.map(v => `- **${v.id}**: ${v.description} (${v.impact})`).join('\n'
      */
     generatePa11yResultsSection() {
         const pa11yResults = this.reportData.pa11yresults;
-        if (!pa11yResults) return 'No Pa11y results available.';
+        if (!pa11yResults) {return 'No Pa11y results available.';}
 
         const issues = Array.isArray(pa11yResults) ? pa11yResults : [];
 
@@ -437,7 +437,7 @@ ${issues.map(issue => `- **${issue.code}**: ${issue.message}`).join('\n')}
      */
     generateLighthouseResultsSection() {
         const lighthouseResults = this.reportData.lighthouseresults;
-        if (!lighthouseResults) return 'No Lighthouse results available.';
+        if (!lighthouseResults) {return 'No Lighthouse results available.';}
 
         const accessibilityScore = lighthouseResults.categories?.accessibility?.score || 0;
         const score = Math.round(accessibilityScore * 100);
@@ -453,7 +453,7 @@ ${issues.map(issue => `- **${issue.code}**: ${issue.message}`).join('\n')}
      */
     generateIssuesSection() {
         const issues = [];
-        
+
         // Add axe-core violations
         if (this.reportData.axeresults?.violations) {
             this.reportData.axeresults.violations.forEach(violation => {
@@ -495,7 +495,7 @@ ${index + 1}. **${issue.tool}** - ${issue.severity.toUpperCase()}
      */
     generateRecommendationsSection() {
         const recommendations = this.reportData.recommendations || [];
-        
+
         if (recommendations.length === 0) {
             return 'No specific recommendations at this time.';
         }
@@ -508,17 +508,17 @@ ${index + 1}. **${issue.tool}** - ${issue.severity.toUpperCase()}
 
         if (highPriority.length > 0) {
             section += '### High Priority\n';
-            section += highPriority.map(r => `- **${r.title}**: ${r.description}`).join('\n') + '\n\n';
+            section += `${highPriority.map(r => `- **${r.title}**: ${r.description}`).join('\n') }\n\n`;
         }
 
         if (mediumPriority.length > 0) {
             section += '### Medium Priority\n';
-            section += mediumPriority.map(r => `- **${r.title}**: ${r.description}`).join('\n') + '\n\n';
+            section += `${mediumPriority.map(r => `- **${r.title}**: ${r.description}`).join('\n') }\n\n`;
         }
 
         if (lowPriority.length > 0) {
             section += '### Low Priority\n';
-            section += lowPriority.map(r => `- **${r.title}**: ${r.description}`).join('\n') + '\n\n';
+            section += `${lowPriority.map(r => `- **${r.title}**: ${r.description}`).join('\n') }\n\n`;
         }
 
         return section;
@@ -528,9 +528,9 @@ ${index + 1}. **${issue.tool}** - ${issue.severity.toUpperCase()}
      * Generate compliance report
      */
     generateComplianceReport() {
-        const compliance = this.reportData.compliance;
+        const {compliance} = this.reportData;
         const reportPath = path.join(process.cwd(), 'docs', 'ACCESSIBILITY_COMPLIANCE.md');
-        
+
         const report = `# 📋 Accessibility Compliance Report
 
 **Generated**: ${new Date(this.reportData.timestamp).toLocaleString()}
@@ -582,7 +582,7 @@ ${compliance.wcag21AA.issues.filter(issue => issue.impact === 'critical' || issu
      */
     generateTestingGuide() {
         const guidePath = path.join(process.cwd(), 'docs', 'ACCESSIBILITY_TESTING_GUIDE.md');
-        
+
         const guide = `# 🧪 Accessibility Testing Guide
 
 This guide provides comprehensive instructions for testing accessibility in the Ignite Fitness application.
@@ -798,7 +798,7 @@ Accessibility tests are automatically run in the CI/CD pipeline:
 // CLI interface
 if (require.main === module) {
     const generator = new AccessibilityReportGenerator();
-    
+
     generator.generateReport()
         .then(() => {
             process.exit(0);

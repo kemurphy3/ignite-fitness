@@ -61,25 +61,25 @@ describe('Error Boundary', () => {
     describe('Error Handling', () => {
         it('should handle errors', () => {
             errorBoundary.init();
-            
+
             const errorInfo = {
                 type: 'test_error',
                 message: 'Test error message',
                 timestamp: new Date().toISOString()
             };
-            
+
             errorBoundary.handleError(errorInfo);
-            
+
             expect(errorBoundary.errorCount).toBe(1);
         });
 
         it('should track error count', () => {
             errorBoundary.init();
-            
+
             errorBoundary.handleError({ type: 'error1' });
             errorBoundary.handleError({ type: 'error2' });
             errorBoundary.handleError({ type: 'error3' });
-            
+
             expect(errorBoundary.errorCount).toBe(3);
         });
     });
@@ -87,10 +87,10 @@ describe('Error Boundary', () => {
     describe('Error Recovery', () => {
         it('should reset error boundary', () => {
             errorBoundary.init();
-            
+
             errorBoundary.handleError({ type: 'test' });
             expect(errorBoundary.errorCount).toBe(1);
-            
+
             errorBoundary.reset();
             expect(errorBoundary.errorCount).toBe(0);
         });
@@ -99,20 +99,20 @@ describe('Error Boundary', () => {
     describe('Error Queue', () => {
         it('should queue errors', () => {
             errorBoundary.init();
-            
+
             errorBoundary.handleError({ type: 'error1' });
             errorBoundary.handleError({ type: 'error2' });
-            
+
             const queue = errorBoundary.getErrorQueue();
             expect(queue.length).toBe(2);
         });
 
         it('should clear error queue', () => {
             errorBoundary.init();
-            
+
             errorBoundary.handleError({ type: 'error1' });
             errorBoundary.clearErrorQueue();
-            
+
             const queue = errorBoundary.getErrorQueue();
             expect(queue.length).toBe(0);
         });

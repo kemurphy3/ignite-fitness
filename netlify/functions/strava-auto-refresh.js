@@ -9,12 +9,12 @@ const logger = createLogger('strava-auto-refresh');
 exports.handler = async (event) => {
   // This function is triggered by Netlify Scheduled Functions
   // Schedule: every 5 minutes
-  
+
   const sql = getDB();
-  
+
   try {
     logger.info('Starting automatic token refresh');
-    
+
     // Find tokens expiring soon (within 10 minutes)
     const expiringTokens = await sql`
       SELECT user_id, expires_at, athlete_id
@@ -25,25 +25,25 @@ exports.handler = async (event) => {
       ORDER BY expires_at ASC
       LIMIT 50
     `;
-    
+
     logger.info('Found expiring tokens', { count: expiringTokens.length });
-    
+
     const results = [];
-    
+
     for (const token of expiringTokens) {
       try {
         // Call refresh endpoint
         const response = await fetch(`${process.env.URL || 'https://your-site.netlify.app'}/.netlify/functions/strava-refresh-token`, {
           method: 'POST',
-          headers: { 
+          headers: {
             'Content-Type': 'application/json',
             'User-Agent': 'Strava-Auto-Refresh/1.0'
           },
           body: JSON.stringify({ userId: token.user_id })
         });
-        
+
         const responseData = await response.json();
-        
+
         results.push({
           user_id: token.user_id,
           athlete_id: token.athlete_id,
@@ -52,7 +52,7 @@ exports.handler = async (event) => {
           cached: responseData.cached || false,
           refresh_not_needed: responseData.refresh_not_needed || false
         });
-        
+
         // Log the auto-refresh attempt
         await auditLog(sql, {
           user_id: token.user_id,
@@ -66,20 +66,20 @@ exports.handler = async (event) => {
             expires_at: token.expires_at
           }
         });
-        
+
       } catch (error) {
-        logger.error('Auto-refresh failed for user', { 
+        logger.error('Auto-refresh failed for user', {
           user_id: token.user_id,
-          error: error.message 
+          error: error.message
         });
-        
+
         results.push({
           user_id: token.user_id,
           athlete_id: token.athlete_id,
           success: false,
           error: error.message
         });
-        
+
         // Log the error
         await auditLog(sql, {
           user_id: token.user_id,
@@ -93,13 +93,13 @@ exports.handler = async (event) => {
         });
       }
     }
-    
+
     // Clean up old rate limits and expired locks
     const [rateLimitCleanup, lockCleanup] = await Promise.all([
       cleanupRateLimits(sql),
       cleanupExpiredLocks(sql)
     ]);
-    
+
     const summary = {
       processed: results.length,
       successful: results.filter(r => r.success).length,
@@ -110,22 +110,22 @@ exports.handler = async (event) => {
       lock_cleanup: lockCleanup,
       timestamp: new Date().toISOString()
     };
-    
+
     logger.info('Auto-refresh completed', summary);
-    
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(summary)
     };
-    
+
   } catch (error) {
     logger.error('Auto-refresh failed', { error: error.message });
-    
+
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         error: 'Auto-refresh failed',
         message: error.message,
         timestamp: new Date().toISOString()

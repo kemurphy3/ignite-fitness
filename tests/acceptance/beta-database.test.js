@@ -22,7 +22,7 @@ describe('Beta Database Acceptance Tests', () => {
 
     describe('User Creation and Profile Setup', () => {
         it('should create a test user and setup multi-sport profile', async () => {
-            const userId = 'test_user_' + Date.now();
+            const userId = `test_user_${ Date.now()}`;
 
             // Create user profile
             await sql`
@@ -116,7 +116,7 @@ describe('Beta Database Acceptance Tests', () => {
             expect(workout.structure.length).toBeGreaterThan(0);
 
             // Verify structure has required blocks
-            const structure = workout.structure;
+            const {structure} = workout;
             const hasWarmup = structure.some(block => block.block_type === 'warmup');
             const hasMain = structure.some(block => block.block_type === 'main');
             const hasCooldown = structure.some(block => block.block_type === 'cooldown');
@@ -157,7 +157,7 @@ describe('Beta Database Acceptance Tests', () => {
 
             for (const fromMod of modalities) {
                 for (const toMod of modalities) {
-                    if (fromMod === toMod) continue;
+                    if (fromMod === toMod) {continue;}
 
                     for (const zone of zones) {
                         const [rule] = await sql`
@@ -276,7 +276,7 @@ describe('Beta Database Acceptance Tests', () => {
 
     describe('Database Integration', () => {
         it('should support workout planning workflow', async () => {
-            const userId = 'test_planner_' + Date.now();
+            const userId = `test_planner_${ Date.now()}`;
 
             // Create user
             await sql`
@@ -292,7 +292,7 @@ describe('Beta Database Acceptance Tests', () => {
             `;
 
             // Create a planned session
-            const sessionId = 'session_' + Date.now();
+            const sessionId = `session_${ Date.now()}`;
             await sql`
                 INSERT INTO session_logs (user_id, session_id, date, workout_name)
                 VALUES (${userId}, ${sessionId}, CURRENT_DATE, 'Test Workout')

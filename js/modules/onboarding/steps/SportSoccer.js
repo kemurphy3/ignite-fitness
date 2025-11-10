@@ -15,7 +15,7 @@ class SportSoccerStep {
     render(existingData = {}) {
         const selectedPosition = existingData.position || '';
         const selectedPhase = existingData.season_phase || 'in-season';
-        
+
         return `
             <div class="onboarding-step sport-soccer-step">
                 <h2>Soccer-Specific Details</h2>
@@ -110,7 +110,7 @@ class SportSoccerStep {
     getSelectedValues() {
         const position = document.querySelector('input[name="position"]:checked')?.value || 'midfielder';
         const season_phase = document.querySelector('input[name="season_phase"]:checked')?.value || 'in-season';
-        
+
         return {
             position,
             season_phase

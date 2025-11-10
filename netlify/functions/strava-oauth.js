@@ -48,19 +48,19 @@ const okPreflight = () => ({
 });
 
 exports.handler = async (event) => {
-    if (event.httpMethod === 'OPTIONS') return okPreflight();
-    if (event.httpMethod !== 'POST') return methodNotAllowed();
+    if (event.httpMethod === 'OPTIONS') {return okPreflight();}
+    if (event.httpMethod !== 'POST') {return methodNotAllowed();}
 
     try {
         const { code, state } = JSON.parse(event.body || '{}');
-        
+
         if (!code) {
             return badReq('Missing authorization code');
         }
 
-        const STRAVA_CLIENT_ID = process.env.STRAVA_CLIENT_ID;
-        const STRAVA_CLIENT_SECRET = process.env.STRAVA_CLIENT_SECRET;
-        
+        const {STRAVA_CLIENT_ID} = process.env;
+        const {STRAVA_CLIENT_SECRET} = process.env;
+
         if (!STRAVA_CLIENT_ID || !STRAVA_CLIENT_SECRET) {
             return {
                 statusCode: 500,
@@ -81,14 +81,14 @@ exports.handler = async (event) => {
             body: new URLSearchParams({
                 client_id: STRAVA_CLIENT_ID,
                 client_secret: STRAVA_CLIENT_SECRET,
-                code: code,
+                code,
                 grant_type: 'authorization_code'
             })
         });
 
         if (!tokenResponse.ok) {
             const errorData = await tokenResponse.json();
-            logger.error('Strava token exchange failed', { 
+            logger.error('Strava token exchange failed', {
                 status: tokenResponse.status,
                 error_data: errorData
             });
@@ -98,8 +98,8 @@ exports.handler = async (event) => {
                     'Content-Type': 'application/json',
                     'Access-Control-Allow-Origin': '*'
                 },
-                body: JSON.stringify({ 
-                    success: false, 
+                body: JSON.stringify({
+                    success: false,
                     error: 'Failed to exchange authorization code for access token',
                     details: errorData
                 })
@@ -107,7 +107,7 @@ exports.handler = async (event) => {
         }
 
         const tokenData = await tokenResponse.json();
-        
+
         // Log token data safely (tokens will be masked)
         logger.info('Strava token exchange successful', {
             access_token: tokenData.access_token,
@@ -115,7 +115,7 @@ exports.handler = async (event) => {
             expires_at: tokenData.expires_at,
             athlete_id: tokenData.athlete?.id
         });
-        
+
         // Get athlete details
         const athleteResponse = await fetch('https://www.strava.com/api/v3/athlete', {
             headers: {
@@ -133,7 +133,7 @@ exports.handler = async (event) => {
             access_token: tokenData.access_token,
             refresh_token: tokenData.refresh_token,
             expires_at: tokenData.expires_at,
-            athlete: athlete,
+            athlete,
             message: 'Strava authorization successful'
         });
 
@@ -148,8 +148,8 @@ exports.handler = async (event) => {
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
             },
-            body: JSON.stringify({ 
-                success: false, 
+            body: JSON.stringify({
+                success: false,
                 error: 'Internal server error',
                 details: error.message
             })

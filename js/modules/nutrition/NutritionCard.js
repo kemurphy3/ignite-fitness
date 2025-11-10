@@ -7,11 +7,11 @@ class NutritionCard {
         this.logger = window.SafeLogger || console;
         this.storageManager = window.StorageManager;
         this.authManager = window.AuthManager;
-        
+
         this.todayMacros = null;
         this.todayLogged = { protein: 0, carbs: 0, fat: 0, calories: 0 }; // Tracked intake for today
         this.mealEntries = []; // List of meals/foods logged today
-        
+
         this.loadTodayMacros();
         this.loadTodayTracking();
     }
@@ -23,12 +23,12 @@ class NutritionCard {
     render() {
         const card = document.createElement('div');
         card.className = 'nutrition-card';
-        
+
         const macros = this.getTodayMacros();
         const dayType = this.getDayType();
         const rationale = macros.rationale || this.generateDefaultRationale(dayType, macros);
         const hydration = macros.hydration || { daily: 2000, unit: 'ml' };
-        
+
         card.innerHTML = `
             <div class="card-header">
                 <h3>💪 Daily Fuel</h3>
@@ -64,10 +64,10 @@ class NutritionCard {
                 <div class="rationale-text">💡 Why: ${rationale}</div>
             </div>
         `;
-        
+
         return card;
     }
-    
+
     /**
      * Generate default rationale
      * @param {string} dayType - Day type
@@ -80,7 +80,7 @@ class NutritionCard {
             training: 'Balanced macros support training adaptation',
             rest: 'Lower carbs aid recovery'
         };
-        
+
         return dayText[dayType] || 'Nutrition supports your training goals';
     }
 
@@ -98,17 +98,17 @@ class NutritionCard {
             carbs: '🍞',
             fat: '🥑'
         };
-        
+
         const labels = {
             protein: 'Protein',
             carbs: 'Carbs',
             fat: 'Fat'
         };
-        
+
         // Calculate progress percentage
         const progressPercent = loggedGrams > 0 ? Math.min(100, (loggedGrams / targetGrams) * 100) : 0;
         const isOverTarget = loggedGrams > targetGrams;
-        
+
         return `
             <div class="macro-item">
                 <div class="macro-header">
@@ -139,11 +139,11 @@ class NutritionCard {
      */
     renderMealExamples(dayType) {
         const examples = this.getMealExamples(dayType);
-        
+
         if (!examples || examples.length === 0) {
             return '';
         }
-        
+
         return `
             <div class="meal-examples">
                 <h4>💡 Meal Ideas for ${this.capitalize(dayType)} Days</h4>
@@ -161,11 +161,11 @@ class NutritionCard {
      */
     renderCarbTiming(dayType) {
         const timing = this.getCarbTiming(dayType);
-        
+
         if (!timing) {
             return '';
         }
-        
+
         return `
             <div class="carb-timing">
                 <h4>⏰ Carb Timing</h4>
@@ -189,19 +189,19 @@ class NutritionCard {
         if (this.todayMacros) {
             return this.todayMacros;
         }
-        
+
         // Calculate based on user profile
         const userId = this.authManager?.getCurrentUsername();
         if (!userId) {
             return this.getDefaultMacros();
         }
-        
+
         const profile = this.storageManager.getUserProfile(userId);
         if (profile) {
             this.todayMacros = this.calculateMacros(profile);
             return this.todayMacros;
         }
-        
+
         return this.getDefaultMacros();
     }
 
@@ -212,22 +212,22 @@ class NutritionCard {
      */
     calculateMacros(profile) {
         const { gender, age, weight, height, activityLevel, sport } = profile;
-        
+
         // BMR using Mifflin-St Jeor
         const bmr = this.calculateBMR(gender, age, weight, height);
-        
+
         // Activity multiplier
         const activityMult = this.getActivityMultiplier(activityLevel || 'moderate');
         const maintenance = bmr * activityMult;
-        
+
         // Day type adjustment
         const dayType = this.getDayType();
         const adjustment = this.getDayTypeAdjustment(dayType);
         const targetCalories = Math.round(maintenance * adjustment);
-        
+
         // Calculate macros
         const macros = this.calculateMacroBreakdown(targetCalories, sport || 'soccer', dayType);
-        
+
         return {
             calories: targetCalories,
             ...macros
@@ -290,9 +290,9 @@ class NutritionCard {
             training: { protein: 0.25, carbs: 0.45, fat: 0.30 },
             rest: { protein: 0.30, carbs: 0.35, fat: 0.35 }
         };
-        
+
         const dayRatios = ratios[dayType] || ratios.training;
-        
+
         return {
             protein: Math.round((calories * dayRatios.protein) / 4),
             carbs: Math.round((calories * dayRatios.carbs) / 4),
@@ -310,7 +310,7 @@ class NutritionCard {
      */
     getMealExamples(dayType) {
         const sport = this.getUserSport();
-        
+
         const examples = {
             training: [
                 'Banana + peanut butter (pre)',
@@ -331,7 +331,7 @@ class NutritionCard {
                 'Stay hydrated'
             ]
         };
-        
+
         return examples[dayType] || examples.training;
     }
 
@@ -370,23 +370,23 @@ class NutritionCard {
     getDayType() {
         try {
             const userId = this.authManager?.getCurrentUserId() || this.authManager?.getCurrentUsername();
-            if (!userId) return 'training';
-            
+            if (!userId) {return 'training';}
+
             // Check if there's a game today using GameDayService
             if (window.GameDayService) {
                 const today = new Date();
                 const isGameDay = window.GameDayService.isGameDay(userId, today);
-                
+
                 if (isGameDay) {
                     return 'game';
                 }
             }
-            
+
             // Check for scheduled workout today
             // If no workout scheduled, it's a rest day
             const today = new Date();
             const todayStr = today.toISOString().split('T')[0];
-            
+
             // Check user schedule for today
             const schedule = this.storageManager?.getUserSchedule?.(userId);
             if (schedule) {
@@ -396,7 +396,7 @@ class NutritionCard {
                     return 'training';
                 }
             }
-            
+
             // Default to rest if no game and no workout
             return 'rest';
         } catch (error) {
@@ -412,17 +412,17 @@ class NutritionCard {
      * @returns {boolean} True if workout scheduled
      */
     checkTodayWorkout(schedule, todayStr) {
-        if (!schedule) return false;
-        
+        if (!schedule) {return false;}
+
         // Check workout days
         const dayOfWeek = new Date(todayStr).getDay();
         const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
         const todayName = dayNames[dayOfWeek];
-        
+
         if (schedule.workoutDays?.includes(todayName)) {
             return true;
         }
-        
+
         // Check specific dates
         if (schedule.scheduledWorkouts) {
             return schedule.scheduledWorkouts.some(workout => {
@@ -431,7 +431,7 @@ class NutritionCard {
                 return workoutDateStr === todayStr;
             });
         }
-        
+
         return false;
     }
 
@@ -470,12 +470,12 @@ class NutritionCard {
                 this.todayMacros = this.getDefaultMacros();
                 return;
             }
-            
+
             // Try to load cached macros from storage
             const today = new Date().toISOString().split('T')[0];
             const storageKey = `ignitefitness_macros_${userId}_${today}`;
             const stored = localStorage.getItem(storageKey);
-            
+
             if (stored) {
                 try {
                     const cached = JSON.parse(stored);
@@ -489,13 +489,13 @@ class NutritionCard {
                     this.logger.debug('Invalid cached macros, recalculating:', e);
                 }
             }
-            
+
             // Calculate macros from user profile
             const profile = this.storageManager?.getUserProfile?.(userId);
             if (profile) {
                 const calculated = this.calculateMacros(profile);
                 this.todayMacros = calculated;
-                
+
                 // Cache for today
                 try {
                     const cacheData = {
@@ -506,10 +506,10 @@ class NutritionCard {
                 } catch (e) {
                     this.logger.debug('Failed to cache macros:', e);
                 }
-                
+
                 return;
             }
-            
+
             // Default fallback
             this.todayMacros = this.getDefaultMacros();
         } catch (error) {
@@ -630,15 +630,15 @@ class NutritionCard {
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(modal);
-        
+
         // Focus first input
         setTimeout(() => {
             const firstInput = modal.querySelector('#meal-name');
-            if (firstInput) firstInput.focus();
+            if (firstInput) {firstInput.focus();}
         }, 100);
-        
+
         // Close on overlay click
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
@@ -663,10 +663,10 @@ class NutritionCard {
      */
     handleLogSubmit(event) {
         event.preventDefault();
-        
+
         const form = event.target;
         const formData = new FormData(form);
-        
+
         const entry = {
             name: formData.get('name'),
             protein: parseFloat(formData.get('protein')) || 0,
@@ -679,28 +679,28 @@ class NutritionCard {
             ),
             timestamp: new Date().toISOString()
         };
-        
+
         // Add to today's entries
         this.mealEntries.push(entry);
-        
+
         // Update today's totals
         this.todayLogged.protein += entry.protein;
         this.todayLogged.carbs += entry.carbs;
         this.todayLogged.fat += entry.fat;
         this.todayLogged.calories += entry.calories;
-        
+
         // Save to storage
         this.saveTodayTracking();
-        
+
         // Close modal
         this.closeLogModal();
-        
+
         // Re-render card if it's in the DOM
         this.refreshCard();
-        
+
         // Show success message
         this.showSuccessMessage('Meal logged successfully!');
-        
+
         this.logger.audit('MACRO_LOGGED', entry);
     }
 
@@ -720,31 +720,31 @@ class NutritionCard {
      * @param {number} index - Entry index
      */
     removeEntry(index) {
-        if (index < 0 || index >= this.mealEntries.length) return;
-        
+        if (index < 0 || index >= this.mealEntries.length) {return;}
+
         const entry = this.mealEntries[index];
-        
+
         // Subtract from totals
         this.todayLogged.protein -= entry.protein;
         this.todayLogged.carbs -= entry.carbs;
         this.todayLogged.fat -= entry.fat;
         this.todayLogged.calories -= entry.calories;
-        
+
         // Remove entry
         this.mealEntries.splice(index, 1);
-        
+
         // Ensure totals don't go negative
         this.todayLogged.protein = Math.max(0, this.todayLogged.protein);
         this.todayLogged.carbs = Math.max(0, this.todayLogged.carbs);
         this.todayLogged.fat = Math.max(0, this.todayLogged.fat);
         this.todayLogged.calories = Math.max(0, this.todayLogged.calories);
-        
+
         // Save to storage
         this.saveTodayTracking();
-        
+
         // Re-render card
         this.refreshCard();
-        
+
         this.logger.audit('MACRO_ENTRY_REMOVED', { index, entry });
     }
 
@@ -754,17 +754,17 @@ class NutritionCard {
     loadTodayTracking() {
         try {
             const userId = this.authManager?.getCurrentUserId() || this.authManager?.getCurrentUsername();
-            if (!userId) return;
-            
+            if (!userId) {return;}
+
             const today = new Date().toISOString().split('T')[0];
             const storageKey = `ignitefitness_macro_tracking_${userId}_${today}`;
             const stored = localStorage.getItem(storageKey);
-            
+
             if (stored) {
                 const data = JSON.parse(stored);
                 this.todayLogged = data.logged || { protein: 0, carbs: 0, fat: 0, calories: 0 };
                 this.mealEntries = data.entries || [];
-                
+
                 // Recalculate totals from entries if needed
                 if (this.mealEntries.length > 0) {
                     this.recalculateTotals();
@@ -783,17 +783,17 @@ class NutritionCard {
     saveTodayTracking() {
         try {
             const userId = this.authManager?.getCurrentUserId() || this.authManager?.getCurrentUsername();
-            if (!userId) return;
-            
+            if (!userId) {return;}
+
             const today = new Date().toISOString().split('T')[0];
             const storageKey = `ignitefitness_macro_tracking_${userId}_${today}`;
-            
+
             const data = {
                 date: today,
                 logged: this.todayLogged,
                 entries: this.mealEntries
             };
-            
+
             localStorage.setItem(storageKey, JSON.stringify(data));
         } catch (error) {
             this.logger.error('Failed to save macro tracking:', error);
@@ -805,7 +805,7 @@ class NutritionCard {
      */
     recalculateTotals() {
         this.todayLogged = { protein: 0, carbs: 0, fat: 0, calories: 0 };
-        
+
         this.mealEntries.forEach(entry => {
             this.todayLogged.protein += entry.protein || 0;
             this.todayLogged.carbs += entry.carbs || 0;
@@ -835,11 +835,11 @@ class NutritionCard {
         notification.className = 'nutrition-notification success';
         notification.textContent = message;
         document.body.appendChild(notification);
-        
+
         setTimeout(() => {
             notification.classList.add('show');
         }, 10);
-        
+
         setTimeout(() => {
             notification.classList.remove('show');
             setTimeout(() => notification.remove(), 300);
@@ -864,19 +864,19 @@ class NutritionCard {
     async getWeeklySummary(days = 7) {
         try {
             const userId = this.authManager?.getCurrentUserId() || this.authManager?.getCurrentUsername();
-            if (!userId) return null;
-            
+            if (!userId) {return null;}
+
             const summaries = [];
             const today = new Date();
-            
+
             for (let i = 0; i < days; i++) {
                 const date = new Date(today);
                 date.setDate(date.getDate() - i);
                 const dateStr = date.toISOString().split('T')[0];
-                
+
                 const storageKey = `ignitefitness_macro_tracking_${userId}_${dateStr}`;
                 const stored = localStorage.getItem(storageKey);
-                
+
                 if (stored) {
                     const data = JSON.parse(stored);
                     summaries.push({
@@ -886,7 +886,7 @@ class NutritionCard {
                     });
                 }
             }
-            
+
             // Calculate averages
             if (summaries.length > 0) {
                 const totals = summaries.reduce((acc, day) => {
@@ -896,7 +896,7 @@ class NutritionCard {
                     acc.calories += day.logged.calories;
                     return acc;
                 }, { protein: 0, carbs: 0, fat: 0, calories: 0 });
-                
+
                 return {
                     days: summaries.length,
                     average: {
@@ -908,7 +908,7 @@ class NutritionCard {
                     totals
                 };
             }
-            
+
             return null;
         } catch (error) {
             this.logger.error('Failed to get weekly summary:', error);

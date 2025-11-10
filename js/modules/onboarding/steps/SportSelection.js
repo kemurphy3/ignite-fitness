@@ -99,13 +99,13 @@ class SportSelection extends window.BaseComponent {
      */
     selectPrimarySport(sportKey) {
         this.selectedPrimary = sportKey;
-        
+
         // Update UI
         document.querySelectorAll('.sport-card').forEach(card => {
             card.classList.remove('selected');
         });
         document.querySelector(`[data-sport="${sportKey}"]`).classList.add('selected');
-        
+
         // Render sport-specific questions
         const container = document.querySelector('.sport-selection-step');
         if (container) {
@@ -119,7 +119,7 @@ class SportSelection extends window.BaseComponent {
                     actionsDiv.insertAdjacentHTML('beforebegin', questionsHtml);
                 }
             }
-            
+
             // Re-enable continue button
             const continueBtn = container.querySelector('.btn-primary');
             if (continueBtn) {
@@ -133,7 +133,7 @@ class SportSelection extends window.BaseComponent {
      * @returns {string} HTML for sport-specific questions
      */
     renderSportSpecificQuestions() {
-        if (!this.selectedPrimary) return '';
+        if (!this.selectedPrimary) {return '';}
 
         switch(this.selectedPrimary) {
             case 'running':
@@ -155,7 +155,7 @@ class SportSelection extends window.BaseComponent {
      */
     renderRunningQuestions() {
         const data = this.sportSpecificData.running || {};
-        
+
         return `
             <div class="sport-specific-questions">
                 <h3>Running Specifics</h3>
@@ -203,7 +203,7 @@ class SportSelection extends window.BaseComponent {
      */
     renderCyclingQuestions() {
         const data = this.sportSpecificData.cycling || {};
-        
+
         return `
             <div class="sport-specific-questions">
                 <h3>Cycling Specifics</h3>
@@ -240,7 +240,7 @@ class SportSelection extends window.BaseComponent {
      */
     renderSwimmingQuestions() {
         const data = this.sportSpecificData.swimming || {};
-        
+
         return `
             <div class="sport-specific-questions">
                 <h3>Swimming Specifics</h3>
@@ -274,7 +274,7 @@ class SportSelection extends window.BaseComponent {
      */
     renderSoccerQuestions() {
         const data = this.sportSpecificData.soccer || {};
-        
+
         return `
             <div class="sport-specific-questions">
                 <h3>Soccer Specifics</h3>
@@ -333,7 +333,7 @@ class SportSelection extends window.BaseComponent {
         if (!this.sportSpecificData[sport].terrain) {
             this.sportSpecificData[sport].terrain = [];
         }
-        
+
         if (selected && !this.sportSpecificData[sport].terrain.includes(terrain)) {
             this.sportSpecificData[sport].terrain.push(terrain);
         } else if (!selected) {
@@ -352,21 +352,21 @@ class SportSelection extends window.BaseComponent {
 
         // Collect all form data
         const formData = this.collectFormData();
-        
+
         // Update onboarding data
         const onboardingManager = window.OnboardingManager;
         if (onboardingManager) {
             onboardingManager.onboardingData.primarySport = this.selectedPrimary;
             onboardingManager.onboardingData.sportSpecific = this.sportSpecificData;
             onboardingManager.onboardingData.sportSelectionData = formData;
-            
+
             // Save and continue
             onboardingManager.saveStepData('sport_selection', {
                 primarySport: this.selectedPrimary,
                 sportSpecific: this.sportSpecificData,
                 ...formData
             });
-            
+
             onboardingManager.nextStep();
         }
     }
@@ -378,29 +378,29 @@ class SportSelection extends window.BaseComponent {
     collectFormData() {
         const formData = {};
         const sport = this.selectedPrimary;
-        
+
         if (sport === 'running') {
             const focusSelect = document.getElementById('running_focus');
             const recent5kInput = document.getElementById('recent_5k');
-            if (focusSelect) formData.focus = focusSelect.value;
-            if (recent5kInput) formData.recent5k = recent5kInput.value;
+            if (focusSelect) {formData.focus = focusSelect.value;}
+            if (recent5kInput) {formData.recent5k = recent5kInput.value;}
         } else if (sport === 'cycling') {
             const typeSelect = document.getElementById('cycling_type');
             const ftpInput = document.getElementById('ftp_estimate');
-            if (typeSelect) formData.type = typeSelect.value;
-            if (ftpInput) formData.ftp = ftpInput.value;
+            if (typeSelect) {formData.type = typeSelect.value;}
+            if (ftpInput) {formData.ftp = ftpInput.value;}
         } else if (sport === 'swimming') {
             const envSelect = document.getElementById('swim_environment');
             const poolSelect = document.getElementById('pool_length');
-            if (envSelect) formData.environment = envSelect.value;
-            if (poolSelect) formData.poolLength = poolSelect.value;
+            if (envSelect) {formData.environment = envSelect.value;}
+            if (poolSelect) {formData.poolLength = poolSelect.value;}
         } else if (sport === 'soccer') {
             const posSelect = document.getElementById('soccer_position');
             const levelSelect = document.getElementById('soccer_level');
-            if (posSelect) formData.position = posSelect.value;
-            if (levelSelect) formData.level = levelSelect.value;
+            if (posSelect) {formData.position = posSelect.value;}
+            if (levelSelect) {formData.level = levelSelect.value;}
         }
-        
+
         return formData;
     }
 }

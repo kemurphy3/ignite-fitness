@@ -7,7 +7,7 @@ class LegalCopy {
         this.logger = window.SafeLogger || console;
         this.storageManager = window.StorageManager;
         this.acceptances = new Map();
-        
+
         this.disclaimers = {
             injuryAssessment: {
                 id: 'injury_assessment',
@@ -72,7 +72,7 @@ Timestamp: ${new Date().toISOString()}
                 required: true
             }
         };
-        
+
         this.loadAcceptances();
     }
 
@@ -134,19 +134,19 @@ Timestamp: ${new Date().toISOString()}
                 resolve(false);
                 return;
             }
-            
+
             if (this.isAccepted(disclaimerId)) {
                 resolve(true);
                 return;
             }
-            
+
             const modal = this.createDisclaimerModal(disclaimer, (accepted) => {
                 if (accepted) {
                     this.acceptDisclaimer(disclaimerId);
                 }
                 resolve(accepted);
             });
-            
+
             document.body.appendChild(modal);
         });
     }
@@ -177,17 +177,17 @@ Timestamp: ${new Date().toISOString()}
                 </div>
             </div>
         `;
-        
+
         window.handleLegalAcceptance = () => {
             modal.remove();
             callback(true);
         };
-        
+
         // Prevent closing without acceptance if required
         if (disclaimer.required) {
             modal.querySelector('.modal-close')?.remove();
         }
-        
+
         return modal;
     }
 
@@ -200,14 +200,14 @@ Timestamp: ${new Date().toISOString()}
             timestamp: new Date().toISOString(),
             version: this.disclaimers[disclaimerId]?.version || '1.0'
         });
-        
+
         this.saveAcceptances();
-        
+
         this.logger.audit('DISCLAIMER_ACCEPTED', {
             disclaimerId,
             timestamp: new Date().toISOString()
         });
-        
+
         // Emit event
         if (window.EventBus) {
             window.EventBus.emit('legal:disclaimer_accepted', { disclaimerId });

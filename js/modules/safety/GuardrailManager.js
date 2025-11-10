@@ -13,7 +13,7 @@ class GuardrailManager {
         this.limits = {
             // Weekly caps by training level
             weeklyLoadCaps: {
-                beginner: { total: 250, hard: 50 },      // Z4-Z5 minutes
+                beginner: { total: 250, hard: 50 }, // Z4-Z5 minutes
                 intermediate: { total: 400, hard: 80 },
                 advanced: { total: 600, hard: 120 },
                 elite: { total: 800, hard: 160 }
@@ -21,28 +21,28 @@ class GuardrailManager {
 
             // Ramp rate limits (weekly increase)
             rampRates: {
-                load: 0.10,          // Max 10% weekly load increase
-                volume: 0.10,        // Max 10% weekly volume increase
-                intensity: 0.05      // Max 5% weekly intensity increase
+                load: 0.10, // Max 10% weekly load increase
+                volume: 0.10, // Max 10% weekly volume increase
+                intensity: 0.05 // Max 5% weekly intensity increase
             },
 
             // Recovery requirements
             recovery: {
-                minRestBetweenHard: 24,     // Hours between Z4/Z5 sessions
-                maxConsecutiveHard: 2,      // Max consecutive hard days
-                requiredEasyDays: 1,        // Easy days per week minimum
-                deloadFrequency: 4          // Deload every 4th week
+                minRestBetweenHard: 24, // Hours between Z4/Z5 sessions
+                maxConsecutiveHard: 2, // Max consecutive hard days
+                requiredEasyDays: 1, // Easy days per week minimum
+                deloadFrequency: 4 // Deload every 4th week
             },
 
             // Injury prevention
             injury: {
-                maxDailyLoad: 120,          // Daily load cap
+                maxDailyLoad: 120, // Daily load cap
                 soreness: {
-                    levelThreshold: 7,        // 1-10 scale
-                    loadReduction: 0.3        // 30% load reduction
+                    levelThreshold: 7, // 1-10 scale
+                    loadReduction: 0.3 // 30% load reduction
                 },
-                painThreshold: 4,           // Any pain level 4+ = stop
-                missedDaysAutoDeload: 3     // Auto-deload after 3+ missed days
+                painThreshold: 4, // Any pain level 4+ = stop
+                missedDaysAutoDeload: 3 // Auto-deload after 3+ missed days
             }
         };
     }
@@ -136,7 +136,7 @@ class GuardrailManager {
                 result.warnings.push(deloadCheck.message);
                 result.autoAdjustments.push({
                     type: 'deload_week',
-                    loadReduction: 0.4,  // 40% load reduction
+                    loadReduction: 0.4, // 40% load reduction
                     reason: 'Scheduled deload week'
                 });
             }
@@ -193,7 +193,7 @@ class GuardrailManager {
         }, 0);
 
         const currentHardMinutes = this.calculateWeeklyHardMinutes(weekSessions);
-        
+
         // Calculate workout load
         const workoutLoad = this.calculateWorkoutLoad(workout);
         const workoutHardMinutes = this.calculateHardMinutes(workout);
@@ -381,7 +381,7 @@ class GuardrailManager {
         // Check soreness levels
         const sorenessLevel = readinessData.sorenessLevel || readinessData.soreness || readinessData.muscleSoreness || 0;
         if (sorenessLevel >= this.limits.injury.soreness.levelThreshold) {
-            const loadReduction = this.limits.injury.soreness.loadReduction;
+            const {loadReduction} = this.limits.injury.soreness;
             return {
                 passed: false,
                 severity: 'warn',
@@ -513,7 +513,7 @@ class GuardrailManager {
                     break;
                 case 'ramp_adjustment':
                     modifiedWorkout = this.adjustWorkoutLoad(modifiedWorkout, adjustment.newLoad);
-                    appliedModifications.push(`Ramp rate adjusted`);
+                    appliedModifications.push('Ramp rate adjusted');
                     break;
             }
         }
@@ -612,7 +612,7 @@ class GuardrailManager {
      */
     adjustWorkoutLoad(workout, targetLoad) {
         const currentLoad = this.calculateWorkoutLoad(workout);
-        if (currentLoad === 0) return workout;
+        if (currentLoad === 0) {return workout;}
 
         const factor = 1 - ((currentLoad - targetLoad) / currentLoad);
         return this.reduceWorkoutLoad(workout, Math.max(0, Math.min(0.5, factor)));
@@ -717,7 +717,7 @@ class GuardrailManager {
      * @returns {string} Max intensity zone
      */
     getMaxIntensity(workout) {
-        if (!workout) return 'Z1';
+        if (!workout) {return 'Z1';}
 
         if (workout.structure) {
             const intensities = workout.structure
@@ -745,10 +745,10 @@ class GuardrailManager {
             }, 7);
 
             // Map RPE to zone
-            if (maxRPE >= 9) return 'Z5';
-            if (maxRPE >= 7) return 'Z4';
-            if (maxRPE >= 5) return 'Z3';
-            if (maxRPE >= 3) return 'Z2';
+            if (maxRPE >= 9) {return 'Z5';}
+            if (maxRPE >= 7) {return 'Z4';}
+            if (maxRPE >= 5) {return 'Z3';}
+            if (maxRPE >= 3) {return 'Z2';}
             return 'Z1';
         }
 
@@ -761,7 +761,7 @@ class GuardrailManager {
      * @returns {number} Consecutive weeks
      */
     calculateConsecutiveTrainingWeeks(sessions) {
-        if (!sessions || sessions.length === 0) return 0;
+        if (!sessions || sessions.length === 0) {return 0;}
 
         const sortedSessions = sessions
             .map(session => ({
@@ -771,7 +771,7 @@ class GuardrailManager {
             .filter(s => !isNaN(s.date.getTime()))
             .sort((a, b) => b.date - a.date);
 
-        if (sortedSessions.length === 0) return 0;
+        if (sortedSessions.length === 0) {return 0;}
 
         let weeks = 0;
         let currentWeek = null;
@@ -808,7 +808,7 @@ class GuardrailManager {
             .map(session => session.readinessScore || session.readiness || session.readinessData?.score)
             .filter(score => score !== null && score !== undefined && !isNaN(score));
 
-        if (readinessScores.length === 0) return null;
+        if (readinessScores.length === 0) {return null;}
 
         const avg = readinessScores.reduce((sum, score) => sum + score, 0) / readinessScores.length;
         return avg;

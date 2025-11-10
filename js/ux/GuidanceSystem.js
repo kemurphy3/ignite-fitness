@@ -6,25 +6,25 @@
 class GuidanceSystem {
     constructor() {
         this.tips = {
-            goals: "Start with 1-2 specific goals. You can always add more later!",
+            goals: 'Start with 1-2 specific goals. You can always add more later!',
             schedule: "Be honest about your available time. It's better to be consistent with shorter workouts.",
             workouts: "Your AI coach will adjust difficulty based on your feedback. Don't worry about being perfect!",
-            progress: "Track how you feel after workouts. This helps your AI coach personalize future sessions."
+            progress: 'Track how you feel after workouts. This helps your AI coach personalize future sessions.'
         };
     }
-    
+
     showTip(category) {
         const tip = this.tips[category];
         if (tip) {
             this.displayTooltip(tip);
         }
     }
-    
+
     displayTooltip(message) {
         // Remove existing tooltip
         const existing = document.getElementById('guidance-tooltip');
-        if (existing) existing.remove();
-        
+        if (existing) {existing.remove();}
+
         // Create new tooltip
         const tooltip = document.createElement('div');
         tooltip.id = 'guidance-tooltip';
@@ -58,9 +58,9 @@ class GuidanceSystem {
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(tooltip);
-        
+
         // Auto-remove after 8 seconds
         setTimeout(() => {
             if (tooltip.parentElement) {
@@ -68,7 +68,7 @@ class GuidanceSystem {
             }
         }, 8000);
     }
-    
+
     addHelpButton(elementId, category) {
         const element = document.getElementById(elementId);
         if (element) {
@@ -86,7 +86,7 @@ class GuidanceSystem {
                 color: #4a5568;
             `;
             helpBtn.onclick = () => this.showTip(category);
-            
+
             element.appendChild(helpBtn);
         }
     }

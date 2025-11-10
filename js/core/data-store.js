@@ -10,19 +10,19 @@ class DataStore {
         this.conflictResolution = 'timestamp'; // local, remote, merge, timestamp
         this.cacheExpiry = 5 * 60 * 1000; // 5 minutes
         this.maxCacheSize = 1000;
-        
+
         // Listen for online/offline events
         window.addEventListener('online', () => this.handleOnline());
         window.addEventListener('offline', () => this.handleOffline());
-        
+
         // Start sync interval
         setInterval(() => this.processSyncQueue(), 30000); // Every 30 seconds
     }
-    
+
     // Get data with caching
     async get(key, options = {}) {
         const { useCache = true, forceRefresh = false } = options;
-        
+
         // Check cache first
         if (useCache && !forceRefresh) {
             const cached = this.cache.get(key);
@@ -30,49 +30,49 @@ class DataStore {
                 return cached.data;
             }
         }
-        
+
         // Fetch from source
         try {
             const data = await this.fetchFromSource(key);
-            
+
             // Cache the result
             this.cache.set(key, {
-                data: data,
+                data,
                 timestamp: Date.now()
             });
-            
+
             return data;
         } catch (error) {
             console.error(`Error fetching data for key ${key}:`, error);
-            
+
             // Return cached data if available
             const cached = this.cache.get(key);
             if (cached) {
                 return cached.data;
             }
-            
+
             throw error;
         }
     }
-    
+
     // Set data with conflict resolution
     async set(key, data, options = {}) {
         const { priority = 'local', conflictResolution = this.conflictResolution } = options;
-        
+
         // Check for conflicts
         const existing = this.cache.get(key);
         if (existing && this.hasConflict(existing.data, data)) {
             const resolved = this.resolveConflict(existing.data, data, conflictResolution);
             data = resolved;
         }
-        
+
         // Store in cache
         this.cache.set(key, {
-            data: data,
+            data,
             timestamp: Date.now(),
-            priority: priority
+            priority
         });
-        
+
         // Queue for sync if online
         if (this.isOnline) {
             this.syncQueue.push({ key, data, timestamp: Date.now() });
@@ -80,11 +80,11 @@ class DataStore {
             // Store pending write
             this.pendingWrites.set(key, { data, timestamp: Date.now() });
         }
-        
+
         // Save to localStorage as backup
         this.saveToLocalStorage(key, data);
     }
-    
+
     // Fetch from source (localStorage or API)
     async fetchFromSource(key) {
         // Try localStorage first
@@ -92,7 +92,7 @@ class DataStore {
         if (localData) {
             return localData;
         }
-        
+
         // Try API if online
         if (this.isOnline) {
             try {
@@ -102,10 +102,10 @@ class DataStore {
                 return localData;
             }
         }
-        
+
         return localData;
     }
-    
+
     // Load from localStorage
     loadFromLocalStorage(key) {
         try {
@@ -116,7 +116,7 @@ class DataStore {
             return null;
         }
     }
-    
+
     // Save to localStorage
     saveToLocalStorage(key, data) {
         try {
@@ -125,7 +125,7 @@ class DataStore {
             console.error(`Error saving ${key} to localStorage:`, error);
         }
     }
-    
+
     // Fetch from API
     async fetchFromAPI(key) {
         const endpoints = {
@@ -133,26 +133,26 @@ class DataStore {
             'sessions': '/.netlify/functions/sessions-list',
             'all_users': '/.netlify/functions/admin-get-all-users'
         };
-        
+
         const endpoint = endpoints[key];
         if (!endpoint) {
             throw new Error(`No API endpoint for key: ${key}`);
         }
-        
+
         const response = await fetch(endpoint, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
             }
         });
-        
+
         if (!response.ok) {
             throw new Error(`API request failed: ${response.status}`);
         }
-        
+
         return await response.json();
     }
-    
+
     // Check for data conflicts
     hasConflict(existing, incoming) {
         // Simple conflict detection based on timestamp
@@ -162,7 +162,7 @@ class DataStore {
         }
         return false;
     }
-    
+
     // Resolve conflicts
     resolveConflict(existing, incoming, strategy) {
         switch (strategy) {
@@ -177,11 +177,11 @@ class DataStore {
                 return existing.timestamp > incoming.timestamp ? existing : incoming;
         }
     }
-    
+
     // Merge data objects
     mergeData(existing, incoming) {
         const merged = { ...existing };
-        
+
         for (const key in incoming) {
             if (incoming[key] !== undefined) {
                 if (typeof incoming[key] === 'object' && !Array.isArray(incoming[key])) {
@@ -191,18 +191,18 @@ class DataStore {
                 }
             }
         }
-        
+
         return merged;
     }
-    
+
     // Process sync queue
     async processSyncQueue() {
         if (!this.isOnline || this.syncQueue.length === 0) {
             return;
         }
-        
+
         const batch = this.syncQueue.splice(0, 10); // Process 10 items at a time
-        
+
         for (const item of batch) {
             try {
                 await this.syncToAPI(item.key, item.data);
@@ -213,7 +213,7 @@ class DataStore {
             }
         }
     }
-    
+
     // Sync to API
     async syncToAPI(key, data) {
         const endpoints = {
@@ -224,30 +224,30 @@ class DataStore {
             'workout_schedule': '/.netlify/functions/save-user-data',
             'strava_activities': '/.netlify/functions/save-user-data'
         };
-        
+
         const endpoint = endpoints[key];
         if (!endpoint) {
             throw new Error(`No sync endpoint for key: ${key}`);
         }
-        
+
         // Prepare data for database sync based on data type
         let requestBody;
         if (key === 'user_data') {
             requestBody = {
                 userId: this.currentUser,
                 dataType: 'all',
-                data: data
+                data
             };
         } else if (['preferences', 'goals', 'workout_schedule', 'strava_activities'].includes(key)) {
             requestBody = {
                 userId: this.currentUser,
                 dataType: key,
-                data: data
+                data
             };
         } else {
             requestBody = data;
         }
-        
+
         try {
             const response = await fetch(endpoint, {
                 method: 'POST',
@@ -256,60 +256,60 @@ class DataStore {
                 },
                 body: JSON.stringify(requestBody)
             });
-            
+
             if (!response.ok) {
                 const errorText = await response.text();
                 let errorMessage = `Sync failed: ${response.status}`;
-                
+
                 try {
                     const errorData = JSON.parse(errorText);
                     errorMessage += ` - ${errorData.error || errorText}`;
                 } catch {
                     errorMessage += ` - ${errorText}`;
                 }
-                
+
                 throw new Error(errorMessage);
             }
-            
+
             const result = await response.json();
             console.log(`Successfully synced ${key} to database:`, result);
-            
+
             // Update last sync time
             this.lastSyncTime = Date.now();
             localStorage.setItem('ignitefitness_last_sync', this.lastSyncTime.toString());
-            
+
             return result;
         } catch (error) {
             console.error(`Sync error for ${key}:`, error);
-            
+
             // If it's a network error, queue for retry
             if (error.name === 'TypeError' || error.message.includes('fetch')) {
                 throw new Error(`Network error: ${error.message}`);
             }
-            
+
             // For other errors, re-throw
             throw error;
         }
     }
-    
+
     // Handle online event
     handleOnline() {
         this.isOnline = true;
         this.updateSyncStatus();
-        
+
         // Process pending writes
         for (const [key, write] of this.pendingWrites) {
             this.syncQueue.push({ key, data: write.data, timestamp: write.timestamp });
         }
         this.pendingWrites.clear();
     }
-    
+
     // Handle offline event
     handleOffline() {
         this.isOnline = false;
         this.updateSyncStatus();
     }
-    
+
     // Update sync status indicator
     updateSyncStatus() {
         const indicator = document.getElementById('sync-status');
@@ -318,12 +318,12 @@ class DataStore {
             indicator.style.color = this.isOnline ? '#68d391' : '#fc8181';
         }
     }
-    
+
     // Clear cache
     clearCache() {
         this.cache.clear();
     }
-    
+
     // Get cache statistics
     getCacheStats() {
         return {

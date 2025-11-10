@@ -43,12 +43,12 @@ const okPreflight = () => ({
 });
 
 exports.handler = async (event) => {
-    if (event.httpMethod === 'OPTIONS') return okPreflight();
-    if (event.httpMethod !== 'POST') return methodNotAllowed();
+    if (event.httpMethod === 'OPTIONS') {return okPreflight();}
+    if (event.httpMethod !== 'POST') {return methodNotAllowed();}
 
     try {
         const { userId, dataType, data } = JSON.parse(event.body || '{}');
-        
+
         if (!userId) {
             return badReq('Missing required field: userId');
         }
@@ -65,7 +65,7 @@ exports.handler = async (event) => {
         `;
         const user_id = user[0].id;
 
-        let savedData = {};
+        const savedData = {};
 
         // Handle different data types
         if (dataType === 'all' || dataType === 'preferences') {
@@ -194,10 +194,10 @@ exports.handler = async (event) => {
             }
         }
 
-        return okJson({ 
-            success: true, 
+        return okJson({
+            success: true,
             message: 'User data saved successfully',
-            savedData: savedData,
+            savedData,
             timestamp: new Date().toISOString()
         });
     } catch (error) {

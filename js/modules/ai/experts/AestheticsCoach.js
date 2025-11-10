@@ -20,7 +20,7 @@ class AestheticsCoach {
         };
 
         const aestheticFocus = preferences?.aestheticFocus || 'functional';
-        
+
         // Do not override main program; only suggest accessories
         if (aestheticFocus === 'functional') {
             return proposal; // No aesthetic work if functional focus
@@ -32,11 +32,11 @@ class AestheticsCoach {
         proposal.blocks = accessories;
 
         proposal.constraints = [
-            { 
+            {
                 type: 'volume',
                 rule: 'Accessories limited to 30% of total session volume'
             },
-            { 
+            {
                 type: 'readiness',
                 rule: readiness <= 6 ? 'Reduce accessory volume by 30%' : 'Normal volume'
             }
@@ -71,7 +71,7 @@ class AestheticsCoach {
         };
 
         let accessories = accessoryMap[aestheticFocus] || [];
-        
+
         // Reduce volume if readiness low
         if (readiness <= 6) {
             accessories = accessories.map(acc => ({

@@ -12,14 +12,14 @@ class ExpertCoordinator {
         this.coordinatorContext = window.CoordinatorContext;
         this.dataValidator = window.AIDataValidator;
         this.errorAlert = window.ErrorAlert;
-        
+
         // Initialize memoized coordinator for performance
         this.memoizedCoordinator = new MemoizedCoordinator();
-        
+
         // T2B-3: Initialize validation cache for performance optimization
         this.validationCache = new Map();
         this.validationCacheMaxSize = 100;
-        
+
         this.experts = {
             strength: new StrengthCoach(),
             sports: new SportsCoach(),
@@ -28,11 +28,11 @@ class ExpertCoordinator {
             aesthetics: new AestheticsCoach(),
             climbing: new ClimbingCoach()
         };
-        
+
         // Register experts with memoized coordinator
         this.registerExperts();
     }
-    
+
     /**
      * Register experts with memoized coordinator
      */
@@ -41,7 +41,7 @@ class ExpertCoordinator {
             this.memoizedCoordinator.registerExpert(name, expert);
         });
     }
-    
+
     /**
      * Create cache key for context
      * @param {Object} context - User context
@@ -55,10 +55,10 @@ class ExpertCoordinator {
             preferences: context.preferences,
             timestamp: Math.floor(Date.now() / (5 * 60 * 1000)) // 5-minute buckets
         };
-        
+
         return JSON.stringify(keyData, Object.keys(keyData).sort());
     }
-    
+
     /**
      * Get performance statistics
      * @returns {Object} Performance stats
@@ -66,7 +66,7 @@ class ExpertCoordinator {
     getPerformanceStats() {
         return this.memoizedCoordinator.getStats();
     }
-    
+
     /**
      * Clear memoization cache
      */
@@ -81,27 +81,27 @@ class ExpertCoordinator {
      */
     async planToday(context) {
         const startTime = performance.now();
-        
+
         try {
             // Use memoized coordinator for performance
             const plan = await this.memoizedCoordinator.planToday(context, {
                 useMemoization: true,
                 cacheKey: this.createCacheKey(context)
             });
-            
+
             const responseTime = performance.now() - startTime;
             this.logger.info(`Plan generated in ${responseTime.toFixed(2)}ms`);
-            
+
             return plan;
-            
+
         } catch (error) {
             this.logger.error('Plan generation failed:', error);
-            
+
             // Fallback to non-memoized approach
             return await this.planTodayFallback(context);
         }
     }
-    
+
     /**
      * Fallback plan generation without memoization
      * @param {Object} context - User context
@@ -113,7 +113,7 @@ class ExpertCoordinator {
             // All user inputs MUST flow through validation pipeline
             let validationResult = null;
             let validationCacheKey = null;
-            
+
             // Generate cache key for validation result caching
             if (context) {
                 validationCacheKey = this.generateValidationCacheKey(context);
@@ -133,7 +133,7 @@ class ExpertCoordinator {
                                 warnings: []
                             };
                             context = validationResult.validatedContext;
-                            
+
                             // Cache successful validation
                             if (!this.validationCache) {
                                 this.validationCache = new Map();
@@ -146,7 +146,7 @@ class ExpertCoordinator {
                                 this.validationCache.delete(firstKey);
                             }
                             this.validationCache.set(validationCacheKey, validationResult);
-                            
+
                             this.logger.info('Context validated with conservative fallbacks', {
                                 readiness: context.readinessScore,
                                 atl7: context.atl7,
@@ -175,7 +175,7 @@ class ExpertCoordinator {
                         context = validationResult.validatedContext;
                     }
                 }
-                
+
                 // Store validation metadata in context for transparency
                 context._validationMetadata = {
                     isValid: validationResult?.isValid ?? false,
@@ -183,7 +183,7 @@ class ExpertCoordinator {
                     warnings: validationResult?.warnings ?? [],
                     cached: validationResult !== null && this.validationCache?.has(validationCacheKey)
                 };
-                
+
                 // Log validation issues if any
                 if (validationResult && (!validationResult.isValid || validationResult.warnings.length > 0)) {
                     this.logger.info('VALIDATION_WARNINGS', {
@@ -193,88 +193,88 @@ class ExpertCoordinator {
                     });
                 }
             }
-            
+
             // Build enhanced context with load metrics and confidence
             if (this.coordinatorContext) {
                 const enhancedContext = await this.coordinatorContext.buildContext(context);
                 context = enhancedContext;
             }
-            
+
             // Check if we need to infer readiness
-            let readiness = context.readiness;
+            let {readiness} = context;
             let isInferred = false;
             let inferenceRationale = '';
-            
+
             // If no explicit check-in, infer readiness
             if (!readiness || isNaN(readiness)) {
                 if (this.readinessInference && typeof this.readinessInference.inferReadiness === 'function') {
                     const lastSessions = context.history?.lastSessions || [];
                     const schedule = context.schedule || {};
-                    
+
                     const inferenceResult = await this.readinessInference.inferReadiness({ lastSessions, schedule });
                     readiness = inferenceResult.score;
                     isInferred = inferenceResult.inferred;
                     inferenceRationale = inferenceResult.rationale;
-                    
+
                     this.logger.info('Readiness inferred', { score: readiness, rationale: inferenceRationale });
                 } else {
                     // Fallback if inference not available
                     readiness = 7;
                 }
             }
-            
+
             // Update context with readiness (possibly inferred)
             context.readiness = readiness;
-            
+
             // Apply load-based adjustments
             this.applyLoadBasedAdjustments(context);
-            
+
             // Get seasonal context
             let seasonalContext = null;
             if (this.seasonalPrograms && typeof this.seasonalPrograms.getSeasonContext === 'function') {
                 const userProfile = context.profile || {};
                 const calendar = context.calendar || {};
-                
+
                 seasonalContext = this.seasonalPrograms.getSeasonContext(new Date(), userProfile, calendar);
-                
+
                 // Apply seasonal rules
                 if (seasonalContext.deloadThisWeek) {
                     context.deloadWeek = true;
                 }
-                
+
                 // Apply game proximity rules in-season
                 if (seasonalContext.phaseKey === 'in' && seasonalContext.gameProximity.suppressHeavyLower) {
                     context.suppressHeavyLower = true;
                     context.gameTomorrow = seasonalContext.gameProximity.isTomorrow;
                 }
-                
+
                 this.logger.info('Season context', seasonalContext);
             }
-            
-            this.logger.info('Coordinator decision', { 
+
+            this.logger.info('Coordinator decision', {
                 readiness,
                 inferred: isInferred,
                 mode: context.preferences?.trainingMode,
                 gameDay: context.schedule?.isGameDay,
                 phase: seasonalContext?.phase
             });
-            
+
             // Get proposals from all experts
             const proposals = this.gatherProposals(context);
-            
+
             // CRITICAL FIX: Check for empty proposals and return fallback plan
             if (proposals._empty || Object.values(proposals).every(p => !p || !p.blocks || p.blocks.length === 0)) {
                 this.logger.warn('All expert proposals are empty - using fallback plan');
                 return this.getFallbackPlanStructured(context);
             }
-            
+
             // Merge and resolve
             const mergedPlan = this.mergeProposals(proposals, context);
             const resolvedPlan = this.resolveConflicts(mergedPlan, proposals, context);
-            
+
             // Convert to required structure
             const structuredPlan = this.structurePlan(resolvedPlan, context);
-            
+
             // Add inference transparency note if applicable
             if (isInferred) {
                 const rationale = inferenceRationale || 'Estimated from recent training and schedule.';
@@ -282,7 +282,7 @@ class ExpertCoordinator {
                 structuredPlan.notes = structuredPlan.notes || [];
                 structuredPlan.notes.push({ type: 'info', source: 'readiness', text: 'Today\'s readiness is estimated. Log a check-in to refine recommendations.' });
             }
-            
+
             // Add load-based adjustments to rationale
             if (context.loadAdjustments && context.loadAdjustments.length > 0) {
                 for (const adjustment of context.loadAdjustments) {
@@ -293,11 +293,11 @@ class ExpertCoordinator {
             // Add seasonal context to rationale
             if (seasonalContext) {
                 structuredPlan.why.push(`${seasonalContext.phase} (Week ${seasonalContext.weekOfBlock} of 4)`);
-                
+
                 if (seasonalContext.deloadThisWeek) {
                     structuredPlan.why.push('Deload week: -20% volume for recovery');
                 }
-                
+
                 if (seasonalContext.gameProximity.hasGame) {
                     if (seasonalContext.gameProximity.isTomorrow) {
                         structuredPlan.why.push('Game tomorrow: Reduced lower body volume');
@@ -305,38 +305,38 @@ class ExpertCoordinator {
                         structuredPlan.why.push(`Game in ${seasonalContext.gameProximity.daysUntil} days: Lightening load`);
                     }
                 }
-                
+
                 // Add phase emphasis
                 if (seasonalContext.emphasis) {
                     structuredPlan.why.push(`Focus: ${seasonalContext.emphasis.replace(/_/g, ' ')}`);
                 }
             }
-            
+
             // Apply conservative scaling based on data confidence
             if (this.dataValidator && context.dataConfidence) {
                 const originalIntensity = structuredPlan.targetRPE || 7;
                 const scaledIntensity = this.dataValidator.applyConservativeScaling(
-                    originalIntensity, 
+                    originalIntensity,
                     context.dataConfidence.recent7days || 0.5
                 );
-                
+
                 if (scaledIntensity < originalIntensity) {
                     structuredPlan.intensityScale *= (scaledIntensity / originalIntensity);
                     structuredPlan.why.push(`Intensity scaled down due to low data confidence (${Math.round(context.dataConfidence.recent7days * 100)}%)`);
                 }
             }
-            
+
             // Apply intensity scaling for inferred readiness
             if (isInferred && readiness < 7) {
                 structuredPlan.intensityScale *= 0.85; // Scale down 15% for safety
                 structuredPlan.why.push('Intensity reduced due to inferred low readiness');
             }
-            
+
             // Apply deload volume modifier
             if (seasonalContext && seasonalContext.deloadThisWeek) {
                 structuredPlan.intensityScale *= seasonalContext.volumeModifier;
             }
-            
+
             return structuredPlan;
         } catch (error) {
             this.logger.error('Failed to generate session plan', error);
@@ -353,22 +353,22 @@ class ExpertCoordinator {
         try {
             // Get proposals from all experts
             const proposals = this.gatherProposals(context);
-            
+
             // CRITICAL FIX: Check for empty proposals and return fallback plan
             if (proposals._empty || Object.values(proposals).every(p => !p || !p.blocks || p.blocks.length === 0)) {
                 this.logger.warn('All expert proposals are empty - using fallback plan');
                 return this.getFallbackPlan(context);
             }
-            
+
             // Merge with priority order
             const mergedPlan = this.mergeProposals(proposals, context);
-            
+
             // Resolve conflicts
             const resolvedPlan = this.resolveConflicts(mergedPlan, proposals, context);
-            
+
             // Generate rationale
             const rationales = this.whyDecider.generateRationales(resolvedPlan, proposals, context);
-            
+
             return {
                 ...resolvedPlan,
                 rationale: rationales,
@@ -389,7 +389,7 @@ class ExpertCoordinator {
     gatherProposals(context) {
         const proposals = {};
         const failedExperts = [];
-        
+
         for (const [name, expert] of Object.entries(this.experts)) {
             try {
                 proposals[name] = expert.propose(context);
@@ -397,7 +397,7 @@ class ExpertCoordinator {
                 this.logger.warn(`Expert ${name} failed to propose`, error);
                 proposals[name] = { blocks: [], constraints: [], priorities: [] };
                 failedExperts.push({ name, error: error.message });
-                
+
                 // Show error alert for expert failure
                 if (this.errorAlert) {
                     const userFriendlyMessage = this.getUserFriendlyErrorMessage(error, name);
@@ -411,7 +411,7 @@ class ExpertCoordinator {
                 }
             }
         }
-        
+
         // CRITICAL FIX: Prevent empty workout sessions when all 5 experts fail
         // Check immediately after gathering all proposals - catch before logging
         // If all proposals have empty blocks, user would get blank workout screen
@@ -421,7 +421,7 @@ class ExpertCoordinator {
             // Note: Cannot return getFallbackPlanStructured here as gatherProposals returns proposals
             // Calling methods will detect _empty flag and return fallback plan
         }
-        
+
         // Log summary of failed experts
         if (failedExperts.length > 0) {
             this.logger.error('Expert system failures', {
@@ -430,7 +430,7 @@ class ExpertCoordinator {
                 totalExperts: Object.keys(this.experts).length
             });
         }
-        
+
         return proposals;
     }
 
@@ -459,30 +459,30 @@ class ExpertCoordinator {
      */
     getUserFriendlyErrorMessage(error, expertName) {
         const expertDisplayName = this.getExpertDisplayName(expertName);
-        
+
         // Map common technical errors to user-friendly messages
         const errorMessage = error.message || error.toString();
-        
+
         if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
             return `${expertDisplayName} expert is temporarily unavailable due to connection issues`;
         }
-        
+
         if (errorMessage.includes('timeout')) {
             return `${expertDisplayName} expert is taking longer than expected to respond`;
         }
-        
+
         if (errorMessage.includes('validation') || errorMessage.includes('invalid')) {
             return `${expertDisplayName} expert needs more information to make recommendations`;
         }
-        
+
         if (errorMessage.includes('memory') || errorMessage.includes('allocation')) {
             return `${expertDisplayName} expert is experiencing high load, using simplified recommendations`;
         }
-        
+
         if (errorMessage.includes('permission') || errorMessage.includes('unauthorized')) {
             return `${expertDisplayName} expert access is temporarily restricted`;
         }
-        
+
         // Default user-friendly message
         return `${expertDisplayName} expert is temporarily unavailable`;
     }
@@ -509,10 +509,10 @@ class ExpertCoordinator {
         if (proposals.physio?.blocks) {
             const correctiveWork = proposals.physio.blocks.filter(b => b.type === 'corrective');
             const prehabWork = proposals.physio.blocks.filter(b => b.type === 'prehab');
-            
+
             plan.warmup.push(...correctiveWork);
             plan.finishers.push(...prehabWork);
-            
+
             if (correctiveWork.length > 0 || prehabWork.length > 0) {
                 plan.notes.push({
                     source: 'physio',
@@ -525,10 +525,10 @@ class ExpertCoordinator {
         if (proposals.sports?.blocks) {
             const powerWork = proposals.sports.blocks.filter(b => b.type === 'power');
             const conditioning = proposals.sports.blocks.filter(b => b.type === 'conditioning');
-            
+
             plan.mainSets.push(...powerWork);
             plan.finishers.push(...conditioning);
-            
+
             // Check for game day constraints
             const gameDayConstraints = proposals.sports?.constraints?.find(c => c.type === 'game_day_safety');
             if (gameDayConstraints && gameDayConstraints.daysUntilGame <= 2) {
@@ -544,13 +544,13 @@ class ExpertCoordinator {
         if (context.user?.sport === 'climbing' && proposals.climbing?.blocks) {
             const mainTraining = proposals.climbing.blocks.filter(b => b.type === 'main_training');
             const antagonist = proposals.climbing.blocks.filter(b => b.type === 'antagonist');
-            
+
             // Add climbing-specific training to main sets
             plan.mainSets.push(...mainTraining);
-            
+
             // Add antagonist work to finishers
             plan.finishers.push(...antagonist);
-            
+
             // Add finger recovery constraints
             const fingerRecovery = proposals.climbing?.constraints?.find(c => c.type === 'finger_recovery');
             if (fingerRecovery) {
@@ -559,7 +559,7 @@ class ExpertCoordinator {
                     text: 'Finger recovery period: Minimum 48 hours between intense finger work'
                 });
             }
-            
+
             if (mainTraining.length > 0 || antagonist.length > 0) {
                 plan.notes.push({
                     source: 'climbing',
@@ -572,7 +572,7 @@ class ExpertCoordinator {
         if (proposals.strength?.blocks) {
             const mainSets = proposals.strength.blocks.filter(b => b.type === 'main_sets');
             plan.mainSets.push(...mainSets);
-            
+
             const warmupFromStrength = proposals.strength.blocks.filter(b => b.type === 'warmup');
             plan.warmup = [...warmupFromStrength, ...plan.warmup]; // Strength warmup first
         }
@@ -581,7 +581,7 @@ class ExpertCoordinator {
         if (proposals.aesthetics?.blocks) {
             const accessories = proposals.aesthetics.blocks.filter(b => b.type === 'accessory');
             plan.accessories.push(...accessories);
-            
+
             if (accessories.length > 0) {
                 plan.notes.push({
                     source: 'aesthetics',
@@ -617,10 +617,10 @@ class ExpertCoordinator {
 
         // SAFETY PRIORITY: Check for knee pain or knee flags FIRST (before performance concerns)
         // This ensures safety constraints override game-day performance concerns
-        const kneePain = proposals.physio?.blocks?.find(b => 
+        const kneePain = proposals.physio?.blocks?.find(b =>
             b.exercise?.rationale?.toLowerCase().includes('knee')
         ) || context.constraints?.flags?.includes('knee_pain');
-        
+
         if (kneePain) {
             // CRITICAL FIX: Check for ExerciseAdapter availability BEFORE instantiation
             // Prevents app crash if dependency is missing - graceful degradation pattern
@@ -637,10 +637,10 @@ class ExpertCoordinator {
                 // Flow continues with original exercises rather than crashing
             } else {
                 const exerciseAdapter = new window.ExerciseAdapter();
-                
+
                 plan.mainSets = plan.mainSets.map(main => {
                     const exerciseName = main.exercise || main.name;
-                    
+
                     // Check for Bulgarian Split Squats specifically
                     if (exerciseName && exerciseName.toLowerCase().includes('bulgarian split squat')) {
                         const alternates = exerciseAdapter.getAlternates(exerciseName);
@@ -654,7 +654,7 @@ class ExpertCoordinator {
                             };
                         }
                     }
-                    
+
                     // Check for other squat variations
                     if (exerciseName && exerciseName.includes('squat') && !exerciseName.includes('goblet')) {
                         const alternates = exerciseAdapter.getAlternates(exerciseName);
@@ -668,10 +668,10 @@ class ExpertCoordinator {
                             };
                         }
                     }
-                    
+
                     return main;
                 });
-                
+
                 // Add note about substitutions if any were made
                 plan.notes = plan.notes || [];
                 plan.notes.push({
@@ -687,10 +687,10 @@ class ExpertCoordinator {
         const gameDayConstraint = proposals.sports?.constraints?.find(c => c.type === 'game_day_safety');
         if (gameDayConstraint?.daysUntilGame <= 1) {
             // Remove heavy leg work
-            plan.mainSets = plan.mainSets.filter(main => 
+            plan.mainSets = plan.mainSets.filter(main =>
                 !main.exercise?.includes('squat') && !main.exercise?.includes('deadlift')
             );
-            
+
             plan.substitutions.push({
                 original: 'lower_body_work',
                 alternative: 'upper_body_light + power_maintenance',
@@ -707,7 +707,7 @@ class ExpertCoordinator {
                 load: main.load ? main.load * 0.7 : main.load,
                 _readinessReduced: true // Track that readiness reduction was applied
             }));
-            
+
             plan.notes.push({
                 source: 'readiness',
                 text: 'Reduced volume due to low readiness (≤4). Prioritize recovery.'
@@ -718,16 +718,16 @@ class ExpertCoordinator {
         // CRITICAL FIX: Prevent compound scaling that creates 1-set workouts
         if (context.volumeScale && context.volumeScale < 1.0) {
             const volumeMultiplier = context.volumeScale;
-            
+
             // Calculate maximum allowed reduction (cap at 60% total reduction = 40% minimum)
             const maxTotalReduction = 0.6; // Maximum 60% reduction
             const minEffectiveVolume = 1.0 - maxTotalReduction; // At least 40% of original
-            
+
             // Reduce sets and reps across all exercises
             plan.mainSets = plan.mainSets.map(main => {
                 // Use original sets if available, otherwise current sets
                 const baseSets = main._originalSets || main.sets || 3;
-                
+
                 // If readiness reduction was already applied, calculate cumulative effect
                 let effectiveSets;
                 if (main._readinessReduced) {
@@ -743,31 +743,31 @@ class ExpertCoordinator {
                     const minSetsFromOriginal = Math.max(2, Math.floor(baseSets * minEffectiveVolume));
                     effectiveSets = Math.max(minSetsFromOriginal, afterVolumeScale);
                 }
-                
+
                 // Final safety guard: Always ensure at least 2 sets
                 effectiveSets = Math.max(2, effectiveSets);
-                
+
                 return {
                     ...main,
                     sets: effectiveSets,
                     reps: this.adjustRepsForVolume(main.reps, volumeMultiplier)
                 };
             });
-            
+
             // Apply same protection to accessories (allow more flexibility, but still cap at 60% reduction)
             plan.accessories = plan.accessories.map(accessory => {
                 const baseSets = accessory.sets || 3;
                 const afterVolumeScale = Math.floor(baseSets * volumeMultiplier);
                 const minSetsFromOriginal = Math.max(1, Math.floor(baseSets * minEffectiveVolume));
                 const effectiveSets = Math.max(minSetsFromOriginal, afterVolumeScale);
-                
+
                 return {
                     ...accessory,
                     sets: effectiveSets,
                     reps: this.adjustRepsForVolume(accessory.reps, volumeMultiplier)
                 };
             });
-            
+
             plan.notes.push({
                 source: 'load',
                 text: `Reduced volume due to high training load (${Math.round((1 - volumeMultiplier) * 100)}% reduction)`
@@ -777,7 +777,7 @@ class ExpertCoordinator {
         // Apply recovery day recommendations
         const isSimpleMode = context.preferences?.trainingMode === 'simple';
         let isRecoveryDayMinimal = false;
-        
+
         if (context.recommendRecoveryDay) {
             // Replace main sets with recovery exercises
             plan.mainSets = [{
@@ -786,7 +786,7 @@ class ExpertCoordinator {
                 reps: '10-15',
                 rationale: 'Recovery day due to high training load'
             }];
-            
+
             plan.accessories = [];
             plan.finishers = [{
                 exercise: 'Gentle Stretching',
@@ -794,21 +794,21 @@ class ExpertCoordinator {
                 reps: '5-10',
                 rationale: 'Promote recovery and mobility'
             }];
-            
+
             // T2B-4: Detect when recovery day creates minimal workout in Simple Mode
             isRecoveryDayMinimal = isSimpleMode && plan.mainSets.length <= 1;
-            
+
             plan.notes.push({
                 source: 'load',
                 text: 'Recovery day recommended due to load spike - focus on mobility and light movement'
             });
-            
+
             // T2B-4: Add user notification and override option for Simple Mode + Recovery Day collision
             if (isRecoveryDayMinimal) {
                 // Task 2: Check user preference for recovery day handling
                 const simpleModeManager = window.SimpleModeManager;
                 const userPreference = simpleModeManager?.getRecoveryDayPreference?.() || 'ask';
-                
+
                 // Auto-handle if user has set preference
                 if (userPreference === 'accept') {
                     // User prefers to accept recovery days - no notification needed
@@ -840,16 +840,16 @@ class ExpertCoordinator {
                         overrideMessage: 'You can override with a normal workout if preferred'
                     });
                 }
-                
+
                 // Store recovery day preference prompt flag
                 context.showRecoveryDayPreference = true;
                 context.recoveryDayPreference = userPreference;
-                
+
                 this.logger.info('RECOVERY_DAY_SIMPLE_MODE_COLLISION', {
-                    isSimpleMode: isSimpleMode,
+                    isSimpleMode,
                     isRecoveryDay: true,
                     workoutMinimal: isRecoveryDayMinimal,
-                    userPreference: userPreference,
+                    userPreference,
                     message: 'Recovery day creates minimal workout in Simple Mode'
                 });
             }
@@ -860,7 +860,7 @@ class ExpertCoordinator {
             // Keep only warmup and main in simple mode
             plan.accessories = [];
             plan.finishers = plan.finishers?.slice(0, 1) || []; // One finisher only
-            
+
             plan.notes.push({
                 source: 'mode',
                 text: 'Simple mode. Streamlined plan for quick execution.'
@@ -873,14 +873,14 @@ class ExpertCoordinator {
             // Reduce accessories and finishers
             plan.accessories = plan.accessories?.slice(0, 1) || [];
             plan.finishers = plan.finishers?.slice(0, 1) || [];
-            
+
             // Mark for supersets
             plan.mainSets = plan.mainSets.map(ex => ({
                 ...ex,
                 notes: `${ex.notes || ''} (superset to save time)`.trim(),
                 superset: true
             }));
-            
+
             plan.notes.push({
                 source: 'time',
                 text: `Time-crunched plan (${timeLimit} min). Superset main work for efficiency.`
@@ -904,18 +904,18 @@ class ExpertCoordinator {
      */
     generateSessionNotes(plan, context) {
         const notes = [];
-        
+
         notes.push(`Today's readiness: ${context.readiness}/10`);
-        
+
         if (plan.substitutions.length > 0) {
             notes.push(`Modifications: ${plan.substitutions.map(s => s.reason).join(', ')}`);
         }
-        
+
         if (plan.accessories.length > 0) {
             notes.push(`Accessories: ${context.preferences?.aestheticFocus} focus (${plan.accessories.length} exercises)`);
         }
-        
-        return notes.join('. ') + '.';
+
+        return `${notes.join('. ') }.`;
     }
 
     /**
@@ -928,10 +928,10 @@ class ExpertCoordinator {
         const blocks = [];
         const warnings = [];
         const why = [];
-        
+
         // Calculate intensity scale based on readiness
         const intensityScale = this.calculateIntensityScale(context.readiness);
-        
+
         // Build warm-up block
         if (plan.warmup && plan.warmup.length > 0) {
             blocks.push({
@@ -941,7 +941,7 @@ class ExpertCoordinator {
             });
             why.push('Dynamic warm-up prepares movement patterns');
         }
-        
+
         // Build main block
         if (plan.mainSets && plan.mainSets.length > 0) {
             blocks.push({
@@ -951,7 +951,7 @@ class ExpertCoordinator {
             });
             why.push('Main movements target strength and power');
         }
-        
+
         // Build accessories block
         if (plan.accessories && plan.accessories.length > 0) {
             blocks.push({
@@ -961,7 +961,7 @@ class ExpertCoordinator {
             });
             why.push('Accessory work supports main movements');
         }
-        
+
         // Build recovery block
         if (plan.finishers && plan.finishers.length > 0) {
             blocks.push({
@@ -971,26 +971,26 @@ class ExpertCoordinator {
             });
             why.push('Recovery work promotes adaptation');
         }
-        
+
         // Add rationale from notes
         if (plan.notes) {
             plan.notes.forEach(note => {
                 why.push(note.text);
             });
         }
-        
+
         // Add game day warning if applicable
         if (context.schedule?.daysUntilGame <= 1) {
             warnings.push('Game tomorrow. Reduced volume and intensity for performance.');
             why.push('Lower intensity due to upcoming game');
         }
-        
+
         // Add low readiness warning
         if (context.readiness <= 4) {
             warnings.push('Low readiness. Focus on recovery and form.');
             why.push('Volume reduced due to low readiness');
         }
-        
+
         return {
             blocks,
             intensityScale,
@@ -1021,9 +1021,9 @@ class ExpertCoordinator {
      * @returns {number} Intensity scale (0.6-1.1)
      */
     calculateIntensityScale(readiness) {
-        if (readiness >= 8) return 1.0;
-        if (readiness >= 6) return 0.9;
-        if (readiness >= 4) return 0.8;
+        if (readiness >= 8) {return 1.0;}
+        if (readiness >= 6) {return 0.9;}
+        if (readiness >= 4) {return 0.8;}
         return 0.6;
     }
 
@@ -1037,12 +1037,12 @@ class ExpertCoordinator {
         const baseDuration = exercises.length * 8; // 8 min per exercise
         const sessionLength = context.preferences?.sessionLength || 45;
         const timeLimit = context.constraints?.timeLimit || sessionLength;
-        
+
         // If time-crunched, reduce duration
         if (timeLimit <= 25) {
             return Math.min(baseDuration * 0.6, 20);
         }
-        
+
         return Math.min(baseDuration, 40);
     }
 
@@ -1065,7 +1065,7 @@ class ExpertCoordinator {
         if (this.dataValidator) {
             const conservativeRecs = this.dataValidator.generateConservativeRecommendations(context);
             const safetyFlags = this.dataValidator.generateSafetyFlags(context);
-            
+
             return {
                 blocks: [
                     {
@@ -1106,7 +1106,7 @@ class ExpertCoordinator {
                 warnings: safetyFlags.length > 0 ? safetyFlags : ['Using a safe, simplified workout plan']
             };
         }
-        
+
         // Original fallback if no data validator
         return {
             blocks: [
@@ -1223,33 +1223,33 @@ class ExpertCoordinator {
      * @param {Object} loadStatus - Load status from LoadCalculator
      */
     applyLoadBasedWorkoutAdjustments(context, loadStatus) {
-        const recommendations = loadStatus.recommendations;
-        
+        const {recommendations} = loadStatus;
+
         // Apply intensity and volume adjustments
         if (recommendations.intensity < 1.0) {
             context.intensityScale *= recommendations.intensity;
             context.loadAdjustments.push(`Load-based intensity reduction: ${recommendations.adjustments.intensityReduction}%`);
         }
-        
+
         if (recommendations.volume < 1.0) {
             context.volumeScale = recommendations.volume;
             context.loadAdjustments.push(`Load-based volume reduction: ${recommendations.adjustments.volumeReduction}%`);
         }
-        
+
         // Add load rationale to context
         if (recommendations.message) {
             context.loadAdjustments.push(recommendations.message);
         }
-        
+
         // Set recovery recommendation flag
         if (recommendations.recoveryRecommended) {
             context.recommendRecoveryDay = true;
             context.loadAdjustments.push('Recovery day recommended due to load spike');
         }
-        
+
         // Store load status for use in workout generation
         context.loadStatus = loadStatus;
-        
+
         this.logger.info('Applied load-based workout adjustments', {
             intensity: recommendations.intensity,
             volume: recommendations.volume,
@@ -1273,21 +1273,21 @@ class ExpertCoordinator {
                 const max = Math.max(1, Math.floor(parseInt(match[2]) * volumeMultiplier));
                 return `${min}-${max}`;
             }
-            
+
             // Handle single number strings
             const numMatch = reps.match(/(\d+)/);
             if (numMatch) {
                 const adjusted = Math.max(1, Math.floor(parseInt(numMatch[1]) * volumeMultiplier));
                 return adjusted.toString();
             }
-            
+
             return reps; // Return as-is if no numbers found
         }
-        
+
         if (typeof reps === 'number') {
             return Math.max(1, Math.floor(reps * volumeMultiplier));
         }
-        
+
         return reps;
     }
 
@@ -1328,7 +1328,7 @@ class ExpertCoordinator {
 
         return Math.max(0.5, Math.min(1.2, proxy));
     }
-    
+
     /**
      * T2B-3: Generate cache key for validation result caching
      * @param {Object} context - User context
@@ -1344,11 +1344,11 @@ class ExpertCoordinator {
             goals: context.goals,
             userId: context.user?.id || context.userId
         };
-        
+
         // Create hash-like string from key fields
         return JSON.stringify(keyFields);
     }
-    
+
     /**
      * T2B-3: Apply conservative defaults when validation fails or is unavailable
      * @param {Object} context - Original context
@@ -1356,17 +1356,17 @@ class ExpertCoordinator {
      */
     applyConservativeDefaults(context) {
         const safeContext = { ...context };
-        
+
         // Ensure readiness is valid (default to moderate 7)
         if (!safeContext.readiness || isNaN(safeContext.readiness) || safeContext.readiness < 1 || safeContext.readiness > 10) {
             safeContext.readiness = 7;
             safeContext.readinessScore = 7;
         }
-        
+
         // Ensure load values are non-negative
         safeContext.atl7 = Math.max(0, safeContext.atl7 || 0);
         safeContext.ctl28 = Math.max(0, safeContext.ctl28 || 0);
-        
+
         // Set conservative data confidence if missing
         if (!safeContext.dataConfidence || typeof safeContext.dataConfidence !== 'object') {
             safeContext.dataConfidence = {
@@ -1374,16 +1374,16 @@ class ExpertCoordinator {
                 recent30days: 0.6
             };
         }
-        
+
         // Set conservative intensity scale
         safeContext.intensityScale = safeContext.intensityScale || 0.8;
-        
+
         // Ensure volume scale is reasonable
         safeContext.volumeScale = Math.max(0.5, Math.min(1.0, safeContext.volumeScale || 0.8));
-        
+
         // Mark as using conservative defaults
         safeContext._conservativeDefaults = true;
-        
+
         return safeContext;
     }
 }

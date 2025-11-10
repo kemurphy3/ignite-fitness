@@ -74,7 +74,7 @@ class ExerciseProgression {
      */
     createProgressionPlan(userId, sportId, positionId, userProfile) {
         const plan = {
-            userId: userId,
+            userId,
             sport: sportId,
             position: positionId,
             createdAt: new Date().toISOString(),
@@ -86,9 +86,9 @@ class ExerciseProgression {
         };
 
         this.userProgressions.set(userId, plan);
-        
+
         this.logger.audit('PROGRESSION_PLAN_CREATED', {
-            userId: userId,
+            userId,
             sport: sportId,
             position: positionId
         });
@@ -306,18 +306,18 @@ class ExerciseProgression {
         if (canProgress && currentPhaseIndex < plan.phases.length - 1) {
             plan.currentPhase = plan.phases[currentPhaseIndex + 1].name;
             plan.lastProgression = new Date().toISOString();
-            
+
             this.logger.audit('USER_PROGRESSED', {
-                userId: userId,
+                userId,
                 fromPhase: currentPhase.name,
                 toPhase: plan.currentPhase
             });
         }
 
         return {
-            canProgress: canProgress,
+            canProgress,
             currentPhase: plan.currentPhase,
-            nextPhase: currentPhaseIndex < plan.phases.length - 1 ? 
+            nextPhase: currentPhaseIndex < plan.phases.length - 1 ?
                 plan.phases[currentPhaseIndex + 1].name : null,
             recommendations: this.generateRecommendations(plan, performanceData)
         };
@@ -333,14 +333,14 @@ class ExerciseProgression {
         // Check if minimum duration has been met
         const phaseDuration = this.parseDuration(currentPhase.duration);
         const timeInPhase = this.getTimeInPhase(currentPhase);
-        
+
         if (timeInPhase < phaseDuration.min) {
             return false;
         }
 
         // Check performance criteria
         const criteria = this.getPhaseCriteria(currentPhase);
-        return criteria.every(criterion => 
+        return criteria.every(criterion =>
             this.evaluateCriterion(criterion, performanceData)
         );
     }
@@ -417,7 +417,7 @@ class ExerciseProgression {
         // Apply time constraints
         if (adaptations.timeConstraints) {
             adaptedExercise.duration = this.adjustForTimeConstraints(
-                adaptedExercise.duration, 
+                adaptedExercise.duration,
                 adaptations.timeConstraints
             );
         }
@@ -442,9 +442,9 @@ class ExerciseProgression {
         const experience = userProfile.experience || 'beginner';
 
         return {
-            exerciseId: exerciseId,
-            category: category,
-            rules: rules,
+            exerciseId,
+            category,
+            rules,
             currentLevel: this.getCurrentLevel(exerciseId, userProfile),
             nextLevel: this.getNextLevel(exerciseId, userProfile),
             progressionRate: this.getProgressionRate(experience),

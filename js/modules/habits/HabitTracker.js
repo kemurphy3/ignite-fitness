@@ -9,7 +9,7 @@ class HabitTracker {
         this.authManager = window.AuthManager;
         this.storageManager = window.StorageManager;
         this.goalManager = window.GoalManager;
-        
+
         this.achievementDefinitions = this.initializeAchievements();
         this.motivationalMessages = this.initializeMotivationalMessages();
         this.currentStreaks = {};
@@ -96,11 +96,11 @@ class HabitTracker {
      */
     initializeMotivationalMessages() {
         return {
-            streakStart: "Every journey starts with a single step! 💪",
+            streakStart: 'Every journey starts with a single step! 💪',
             weekComplete: "Week {number} complete! You're building a solid habit 🔥",
-            comeback: "Welcome back! The best time to restart is right now ⭐",
+            comeback: 'Welcome back! The best time to restart is right now ⭐',
             streakMilestone: "Day {day} of your streak! You're on fire! 🔥",
-            achievement: "Achievement unlocked: {name}! {reward}",
+            achievement: 'Achievement unlocked: {name}! {reward}',
             habitFormed: "You've completed {days} days in a row - this is becoming a habit! 🌟"
         };
     }
@@ -114,24 +114,24 @@ class HabitTracker {
         try {
             const today = new Date().toISOString().split('T')[0];
             const userId = this.authManager?.getCurrentUsername() || 'anonymous';
-            
+
             // Get current habit data
             const habitData = this.getHabitData(userId, today);
-            
+
             // Update workout completion
             habitData.workout_completed = true;
             habitData.workout_count = (habitData.workout_count || 0) + 1;
             habitData.last_workout_date = today;
-            
+
             // Update streaks
             this.updateStreaks(habitData, today);
-            
+
             // Check for achievements
             const newAchievements = this.checkAchievements(habitData);
-            
+
             // Save updated data
             this.saveHabitData(userId, today, habitData);
-            
+
             // Log event
             this.logEvent('workout_completed', {
                 userId,
@@ -140,12 +140,12 @@ class HabitTracker {
                 streak: habitData.current_streak,
                 totalWorkouts: habitData.total_workouts
             });
-            
+
             // Show motivational message
             this.showMotivationalMessage('streakMilestone', {
                 day: habitData.current_streak
             });
-            
+
             // Show achievement messages
             newAchievements.forEach(achievement => {
                 this.showMotivationalMessage('achievement', {
@@ -153,13 +153,13 @@ class HabitTracker {
                     reward: achievement.reward
                 });
             });
-            
+
             this.logger.audit('WORKOUT_RECORDED', {
                 userId,
                 date: today,
                 streak: habitData.current_streak
             });
-            
+
             return { success: true, habitData, achievements: newAchievements };
         } catch (error) {
             this.logger.error('Failed to record workout', error);
@@ -176,10 +176,10 @@ class HabitTracker {
         const yesterday = new Date(today);
         yesterday.setDate(yesterday.getDate() - 1);
         const yesterdayStr = yesterday.toISOString().split('T')[0];
-        
+
         // Get yesterday's data
         const yesterdayData = this.getHabitData(habitData.user_id, yesterdayStr);
-        
+
         if (yesterdayData.workout_completed) {
             // Continue streak
             habitData.current_streak = (habitData.current_streak || 0) + 1;
@@ -187,16 +187,16 @@ class HabitTracker {
             // Start new streak
             habitData.current_streak = 1;
         }
-        
+
         // Update longest streak
         habitData.longest_streak = Math.max(
             habitData.longest_streak || 0,
             habitData.current_streak
         );
-        
+
         // Update total workouts
         habitData.total_workouts = (habitData.total_workouts || 0) + 1;
-        
+
         // Update weekly count
         const weekStart = this.getWeekStart(today);
         if (habitData.week_start !== weekStart) {
@@ -214,17 +214,17 @@ class HabitTracker {
      */
     checkAchievements(habitData) {
         const newAchievements = [];
-        
+
         this.achievementDefinitions.forEach(achievement => {
-            if (achievement.unlocked) return; // Already unlocked
-            
+            if (achievement.unlocked) {return;} // Already unlocked
+
             if (this.checkAchievementCondition(achievement, habitData)) {
                 achievement.unlocked = true;
                 achievement.unlocked_at = new Date().toISOString();
                 newAchievements.push(achievement);
             }
         });
-        
+
         return newAchievements;
     }
 
@@ -235,8 +235,8 @@ class HabitTracker {
      * @returns {boolean} Condition met
      */
     checkAchievementCondition(achievement, habitData) {
-        const condition = achievement.condition;
-        
+        const {condition} = achievement;
+
         switch (achievement.id) {
             case 'first_workout':
                 return habitData.total_workouts >= 1;
@@ -269,7 +269,7 @@ class HabitTracker {
         const key = `habit_${userId}_${date}`;
         return this.storageManager?.get(key, {
             user_id: userId,
-            date: date,
+            date,
             workout_completed: false,
             workout_count: 0,
             current_streak: 0,
@@ -301,7 +301,7 @@ class HabitTracker {
     getStreakData(userId) {
         const today = new Date().toISOString().split('T')[0];
         const habitData = this.getHabitData(userId, today);
-        
+
         return {
             current: habitData.current_streak || 0,
             longest: habitData.longest_streak || 0,
@@ -329,7 +329,7 @@ class HabitTracker {
     getHabitProgress(userId) {
         const streakData = this.getStreakData(userId);
         const achievements = this.getUserAchievements(userId);
-        
+
         return {
             currentStreak: streakData.current,
             longestStreak: streakData.longest,
@@ -354,10 +354,10 @@ class HabitTracker {
      * @returns {string} Habit strength
      */
     calculateHabitStrength(streak) {
-        if (streak >= 100) return 'Unstoppable';
-        if (streak >= 30) return 'Strong';
-        if (streak >= 7) return 'Forming';
-        if (streak >= 3) return 'Building';
+        if (streak >= 100) {return 'Unstoppable';}
+        if (streak >= 30) {return 'Strong';}
+        if (streak >= 7) {return 'Forming';}
+        if (streak >= 3) {return 'Building';}
         return 'Starting';
     }
 
@@ -381,17 +381,17 @@ class HabitTracker {
      */
     showMotivationalMessage(messageType, data) {
         const message = this.motivationalMessages[messageType];
-        if (!message) return;
-        
+        if (!message) {return;}
+
         const formattedMessage = this.formatMessage(message, data);
-        
+
         // Emit event for UI to display
         this.eventBus?.emit('motivational:message', {
             type: messageType,
             message: formattedMessage,
-            data: data
+            data
         });
-        
+
         this.logger.info('Motivational message:', formattedMessage);
     }
 
@@ -403,11 +403,11 @@ class HabitTracker {
      */
     formatMessage(message, data) {
         let formatted = message;
-        
+
         for (const [key, value] of Object.entries(data)) {
             formatted = formatted.replace(`{${key}}`, value);
         }
-        
+
         return formatted;
     }
 
@@ -424,12 +424,12 @@ class HabitTracker {
                 kind: eventType,
                 payload: data
             };
-            
+
             // Save to events table (would typically be database)
             const events = this.storageManager?.get('user_events', []);
             events.push(event);
             this.storageManager?.set('user_events', events);
-            
+
             this.logger.audit('HABIT_EVENT', { eventType, data });
         } catch (error) {
             this.logger.error('Failed to log event', error);

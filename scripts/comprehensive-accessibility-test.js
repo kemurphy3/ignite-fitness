@@ -96,12 +96,12 @@ class ComprehensiveAccessibilityTester {
      */
     async runTest(testName, testData) {
         console.log(`Testing: ${testName}`);
-        
+
         this.results.totalTests++;
-        
+
         // Categorize test
         const category = this.categorizeTest(testName);
-        
+
         if (testData.violations.length === 0) {
             this.results.passedTests++;
             this.results.categories[category].score += testData.score;
@@ -110,10 +110,10 @@ class ComprehensiveAccessibilityTester {
                 score: testData.score,
                 status: 'passed'
             });
-            
+
             console.log(`✅ PASSED: ${testName}`);
             console.log(`   Score: ${testData.score}/100`);
-            
+
             if (testData.passes.length > 0) {
                 console.log('   Passes:');
                 testData.passes.forEach(pass => {
@@ -127,17 +127,17 @@ class ComprehensiveAccessibilityTester {
                 score: testData.score,
                 status: 'failed'
             });
-            
+
             console.log(`❌ FAILED: ${testName}`);
             console.log(`   Score: ${testData.score}/100`);
-            
+
             console.log('   Violations:');
             testData.violations.forEach(violation => {
                 console.log(`     ✗ ${violation}`);
                 this.results.violations.push(violation);
             });
         }
-        
+
         console.log('');
     }
 
@@ -172,7 +172,7 @@ class ComprehensiveAccessibilityTester {
 
         // Calculate category scores
         Object.keys(this.results.categories).forEach(category => {
-            const tests = this.results.categories[category].tests;
+            const {tests} = this.results.categories[category];
             if (tests.length > 0) {
                 const totalScore = tests.reduce((sum, test) => sum + test.score, 0);
                 this.results.categories[category].score = Math.round(totalScore / tests.length);
@@ -245,7 +245,7 @@ class ComprehensiveAccessibilityTester {
     generateTestingMatrix() {
         console.log('\n📋 Comprehensive Accessibility Testing Matrix');
         console.log('============================================');
-        
+
         const matrix = [
             'Automated Testing',
             '  □ axe-core integration complete',
@@ -363,7 +363,7 @@ class ComprehensiveAccessibilityTester {
         const hasHighContrast = this.checkFileContains('styles/design-tokens.css', 'prefers-contrast: high');
         const hasForcedColors = this.checkFileContains('styles/design-tokens.css', 'forced-colors: active');
         const hasSystemColors = this.checkFileContains('styles/design-tokens.css', 'CanvasText');
-        
+
         return {
             passed: hasHighContrast && hasForcedColors && hasSystemColors,
             status: (hasHighContrast && hasForcedColors && hasSystemColors) ? 'PASS' : 'FAIL',
@@ -378,7 +378,7 @@ class ComprehensiveAccessibilityTester {
         const hasScreenReaderWorkflow = this.checkFileContains('js/modules/accessibility/ScreenReaderWorkflowManager.js', 'ScreenReaderWorkflowManager');
         const hasFocusTrap = this.checkFileContains('js/modules/accessibility/FocusTrapManager.js', 'FocusTrapManager');
         const hasKeyboardShortcuts = this.checkFileContains('js/modules/accessibility/ScreenReaderWorkflowManager.js', 'setupShortcuts');
-        
+
         return {
             passed: hasScreenReaderWorkflow && hasFocusTrap && hasKeyboardShortcuts,
             status: (hasScreenReaderWorkflow && hasFocusTrap && hasKeyboardShortcuts) ? 'PASS' : 'FAIL',
@@ -393,7 +393,7 @@ class ComprehensiveAccessibilityTester {
         const hasFormValidation = this.checkFileContains('js/modules/accessibility/FormValidationManager.js', 'FormValidationManager');
         const hasErrorAnnouncements = this.checkFileContains('js/modules/accessibility/FormValidationManager.js', 'announceFieldErrors');
         const hasLiveRegions = this.checkFileContains('js/modules/accessibility/LiveRegionManager.js', 'LiveRegionManager');
-        
+
         return {
             passed: hasFormValidation && hasErrorAnnouncements && hasLiveRegions,
             status: (hasFormValidation && hasErrorAnnouncements && hasLiveRegions) ? 'PASS' : 'FAIL',
@@ -408,7 +408,7 @@ class ComprehensiveAccessibilityTester {
         const hasLiveRegions = this.checkFileContains('js/modules/accessibility/LiveRegionManager.js', 'LiveRegionManager');
         const hasAnnouncements = this.checkFileContains('js/modules/accessibility/LiveRegionManager.js', 'announce');
         const hasVoiceControl = this.checkFileContains('js/modules/accessibility/VoiceControlManager.js', 'VoiceControlManager');
-        
+
         return {
             passed: hasLiveRegions && hasAnnouncements && hasVoiceControl,
             status: (hasLiveRegions && hasAnnouncements && hasVoiceControl) ? 'PASS' : 'FAIL',
@@ -423,7 +423,7 @@ class ComprehensiveAccessibilityTester {
         const hasFocusIndicators = this.checkFileContains('styles/design-tokens.css', 'focus-outline');
         const hasBorderContrast = this.checkFileContains('styles/design-tokens.css', 'border-width');
         const hasVisualCues = this.checkFileContains('js/modules/accessibility/CognitiveAccessibilityManager.js', 'addVisualCues');
-        
+
         return {
             passed: hasFocusIndicators && hasBorderContrast && hasVisualCues,
             status: (hasFocusIndicators && hasBorderContrast && hasVisualCues) ? 'PASS' : 'FAIL',
@@ -438,7 +438,7 @@ class ComprehensiveAccessibilityTester {
         const hasFocusTrap = this.checkFileContains('js/modules/accessibility/FocusTrapManager.js', 'FocusTrapManager');
         const hasFocusOrder = this.checkFileContains('js/modules/accessibility/FocusTrapManager.js', 'handleTabKey');
         const hasFocusReturn = this.checkFileContains('js/modules/accessibility/FocusTrapManager.js', 'releaseFocus');
-        
+
         return {
             passed: hasFocusTrap && hasFocusOrder && hasFocusReturn,
             status: (hasFocusTrap && hasFocusOrder && hasFocusReturn) ? 'PASS' : 'FAIL',
@@ -453,7 +453,7 @@ class ComprehensiveAccessibilityTester {
         const hasCIWorkflow = this.checkFileContains('.github/workflows/accessibility.yml', 'accessibility-testing');
         const hasRegressionCheck = this.checkFileContains('scripts/accessibility-regression-check.js', 'AccessibilityRegressionChecker');
         const hasReportGenerator = this.checkFileContains('scripts/generate-accessibility-report.js', 'AccessibilityReportGenerator');
-        
+
         return {
             passed: hasCIWorkflow && hasRegressionCheck && hasReportGenerator,
             status: (hasCIWorkflow && hasRegressionCheck && hasReportGenerator) ? 'PASS' : 'FAIL',
@@ -468,7 +468,7 @@ class ComprehensiveAccessibilityTester {
         const hasScreenReaderWorkflow = this.checkFileContains('js/modules/accessibility/ScreenReaderWorkflowManager.js', 'ScreenReaderWorkflowManager');
         const hasTestingGuide = this.checkFileContains('docs/SCREEN_READER_COMPATIBILITY_TESTING.md', 'NVDA Testing');
         const hasVoiceControl = this.checkFileContains('js/modules/accessibility/VoiceControlManager.js', 'VoiceControlManager');
-        
+
         return {
             passed: hasScreenReaderWorkflow && hasTestingGuide && hasVoiceControl,
             status: (hasScreenReaderWorkflow && hasTestingGuide && hasVoiceControl) ? 'PASS' : 'FAIL',
@@ -483,7 +483,7 @@ class ComprehensiveAccessibilityTester {
         const hasCognitiveAccessibility = this.checkFileContains('js/modules/accessibility/CognitiveAccessibilityManager.js', 'CognitiveAccessibilityManager');
         const hasLiveRegions = this.checkFileContains('js/modules/accessibility/LiveRegionManager.js', 'LiveRegionManager');
         const hasFocusTrap = this.checkFileContains('js/modules/accessibility/FocusTrapManager.js', 'FocusTrapManager');
-        
+
         return {
             passed: hasCognitiveAccessibility && hasLiveRegions && hasFocusTrap,
             status: (hasCognitiveAccessibility && hasLiveRegions && hasFocusTrap) ? 'PASS' : 'FAIL',
@@ -508,11 +508,11 @@ class ComprehensiveAccessibilityTester {
 // CLI interface
 if (require.main === module) {
     const tester = new ComprehensiveAccessibilityTester();
-    
+
     tester.runTests()
         .then(() => {
             tester.validateComprehensiveAccessibilityCriteria();
-            
+
             // Exit with appropriate code
             if (tester.results.score >= 95) {
                 console.log('\n🎉 All comprehensive accessibility tests passed!');

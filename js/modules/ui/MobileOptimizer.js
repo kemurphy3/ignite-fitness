@@ -10,7 +10,7 @@ class MobileOptimizer {
         this.isDesktop = false;
         this.touchSupport = false;
         this.orientation = 'portrait';
-        
+
         this.initializeOptimizer();
         this.setupEventListeners();
         this.applyMobileOptimizations();
@@ -23,7 +23,7 @@ class MobileOptimizer {
         this.detectDeviceType();
         this.detectTouchSupport();
         this.detectOrientation();
-        
+
         this.logger.debug('Mobile optimizer initialized:', {
             isMobile: this.isMobile,
             isTablet: this.isTablet,
@@ -38,11 +38,11 @@ class MobileOptimizer {
      */
     detectDeviceType() {
         const width = window.innerWidth;
-        
+
         this.isMobile = width <= 768;
         this.isTablet = width > 768 && width <= 1024;
         this.isDesktop = width > 1024;
-        
+
         // Update body class for CSS targeting
         document.body.classList.remove('mobile', 'tablet', 'desktop');
         if (this.isMobile) {
@@ -58,10 +58,10 @@ class MobileOptimizer {
      * Detect touch support
      */
     detectTouchSupport() {
-        this.touchSupport = 'ontouchstart' in window || 
-                           navigator.maxTouchPoints > 0 || 
+        this.touchSupport = 'ontouchstart' in window ||
+                           navigator.maxTouchPoints > 0 ||
                            navigator.msMaxTouchPoints > 0;
-        
+
         if (this.touchSupport) {
             document.body.classList.add('touch');
         } else {
@@ -74,7 +74,7 @@ class MobileOptimizer {
      */
     detectOrientation() {
         this.orientation = window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
-        
+
         document.body.classList.remove('portrait', 'landscape');
         document.body.classList.add(this.orientation);
     }
@@ -111,15 +111,15 @@ class MobileOptimizer {
         const wasMobile = this.isMobile;
         const wasTablet = this.isTablet;
         const wasDesktop = this.isDesktop;
-        
+
         this.detectDeviceType();
         this.detectOrientation();
-        
+
         // Emit device type change event if changed
         if (wasMobile !== this.isMobile || wasTablet !== this.isTablet || wasDesktop !== this.isDesktop) {
             this.emitDeviceTypeChange();
         }
-        
+
         // Update mobile-specific optimizations
         this.applyMobileOptimizations();
     }
@@ -130,11 +130,11 @@ class MobileOptimizer {
     handleOrientationChange() {
         const wasPortrait = this.orientation === 'portrait';
         this.detectOrientation();
-        
+
         if (wasPortrait !== (this.orientation === 'portrait')) {
             this.emitOrientationChange();
         }
-        
+
         // Apply orientation-specific optimizations
         this.applyOrientationOptimizations();
     }
@@ -160,7 +160,7 @@ class MobileOptimizer {
         document.addEventListener('touchmove', (e) => {
             const touchY = e.touches[0].clientY;
             const touchDiff = touchStartY - touchY;
-            
+
             // Prevent overscroll bounce on iOS
             if (touchDiff < 0 && window.scrollY === 0) {
                 e.preventDefault();
@@ -188,13 +188,13 @@ class MobileOptimizer {
     applyMobileStyles() {
         // Ensure viewport meta tag is correct
         this.updateViewportMeta();
-        
+
         // Add mobile-specific CSS classes
         document.body.classList.add('mobile-optimized');
-        
+
         // Optimize font sizes for mobile
         this.optimizeFontSizes();
-        
+
         // Adjust spacing for touch interfaces
         this.optimizeSpacing();
     }
@@ -211,13 +211,13 @@ class MobileOptimizer {
      */
     updateViewportMeta() {
         let viewportMeta = document.querySelector('meta[name="viewport"]');
-        
+
         if (!viewportMeta) {
             viewportMeta = document.createElement('meta');
             viewportMeta.name = 'viewport';
             document.head.appendChild(viewportMeta);
         }
-        
+
         if (this.isMobile) {
             viewportMeta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
         } else {
@@ -255,13 +255,13 @@ class MobileOptimizer {
                 font-size: 16px; /* Prevents zoom on iOS */
             }
         `;
-        
+
         // Remove existing mobile styles
         const existingStyle = document.getElementById('mobile-optimizer-styles');
         if (existingStyle) {
             existingStyle.remove();
         }
-        
+
         style.id = 'mobile-optimizer-styles';
         document.head.appendChild(style);
     }
@@ -273,19 +273,19 @@ class MobileOptimizer {
         // Swipe gestures for navigation
         let startX = 0;
         let startY = 0;
-        
+
         document.addEventListener('touchstart', (e) => {
             startX = e.touches[0].clientX;
             startY = e.touches[0].clientY;
         }, { passive: true });
-        
+
         document.addEventListener('touchend', (e) => {
             const endX = e.changedTouches[0].clientX;
             const endY = e.changedTouches[0].clientY;
-            
+
             const diffX = startX - endX;
             const diffY = startY - endY;
-            
+
             // Horizontal swipe detection
             if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
                 if (diffX > 0) {
@@ -307,7 +307,7 @@ class MobileOptimizer {
             const tabs = window.BottomNavigation.getAllTabs();
             const currentTab = window.BottomNavigation.activeTab;
             const currentIndex = tabs.findIndex(tab => tab.id === currentTab);
-            
+
             if (currentIndex < tabs.length - 1) {
                 const nextTab = tabs[currentIndex + 1];
                 window.BottomNavigation.navigateToTab(nextTab.id);
@@ -323,7 +323,7 @@ class MobileOptimizer {
             const tabs = window.BottomNavigation.getAllTabs();
             const currentTab = window.BottomNavigation.activeTab;
             const currentIndex = tabs.findIndex(tab => tab.id === currentTab);
-            
+
             if (currentIndex > 0) {
                 const prevTab = tabs[currentIndex - 1];
                 window.BottomNavigation.navigateToTab(prevTab.id);
@@ -337,7 +337,7 @@ class MobileOptimizer {
     optimizeScrolling() {
         // Add smooth scrolling behavior
         document.documentElement.style.scrollBehavior = 'smooth';
-        
+
         // Optimize scroll performance
         const style = document.createElement('style');
         style.textContent = `
@@ -351,12 +351,12 @@ class MobileOptimizer {
                 transform: translateZ(0);
             }
         `;
-        
+
         const existingStyle = document.getElementById('mobile-scroll-styles');
         if (existingStyle) {
             existingStyle.remove();
         }
-        
+
         style.id = 'mobile-scroll-styles';
         document.head.appendChild(style);
     }
@@ -395,12 +395,12 @@ class MobileOptimizer {
                 font-size: 14px;
             }
         `;
-        
+
         const existingStyle = document.getElementById('mobile-font-styles');
         if (existingStyle) {
             existingStyle.remove();
         }
-        
+
         style.id = 'mobile-font-styles';
         document.head.appendChild(style);
     }
@@ -425,12 +425,12 @@ class MobileOptimizer {
                 gap: 12px;
             }
         `;
-        
+
         const existingStyle = document.getElementById('mobile-spacing-styles');
         if (existingStyle) {
             existingStyle.remove();
         }
-        
+
         style.id = 'mobile-spacing-styles';
         document.head.appendChild(style);
     }

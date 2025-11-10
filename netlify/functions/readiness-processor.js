@@ -36,15 +36,15 @@ exports.handler = async (event, context) => {
             case 'calculate_readiness':
                 result = calculateReadiness(data);
                 break;
-            
+
             case 'get_adjustments':
                 result = getWorkoutAdjustments(data);
                 break;
-            
+
             case 'check_conflicts':
                 result = checkScheduleConflicts(data);
                 break;
-            
+
             default:
                 return {
                     statusCode: 400,
@@ -75,29 +75,29 @@ exports.handler = async (event, context) => {
  */
 function calculateReadiness(checkInData) {
     const { sleepQuality, stressLevel, sorenessLevel, energyLevel } = checkInData;
-    
+
     // Weighted formula: 30% sleep, 25% stress (inverted), 25% soreness (inverted), 20% energy
     const sleepWeight = 0.30;
     const stressWeight = 0.25;
     const sorenessWeight = 0.25;
     const energyWeight = 0.20;
-    
+
     // Invert stress and soreness (lower is better)
     const stressScore = 11 - stressLevel;
     const sorenessScore = 11 - sorenessLevel;
-    
+
     // Calculate weighted score
-    const weightedScore = 
-        (sleepQuality * sleepWeight) +           // 30%
-        (stressScore * stressWeight) +          // 25%
-        (sorenessScore * sorenessWeight) +      // 25%
-        (energyLevel * energyWeight);           // 20%
-    
+    const weightedScore =
+        (sleepQuality * sleepWeight) + // 30%
+        (stressScore * stressWeight) + // 25%
+        (sorenessScore * sorenessWeight) + // 25%
+        (energyLevel * energyWeight); // 20%
+
     const readinessScore = Math.round(weightedScore);
-    
+
     // Clamp to 1-10
     const clampedScore = Math.max(1, Math.min(10, readinessScore));
-    
+
     return {
         score: clampedScore,
         breakdown: {
@@ -116,7 +116,7 @@ function calculateReadiness(checkInData) {
  */
 function getWorkoutAdjustments(data) {
     const { readinessScore, rpe, weekNumber, gameDates } = data;
-    
+
     const adjustments = {
         intensityMultiplier: 1.0,
         volumeMultiplier: 1.0,
@@ -124,7 +124,7 @@ function getWorkoutAdjustments(data) {
         coachMessage: '',
         modifications: []
     };
-    
+
     // Readiness-based adjustments
     if (readinessScore <= 4) {
         adjustments.workoutType = 'recovery';
@@ -142,7 +142,7 @@ function getWorkoutAdjustments(data) {
         adjustments.volumeMultiplier = 1.0;
         adjustments.coachMessage = 'Excellent readiness! Ready for full intensity.';
     }
-    
+
     // RPE-based adjustments
     if (rpe !== undefined) {
         if (rpe > 8) {
@@ -155,14 +155,14 @@ function getWorkoutAdjustments(data) {
             adjustments.modifications.push('Increase next session by 5% (previous RPE < 6)');
         }
     }
-    
+
     // Deload week adjustments
     if (weekNumber && weekNumber % 4 === 0) {
         adjustments.volumeMultiplier *= 0.80;
         adjustments.modifications.push('Deload week - reducing volume by 20%');
         adjustments.coachMessage += ' This is your deload week for active recovery.';
     }
-    
+
     // Game day scheduling
     if (gameDates && gameDates.length > 0) {
         const gameAdjustments = calculateGameDayAdjustments(gameDates);
@@ -172,7 +172,7 @@ function getWorkoutAdjustments(data) {
             adjustments.modifications.push(gameAdjustments.modification);
         }
     }
-    
+
     return adjustments;
 }
 
@@ -183,14 +183,14 @@ function getWorkoutAdjustments(data) {
  */
 function checkScheduleConflicts(data) {
     const { workoutDate, intensity, bodyPart, gameDates, previousSessions } = data;
-    
+
     const conflicts = [];
-    
+
     // Check game day conflicts
     if (gameDates && gameDates.length > 0) {
         gameDates.forEach(gameDate => {
             const daysUntil = Math.ceil((new Date(gameDate) - new Date(workoutDate)) / (1000 * 60 * 60 * 24));
-            
+
             if (daysUntil === 1) {
                 // Game day -1
                 if (intensity === 'heavy' || bodyPart === 'legs') {
@@ -214,12 +214,12 @@ function checkScheduleConflicts(data) {
             }
         });
     }
-    
+
     // Check back-to-back training
     if (previousSessions && previousSessions.length > 0) {
         const lastSession = previousSessions[previousSessions.length - 1];
         const daysSince = Math.ceil((new Date(workoutDate) - new Date(lastSession.date)) / (1000 * 60 * 60 * 24));
-        
+
         if (daysSince < 2 && lastSession.intensity === 'heavy' && intensity === 'heavy') {
             conflicts.push({
                 type: 'back_to_back',
@@ -229,7 +229,7 @@ function checkScheduleConflicts(data) {
             });
         }
     }
-    
+
     return {
         hasConflicts: conflicts.length > 0,
         conflicts,
@@ -245,11 +245,11 @@ function checkScheduleConflicts(data) {
  */
 function calculateGameDayAdjustments(gameDates) {
     const today = new Date();
-    
+
     for (const gameDate of gameDates) {
         const game = new Date(gameDate);
         const daysUntil = Math.ceil((game - today) / (1000 * 60 * 60 * 24));
-        
+
         if (daysUntil === 1) {
             return {
                 intensityMultiplier: 0.5,
@@ -264,7 +264,7 @@ function calculateGameDayAdjustments(gameDates) {
             };
         }
     }
-    
+
     return null;
 }
 

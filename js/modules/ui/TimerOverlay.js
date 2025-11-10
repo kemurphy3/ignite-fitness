@@ -5,7 +5,7 @@
 class TimerOverlay {
     constructor() {
         this.logger = window.SafeLogger || console;
-        
+
         this.sessionTimer = null;
         this.restTimer = null;
         this.sessionStartTime = null;
@@ -13,7 +13,7 @@ class TimerOverlay {
         this.isPaused = false;
         this.pauseDuration = 0;
         this.pauseStartTime = null;
-        
+
         this.createOverlay();
         this.setupKeyboardControls();
     }
@@ -88,7 +88,7 @@ class TimerOverlay {
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(overlay);
     }
 
@@ -99,17 +99,17 @@ class TimerOverlay {
         this.sessionStartTime = Date.now();
         this.isPaused = false;
         this.showOverlay();
-        
+
         // Set session timer as active
         this.setActiveTimer('session');
-        
+
         this.updateTimer('session-timer-display', 0);
-        
+
         this.sessionTimer = setInterval(() => {
             const elapsed = Date.now() - this.sessionStartTime - this.pauseDuration;
             this.updateTimer('session-timer-display', elapsed);
         }, 1000);
-        
+
         this.logger.debug('Session timer started');
     }
 
@@ -121,7 +121,7 @@ class TimerOverlay {
             clearInterval(this.sessionTimer);
             this.sessionTimer = null;
         }
-        
+
         this.hideOverlay();
         this.logger.debug('Session timer stopped');
     }
@@ -147,7 +147,7 @@ class TimerOverlay {
             this.pauseDuration += pauseDuration;
             this.pauseStartTime = null;
             this.isPaused = false;
-            
+
             this.startSessionTimer();
             this.logger.debug('Session timer resumed');
         }
@@ -160,32 +160,32 @@ class TimerOverlay {
      * @param {Object} context - Rest context information
      */
     startRestTimer(duration = 60, onComplete = null, context = {}) {
-        if (duration < 30) duration = 30;
-        if (duration > 180) duration = 180;
-        
+        if (duration < 30) {duration = 30;}
+        if (duration > 180) {duration = 180;}
+
         this.restEndTime = Date.now() + (duration * 1000);
-        
+
         // Show rest timer
         const restTimerEl = document.getElementById('rest-timer');
         if (restTimerEl) {
             restTimerEl.classList.add('active');
         }
-        
+
         // Set rest timer as active
         this.setActiveTimer('rest');
-        
+
         // Update rest context
         this.updateRestContext(duration, context);
-        
+
         this.restTimer = setInterval(() => {
             const remaining = Math.max(0, this.restEndTime - Date.now());
-            
+
             if (remaining <= 0) {
                 this.stopRestTimer();
-                
+
                 // Play notification sound
                 this.playNotification();
-                
+
                 if (onComplete) {
                     onComplete();
                 }
@@ -193,7 +193,7 @@ class TimerOverlay {
                 this.updateRestTimerDisplay(remaining);
             }
         }, 100);
-        
+
         this.logger.debug('Rest timer started', { duration, context });
     }
 
@@ -204,7 +204,7 @@ class TimerOverlay {
     setActiveTimer(activeType) {
         const sessionTimer = document.querySelector('.session-timer');
         const restTimer = document.getElementById('rest-timer');
-        
+
         // Remove all active/inactive classes
         if (sessionTimer) {
             sessionTimer.classList.remove('active', 'inactive');
@@ -212,7 +212,7 @@ class TimerOverlay {
         if (restTimer) {
             restTimer.classList.remove('active', 'inactive');
         }
-        
+
         // Set active timer
         if (activeType === 'session' && sessionTimer) {
             sessionTimer.classList.add('active');
@@ -234,12 +234,12 @@ class TimerOverlay {
     updateRestTimerDisplay(remainingMs) {
         const seconds = Math.floor(remainingMs / 1000);
         const display = document.getElementById('rest-timer-display');
-        
+
         if (display) {
             const minutes = Math.floor(seconds / 60);
             const secs = seconds % 60;
             display.textContent = `${minutes}:${secs.toString().padStart(2, '0')}`;
-            
+
             // Add urgency class when < 10 seconds
             if (seconds < 10) {
                 display.classList.add('urgent');
@@ -257,15 +257,15 @@ class TimerOverlay {
             clearInterval(this.restTimer);
             this.restTimer = null;
         }
-        
+
         const restTimerEl = document.getElementById('rest-timer');
         if (restTimerEl) {
             restTimerEl.classList.remove('active');
         }
-        
+
         // Reset to session timer being active
         this.setActiveTimer('session');
-        
+
         this.restEndTime = null;
     }
 
@@ -276,12 +276,12 @@ class TimerOverlay {
      */
     updateTimer(elementId, ms) {
         const element = document.getElementById(elementId);
-        if (!element) return;
-        
+        if (!element) {return;}
+
         const totalSeconds = Math.floor(ms / 1000);
         const minutes = Math.floor(totalSeconds / 60);
         const seconds = totalSeconds % 60;
-        
+
         element.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
     }
 
@@ -295,7 +295,7 @@ class TimerOverlay {
         if (progressBar) {
             progressBar.style.width = `${percentage}%`;
         }
-        
+
         if (text) {
             const progressText = document.getElementById('progress-text');
             if (progressText) {
@@ -333,16 +333,16 @@ class TimerOverlay {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
-            
+
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
-            
+
             oscillator.frequency.value = 800;
             oscillator.type = 'sine';
-            
+
             gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
             gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-            
+
             oscillator.start(audioContext.currentTime);
             oscillator.stop(audioContext.currentTime + 0.5);
         } catch (error) {
@@ -355,8 +355,8 @@ class TimerOverlay {
      * @returns {number} Elapsed time in milliseconds
      */
     getElapsedTime() {
-        if (!this.sessionStartTime) return 0;
-        
+        if (!this.sessionStartTime) {return 0;}
+
         const elapsed = Date.now() - this.sessionStartTime - this.pauseDuration;
         return elapsed;
     }
@@ -369,11 +369,11 @@ class TimerOverlay {
     updateRestContext(duration, context = {}) {
         const recommendedRest = document.getElementById('recommended-rest');
         const restReason = document.getElementById('rest-reason');
-        
+
         if (recommendedRest) {
             recommendedRest.textContent = `${duration}s`;
         }
-        
+
         if (restReason) {
             const reason = context.reason || this.getDefaultRestReason(duration);
             restReason.textContent = reason;
@@ -449,19 +449,19 @@ class TimerOverlay {
     toggleSessionPause() {
         const pauseBtn = document.getElementById('pause-session-timer');
         const resumeBtn = document.getElementById('resume-session-timer');
-        
+
         if (this.isPaused) {
             this.resumeSessionTimer();
-            if (pauseBtn) pauseBtn.style.display = 'block';
-            if (resumeBtn) resumeBtn.style.display = 'none';
-            if (pauseBtn) pauseBtn.setAttribute('aria-pressed', 'false');
+            if (pauseBtn) {pauseBtn.style.display = 'block';}
+            if (resumeBtn) {resumeBtn.style.display = 'none';}
+            if (pauseBtn) {pauseBtn.setAttribute('aria-pressed', 'false');}
         } else {
             this.pauseSessionTimer();
-            if (pauseBtn) pauseBtn.style.display = 'none';
-            if (resumeBtn) resumeBtn.style.display = 'block';
-            if (pauseBtn) pauseBtn.setAttribute('aria-pressed', 'true');
+            if (pauseBtn) {pauseBtn.style.display = 'none';}
+            if (resumeBtn) {resumeBtn.style.display = 'block';}
+            if (pauseBtn) {pauseBtn.setAttribute('aria-pressed', 'true');}
         }
-        
+
         // Announce state change to screen readers
         this.announceTimerState();
     }
@@ -475,7 +475,7 @@ class TimerOverlay {
             this.pauseStartTime = Date.now();
             clearInterval(this.sessionTimer);
             this.sessionTimer = null;
-            
+
             this.logger.debug('Session timer paused');
         }
     }
@@ -490,13 +490,13 @@ class TimerOverlay {
                 this.pauseDuration += Date.now() - this.pauseStartTime;
                 this.pauseStartTime = null;
             }
-            
+
             // Restart the timer
             this.sessionTimer = setInterval(() => {
                 const elapsed = Date.now() - this.sessionStartTime - this.pauseDuration;
                 this.updateTimer('session-timer-display', elapsed);
             }, 1000);
-            
+
             this.logger.debug('Session timer resumed');
         }
     }
@@ -506,7 +506,7 @@ class TimerOverlay {
      */
     announceTimerState() {
         const announcement = this.isPaused ? 'Session timer paused' : 'Session timer resumed';
-        
+
         // Use LiveRegionManager for better announcement management
         if (window.LiveRegionManager) {
             window.LiveRegionManager.handleTimerAnnouncement({
@@ -527,11 +527,11 @@ class TimerOverlay {
         const minutes = Math.floor(elapsed / 60000);
         const seconds = Math.floor((elapsed % 60000) / 1000);
         const duration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        
+
         if (window.LiveRegionManager) {
             window.LiveRegionManager.handleTimerAnnouncement({
                 type: 'timer-complete',
-                duration: duration,
+                duration,
                 message: `Session completed in ${duration}`
             });
         } else {
@@ -560,7 +560,7 @@ class TimerOverlay {
         if (window.LiveRegionManager) {
             window.LiveRegionManager.handleTimerAnnouncement({
                 type: 'rest-start',
-                duration: duration,
+                duration,
                 message: `Rest period started. Recommended duration: ${duration} seconds`
             });
         } else {

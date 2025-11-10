@@ -14,12 +14,12 @@ class AdaptiveDashboard extends AdaptiveComponent {
      * Render simple mode dashboard
      */
     renderSimple() {
-        if (!this.element) return;
-        
+        if (!this.element) {return;}
+
         const username = this.authManager?.getCurrentUsername() || 'Athlete';
         const workoutCount = this.getWorkoutCount();
         const currentStreak = this.getCurrentStreak();
-        
+
         this.element.innerHTML = `
             <div class="dashboard-simple">
                 <div class="simple-mode-indicator" style="
@@ -102,12 +102,12 @@ class AdaptiveDashboard extends AdaptiveComponent {
      * Render advanced mode dashboard
      */
     renderAdvanced() {
-        if (!this.element) return;
-        
+        if (!this.element) {return;}
+
         // Use existing dashboard with all features
         if (window.DashboardHero) {
             const hero = window.DashboardHero.render();
-            
+
             this.element.innerHTML = `
                 <div class="dashboard-advanced">
                     ${hero.outerHTML}
@@ -128,7 +128,7 @@ class AdaptiveDashboard extends AdaptiveComponent {
                     </div>
                 </div>
             `;
-            
+
             // Load charts if available
             if (window.Trends) {
                 setTimeout(() => {
@@ -150,8 +150,8 @@ class AdaptiveDashboard extends AdaptiveComponent {
     getWorkoutCount() {
         try {
             const userId = this.authManager?.getCurrentUsername();
-            if (!userId) return 0;
-            
+            if (!userId) {return 0;}
+
             const userData = this.storageManager?.getUserData?.(userId) || {};
             const workouts = userData.data?.workouts || [];
             return workouts.length;

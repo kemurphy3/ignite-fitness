@@ -338,7 +338,7 @@ class PositionTraining {
     generateTrainingProgram(sportId, positionId, userProfile) {
         const sport = this.sportDefinitions.getSport(sportId);
         const position = this.sportDefinitions.getPosition(sportId, positionId);
-        
+
         if (!sport || !position) {
             throw new Error(`Invalid sport/position combination: ${sportId}/${positionId}`);
         }
@@ -351,7 +351,7 @@ class PositionTraining {
         const program = {
             sport: sportId,
             position: positionId,
-            userProfile: userProfile,
+            userProfile,
             generatedAt: new Date().toISOString(),
             modules: {},
             weeklyStructure: trainingModules.weeklyStructure,
@@ -403,7 +403,7 @@ class PositionTraining {
     generateProgression(moduleId, userProfile) {
         const experience = userProfile.experience || 'beginner';
         const weeks = 12; // Standard program length
-        
+
         const progressions = {
             beginner: {
                 week1_4: { intensity: 'low', volume: 'low', focus: 'technique' },
@@ -454,8 +454,8 @@ class PositionTraining {
     generateRecommendations(sportId, positionId, userProfile) {
         const recommendations = [];
         const position = this.sportDefinitions.getPosition(sportId, positionId);
-        
-        if (!position) return recommendations;
+
+        if (!position) {return recommendations;}
 
         // Physical demands recommendations
         const demands = position.physicalDemands;
@@ -464,7 +464,7 @@ class PositionTraining {
                 if (level === 'very_high' || level === 'high') {
                     recommendations.push({
                         type: 'physical_development',
-                        attribute: attribute,
+                        attribute,
                         priority: 'high',
                         message: `Focus on ${attribute} development - critical for ${position.name} position`
                     });
@@ -477,7 +477,7 @@ class PositionTraining {
         injuryRisks.forEach(risk => {
             recommendations.push({
                 type: 'injury_prevention',
-                risk: risk,
+                risk,
                 priority: 'high',
                 message: `Implement ${risk} prevention strategies`
             });
@@ -488,7 +488,7 @@ class PositionTraining {
         trainingFocus.forEach(focus => {
             recommendations.push({
                 type: 'training_focus',
-                focus: focus,
+                focus,
                 priority: 'medium',
                 message: `Prioritize ${focus} in your training program`
             });
@@ -624,7 +624,7 @@ class PositionTraining {
 
     getAlternativeExercises(injuryHistory) {
         return injuryHistory.map(injury => ({
-            injury: injury,
+            injury,
             alternatives: [`alternative_for_${injury}`]
         }));
     }

@@ -417,23 +417,23 @@ class CorrectiveExercises {
     createProtocol(screeningResult) {
         const issues = this.identifyIssues(screeningResult);
         const exercises = this.selectExercises(issues);
-        
+
         const protocol = {
             id: this.generateId(),
             userId: screeningResult.userProfile?.userId,
             createdAt: new Date().toISOString(),
-            issues: issues,
-            exercises: exercises,
+            issues,
+            exercises,
             schedule: this.generateSchedule(exercises),
             duration: '4-6 weeks',
             progressions: this.generateProgressions(exercises)
         };
 
         this.activeProtocols.set(protocol.id, protocol);
-        
+
         this.logger.audit('CORRECTIVE_PROTOCOL_CREATED', {
             protocolId: protocol.id,
-            issues: issues,
+            issues,
             exerciseCount: exercises.length
         });
 
@@ -447,7 +447,7 @@ class CorrectiveExercises {
      */
     identifyIssues(screeningResult) {
         const issues = [];
-        
+
         if (screeningResult.score <= 1) {
             issues.push('significant_movement_dysfunction');
         }
@@ -458,7 +458,7 @@ class CorrectiveExercises {
                     issues.push(obs.compensation);
                     issues.push(`${obs.compensation}_compensation`);
                 }
-                
+
                 if (obs.muscleImbalance) {
                     issues.push(obs.muscleImbalance);
                 }
@@ -475,10 +475,10 @@ class CorrectiveExercises {
      */
     selectExercises(issues) {
         const selectedExercises = [];
-        
+
         issues.forEach(issue => {
             Object.values(this.exerciseLibrary).forEach(exercise => {
-                if (exercise.purpose.includes(issue) || 
+                if (exercise.purpose.includes(issue) ||
                     exercise.name.toLowerCase().includes(issue.toLowerCase())) {
                     if (!selectedExercises.find(ex => ex.name === exercise.name)) {
                         selectedExercises.push(exercise);
@@ -501,7 +501,7 @@ class CorrectiveExercises {
             duration: '15-20 minutes',
             timing: 'Morning or warm-up',
             sessionStructure: {
-                mobility: exercises.filter(ex => ex.name.toLowerCase().includes('stretch') || 
+                mobility: exercises.filter(ex => ex.name.toLowerCase().includes('stretch') ||
                                                  ex.name.toLowerCase().includes('mobility')),
                 activation: exercises.filter(ex => ex.name.toLowerCase().includes('activation')),
                 strength: exercises.filter(ex => ex.name.toLowerCase().includes('strength') ||
@@ -518,7 +518,7 @@ class CorrectiveExercises {
      */
     generateProgressions(exercises) {
         const progressions = {};
-        
+
         exercises.forEach(exercise => {
             progressions[exercise.name] = {
                 week1_2: exercise.progression[0] || exercise.instructions,
@@ -590,7 +590,7 @@ class CorrectiveExercises {
     getModifications(issues) {
         // Ensure issues is an array - handle both string and array inputs
         const issuesArray = Array.isArray(issues) ? issues : (issues ? [issues] : []);
-        
+
         if (issuesArray.length === 0) {
             return {
                 warmUp: [],
@@ -601,7 +601,7 @@ class CorrectiveExercises {
                 duration: '15-20 minutes'
             };
         }
-        
+
         const modifications = {
             warmUp: [],
             mainExercises: [],
@@ -614,7 +614,7 @@ class CorrectiveExercises {
         issuesArray.forEach(issue => {
             const exercises = this.selectExercises([issue]);
             exercises.forEach(exercise => {
-                if (exercise.name.toLowerCase().includes('stretch') || 
+                if (exercise.name.toLowerCase().includes('stretch') ||
                     exercise.name.toLowerCase().includes('mobility')) {
                     modifications.warmUp.push(exercise);
                 } else if (exercise.name.toLowerCase().includes('strength') ||
@@ -623,7 +623,7 @@ class CorrectiveExercises {
                 } else {
                     modifications.coolDown.push(exercise);
                 }
-                
+
                 // Add exercise to substitute list if it's a corrective exercise
                 if (exercise.purpose && exercise.purpose.includes(issue)) {
                     modifications.substitute.push(exercise);

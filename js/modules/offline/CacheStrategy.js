@@ -10,12 +10,12 @@ class CacheStrategy {
             api: { size: 0, entries: 0 },
             workout: { size: 0, entries: 0 }
         };
-        
+
         this.logger = window.SafeLogger || console;
-        
+
         this.init();
     }
-    
+
     /**
      * Initialize cache strategy
      */
@@ -25,9 +25,9 @@ class CacheStrategy {
             if ('serviceWorker' in navigator) {
                 const registration = await navigator.serviceWorker.register('/sw.js');
                 this.serviceWorker = registration.active || registration.waiting || registration.installing;
-                
+
                 this.logger.info('Service Worker registered:', registration);
-                
+
                 // Listen for service worker updates
                 registration.addEventListener('updatefound', () => {
                     const newWorker = registration.installing;
@@ -38,22 +38,22 @@ class CacheStrategy {
                         }
                     });
                 });
-                
+
                 // Listen for messages from service worker
                 navigator.serviceWorker.addEventListener('message', this.handleMessage.bind(this));
-                
+
                 // Update cache stats
                 await this.updateCacheStats();
-                
+
             } else {
                 this.logger.warn('Service Worker not supported');
             }
-            
+
         } catch (error) {
             this.logger.error('Failed to initialize cache strategy:', error);
         }
     }
-    
+
     /**
      * Cache workout data
      * @param {string} url - Data URL
@@ -64,30 +64,30 @@ class CacheStrategy {
             this.logger.warn('Service Worker not available for caching');
             return;
         }
-        
+
         try {
             this.serviceWorker.postMessage({
                 type: 'CACHE_WORKOUT_DATA',
                 data: { url, data }
             });
-            
+
             this.logger.debug('Workout data cached:', url);
-            
+
         } catch (error) {
             this.logger.error('Failed to cache workout data:', error);
         }
     }
-    
+
     /**
      * Preload critical resources
      * @param {Array} urls - URLs to preload
      */
     async preloadResources(urls) {
-        if (!this.serviceWorker) return;
-        
+        if (!this.serviceWorker) {return;}
+
         try {
             const cache = await caches.open('ignite-fitness-static-v1');
-            
+
             const preloadPromises = urls.map(async url => {
                 try {
                     const response = await fetch(url);
@@ -99,35 +99,35 @@ class CacheStrategy {
                     this.logger.warn('Failed to preload resource:', url, error);
                 }
             });
-            
+
             await Promise.all(preloadPromises);
             this.logger.info(`Preloaded ${urls.length} resources`);
-            
+
         } catch (error) {
             this.logger.error('Failed to preload resources:', error);
         }
     }
-    
+
     /**
      * Clear specific cache
      * @param {string} cacheName - Cache name to clear
      */
     async clearCache(cacheName) {
-        if (!this.serviceWorker) return;
-        
+        if (!this.serviceWorker) {return;}
+
         try {
             this.serviceWorker.postMessage({
                 type: 'CLEAR_CACHE',
                 data: { cacheName }
             });
-            
+
             this.logger.info('Cache cleared:', cacheName);
-            
+
         } catch (error) {
             this.logger.error('Failed to clear cache:', error);
         }
     }
-    
+
     /**
      * Get cache statistics
      * @returns {Object} Cache statistics
@@ -136,34 +136,34 @@ class CacheStrategy {
         if (!this.serviceWorker) {
             return this.cacheStats;
         }
-        
+
         try {
             const messageChannel = new MessageChannel();
-            
+
             return new Promise((resolve) => {
                 messageChannel.port1.onmessage = (event) => {
                     this.cacheStats = event.data;
                     resolve(event.data);
                 };
-                
+
                 this.serviceWorker.postMessage({
                     type: 'GET_CACHE_STATS'
                 }, [messageChannel.port2]);
             });
-            
+
         } catch (error) {
             this.logger.error('Failed to get cache stats:', error);
             return this.cacheStats;
         }
     }
-    
+
     /**
      * Update cache statistics
      */
     async updateCacheStats() {
         this.cacheStats = await this.getCacheStats();
     }
-    
+
     /**
      * Check if resource is cached
      * @param {string} url - URL to check
@@ -178,7 +178,7 @@ class CacheStrategy {
             return false;
         }
     }
-    
+
     /**
      * Get cached data
      * @param {string} url - URL to get
@@ -188,26 +188,26 @@ class CacheStrategy {
         try {
             const cache = await caches.open('ignite-fitness-workout-v1');
             const response = await cache.match(url);
-            
+
             if (response) {
                 return await response.json();
             }
-            
+
             return null;
-            
+
         } catch (error) {
             this.logger.error('Failed to get cached data:', error);
             return null;
         }
     }
-    
+
     /**
      * Handle messages from service worker
      * @param {MessageEvent} event - Message event
      */
     handleMessage(event) {
         const { type, data } = event.data;
-        
+
         switch (type) {
             case 'CACHE_UPDATED':
                 this.logger.debug('Cache updated:', data);
@@ -217,7 +217,7 @@ class CacheStrategy {
                 break;
         }
     }
-    
+
     /**
      * Notify user about service worker update
      */
@@ -238,7 +238,7 @@ class CacheStrategy {
             max-width: 300px;
             font-weight: 500;
         `;
-        
+
         notification.innerHTML = `
             <div style="display: flex; align-items: center; gap: 12px;">
                 <span style="font-size: 20px;">🔄</span>
@@ -257,9 +257,9 @@ class CacheStrategy {
                 ">Update</button>
             </div>
         `;
-        
+
         document.body.appendChild(notification);
-        
+
         // Auto-remove after 10 seconds
         setTimeout(() => {
             if (notification.parentElement) {
@@ -267,30 +267,30 @@ class CacheStrategy {
             }
         }, 10000);
     }
-    
+
     /**
      * Monitor cache performance
      */
     startPerformanceMonitoring() {
         setInterval(async () => {
             await this.updateCacheStats();
-            
+
             const totalSize = Object.values(this.cacheStats).reduce((sum, stat) => sum + stat.size, 0);
             const totalEntries = Object.values(this.cacheStats).reduce((sum, stat) => sum + stat.entries, 0);
-            
+
             if (totalSize > 40 * 1024 * 1024) { // 40MB
                 this.logger.warn('Cache size approaching limit:', totalSize);
             }
-            
+
             this.logger.debug('Cache stats:', {
-                totalSize: Math.round(totalSize / 1024 / 1024) + 'MB',
+                totalSize: `${Math.round(totalSize / 1024 / 1024) }MB`,
                 totalEntries,
                 hitRate: this.calculateHitRate()
             });
-            
+
         }, 30000); // Every 30 seconds
     }
-    
+
     /**
      * Calculate cache hit rate
      * @returns {number} Hit rate percentage
@@ -300,7 +300,7 @@ class CacheStrategy {
         // For now, return a placeholder
         return 85; // 85% hit rate
     }
-    
+
     /**
      * Get offline status
      * @returns {boolean} Offline status
@@ -308,7 +308,7 @@ class CacheStrategy {
     isOffline() {
         return !navigator.onLine;
     }
-    
+
     /**
      * Handle offline/online events
      */
@@ -317,13 +317,13 @@ class CacheStrategy {
             this.logger.info('Back online');
             this.dispatchEvent('online');
         });
-        
+
         window.addEventListener('offline', () => {
             this.logger.info('Gone offline');
             this.dispatchEvent('offline');
         });
     }
-    
+
     /**
      * Dispatch custom events
      */

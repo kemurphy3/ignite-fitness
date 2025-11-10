@@ -3,9 +3,9 @@
 // Tests sessions-create.js, sessions-list.js, and related functionality
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { 
-  setupTestDB, 
-  teardownTestDB, 
+import {
+  setupTestDB,
+  teardownTestDB,
   getTestDatabase,
   createTestUser,
   createTestSession,
@@ -18,7 +18,7 @@ describe('Sessions API Tests', () => {
 
   beforeEach(async () => {
     db = getTestDatabase();
-    
+
     if (process.env.MOCK_DATABASE === 'true' || !db) {
       console.log('⚠️  Mock database mode - skipping database integration tests');
       return;
@@ -26,7 +26,7 @@ describe('Sessions API Tests', () => {
 
     // Clean up any existing test data
     await cleanupTestData();
-    
+
     // Create a test user
     testUser = await createTestUser({
       external_id: `test_user_${Date.now()}`,
@@ -56,7 +56,7 @@ describe('Sessions API Tests', () => {
       }
 
       const { handler } = await import('../../netlify/functions/sessions-create.js');
-      
+
       const sessionData = {
         type: 'workout',
         source: 'app',
@@ -83,7 +83,7 @@ describe('Sessions API Tests', () => {
       expect(responseData.data.id).toBeDefined();
       expect(responseData.data.type).toBe(sessionData.type);
       expect(responseData.data.source).toBe(sessionData.source);
-      
+
       // Verify session was stored in database
       if (db) {
         const storedSession = await db`
@@ -103,7 +103,7 @@ describe('Sessions API Tests', () => {
       const { handler } = await import('../../netlify/functions/sessions-create.js');
 
       // Test missing type
-      let event = {
+      const event = {
         httpMethod: 'POST',
         headers: {
           'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
@@ -220,7 +220,7 @@ describe('Sessions API Tests', () => {
       // Try to create duplicate
       const response2 = await handler(createEvent1);
       const responseData2 = JSON.parse(response2.body);
-      
+
       if (response2.statusCode === 409) {
         expect(responseData2.error.code).toBe('DUPLICATE_SESSION');
       }
@@ -277,7 +277,7 @@ describe('Sessions API Tests', () => {
       expect(listData.success).toBe(true);
       expect(listData.data).toBeDefined();
       expect(Array.isArray(listData.data.items || listData.data)).toBe(true);
-      
+
       const sessions = listData.data.items || listData.data;
       if (sessions.length > 0) {
         expect(sessions[0]).toHaveProperty('id');
@@ -408,14 +408,14 @@ describe('Sessions API Tests', () => {
 
       expect(page1Response.statusCode).toBe(200);
       expect(page1Data.success).toBe(true);
-      
+
       const items = page1Data.data?.items || page1Data.data || [];
       expect(items.length).toBeLessThanOrEqual(2);
 
       // Test with cursor/offset if supported
       if (page1Data.data?.pagination || page1Data.pagination) {
         const pagination = page1Data.data?.pagination || page1Data.pagination;
-        
+
         if (pagination.next_cursor || pagination.offset !== undefined) {
           const page2Event = {
             httpMethod: 'GET',
@@ -752,7 +752,7 @@ describe('Sessions API Tests', () => {
 
       // Valid types: 'workout', 'sport', 'recovery', 'sleep'
       const validTypes = ['workout', 'sport', 'recovery', 'sleep'];
-      
+
       for (const validType of validTypes) {
         const event = {
           httpMethod: 'POST',
@@ -773,7 +773,7 @@ describe('Sessions API Tests', () => {
 
       // Invalid types should be rejected
       const invalidTypes = ['invalid_type', 'unknown', '', null, 123];
-      
+
       for (const invalidType of invalidTypes) {
         const event = {
           httpMethod: 'POST',
@@ -871,7 +871,7 @@ describe('Sessions API Tests', () => {
 
       // Invalid date formats
       const invalidDates = ['not-a-date', '2024-13-45', '2024/01/01', '', null];
-      
+
       for (const invalidDate of invalidDates) {
         const invalidEvent = {
           httpMethod: 'POST',
@@ -1003,7 +1003,7 @@ describe('Sessions API Tests', () => {
       }
 
       const responses = await Promise.all(concurrentSessions);
-      
+
       // All should complete without errors (may have some duplicates, but no crashes)
       responses.forEach((response, index) => {
         expect(response.statusCode).toBeDefined();

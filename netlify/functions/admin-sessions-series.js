@@ -1,19 +1,19 @@
 // GET /api/admin/sessions/series - Time series with proper timezone handling
 const { neon } = require('@neondatabase/serverless');
 const crypto = require('crypto');
-const { 
-  verifyAdmin, 
-  auditLog, 
-  errorResponse, 
+const {
+  verifyAdmin,
+  auditLog,
+  errorResponse,
   validateDateRange,
   validateTimezone,
   withTimeout,
-  successResponse 
+  successResponse
 } = require('./utils/admin-auth');
 
-const { 
-  safeQuery, 
-  validateBucket 
+const {
+  safeQuery,
+  validateBucket
 } = require('./utils/safe-query');
 
 const { getNeonClient } = require('./utils/connection-pool');
@@ -22,29 +22,29 @@ const sql = getNeonClient();
 exports.handler = async (event) => {
   const startTime = Date.now();
   const requestId = crypto.randomUUID();
-  
+
   try {
     await sql`SET statement_timeout = '5s'`;
-    
+
     const token = event.headers.authorization?.split(' ')[1];
     if (!token) {
       return errorResponse(401, 'MISSING_TOKEN', 'Authorization header required', requestId);
     }
-    
+
     const { adminId } = await verifyAdmin(token, requestId);
-    
+
     const { from, to, bucket = 'day', timezone = 'UTC' } = event.queryStringParameters || {};
-    
+
     // Validate required params
     if (!from || !to) {
       return errorResponse(400, 'MISSING_PARAMS', 'Parameters from and to are required', requestId);
     }
-    
+
     // Validate date range, timezone, and bucket
     const { fromDate, toDate } = validateDateRange(from, to);
     const validatedTimezone = validateTimezone(timezone);
     const validatedBucket = validateBucket(bucket);
-    
+
     // Proper timezone conversion with DST handling using safe queries
     const series = await withTimeout(async () => {
       return await safeQuery(async () => {
@@ -110,27 +110,27 @@ exports.handler = async (event) => {
         }
       });
     });
-    
+
     // Calculate summary with privacy
     const summary = series.reduce((acc, row) => ({
       total_sessions: acc.total_sessions + row.session_count,
       total_users: Math.max(acc.total_users, row.unique_users_raw || 0),
       completion_rate: null // Calculate after
     }), { total_sessions: 0, total_users: 0 });
-    
+
     const totalCompleted = series.reduce((sum, row) => sum + row.completed_count, 0);
-    summary.completion_rate = summary.total_sessions > 0 
+    summary.completion_rate = summary.total_sessions > 0
       ? Math.round((totalCompleted / summary.total_sessions) * 100) / 100
       : null;
-    
+
     // Apply privacy threshold to summary
     if (summary.total_users < 5) {
       summary.total_users = null;
     }
-    
-    await auditLog(adminId, '/admin/sessions/series', 'GET', 
+
+    await auditLog(adminId, '/admin/sessions/series', 'GET',
       { from, to, bucket, timezone }, 200, Date.now() - startTime, requestId);
-    
+
     return successResponse(
       {
         series: series.map(row => ({
@@ -151,16 +151,16 @@ exports.handler = async (event) => {
       requestId,
       'private, max-age=300'
     );
-    
+
   } catch (error) {
     const statusCode = error.message.includes('Authentication') ? 401 :
                       error.message.includes('Admin') ? 403 :
                       error.message.includes('Invalid date') || error.message.includes('Invalid timezone') ? 400 :
                       error.message.includes('Query timeout') ? 500 : 500;
-    
-    await auditLog(null, '/admin/sessions/series', 'GET', 
+
+    await auditLog(null, '/admin/sessions/series', 'GET',
       event.queryStringParameters, statusCode, Date.now() - startTime, requestId);
-    
+
     if (error.message.includes('Authentication failed')) {
       return errorResponse(401, 'UNAUTHORIZED', 'Invalid or expired token', requestId);
     }

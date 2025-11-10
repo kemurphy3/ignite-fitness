@@ -42,7 +42,7 @@ class AdaptiveComponent {
      */
     render() {
         this.checkSimpleMode();
-        
+
         if (this.simpleMode) {
             this.renderSimple();
         } else {

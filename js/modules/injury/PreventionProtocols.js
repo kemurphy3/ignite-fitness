@@ -288,7 +288,7 @@ class PreventionProtocols {
      * @returns {Object|null} Prevention protocol
      */
     getProtocol(injuryType) {
-        const protocolKey = injuryType.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_prevention';
+        const protocolKey = `${injuryType.toLowerCase().replace(/[^a-z0-9]/g, '_') }_prevention`;
         return this.protocols[protocolKey] || null;
     }
 
@@ -299,7 +299,7 @@ class PreventionProtocols {
      */
     getProtocolsForSport(sportId) {
         const sport = this.sportDefinitions.getSport(sportId);
-        if (!sport) return [];
+        if (!sport) {return [];}
 
         const sportInjuries = sport.commonInjuries || [];
         const protocols = [];
@@ -308,8 +308,8 @@ class PreventionProtocols {
             const protocol = this.getProtocol(injury.name || injury);
             if (protocol) {
                 protocols.push({
-                    injury: injury,
-                    protocol: protocol
+                    injury,
+                    protocol
                 });
             }
         });
@@ -325,7 +325,7 @@ class PreventionProtocols {
      */
     getProtocolsForPosition(sportId, positionId) {
         const position = this.sportDefinitions.getPosition(sportId, positionId);
-        if (!position) return [];
+        if (!position) {return [];}
 
         const positionInjuries = position.injuryRisks || [];
         const protocols = [];
@@ -334,8 +334,8 @@ class PreventionProtocols {
             const protocol = this.getProtocol(injury.name || injury);
             if (protocol) {
                 protocols.push({
-                    injury: injury,
-                    protocol: protocol
+                    injury,
+                    protocol
                 });
             }
         });
@@ -351,9 +351,9 @@ class PreventionProtocols {
     createPreventionProgram(userProfile) {
         const sportId = userProfile.sport || 'soccer';
         const positionId = userProfile.position;
-        
+
         const sportProtocols = this.getProtocolsForSport(sportId);
-        const positionProtocols = positionId ? 
+        const positionProtocols = positionId ?
             this.getProtocolsForPosition(sportId, positionId) : [];
 
         const program = {
@@ -479,10 +479,10 @@ class PreventionProtocols {
      */
     getEffectivenessData(injuryType) {
         const protocol = this.getProtocol(injuryType);
-        if (!protocol) return null;
+        if (!protocol) {return null;}
 
         return {
-            injuryType: injuryType,
+            injuryType,
             protocolName: protocol.name,
             effectiveness: protocol.effectiveness,
             evidence: protocol.evidence,

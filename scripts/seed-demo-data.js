@@ -169,7 +169,7 @@ class DemoDataSeeder {
     }
 
     async seedSubstitutionExamples(examples) {
-        if (!examples || examples.length === 0) return;
+        if (!examples || examples.length === 0) {return;}
 
         process.stdout.write('🔁 Seeding substitution examples ');
         for (const example of examples) {
@@ -252,7 +252,7 @@ class DemoDataSeeder {
             apikey: this.supabaseKey,
             Authorization: `Bearer ${this.supabaseKey}`
         };
-        if (prefer) headers.Prefer = prefer;
+        if (prefer) {headers.Prefer = prefer;}
         return headers;
     }
 

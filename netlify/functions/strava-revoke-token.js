@@ -69,13 +69,13 @@ const okPreflight = () => ({
 });
 
 exports.handler = async (event) => {
-    if (event.httpMethod === 'OPTIONS') return okPreflight();
-    if (event.httpMethod !== 'POST') return methodNotAllowed();
+    if (event.httpMethod === 'OPTIONS') {return okPreflight();}
+    if (event.httpMethod !== 'POST') {return methodNotAllowed();}
 
     try {
         // Parse request body
         const { access_token, refresh_token, user_id } = JSON.parse(event.body || '{}');
-        
+
         if (!access_token) {
             return badReq('Missing access token');
         }
@@ -87,16 +87,16 @@ exports.handler = async (event) => {
         }
 
         const jwtToken = authHeader.substring(7);
-        
+
         // Verify JWT token (simplified - in production, use proper JWT verification)
         if (!jwtToken || jwtToken.length < 10) {
             return unauthorized('Invalid JWT token');
         }
 
         logger.info('Token revocation request received', {
-            user_id: user_id,
-            access_token: access_token,
-            refresh_token: refresh_token
+            user_id,
+            access_token,
+            refresh_token
         });
 
         // Revoke token with Strava API
@@ -106,7 +106,7 @@ exports.handler = async (event) => {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
             body: new URLSearchParams({
-                access_token: access_token
+                access_token
             })
         });
 
@@ -115,9 +115,9 @@ exports.handler = async (event) => {
             logger.error('Strava token revocation failed', {
                 status: revokeResponse.status,
                 error_data: errorData,
-                access_token: access_token
+                access_token
             });
-            
+
             return {
                 statusCode: 400,
                 headers: {
@@ -137,8 +137,8 @@ exports.handler = async (event) => {
 
         // Log successful revocation
         logger.info('Token revocation successful', {
-            user_id: user_id,
-            access_token: access_token,
+            user_id,
+            access_token,
             revoked_at: new Date().toISOString()
         });
 
@@ -262,7 +262,7 @@ async function logTokenRevocation(userId, accessToken) {
         if (error) {
             logger.error('Failed to log token revocation', {
                 user_id: userId,
-                error: error
+                error
             });
         }
 

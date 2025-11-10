@@ -9,13 +9,13 @@ class BaseComponent {
         this.timers = new Set();
         this.observers = new Set();
         this.isDestroyed = false;
-        
+
         this.logger = window.SafeLogger || console;
-        
+
         // Auto-cleanup on page unload
         this.setupAutoCleanup();
     }
-    
+
     /**
      * Add event listener with automatic cleanup tracking
      * @param {HTMLElement|Window|Document} target - Event target
@@ -28,9 +28,9 @@ class BaseComponent {
             this.logger.warn('Cannot add event listener to destroyed component');
             return;
         }
-        
+
         const listenerId = this.generateListenerId(target, event, handler);
-        
+
         // Store listener info for cleanup
         this.eventListeners.set(listenerId, {
             target,
@@ -38,13 +38,13 @@ class BaseComponent {
             handler,
             options
         });
-        
+
         // Add the actual listener
         target.addEventListener(event, handler, options);
-        
+
         this.logger.debug(`Event listener added: ${event} on ${target.constructor.name}`);
     }
-    
+
     /**
      * Remove specific event listener
      * @param {HTMLElement|Window|Document} target - Event target
@@ -53,14 +53,14 @@ class BaseComponent {
      */
     removeEventListener(target, event, handler) {
         const listenerId = this.generateListenerId(target, event, handler);
-        
+
         if (this.eventListeners.has(listenerId)) {
             target.removeEventListener(event, handler);
             this.eventListeners.delete(listenerId);
             this.logger.debug(`Event listener removed: ${event} on ${target.constructor.name}`);
         }
     }
-    
+
     /**
      * Add timer with automatic cleanup tracking
      * @param {Function} callback - Timer callback
@@ -73,18 +73,18 @@ class BaseComponent {
             this.logger.warn('Cannot add timer to destroyed component');
             return null;
         }
-        
-        const timerId = isInterval ? 
-            setInterval(callback, delay) : 
+
+        const timerId = isInterval ?
+            setInterval(callback, delay) :
             setTimeout(callback, delay);
-        
+
         this.timers.add(timerId);
-        
+
         this.logger.debug(`Timer added: ${isInterval ? 'interval' : 'timeout'} (${delay}ms)`);
-        
+
         return timerId;
     }
-    
+
     /**
      * Remove timer
      * @param {number} timerId - Timer ID
@@ -97,7 +97,7 @@ class BaseComponent {
             this.logger.debug('Timer removed');
         }
     }
-    
+
     /**
      * Add observer with automatic cleanup tracking
      * @param {IntersectionObserver|MutationObserver|ResizeObserver} observer - Observer instance
@@ -107,11 +107,11 @@ class BaseComponent {
             this.logger.warn('Cannot add observer to destroyed component');
             return;
         }
-        
+
         this.observers.add(observer);
         this.logger.debug('Observer added');
     }
-    
+
     /**
      * Remove observer
      * @param {IntersectionObserver|MutationObserver|ResizeObserver} observer - Observer instance
@@ -123,7 +123,7 @@ class BaseComponent {
             this.logger.debug('Observer removed');
         }
     }
-    
+
     /**
      * Generate unique listener ID
      * @param {HTMLElement|Window|Document} target - Event target
@@ -132,13 +132,13 @@ class BaseComponent {
      * @returns {string} Listener ID
      */
     generateListenerId(target, event, handler) {
-        const targetId = target === window ? 'window' : 
-                        target === document ? 'document' : 
+        const targetId = target === window ? 'window' :
+                        target === document ? 'document' :
                         target.id || target.className || 'element';
-        
+
         return `${targetId}_${event}_${handler.name || 'anonymous'}`;
     }
-    
+
     /**
      * Setup automatic cleanup on page unload
      */
@@ -147,7 +147,7 @@ class BaseComponent {
         window.addEventListener('beforeunload', () => {
             this.destroy();
         });
-        
+
         // Cleanup on visibility change (for SPA navigation)
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
@@ -157,7 +157,7 @@ class BaseComponent {
             }
         });
     }
-    
+
     /**
      * Pause component (stop timers, pause observers)
      */
@@ -166,16 +166,16 @@ class BaseComponent {
             clearTimeout(timerId);
             clearInterval(timerId);
         });
-        
+
         this.observers.forEach(observer => {
             if (observer.disconnect) {
                 observer.disconnect();
             }
         });
-        
+
         this.logger.debug('Component paused');
     }
-    
+
     /**
      * Resume component (restart timers, observers)
      */
@@ -184,7 +184,7 @@ class BaseComponent {
         // This is a simplified implementation
         this.logger.debug('Component resumed');
     }
-    
+
     /**
      * Destroy component and clean up all resources
      */
@@ -192,22 +192,22 @@ class BaseComponent {
         if (this.isDestroyed) {
             return;
         }
-        
+
         this.logger.debug('Destroying component...');
-        
+
         // Remove all event listeners
         this.eventListeners.forEach(({ target, event, handler }) => {
             target.removeEventListener(event, handler);
         });
         this.eventListeners.clear();
-        
+
         // Clear all timers
         this.timers.forEach(timerId => {
             clearTimeout(timerId);
             clearInterval(timerId);
         });
         this.timers.clear();
-        
+
         // Disconnect all observers
         this.observers.forEach(observer => {
             if (observer.disconnect) {
@@ -215,16 +215,16 @@ class BaseComponent {
             }
         });
         this.observers.clear();
-        
+
         // Remove element from DOM if it exists
         if (this.element && this.element.parentNode) {
             this.element.parentNode.removeChild(this.element);
         }
-        
+
         this.isDestroyed = true;
         this.logger.debug('Component destroyed');
     }
-    
+
     /**
      * Get component statistics
      * @returns {Object} Component stats

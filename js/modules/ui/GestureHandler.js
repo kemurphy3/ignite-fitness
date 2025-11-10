@@ -7,7 +7,7 @@ class GestureHandler {
         this.logger = window.SafeLogger || console;
         this.activeGestures = new Map();
         this.gestureCallbacks = this.initializeGestureCallbacks();
-        
+
         this.setupEventListeners();
     }
 
@@ -63,12 +63,12 @@ class GestureHandler {
         document.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: true });
         document.addEventListener('touchmove', (e) => this.handleTouchMove(e), { passive: true });
         document.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: true });
-        
+
         // Mouse event listeners for desktop testing
         document.addEventListener('mousedown', (e) => this.handleMouseDown(e), { passive: true });
         document.addEventListener('mousemove', (e) => this.handleMouseMove(e), { passive: true });
         document.addEventListener('mouseup', (e) => this.handleMouseUp(e), { passive: true });
-        
+
         // Prevent pull-to-refresh on most pages
         this.preventPullToRefresh();
     }
@@ -90,7 +90,7 @@ class GestureHandler {
 
         document.addEventListener('touchend', (e) => {
             const touchDistance = touchStartY - touchEndY;
-            
+
             // If user pulled down significantly at top of page
             if (touchDistance < -50 && window.scrollY === 0) {
                 e.preventDefault();
@@ -105,11 +105,11 @@ class GestureHandler {
     handleTouchStart(event) {
         const touch = event.touches[0];
         const element = document.elementFromPoint(touch.clientX, touch.clientY);
-        
-        if (!element) return;
-        
+
+        if (!element) {return;}
+
         this.activeGestures.set('current', {
-            element: element,
+            element,
             startX: touch.clientX,
             startY: touch.clientY,
             startTime: Date.now(),
@@ -123,10 +123,10 @@ class GestureHandler {
      */
     handleTouchMove(event) {
         const current = this.activeGestures.get('current');
-        if (!current) return;
-        
+        if (!current) {return;}
+
         const touch = event.touches[0];
-        
+
         current.currentX = touch.clientX;
         current.currentY = touch.clientY;
         current.deltaX = touch.clientX - current.startX;
@@ -139,13 +139,13 @@ class GestureHandler {
      */
     handleTouchEnd(event) {
         const current = this.activeGestures.get('current');
-        if (!current) return;
-        
+        if (!current) {return;}
+
         const duration = Date.now() - current.startTime;
         const deltaX = current.deltaX || 0;
         const deltaY = current.deltaY || 0;
         const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-        
+
         // Determine gesture type
         if (duration > 500) {
             // Long press
@@ -160,7 +160,7 @@ class GestureHandler {
             // Tap
             this.handleTap(current, event);
         }
-        
+
         this.activeGestures.delete('current');
     }
 
@@ -170,21 +170,21 @@ class GestureHandler {
      * @param {string} direction - Swipe direction
      */
     handleSwipe(gestureData, direction) {
-        const target = gestureData.target;
+        const {target} = gestureData;
         const callbacks = this.gestureCallbacks.swipe?.[direction];
-        
-        if (!callbacks || !target) return;
-        
+
+        if (!callbacks || !target) {return;}
+
         const action = callbacks[target];
-        if (!action) return;
-        
+        if (!action) {return;}
+
         this.logger.debug('Swipe gesture detected:', { target, direction, action });
-        
+
         // Emit custom event
         gestureData.element.dispatchEvent(new CustomEvent('gesture:swipe', {
             detail: { direction, target, action }
         }));
-        
+
         // Execute action
         this.executeAction(action, gestureData.element);
     }
@@ -194,21 +194,21 @@ class GestureHandler {
      * @param {Object} gestureData - Gesture data
      */
     handleLongPress(gestureData) {
-        const target = gestureData.target;
+        const {target} = gestureData;
         const callbacks = this.gestureCallbacks.longPress;
-        
-        if (!callbacks || !target) return;
-        
+
+        if (!callbacks || !target) {return;}
+
         const action = callbacks[target];
-        if (!action) return;
-        
+        if (!action) {return;}
+
         this.logger.debug('Long press detected:', { target, action });
-        
+
         // Emit custom event
         gestureData.element.dispatchEvent(new CustomEvent('gesture:longpress', {
             detail: { target, action }
         }));
-        
+
         // Execute action
         this.executeAction(action, gestureData.element);
     }
@@ -221,7 +221,7 @@ class GestureHandler {
     handleTap(gestureData, event) {
         const currentTime = Date.now();
         const lastTap = this.activeGestures.get('lastTap');
-        
+
         if (lastTap && currentTime - lastTap < 300) {
             // Double tap detected
             this.handleDoubleTap(gestureData);
@@ -237,21 +237,21 @@ class GestureHandler {
      * @param {Object} gestureData - Gesture data
      */
     handleDoubleTap(gestureData) {
-        const target = gestureData.target;
+        const {target} = gestureData;
         const callbacks = this.gestureCallbacks.doubleTap;
-        
-        if (!callbacks || !target) return;
-        
+
+        if (!callbacks || !target) {return;}
+
         const action = callbacks[target];
-        if (!action) return;
-        
+        if (!action) {return;}
+
         this.logger.debug('Double tap detected:', { target, action });
-        
+
         // Emit custom event
         gestureData.element.dispatchEvent(new CustomEvent('gesture:doubletap', {
             detail: { target, action }
         }));
-        
+
         // Execute action
         this.executeAction(action, gestureData.element);
     }
@@ -266,14 +266,14 @@ class GestureHandler {
         if (element.dataset.gestureTarget) {
             return element.dataset.gestureTarget;
         }
-        
+
         // Check for class-based targets
-        if (element.classList.contains('exercise-card')) return 'exercise_card';
-        if (element.classList.contains('workout-item')) return 'workout_item';
-        if (element.classList.contains('progress-chart')) return 'progress_chart';
-        if (element.classList.contains('dashboard')) return 'dashboard';
-        if (element.classList.contains('card')) return 'card';
-        
+        if (element.classList.contains('exercise-card')) {return 'exercise_card';}
+        if (element.classList.contains('workout-item')) {return 'workout_item';}
+        if (element.classList.contains('progress-chart')) {return 'progress_chart';}
+        if (element.classList.contains('dashboard')) {return 'dashboard';}
+        if (element.classList.contains('card')) {return 'card';}
+
         return null;
     }
 
@@ -430,11 +430,11 @@ class GestureHandler {
      * Mouse event handlers for desktop testing
      */
     handleMouseDown(event) {
-        if (this.isTouchDevice()) return;
-        
+        if (this.isTouchDevice()) {return;}
+
         const element = event.target;
         this.activeGestures.set('current', {
-            element: element,
+            element,
             startX: event.clientX,
             startY: event.clientY,
             startTime: Date.now(),
@@ -443,11 +443,11 @@ class GestureHandler {
     }
 
     handleMouseMove(event) {
-        if (this.isTouchDevice()) return;
-        
+        if (this.isTouchDevice()) {return;}
+
         const current = this.activeGestures.get('current');
-        if (!current) return;
-        
+        if (!current) {return;}
+
         current.currentX = event.clientX;
         current.currentY = event.clientY;
         current.deltaX = event.clientX - current.startX;
@@ -455,23 +455,23 @@ class GestureHandler {
     }
 
     handleMouseUp(event) {
-        if (this.isTouchDevice()) return;
-        
+        if (this.isTouchDevice()) {return;}
+
         const current = this.activeGestures.get('current');
-        if (!current) return;
-        
+        if (!current) {return;}
+
         const duration = Date.now() - current.startTime;
         const deltaX = current.deltaX || 0;
         const deltaY = current.deltaY || 0;
-        
+
         if (duration > 500 && Math.abs(deltaX) < 10 && Math.abs(deltaY) < 10) {
             this.handleLongPress(current);
         } else if (Math.abs(deltaX) > 50 || Math.abs(deltaY) > 50) {
-            this.handleSwipe(current, Math.abs(deltaX) > Math.abs(deltaY) ? 
-                (deltaX > 0 ? 'right' : 'left') : 
+            this.handleSwipe(current, Math.abs(deltaX) > Math.abs(deltaY) ?
+                (deltaX > 0 ? 'right' : 'left') :
                 (deltaY > 0 ? 'down' : 'up'));
         }
-        
+
         this.activeGestures.delete('current');
     }
 
@@ -493,7 +493,7 @@ class GestureHandler {
         if (!this.gestureCallbacks[gestureType]) {
             this.gestureCallbacks[gestureType] = {};
         }
-        
+
         this.gestureCallbacks[gestureType][target] = callback;
     }
 

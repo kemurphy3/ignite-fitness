@@ -3,9 +3,9 @@
 // Tests exercises-bulk-create.js and related functionality
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { 
-  setupTestDB, 
-  teardownTestDB, 
+import {
+  setupTestDB,
+  teardownTestDB,
   getTestDatabase,
   createTestUser,
   createTestSession,
@@ -19,7 +19,7 @@ describe('Exercises API Tests', () => {
 
   beforeEach(async () => {
     db = getTestDatabase();
-    
+
     if (process.env.MOCK_DATABASE === 'true' || !db) {
       console.log('⚠️  Mock database mode - skipping database integration tests');
       return;
@@ -27,7 +27,7 @@ describe('Exercises API Tests', () => {
 
     // Clean up any existing test data
     await cleanupTestData();
-    
+
     // Create a test user
     testUser = await createTestUser({
       external_id: `test_user_${Date.now()}`,
@@ -129,7 +129,7 @@ describe('Exercises API Tests', () => {
             .post('/api/exercises')
             .set('Authorization', `Bearer ${validToken}`)
             .send(exercise);
-          
+
           expect(response.status).toBe(400);
         } catch (error) {
           // Expected to fail validation
@@ -190,7 +190,7 @@ describe('Exercises API Tests', () => {
       // Should return validation errors for invalid exercises
       // Handler may reject all or reject only invalid ones - both are valid
       expect([400, 422]).toContain(response.statusCode);
-      
+
       if (responseData.error) {
         expect(responseData.error.details || responseData.error).toBeDefined();
       }
@@ -220,7 +220,7 @@ describe('Exercises API Tests', () => {
         },
         body: JSON.stringify({
           session_id: session.id,
-          exercises: exercises
+          exercises
         })
       });
 
@@ -234,14 +234,14 @@ describe('Exercises API Tests', () => {
     it('should validate exercise name', async () => {
       // Test exercise name validation
       const invalidNames = ['', '   ', null, undefined, 'a'.repeat(256)]; // Too long
-      
+
       for (const name of invalidNames) {
         try {
           const response = await request(app)
             .post('/api/exercises')
             .set('Authorization', `Bearer ${validToken}`)
             .send({ name, type: 'strength' });
-          
+
           expect(response.status).toBe(400);
         } catch (error) {
           expect(error).toBeDefined();
@@ -252,14 +252,14 @@ describe('Exercises API Tests', () => {
     it('should validate exercise type', async () => {
       // Test exercise type validation
       const invalidTypes = ['', 'invalid_type', null, undefined];
-      
+
       for (const type of invalidTypes) {
         try {
           const response = await request(app)
             .post('/api/exercises')
             .set('Authorization', `Bearer ${validToken}`)
             .send({ name: 'Test Exercise', type });
-          
+
           expect(response.status).toBe(400);
         } catch (error) {
           expect(error).toBeDefined();
@@ -315,7 +315,7 @@ describe('Exercises API Tests', () => {
 
         const response = await exerciseHandler(event);
         const responseData = JSON.parse(response.body);
-        
+
         expect([400, 422]).toContain(response.statusCode);
         expect(responseData.error).toBeDefined();
       }
@@ -369,7 +369,7 @@ describe('Exercises API Tests', () => {
         };
 
         const response = await exerciseHandler(event);
-        
+
         // Valid categories should be accepted (may fail for other reasons)
         expect([200, 201, 400, 422]).toContain(response.statusCode);
       }
@@ -394,7 +394,7 @@ describe('Exercises API Tests', () => {
 
       const invalidResponse = await exerciseHandler(invalidEvent);
       const invalidData = JSON.parse(invalidResponse.body);
-      
+
       // Invalid category should be rejected or ignored
       if ([400, 422].includes(invalidResponse.statusCode)) {
         expect(invalidData.error).toBeDefined();
@@ -454,7 +454,7 @@ describe('Exercises API Tests', () => {
 
       expect([200, 201]).toContain(exerciseResponse.statusCode);
       expect(exerciseResponseData.exercises || exerciseResponseData.data).toBeDefined();
-      
+
       const exercises = exerciseResponseData.exercises || exerciseResponseData.data || [];
       expect(exercises.length).toBe(1);
       expect(exercises[0].name).toBe('Pull Up');
@@ -748,7 +748,7 @@ describe('Exercises API Tests', () => {
       expect(listResponse.statusCode).toBe(200);
       const exercises = listData.exercises || listData.data?.items || listData.data || [];
       expect(exercises.length).toBeGreaterThanOrEqual(3);
-      
+
       // Verify we can find exercises by name
       const benchPress = exercises.find(e => e.name && e.name.toLowerCase().includes('bench'));
       expect(benchPress).toBeDefined();
@@ -1227,7 +1227,7 @@ describe('Exercises API Tests', () => {
 
       expect(listResponse.statusCode).toBe(200);
       const exercises = listData.exercises || listData.data?.items || listData.data || [];
-      
+
       // Verify exercise with progress exists
       const benchPress = exercises.find(ex => ex.name === 'Bench Press');
       if (benchPress) {
@@ -1300,7 +1300,7 @@ describe('Exercises API Tests', () => {
 
       expect(listResponse.statusCode).toBe(200);
       expect(duration).toBeLessThan(2000); // Should complete within 2 seconds
-      
+
       const exerciseList = listData.exercises || listData.data?.items || listData.data || [];
       expect(exerciseList.length).toBeGreaterThanOrEqual(20);
     });
@@ -1332,7 +1332,7 @@ describe('Exercises API Tests', () => {
       const sessionId = sessionData.data?.id || sessionData.id;
 
       // Create multiple exercises concurrently
-      const concurrentRequests = Array(5).fill(null).map((_, i) => 
+      const concurrentRequests = Array(5).fill(null).map((_, i) =>
         exerciseHandler({
           httpMethod: 'POST',
           path: `/sessions/${sessionId}/exercises`,

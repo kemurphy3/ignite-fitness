@@ -10,7 +10,7 @@ class BottomNavigation {
         this.tabs = [];
         this.currentIndex = 0;
         this.isKeyboardNavigating = false;
-        
+
         this.initializeNavigation();
         this.setupEventListeners();
     }
@@ -107,7 +107,7 @@ class BottomNavigation {
 
         this.createNavigationElement();
         this.updateVisibility();
-        
+
         // Listen for Simple Mode changes
         if (window.EventBus) {
             window.EventBus.on('simpleMode:changed', () => {
@@ -129,11 +129,11 @@ class BottomNavigation {
         const nav = document.createElement('div');
         nav.id = 'bottom-navigation';
         nav.className = 'bottom-nav';
-        
+
         nav.innerHTML = this.generateNavigationHTML();
-        
+
         document.body.appendChild(nav);
-        
+
         this.logger.debug('Bottom navigation created');
     }
 
@@ -172,7 +172,7 @@ class BottomNavigation {
      * @returns {boolean} Whether tab is disabled
      */
     isTabDisabled(tab) {
-        if (!tab.requiresAuth) return false;
+        if (!tab.requiresAuth) {return false;}
         return !this.isAuthenticated();
     }
 
@@ -234,7 +234,7 @@ class BottomNavigation {
      */
     setActiveTab(tabId) {
         this.activeTab = tabId;
-        
+
         // Update visual state
         const navTabs = document.querySelectorAll('.nav-tab');
         navTabs.forEach(tab => {
@@ -252,12 +252,12 @@ class BottomNavigation {
      */
     updateVisibility() {
         const nav = document.getElementById('bottom-navigation');
-        if (!nav) return;
+        if (!nav) {return;}
 
         // Hide navigation on auth pages
         const currentRoute = window.Router.getCurrentRoute();
         const authRoutes = ['#/login', '#/register', '#/onboarding'];
-        
+
         if (authRoutes.includes(currentRoute)) {
             this.hide();
         } else {
@@ -271,7 +271,7 @@ class BottomNavigation {
     updateNavigation() {
         this.createNavigationElement();
         this.updateVisibility();
-        
+
         if (this.activeTab) {
             this.setActiveTab(this.activeTab);
         }
@@ -304,7 +304,7 @@ class BottomNavigation {
      */
     handleResize() {
         const isMobile = window.innerWidth <= 768;
-        
+
         if (isMobile) {
             this.show();
         } else {
@@ -328,7 +328,7 @@ class BottomNavigation {
      */
     addNotificationBadge(tabId, count) {
         const tab = document.querySelector(`[data-tab="${tabId}"]`);
-        if (!tab) return;
+        if (!tab) {return;}
 
         // Remove existing badge
         const existingBadge = tab.querySelector('.nav-badge');
@@ -350,7 +350,7 @@ class BottomNavigation {
      */
     removeNotificationBadge(tabId) {
         const tab = document.querySelector(`[data-tab="${tabId}"]`);
-        if (!tab) return;
+        if (!tab) {return;}
 
         const badge = tab.querySelector('.nav-badge');
         if (badge) {
@@ -421,8 +421,8 @@ class BottomNavigation {
             }
 
             // Check if we're in the navigation area
-            const activeElement = document.activeElement;
-            const isInNav = navContainer.contains(activeElement) || 
+            const {activeElement} = document;
+            const isInNav = navContainer.contains(activeElement) ||
                            activeElement.classList.contains('nav-tab');
 
             if (!isInNav && !this.isKeyboardNavigating) {
@@ -579,9 +579,9 @@ class BottomNavigation {
             liveRegion.className = 'sr-only';
             document.body.appendChild(liveRegion);
         }
-        
+
         liveRegion.textContent = text;
-        
+
         // Clear announcement after a short delay
         setTimeout(() => {
             if (liveRegion) {

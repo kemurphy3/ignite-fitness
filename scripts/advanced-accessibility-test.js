@@ -75,14 +75,14 @@ class AdvancedAccessibilityTester {
      */
     async runTest(testName, testData) {
         console.log(`Testing: ${testName}`);
-        
+
         this.results.totalTests++;
-        
+
         if (testData.violations.length === 0) {
             this.results.passedTests++;
             console.log(`✅ PASSED: ${testName}`);
             console.log(`   Score: ${testData.score}/100`);
-            
+
             if (testData.passes.length > 0) {
                 console.log('   Passes:');
                 testData.passes.forEach(pass => {
@@ -93,14 +93,14 @@ class AdvancedAccessibilityTester {
             this.results.failedTests++;
             console.log(`❌ FAILED: ${testName}`);
             console.log(`   Score: ${testData.score}/100`);
-            
+
             console.log('   Violations:');
             testData.violations.forEach(violation => {
                 console.log(`     ✗ ${violation}`);
                 this.results.violations.push(violation);
             });
         }
-        
+
         console.log('');
     }
 
@@ -197,7 +197,7 @@ class AdvancedAccessibilityTester {
         const hasScreenReaderManager = this.checkFileContains('js/modules/accessibility/ScreenReaderWorkflowManager.js', 'ScreenReaderWorkflowManager');
         const hasShortcuts = this.checkFileContains('js/modules/accessibility/ScreenReaderWorkflowManager.js', 'setupShortcuts');
         const hasAudioCues = this.checkFileContains('js/modules/accessibility/ScreenReaderWorkflowManager.js', 'setupAudioCues');
-        
+
         return {
             passed: hasScreenReaderManager && hasShortcuts && hasAudioCues,
             status: (hasScreenReaderManager && hasShortcuts && hasAudioCues) ? 'PASS' : 'FAIL',
@@ -212,7 +212,7 @@ class AdvancedAccessibilityTester {
         const hasVoiceManager = this.checkFileContains('js/modules/accessibility/VoiceControlManager.js', 'VoiceControlManager');
         const hasSpeechRecognition = this.checkFileContains('js/modules/accessibility/VoiceControlManager.js', 'SpeechRecognition');
         const hasVoiceCommands = this.checkFileContains('js/modules/accessibility/VoiceControlManager.js', 'setupCommands');
-        
+
         return {
             passed: hasVoiceManager && hasSpeechRecognition && hasVoiceCommands,
             status: (hasVoiceManager && hasSpeechRecognition && hasVoiceCommands) ? 'PASS' : 'FAIL',
@@ -227,7 +227,7 @@ class AdvancedAccessibilityTester {
         const hasCognitiveManager = this.checkFileContains('js/modules/accessibility/CognitiveAccessibilityManager.js', 'CognitiveAccessibilityManager');
         const hasPlainLanguage = this.checkFileContains('js/modules/accessibility/CognitiveAccessibilityManager.js', 'plainLanguageMode');
         const hasReadingAssistance = this.checkFileContains('js/modules/accessibility/CognitiveAccessibilityManager.js', 'readingAssistance');
-        
+
         return {
             passed: hasCognitiveManager && hasPlainLanguage && hasReadingAssistance,
             status: (hasCognitiveManager && hasPlainLanguage && hasReadingAssistance) ? 'PASS' : 'FAIL',
@@ -242,7 +242,7 @@ class AdvancedAccessibilityTester {
         const hasHighContrast = this.checkFileContains('styles/design-tokens.css', 'prefers-contrast: high');
         const hasForcedColors = this.checkFileContains('styles/design-tokens.css', 'forced-colors: active');
         const hasSystemColors = this.checkFileContains('styles/design-tokens.css', 'CanvasText');
-        
+
         return {
             passed: hasHighContrast && hasForcedColors && hasSystemColors,
             status: (hasHighContrast && hasForcedColors && hasSystemColors) ? 'PASS' : 'FAIL',
@@ -257,7 +257,7 @@ class AdvancedAccessibilityTester {
         const hasFocusTrap = this.checkFileContains('js/modules/accessibility/FocusTrapManager.js', 'FocusTrapManager');
         const hasFocusOrder = this.checkFileContains('js/modules/accessibility/FocusTrapManager.js', 'handleTabKey');
         const hasFocusReturn = this.checkFileContains('js/modules/accessibility/FocusTrapManager.js', 'releaseFocus');
-        
+
         return {
             passed: hasFocusTrap && hasFocusOrder && hasFocusReturn,
             status: (hasFocusTrap && hasFocusOrder && hasFocusReturn) ? 'PASS' : 'FAIL',
@@ -284,7 +284,7 @@ class AdvancedAccessibilityTester {
     generateTestingChecklist() {
         console.log('\n📋 Advanced Accessibility Testing Checklist');
         console.log('==========================================');
-        
+
         const checklist = [
             'Screen Reader Optimized Workflow',
             '  □ Screen reader shortcuts implemented',
@@ -352,12 +352,12 @@ class AdvancedAccessibilityTester {
 // CLI interface
 if (require.main === module) {
     const tester = new AdvancedAccessibilityTester();
-    
+
     tester.runTests()
         .then(() => {
             tester.validateAdvancedAccessibilityCriteria();
             tester.generateTestingChecklist();
-            
+
             // Exit with appropriate code
             if (tester.results.score >= 95) {
                 console.log('\n🎉 All advanced accessibility tests passed!');

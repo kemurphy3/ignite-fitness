@@ -31,7 +31,7 @@ exports.handler = async (event, context) => {
         }
 
         const periodization = generatePeriodization(sport, season, gameDates, preferences);
-        
+
         return {
             statusCode: 200,
             headers,
@@ -63,34 +63,34 @@ function generatePeriodization(sport, season, gameDates = [], preferences = {}) 
             focus: 'strength_power_development',
             intensity: 'high',
             volume: 'moderate',
-            blocks: 3  // 3-4 blocks of 4 weeks each
+            blocks: 3 // 3-4 blocks of 4 weeks each
         },
         'pre-season': {
             duration: '6-8 weeks',
             focus: 'sport_specific_preparation',
             intensity: 'high',
             volume: 'high',
-            blocks: 2  // 2 blocks of 4 weeks each
+            blocks: 2 // 2 blocks of 4 weeks each
         },
         'in-season': {
             duration: '24-36 weeks',
             focus: 'performance_maintenance',
             intensity: 'moderate',
             volume: 'moderate',
-            blocks: 6  // 6-9 blocks of 4 weeks each
+            blocks: 6 // 6-9 blocks of 4 weeks each
         },
         'post-season': {
             duration: '2-4 weeks',
             focus: 'recovery_regeneration',
             intensity: 'low',
             volume: 'low',
-            blocks: 1  // 1 block
+            blocks: 1 // 1 block
         }
     };
 
     const macrocycle = macrocycles[season] || macrocycles['off-season'];
     const resolvedStartDate = resolveProgramStartDate(preferences) || new Date();
-    
+
     // Generate 4-week microcycle blocks
     const blocks = [];
     for (let i = 1; i <= macrocycle.blocks; i++) {
@@ -132,7 +132,7 @@ function generatePeriodization(sport, season, gameDates = [], preferences = {}) 
  */
 function generateMicrocycleBlock(blockNumber, macrocycle, gameDates, programStartDate = new Date()) {
     const weeks = [];
-    
+
     for (let week = 1; week <= 4; week++) {
         const weekStartDate = calculateWeekStartDate(week, blockNumber, programStartDate);
         const weekData = {
@@ -145,7 +145,7 @@ function generateMicrocycleBlock(blockNumber, macrocycle, gameDates, programStar
             gameConflict: hasGameConflict(week, blockNumber, gameDates),
             startDate: weekStartDate
         };
-        
+
         // Apply taper if game is close
         const taperAdjustment = calculateTaperAdjustment(week, blockNumber, gameDates);
         if (taperAdjustment) {
@@ -154,10 +154,10 @@ function generateMicrocycleBlock(blockNumber, macrocycle, gameDates, programStar
             weekData.intensityMultiplier *= taperAdjustment.intensity;
             weekData.reason = `Tapering for game on ${taperAdjustment.gameDate}`;
         }
-        
+
         weeks.push(weekData);
     }
-    
+
     return {
         blockNumber,
         phase: macrocycle.focus,
@@ -177,8 +177,8 @@ function generateMicrocycleBlock(blockNumber, macrocycle, gameDates, programStar
  * @returns {number} Volume multiplier
  */
 function calculateVolumeMultiplier(week) {
-    if (week === 4) return 0.6;  // Deload: -40%
-    return 0.7 + (week * 0.1);   // Progressive: 0.8, 0.9, 1.0
+    if (week === 4) {return 0.6;} // Deload: -40%
+    return 0.7 + (week * 0.1); // Progressive: 0.8, 0.9, 1.0
 }
 
 /**
@@ -187,7 +187,7 @@ function calculateVolumeMultiplier(week) {
  * @returns {number} Intensity multiplier
  */
 function calculateIntensityMultiplier(week) {
-    if (week === 4) return 0.85;  // Deload: -15%
+    if (week === 4) {return 0.85;} // Deload: -15%
     return 0.9 + (week * 0.033); // Progressive: 0.933, 0.966, 1.0
 }
 
@@ -199,12 +199,12 @@ function calculateIntensityMultiplier(week) {
  * @returns {boolean} Has game conflict
  */
 function hasGameConflict(week, blockNumber, gameDates) {
-    if (!gameDates || gameDates.length === 0) return false;
-    
+    if (!gameDates || gameDates.length === 0) {return false;}
+
     const weekStartDate = calculateWeekStartDate(week, blockNumber, new Date());
     const weekEndDate = new Date(weekStartDate);
     weekEndDate.setDate(weekEndDate.getDate() + 7);
-    
+
     return gameDates.some(gameDate => {
         const game = new Date(gameDate);
         return game >= weekStartDate && game < weekEndDate;
@@ -218,37 +218,37 @@ function hasGameConflict(week, blockNumber, gameDates) {
  * @returns {Array} Taper weeks
  */
 function calculateAutoTaper(gameDates, blocks) {
-    if (!gameDates || gameDates.length === 0) return [];
-    
+    if (!gameDates || gameDates.length === 0) {return [];}
+
     const taperWeeks = [];
-    
+
     gameDates.forEach(gameDate => {
         const game = new Date(gameDate);
-        
+
         // Taper protocol: 2 weeks before game
         const taperStart = new Date(game);
         taperStart.setDate(taperStart.getDate() - 14);
-        
+
         blocks.forEach(block => {
             block.weeks.forEach(week => {
                 const weekStart = calculateWeekStartDate(week.week.split('-')[1], block.blockNumber, new Date());
                 const weekEnd = new Date(weekStart);
                 weekEnd.setDate(weekEnd.getDate() + 7);
-                
+
                 if (weekStart <= taperStart && weekEnd > taperStart) {
                     taperWeeks.push({
-                        gameDate: gameDate,
+                        gameDate,
                         week: week.week,
                         adjustments: {
-                            volume: 0.7,  // -30% volume
-                            intensity: 0.9  // -10% intensity
+                            volume: 0.7, // -30% volume
+                            intensity: 0.9 // -10% intensity
                         }
                     });
                 }
             });
         });
     });
-    
+
     return taperWeeks;
 }
 
@@ -260,26 +260,26 @@ function calculateAutoTaper(gameDates, blocks) {
  * @returns {Object|null} Taper adjustment
  */
 function calculateTaperAdjustment(week, blockNumber, gameDates) {
-    if (!gameDates || gameDates.length === 0) return null;
-    
+    if (!gameDates || gameDates.length === 0) {return null;}
+
     const weekStartDate = calculateWeekStartDate(week, blockNumber, new Date());
-    
+
     for (const gameDate of gameDates) {
         const game = new Date(gameDate);
         const daysUntil = Math.floor((game - weekStartDate) / (1000 * 60 * 60 * 24));
-        
+
         if (daysUntil >= 0 && daysUntil <= 14) {
             // Apply taper in 2 weeks before game
             const taperIntensity = 1 - (daysUntil / 14); // 0 to 1 scale
-            
+
             return {
-                volume: Math.max(0.5, 1 - (taperIntensity * 0.3)),  // -30% max
+                volume: Math.max(0.5, 1 - (taperIntensity * 0.3)), // -30% max
                 intensity: Math.max(0.8, 1 - (taperIntensity * 0.2)), // -20% max
-                gameDate: gameDate
+                gameDate
             };
         }
     }
-    
+
     return null;
 }
 
@@ -397,7 +397,7 @@ function calculatePhaseProgress(blocks, programStartDate) {
  */
 function generateRecommendations(season, blocks) {
     const recommendations = [];
-    
+
     if (season === 'off-season') {
         recommendations.push('Focus on strength and power development');
         recommendations.push('Build aerobic base during deload weeks');
@@ -411,7 +411,7 @@ function generateRecommendations(season, blocks) {
         recommendations.push('Focus on recovery and regeneration');
         recommendations.push('Active recovery activities preferred');
     }
-    
+
     return recommendations;
 }
 

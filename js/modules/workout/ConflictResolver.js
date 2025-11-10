@@ -7,7 +7,7 @@ class ConflictResolver {
         this.logger = window.SafeLogger || console;
         this.eventBus = window.EventBus;
         this.storageManager = window.StorageManager;
-        
+
         this.restDaysBetweenHeavySessions = 2; // Minimum rest between heavy leg sessions
     }
 
@@ -21,7 +21,7 @@ class ConflictResolver {
     resolveConflicts(scheduledWorkout, userSchedule, context = {}) {
         try {
             const conflicts = this.detectConflicts(scheduledWorkout, userSchedule, context);
-            
+
             if (conflicts.length === 0) {
                 return {
                     canProceed: true,
@@ -31,10 +31,10 @@ class ConflictResolver {
             }
 
             const resolution = this.generateResolution(scheduledWorkout, conflicts, userSchedule, context);
-            
+
             return {
                 canProceed: resolution.canProceed,
-                conflicts: conflicts,
+                conflicts,
                 recommendations: resolution.recommendations,
                 modifiedWorkout: resolution.modifiedWorkout || scheduledWorkout
             };
@@ -58,7 +58,7 @@ class ConflictResolver {
     detectConflicts(scheduledWorkout, userSchedule, context) {
         const conflicts = [];
         const workoutDate = new Date(scheduledWorkout.date);
-        
+
         // 1. Check for game-day conflicts
         if (context.upcomingGames) {
             const gameConflict = this.checkGameDayConflict(workoutDate, context.upcomingGames);
@@ -102,7 +102,7 @@ class ConflictResolver {
         for (const game of upcomingGames) {
             const gameDate = new Date(game.date);
             const daysToGame = (gameDate - workoutDate) / (1000 * 60 * 60 * 24);
-            
+
             if (daysToGame === 1) {
                 // Game -1 day: Heavy leg work conflict
                 if (game.priority === 'high' && workoutDate.getHours() > 12) {
@@ -137,7 +137,7 @@ class ConflictResolver {
      */
     checkBackToBackConflict(workoutDate, userSchedule) {
         const previousWorkout = this.getPreviousWorkout(workoutDate, userSchedule);
-        
+
         if (previousWorkout && previousWorkout.intensity === 'heavy') {
             return {
                 type: 'back_to_back',
@@ -158,13 +158,13 @@ class ConflictResolver {
      */
     checkRecoveryConflict(workoutDate, userSchedule) {
         const previousWorkout = this.getPreviousWorkout(workoutDate, userSchedule);
-        
+
         if (!previousWorkout) {
             return null;
         }
 
         const daysBetween = (workoutDate - new Date(previousWorkout.date)) / (1000 * 60 * 60 * 24);
-        
+
         if (previousWorkout.bodyPart === 'legs' && daysBetween < this.restDaysBetweenHeavySessions) {
             return {
                 type: 'recovery',
@@ -186,10 +186,10 @@ class ConflictResolver {
      */
     checkBodyPartOverlap(workoutDate, userSchedule, bodyPart) {
         const previousWorkout = this.getPreviousWorkout(workoutDate, userSchedule);
-        
+
         if (previousWorkout && previousWorkout.bodyPart === bodyPart) {
             const daysBetween = (workoutDate - new Date(previousWorkout.date)) / (1000 * 60 * 60 * 24);
-            
+
             if (daysBetween < 2) {
                 return {
                     type: 'body_part_overlap',
@@ -211,7 +211,7 @@ class ConflictResolver {
      */
     getPreviousWorkout(workoutDate, userSchedule) {
         const workouts = this.getSortedWorkouts(userSchedule);
-        
+
         for (let i = workouts.length - 1; i >= 0; i--) {
             const workoutDateObj = new Date(workouts[i].date);
             if (workoutDateObj < workoutDate) {
@@ -228,7 +228,7 @@ class ConflictResolver {
      * @returns {Array} Sorted workouts
      */
     getSortedWorkouts(userSchedule) {
-        return Object.values(userSchedule).sort((a, b) => 
+        return Object.values(userSchedule).sort((a, b) =>
             new Date(a.date) - new Date(b.date)
         );
     }

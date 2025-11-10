@@ -3,9 +3,9 @@
 // Tests strava-refresh-token.js and related token management
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { 
-  setupTestDB, 
-  teardownTestDB, 
+import {
+  setupTestDB,
+  teardownTestDB,
   getTestDatabase,
   createTestUser,
   cleanupTestData
@@ -17,7 +17,7 @@ describe('Strava Token Refresh Tests', () => {
 
   beforeEach(async () => {
     db = getTestDatabase();
-    
+
     if (process.env.MOCK_DATABASE === 'true' || !db) {
       console.log('⚠️  Mock database mode - skipping database integration tests');
       return;
@@ -25,7 +25,7 @@ describe('Strava Token Refresh Tests', () => {
 
     // Clean up any existing test data
     await cleanupTestData();
-    
+
     // Create a test user
     testUser = await createTestUser({
       external_id: `test_user_${Date.now()}`,
@@ -295,7 +295,7 @@ describe('Strava Token Refresh Tests', () => {
         // Should not expose raw tokens in response (security check)
         expect(responseData.access_token).toBeUndefined();
         expect(responseData.refresh_token).toBeUndefined();
-        
+
         // May include encrypted token info or just success flag
         expect(responseData.success).toBe(true);
       }
@@ -468,7 +468,7 @@ describe('Strava Token Refresh Tests', () => {
       if (response.statusCode === 404) {
         expect(responseData.error || responseData.message).toBeDefined();
       }
-      
+
       // Token cleanup may be handled internally by the handler
       // (expired tokens are replaced, not necessarily deleted immediately)
     });

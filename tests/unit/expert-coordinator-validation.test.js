@@ -60,7 +60,7 @@ describe('ExpertCoordinator Mandatory Validation (T2B-3)', () => {
         // Load ExpertCoordinator
         const module = await import('../../js/modules/ai/ExpertCoordinator.js');
         ExpertCoordinator = module.default || window.ExpertCoordinator?.constructor || ExpertCoordinator;
-        
+
         coordinator = new ExpertCoordinator();
     });
 
@@ -68,7 +68,7 @@ describe('ExpertCoordinator Mandatory Validation (T2B-3)', () => {
         it('should validate context even when validator is unavailable', async () => {
             // Remove validator
             coordinator.dataValidator = null;
-            
+
             const context = {
                 readiness: 8,
                 atl7: 50,
@@ -181,10 +181,10 @@ describe('ExpertCoordinator Mandatory Validation (T2B-3)', () => {
 
             // Should log validation warnings
             const infoCalls = coordinator.logger.info.mock.calls;
-            const hasValidationWarning = infoCalls.some(call => 
+            const hasValidationWarning = infoCalls.some(call =>
                 call[0] === 'VALIDATION_WARNINGS'
             );
-            
+
             // If validation had warnings, they should be logged
             if (context._validationMetadata?.warnings?.length > 0) {
                 expect(hasValidationWarning).toBe(true);
@@ -310,7 +310,7 @@ describe('ExpertCoordinator Mandatory Validation (T2B-3)', () => {
 
             // Should not throw, should use conservative defaults
             await expect(coordinator.planTodayFallback(context)).resolves.toBeDefined();
-            
+
             expect(context._conservativeDefaults).toBe(true);
         });
 
@@ -324,7 +324,7 @@ describe('ExpertCoordinator Mandatory Validation (T2B-3)', () => {
 
             // Should not throw, should use conservative defaults
             await expect(coordinator.planTodayFallback(context)).resolves.toBeDefined();
-            
+
             expect(context._conservativeDefaults).toBe(true);
         });
     });

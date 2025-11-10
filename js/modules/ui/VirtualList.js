@@ -10,32 +10,32 @@ class VirtualList {
         this.renderItem = options.renderItem; // Function to render each item
         this.items = options.items || [];
         this.filteredItems = [...this.items];
-        
+
         // Performance tracking
         this.frameCount = 0;
         this.lastFrameTime = 0;
         this.fps = 0;
-        
+
         // State
         this.scrollTop = 0;
         this.containerHeight = 0;
         this.isScrolling = false;
         this.scrollTimeout = null;
-        
+
         // DOM elements
         this.scrollContainer = null;
         this.viewport = null;
         this.spacer = null;
-        
+
         // Accessibility
         this.focusedIndex = -1;
         this.ariaLiveRegion = null;
-        
+
         this.logger = window.SafeLogger || console;
-        
+
         this.init();
     }
-    
+
     /**
      * Initialize virtual list
      */
@@ -43,21 +43,21 @@ class VirtualList {
         this.createDOM();
         this.bindEvents();
         this.update();
-        
+
         this.logger.debug('VirtualList initialized', {
             itemCount: this.items.length,
             itemHeight: this.itemHeight,
             containerHeight: this.containerHeight
         });
     }
-    
+
     /**
      * Create DOM structure
      */
     createDOM() {
         // Clear container
         this.container.innerHTML = '';
-        
+
         // Create scroll container
         this.scrollContainer = document.createElement('div');
         this.scrollContainer.className = 'virtual-list-container';
@@ -68,7 +68,7 @@ class VirtualList {
             position: relative;
             scroll-behavior: smooth;
         `;
-        
+
         // Create viewport
         this.viewport = document.createElement('div');
         this.viewport.className = 'virtual-list-viewport';
@@ -76,7 +76,7 @@ class VirtualList {
             position: relative;
             width: 100%;
         `;
-        
+
         // Create spacer for total height
         this.spacer = document.createElement('div');
         this.spacer.className = 'virtual-list-spacer';
@@ -87,7 +87,7 @@ class VirtualList {
             right: 0;
             pointer-events: none;
         `;
-        
+
         // Create items container
         this.itemsContainer = document.createElement('div');
         this.itemsContainer.className = 'virtual-list-items';
@@ -95,17 +95,17 @@ class VirtualList {
             position: relative;
             width: 100%;
         `;
-        
+
         // Assemble DOM
         this.viewport.appendChild(this.spacer);
         this.viewport.appendChild(this.itemsContainer);
         this.scrollContainer.appendChild(this.viewport);
         this.container.appendChild(this.scrollContainer);
-        
+
         // Create accessibility elements
         this.createAccessibilityElements();
     }
-    
+
     /**
      * Create accessibility elements
      */
@@ -123,64 +123,64 @@ class VirtualList {
             overflow: hidden;
         `;
         this.container.appendChild(this.ariaLiveRegion);
-        
+
         // Set ARIA attributes
         this.scrollContainer.setAttribute('role', 'listbox');
         this.scrollContainer.setAttribute('aria-label', 'Exercise list');
         this.scrollContainer.setAttribute('tabindex', '0');
     }
-    
+
     /**
      * Bind event listeners
      */
     bindEvents() {
         // Scroll events
         this.scrollContainer.addEventListener('scroll', this.handleScroll.bind(this));
-        
+
         // Keyboard navigation
         this.scrollContainer.addEventListener('keydown', this.handleKeydown.bind(this));
-        
+
         // Focus management
         this.scrollContainer.addEventListener('focus', this.handleFocus.bind(this));
         this.scrollContainer.addEventListener('blur', this.handleBlur.bind(this));
-        
+
         // Resize observer
         if (window.ResizeObserver) {
             this.resizeObserver = new ResizeObserver(this.handleResize.bind(this));
             this.resizeObserver.observe(this.container);
         }
-        
+
         // Performance monitoring
         this.startPerformanceMonitoring();
     }
-    
+
     /**
      * Handle scroll events
      */
     handleScroll(event) {
         this.scrollTop = event.target.scrollTop;
         this.isScrolling = true;
-        
+
         // Clear previous timeout
         if (this.scrollTimeout) {
             clearTimeout(this.scrollTimeout);
         }
-        
+
         // Set timeout to detect scroll end
         this.scrollTimeout = setTimeout(() => {
             this.isScrolling = false;
             this.announceScrollPosition();
         }, 150);
-        
+
         this.update();
     }
-    
+
     /**
      * Handle keyboard navigation
      */
     handleKeydown(event) {
         const { key } = event;
-        
+
         switch (key) {
             case 'ArrowDown':
                 event.preventDefault();
@@ -205,7 +205,7 @@ class VirtualList {
                 break;
         }
     }
-    
+
     /**
      * Handle focus events
      */
@@ -214,14 +214,14 @@ class VirtualList {
             this.focusFirst();
         }
     }
-    
+
     /**
      * Handle blur events
      */
     handleBlur() {
         this.focusedIndex = -1;
     }
-    
+
     /**
      * Handle resize events
      */
@@ -230,7 +230,7 @@ class VirtualList {
         this.containerHeight = entry.contentRect.height;
         this.update();
     }
-    
+
     /**
      * Update virtual list
      */
@@ -238,51 +238,51 @@ class VirtualList {
         if (!this.containerHeight) {
             this.containerHeight = this.container.offsetHeight;
         }
-        
+
         const totalHeight = this.filteredItems.length * this.itemHeight;
         const visibleCount = Math.ceil(this.containerHeight / this.itemHeight);
-        
+
         // Calculate visible range
         const startIndex = Math.max(0, Math.floor(this.scrollTop / this.itemHeight) - this.overscan);
         const endIndex = Math.min(
             this.filteredItems.length - 1,
             startIndex + visibleCount + this.overscan * 2
         );
-        
+
         // Update spacer height
         this.spacer.style.height = `${totalHeight}px`;
-        
+
         // Update items container position
         this.itemsContainer.style.transform = `translateY(${startIndex * this.itemHeight}px)`;
-        
+
         // Render visible items
         this.renderVisibleItems(startIndex, endIndex);
-        
+
         // Update accessibility
         this.updateAccessibility(startIndex, endIndex);
     }
-    
+
     /**
      * Render visible items
      */
     renderVisibleItems(startIndex, endIndex) {
         // Clear existing items
         this.itemsContainer.innerHTML = '';
-        
+
         // Create document fragment for performance
         const fragment = document.createDocumentFragment();
-        
+
         for (let i = startIndex; i <= endIndex; i++) {
             const item = this.filteredItems[i];
-            if (!item) continue;
-            
+            if (!item) {continue;}
+
             const itemElement = this.createItemElement(item, i);
             fragment.appendChild(itemElement);
         }
-        
+
         this.itemsContainer.appendChild(fragment);
     }
-    
+
     /**
      * Create item element
      */
@@ -298,12 +298,12 @@ class VirtualList {
             cursor: pointer;
             transition: background-color 0.2s ease;
         `;
-        
+
         element.setAttribute('role', 'option');
         element.setAttribute('aria-posinset', index + 1);
         element.setAttribute('aria-setsize', this.filteredItems.length);
         element.setAttribute('data-index', index);
-        
+
         // Render item content
         if (this.renderItem) {
             const content = this.renderItem(item, index);
@@ -315,24 +315,24 @@ class VirtualList {
         } else {
             element.textContent = item.name || item.title || `Item ${index + 1}`;
         }
-        
+
         // Add hover effects
         element.addEventListener('mouseenter', () => {
             element.style.backgroundColor = 'var(--color-surface-hover)';
         });
-        
+
         element.addEventListener('mouseleave', () => {
             element.style.backgroundColor = '';
         });
-        
+
         // Add click handler
         element.addEventListener('click', () => {
             this.selectItem(index);
         });
-        
+
         return element;
     }
-    
+
     /**
      * Update accessibility attributes
      */
@@ -344,7 +344,7 @@ class VirtualList {
             item.setAttribute('aria-posinset', index + 1);
             item.setAttribute('aria-setsize', this.filteredItems.length);
         });
-        
+
         // Update focused item
         if (this.focusedIndex >= 0) {
             const focusedItem = this.itemsContainer.querySelector(`[data-index="${this.focusedIndex}"]`);
@@ -354,7 +354,7 @@ class VirtualList {
             }
         }
     }
-    
+
     /**
      * Focus next item
      */
@@ -364,7 +364,7 @@ class VirtualList {
             this.scrollToFocused();
         }
     }
-    
+
     /**
      * Focus previous item
      */
@@ -374,7 +374,7 @@ class VirtualList {
             this.scrollToFocused();
         }
     }
-    
+
     /**
      * Focus first item
      */
@@ -382,7 +382,7 @@ class VirtualList {
         this.focusedIndex = 0;
         this.scrollToFocused();
     }
-    
+
     /**
      * Focus last item
      */
@@ -390,7 +390,7 @@ class VirtualList {
         this.focusedIndex = this.filteredItems.length - 1;
         this.scrollToFocused();
     }
-    
+
     /**
      * Scroll to focused item
      */
@@ -400,7 +400,7 @@ class VirtualList {
             this.scrollContainer.scrollTop = targetScrollTop;
         }
     }
-    
+
     /**
      * Select focused item
      */
@@ -409,7 +409,7 @@ class VirtualList {
             this.selectItem(this.focusedIndex);
         }
     }
-    
+
     /**
      * Select item by index
      */
@@ -419,7 +419,7 @@ class VirtualList {
             this.dispatchEvent('itemSelected', { item, index });
         }
     }
-    
+
     /**
      * Filter items
      */
@@ -429,10 +429,10 @@ class VirtualList {
         this.scrollTop = 0;
         this.scrollContainer.scrollTop = 0;
         this.update();
-        
+
         this.announceFilterResults();
     }
-    
+
     /**
      * Set items
      */
@@ -444,7 +444,7 @@ class VirtualList {
         this.scrollContainer.scrollTop = 0;
         this.update();
     }
-    
+
     /**
      * Scroll to item
      */
@@ -452,7 +452,7 @@ class VirtualList {
         const targetScrollTop = index * this.itemHeight;
         this.scrollContainer.scrollTop = targetScrollTop;
     }
-    
+
     /**
      * Announce scroll position for screen readers
      */
@@ -462,17 +462,17 @@ class VirtualList {
             this.filteredItems.length,
             visibleStart + Math.ceil(this.containerHeight / this.itemHeight) - 1
         );
-        
+
         this.announce(`Showing items ${visibleStart} to ${visibleEnd} of ${this.filteredItems.length}`);
     }
-    
+
     /**
      * Announce filter results
      */
     announceFilterResults() {
         this.announce(`${this.filteredItems.length} items found`);
     }
-    
+
     /**
      * Announce message to screen readers
      */
@@ -481,7 +481,7 @@ class VirtualList {
             this.ariaLiveRegion.textContent = message;
         }
     }
-    
+
     /**
      * Start performance monitoring
      */
@@ -489,23 +489,23 @@ class VirtualList {
         const monitor = () => {
             this.frameCount++;
             const now = performance.now();
-            
+
             if (now - this.lastFrameTime >= 1000) {
                 this.fps = Math.round((this.frameCount * 1000) / (now - this.lastFrameTime));
                 this.frameCount = 0;
                 this.lastFrameTime = now;
-                
+
                 if (this.fps < 30) {
                     this.logger.warn(`Low FPS detected: ${this.fps}`);
                 }
             }
-            
+
             requestAnimationFrame(monitor);
         };
-        
+
         requestAnimationFrame(monitor);
     }
-    
+
     /**
      * Dispatch custom events
      */
@@ -513,7 +513,7 @@ class VirtualList {
         const event = new CustomEvent(eventName, { detail });
         this.container.dispatchEvent(event);
     }
-    
+
     /**
      * Get performance stats
      */
@@ -525,7 +525,7 @@ class VirtualList {
             memoryUsage: this.estimateMemoryUsage()
         };
     }
-    
+
     /**
      * Estimate memory usage
      */
@@ -533,7 +533,7 @@ class VirtualList {
         const visibleItems = Math.ceil(this.containerHeight / this.itemHeight) + this.overscan * 2;
         return visibleItems * 1024; // Rough estimate in bytes
     }
-    
+
     /**
      * Destroy virtual list
      */
@@ -541,11 +541,11 @@ class VirtualList {
         if (this.resizeObserver) {
             this.resizeObserver.disconnect();
         }
-        
+
         if (this.scrollTimeout) {
             clearTimeout(this.scrollTimeout);
         }
-        
+
         this.container.innerHTML = '';
     }
 }

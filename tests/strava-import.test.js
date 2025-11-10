@@ -3,9 +3,9 @@
 // Tests integrations-strava-import.js and related import features
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { 
-  setupTestDB, 
-  teardownTestDB, 
+import {
+  setupTestDB,
+  teardownTestDB,
   getTestDatabase,
   createTestUser,
   cleanupTestData
@@ -17,7 +17,7 @@ describe('Strava Import Tests', () => {
 
   beforeEach(async () => {
     db = getTestDatabase();
-    
+
     if (process.env.MOCK_DATABASE === 'true' || !db) {
       console.log('⚠️  Mock database mode - skipping database integration tests');
       return;
@@ -25,7 +25,7 @@ describe('Strava Import Tests', () => {
 
     // Clean up any existing test data
     await cleanupTestData();
-    
+
     // Create a test user
     testUser = await createTestUser({
       external_id: `test_user_${Date.now()}`,
@@ -73,7 +73,7 @@ describe('Strava Import Tests', () => {
       // Response may succeed with empty activities, or fail if no Strava token
       // Both scenarios are valid - the important thing is the handler processes correctly
       expect([200, 400, 401, 403]).toContain(response.statusCode);
-      
+
       if (response.statusCode === 200) {
         expect(responseData).toBeDefined();
         // If successful, should have import statistics
@@ -112,7 +112,7 @@ describe('Strava Import Tests', () => {
       // Handler should gracefully handle rate limits
       // May return 429 (Too Many Requests) or continue with empty results
       expect([200, 429, 400, 401, 403]).toContain(response.statusCode);
-      
+
       if (response.statusCode === 429) {
         // Should include rate limit information
         expect(responseData.error || responseData.message).toBeDefined();
@@ -148,7 +148,7 @@ describe('Strava Import Tests', () => {
 
         const response = await handler(event);
         const responseData = JSON.parse(response.body);
-        
+
         // Should handle invalid params gracefully (may accept or reject)
         expect([200, 400, 422]).toContain(response.statusCode);
       }
@@ -236,7 +236,7 @@ describe('Strava Import Tests', () => {
         // If import succeeded, verify it handled different types
         // Response should indicate number of activities imported or list them
         expect(typeof responseData.imported === 'number' || Array.isArray(responseData.imported)).toBe(true);
-        
+
         // If activities are listed, verify they have type information
         if (Array.isArray(responseData.imported) && responseData.imported.length > 0) {
           const firstActivity = responseData.imported[0];
@@ -274,7 +274,7 @@ describe('Strava Import Tests', () => {
 
       if (response.statusCode === 200 && responseData.imported) {
         // If activities were imported, verify metrics are processed
-        const imported = responseData.imported;
+        const {imported} = responseData;
         if (Array.isArray(imported) && imported.length > 0) {
           // Verify activities have metric fields
           const firstActivity = imported[0];
@@ -313,7 +313,7 @@ describe('Strava Import Tests', () => {
 
       if (response.statusCode === 200 && responseData.imported) {
         // If activities were imported with GPS data, verify structure
-        const imported = responseData.imported;
+        const {imported} = responseData;
         if (Array.isArray(imported) && imported.length > 0) {
           const firstActivity = imported[0];
           // GPS data may be in polyline, summary_polyline, or map fields
@@ -393,7 +393,7 @@ describe('Strava Import Tests', () => {
       };
 
       const firstResponse = await handler(firstImportEvent);
-      
+
       // Second import (should be incremental, only importing new activities)
       const secondImportEvent = {
         httpMethod: 'POST',
@@ -417,11 +417,11 @@ describe('Strava Import Tests', () => {
       if (firstResponse.statusCode === 200 && secondResponse.statusCode === 200) {
         const firstData = JSON.parse(firstResponse.body);
         const secondData = JSON.parse(secondResponse.body);
-        
+
         // Second import should report fewer or same number of activities (duplicates excluded)
         const firstCount = typeof firstData.imported === 'number' ? firstData.imported : (firstData.imported?.length || 0);
         const secondCount = typeof secondData.imported === 'number' ? secondData.imported : (secondData.imported?.length || 0);
-        
+
         // Second import should not import more than first (assuming no new activities)
         expect(secondCount).toBeLessThanOrEqual(firstCount);
       }
@@ -523,7 +523,7 @@ describe('Strava Import Tests', () => {
 
       // First import
       const firstResponse = await handler(event);
-      
+
       // Second import of same time range (should handle duplicates)
       const secondResponse = await handler(event);
 
@@ -534,11 +534,11 @@ describe('Strava Import Tests', () => {
       if (firstResponse.statusCode === 200 && secondResponse.statusCode === 200) {
         const firstData = JSON.parse(firstResponse.body);
         const secondData = JSON.parse(secondResponse.body);
-        
+
         // Second import should report duplicates or fewer activities
         const firstCount = typeof firstData.imported === 'number' ? firstData.imported : (firstData.imported?.length || 0);
         const secondCount = typeof secondData.imported === 'number' ? secondData.imported : (secondData.imported?.length || 0);
-        
+
         // Duplicates should be handled (second should be <= first)
         expect(secondCount).toBeLessThanOrEqual(firstCount);
       }
@@ -711,7 +711,7 @@ describe('Strava Import Tests', () => {
       if (response.statusCode === 200) {
         // Successful import should include progress/statistics
         expect(responseData.imported !== undefined || responseData.duplicates !== undefined || responseData.failed !== undefined).toBe(true);
-        
+
         // Progress tracking may be implicit in response structure
         expect(typeof responseData).toBe('object');
       } else {
@@ -753,7 +753,7 @@ describe('Strava Import Tests', () => {
       if (response.statusCode === 200) {
         // Should complete within reasonable time (handler has time boxing)
         expect(duration).toBeLessThan(30000); // 30 seconds
-        
+
         // Should respect maxActivities limit internally
         if (responseData.imported !== undefined) {
           expect(responseData.imported).toBeGreaterThanOrEqual(0);
@@ -788,7 +788,7 @@ describe('Strava Import Tests', () => {
       if (response.statusCode === 200) {
         // Response should include import statistics
         expect(responseData).toBeDefined();
-        
+
         // Statistics may include imported, duplicates, failed counts
         if (responseData.imported !== undefined) {
           expect(typeof responseData.imported).toBe('number');
@@ -834,7 +834,7 @@ describe('Strava Import Tests', () => {
       if (response.statusCode === 200) {
         // Response should include import completion summary
         expect(responseData).toBeDefined();
-        
+
         // Completion summary may include imported count, duplicates, etc.
         if (responseData.imported !== undefined || responseData.duplicates !== undefined) {
           // User gets completion information via response

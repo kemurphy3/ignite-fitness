@@ -25,17 +25,17 @@ class LinkBanner {
         // Check if activity has multiple sources
         const sources = activity.source_set || {};
         const sourceCount = Object.keys(sources).length;
-        
+
         if (sourceCount < 2) {
             // No linking needed
             return null;
         }
 
         // Determine primary and secondary sources
-        const sourcesList = Object.entries(sources).sort((a, b) => 
+        const sourcesList = Object.entries(sources).sort((a, b) =>
             (b[1].richness || 0) - (a[1].richness || 0)
         );
-        
+
         const primarySource = sourcesList[0];
         const secondarySource = sourcesList.length > 1 ? sourcesList[1] : null;
 
@@ -47,7 +47,7 @@ class LinkBanner {
         const banner = document.createElement('div');
         banner.className = 'link-banner';
         banner.dataset.activityId = activity.id;
-        
+
         banner.innerHTML = `
             <div class="link-banner-content">
                 <div class="link-banner-icon">🔗</div>
@@ -108,10 +108,10 @@ class LinkBanner {
      */
     attachEventListeners(banner, activity, primarySource, secondarySource) {
         const buttons = banner.querySelectorAll('button[data-action]');
-        
+
         buttons.forEach(button => {
             button.addEventListener('click', () => {
-                const action = button.dataset.action;
+                const {action} = button.dataset;
                 this.handleLinkAction(action, activity, primarySource, secondarySource, banner);
             });
         });
@@ -141,7 +141,7 @@ class LinkBanner {
                 if (result.success) {
                     // Update banner to show current state
                     this.updateBannerState(banner, action);
-                    
+
                     // Show feedback
                     this.showFeedback(banner, result.message);
 
@@ -202,9 +202,9 @@ class LinkBanner {
         const feedback = document.createElement('div');
         feedback.className = 'link-banner-feedback link-banner-feedback-success';
         feedback.textContent = message;
-        
+
         banner.appendChild(feedback);
-        
+
         setTimeout(() => {
             feedback.style.opacity = '0';
             setTimeout(() => feedback.remove(), 300);
@@ -220,9 +220,9 @@ class LinkBanner {
         const errorDiv = document.createElement('div');
         errorDiv.className = 'link-banner-feedback link-banner-feedback-error';
         errorDiv.textContent = `Error: ${error}`;
-        
+
         banner.appendChild(errorDiv);
-        
+
         setTimeout(() => {
             errorDiv.style.opacity = '0';
             setTimeout(() => errorDiv.remove(), 300);

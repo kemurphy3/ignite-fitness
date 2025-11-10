@@ -9,24 +9,24 @@ let dataStore = null;
 let contextAwareAI = null;
 
 // Initialize application when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
     console.log('Ignite Fitness App Initializing...');
-    
+
     // Load modules
     loadModules();
-    
+
     // Initialize authentication
     initializeAuth();
-    
+
     // Initialize data store
     initializeDataStore();
-    
+
     // Initialize AI systems
     initializeAI();
-    
+
     // Load user data if logged in
     checkLoginStatus();
-    
+
     console.log('Ignite Fitness App Initialized Successfully!');
 });
 
@@ -35,10 +35,10 @@ function loadModules() {
     // Core modules
     loadScript('js/core/auth.js');
     loadScript('js/core/data-store.js');
-    
+
     // AI modules
     loadScript('js/ai/context-aware-ai.js');
-    
+
     // Additional modules will be loaded here as they are created
 }
 
@@ -61,7 +61,7 @@ function initializeAuth() {
         currentUser = savedUser;
         isLoggedIn = true;
     }
-    
+
     // Initialize auth module with global references
     if (typeof initAuth === 'function') {
         initAuth({
@@ -117,7 +117,7 @@ function showLoginForm() {
 function showUserDashboard() {
     document.getElementById('loginForm').classList.add('hidden');
     document.getElementById('userDashboard').classList.remove('hidden');
-    
+
     // Update athlete name display
     const athleteNameElement = document.getElementById('currentAthleteName');
     if (athleteNameElement && users[currentUser]) {
@@ -127,8 +127,8 @@ function showUserDashboard() {
 
 // Load user data
 async function loadUserData() {
-    if (!currentUser) return;
-    
+    if (!currentUser) {return;}
+
     try {
         // Load from data store
         const userData = await dataStore.get('user_data');
@@ -141,12 +141,12 @@ async function loadUserData() {
                 users = JSON.parse(savedUsers);
             }
         }
-        
+
         // Load data into forms
         loadPersonalDataToForm();
         loadGoalsToForm();
         loadWearableSettingsToForm();
-        
+
     } catch (error) {
         console.error('Error loading user data:', error);
     }
@@ -154,15 +154,15 @@ async function loadUserData() {
 
 // Save user data
 async function saveUserData() {
-    if (!currentUser) return;
-    
+    if (!currentUser) {return;}
+
     try {
         // Save to data store
         await dataStore.set('user_data', users[currentUser]);
-        
+
         // Also save to localStorage as backup
         localStorage.setItem('ignitefitness_users', JSON.stringify(users));
-        
+
     } catch (error) {
         console.error('Error saving user data:', error);
     }
@@ -195,10 +195,10 @@ function showSuccess(message) {
         `;
         document.body.appendChild(notification);
     }
-    
+
     notification.textContent = message;
     notification.style.display = 'block';
-    
+
     // Hide after 3 seconds
     setTimeout(() => {
         notification.style.display = 'none';
@@ -207,44 +207,44 @@ function showSuccess(message) {
 
 // Load personal data into form
 function loadPersonalDataToForm() {
-    if (!currentUser || !users[currentUser]) return;
-    
+    if (!currentUser || !users[currentUser]) {return;}
+
     const user = users[currentUser];
     const personalData = user.personalData || {};
-    
+
     // Load basic info
-    if (personalData.age) document.getElementById('age').value = personalData.age;
-    if (personalData.weight) document.getElementById('weight').value = personalData.weight;
-    if (personalData.height) document.getElementById('height').value = personalData.height;
-    if (personalData.experience) document.getElementById('experience').value = personalData.experience;
+    if (personalData.age) {document.getElementById('age').value = personalData.age;}
+    if (personalData.weight) {document.getElementById('weight').value = personalData.weight;}
+    if (personalData.height) {document.getElementById('height').value = personalData.height;}
+    if (personalData.experience) {document.getElementById('experience').value = personalData.experience;}
 }
 
 // Load goals into form
 function loadGoalsToForm() {
-    if (!currentUser || !users[currentUser]) return;
-    
+    if (!currentUser || !users[currentUser]) {return;}
+
     const user = users[currentUser];
     const goals = user.goals || {};
-    
+
     // Load goal selections
     if (goals.primary) {
         const primaryGoal = document.querySelector(`input[name="primaryGoal"][value="${goals.primary}"]`);
-        if (primaryGoal) primaryGoal.checked = true;
+        if (primaryGoal) {primaryGoal.checked = true;}
     }
-    
+
     if (goals.secondary) {
         const secondaryGoal = document.querySelector(`input[name="secondaryGoal"][value="${goals.secondary}"]`);
-        if (secondaryGoal) secondaryGoal.checked = true;
+        if (secondaryGoal) {secondaryGoal.checked = true;}
     }
 }
 
 // Load wearable settings into form
 function loadWearableSettingsToForm() {
-    if (!currentUser || !users[currentUser]) return;
-    
+    if (!currentUser || !users[currentUser]) {return;}
+
     const user = users[currentUser];
     const wearableSettings = user.wearableSettings || {};
-    
+
     // Load Strava settings
     if (wearableSettings.strava) {
         if (wearableSettings.strava.clientId) {
@@ -260,7 +260,7 @@ function loadWearableSettingsToForm() {
             document.getElementById('stravaRefreshToken').value = wearableSettings.strava.refreshToken;
         }
     }
-    
+
     // Load other wearable settings as needed
 }
 
@@ -270,57 +270,57 @@ function showTab(tabName) {
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.add('hidden');
     });
-    
+
     // Remove active class from all tab buttons
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('active');
     });
-    
+
     // Show selected tab content
     const selectedTab = document.getElementById(tabName);
     if (selectedTab) {
         selectedTab.classList.remove('hidden');
     }
-    
+
     // Add active class to clicked button
     const clickedButton = event.target;
     clickedButton.classList.add('active');
 }
 
 function savePersonalInfo() {
-    if (!currentUser) return;
-    
+    if (!currentUser) {return;}
+
     const personalData = {
         age: document.getElementById('age').value,
         weight: document.getElementById('weight').value,
         height: document.getElementById('height').value,
         experience: document.getElementById('experience').value
     };
-    
+
     if (!users[currentUser]) {
         users[currentUser] = {};
     }
-    
+
     users[currentUser].personalData = personalData;
     saveUserData();
     showSuccess('Personal information saved!');
 }
 
 function saveGoals() {
-    if (!currentUser) return;
-    
+    if (!currentUser) {return;}
+
     const primaryGoal = document.querySelector('input[name="primaryGoal"]:checked')?.value;
     const secondaryGoal = document.querySelector('input[name="secondaryGoal"]:checked')?.value;
-    
+
     const goals = {
         primary: primaryGoal,
         secondary: secondaryGoal
     };
-    
+
     if (!users[currentUser]) {
         users[currentUser] = {};
     }
-    
+
     users[currentUser].goals = goals;
     saveUserData();
     showSuccess('Goals saved!');

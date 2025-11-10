@@ -43,7 +43,7 @@ if (typeof window === 'undefined' || !window.Fixtures) {
 
         // Build fixtures object
         const fixtures = {
-            normal: normal,
+            normal,
 
             // Game tomorrow: heavy lower body removed
             gameTomorrow: {

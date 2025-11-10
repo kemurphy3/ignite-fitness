@@ -9,7 +9,7 @@ class ObjectPool {
         this.maxSize = maxSize;
         this.pool = [];
         this.activeObjects = new Set();
-        
+
         this.stats = {
             created: 0,
             reused: 0,
@@ -17,19 +17,19 @@ class ObjectPool {
             peakActive: 0,
             currentActive: 0
         };
-        
+
         this.logger = window.SafeLogger || console;
-        
+
         // Pre-populate pool
         this.prePopulate(initialSize);
-        
+
         this.logger.info('ObjectPool initialized', {
             initialSize,
             maxSize,
             type: createFn.name || 'anonymous'
         });
     }
-    
+
     /**
      * Pre-populate pool with initial objects
      * @param {number} size - Number of objects to create
@@ -41,7 +41,7 @@ class ObjectPool {
             this.stats.created++;
         }
     }
-    
+
     /**
      * Get object from pool
      * @param {...any} args - Arguments to pass to reset function
@@ -49,7 +49,7 @@ class ObjectPool {
      */
     acquire(...args) {
         let obj;
-        
+
         if (this.pool.length > 0) {
             // Reuse existing object
             obj = this.pool.pop();
@@ -59,20 +59,20 @@ class ObjectPool {
             obj = this.createFn();
             this.stats.created++;
         }
-        
+
         // Reset object state
         if (this.resetFn) {
             this.resetFn(obj, ...args);
         }
-        
+
         // Track active object
         this.activeObjects.add(obj);
         this.stats.currentActive = this.activeObjects.size;
         this.stats.peakActive = Math.max(this.stats.peakActive, this.stats.currentActive);
-        
+
         return obj;
     }
-    
+
     /**
      * Return object to pool
      * @param {Object} obj - Object to return
@@ -82,11 +82,11 @@ class ObjectPool {
             this.logger.warn('Attempted to release object not from this pool');
             return;
         }
-        
+
         // Remove from active set
         this.activeObjects.delete(obj);
         this.stats.currentActive = this.activeObjects.size;
-        
+
         // Add back to pool if not at max size
         if (this.pool.length < this.maxSize) {
             this.pool.push(obj);
@@ -95,7 +95,7 @@ class ObjectPool {
             this.stats.destroyed++;
         }
     }
-    
+
     /**
      * Release all active objects
      */
@@ -104,7 +104,7 @@ class ObjectPool {
             this.release(obj);
         });
     }
-    
+
     /**
      * Clear entire pool
      */
@@ -112,10 +112,10 @@ class ObjectPool {
         this.pool.length = 0;
         this.activeObjects.clear();
         this.stats.currentActive = 0;
-        
+
         this.logger.info('ObjectPool cleared');
     }
-    
+
     /**
      * Get pool statistics
      * @returns {Object} Pool statistics
@@ -225,14 +225,14 @@ class DOMElementPool extends ObjectPool {
                 // Clear element
                 element.innerHTML = '';
                 element.className = '';
-                
+
                 // Reset attributes
                 Array.from(element.attributes).forEach(attr => {
                     if (attr.name !== 'id') {
                         element.removeAttribute(attr.name);
                     }
                 });
-                
+
                 // Set new attributes
                 Object.entries(attributes).forEach(([key, value]) => {
                     element.setAttribute(key, value);
@@ -275,13 +275,13 @@ class PoolManager {
     constructor() {
         this.pools = new Map();
         this.logger = window.SafeLogger || console;
-        
+
         // Initialize common pools
         this.initializeCommonPools();
-        
+
         this.logger.info('PoolManager initialized');
     }
-    
+
     /**
      * Initialize common object pools
      */
@@ -289,22 +289,22 @@ class PoolManager {
         // Vector pools
         this.pools.set('vector2d', new Vector2DPool());
         this.pools.set('vector3d', new Vector3DPool());
-        
+
         // Matrix pool
         this.pools.set('matrix', new MatrixPool());
-        
+
         // Event pool
         this.pools.set('event', new EventPool());
-        
+
         // DOM element pools
         this.pools.set('div', new DOMElementPool('div'));
         this.pools.set('span', new DOMElementPool('span'));
         this.pools.set('button', new DOMElementPool('button'));
-        
+
         // Calculation pool
         this.pools.set('calculation', new CalculationPool());
     }
-    
+
     /**
      * Get pool by name
      * @param {string} name - Pool name
@@ -313,7 +313,7 @@ class PoolManager {
     getPool(name) {
         return this.pools.get(name);
     }
-    
+
     /**
      * Create new pool
      * @param {string} name - Pool name
@@ -323,7 +323,7 @@ class PoolManager {
         this.pools.set(name, pool);
         this.logger.info(`Pool created: ${name}`);
     }
-    
+
     /**
      * Acquire object from pool
      * @param {string} poolName - Pool name
@@ -336,10 +336,10 @@ class PoolManager {
             this.logger.error(`Pool not found: ${poolName}`);
             return null;
         }
-        
+
         return pool.acquire(...args);
     }
-    
+
     /**
      * Release object to pool
      * @param {string} poolName - Pool name
@@ -351,10 +351,10 @@ class PoolManager {
             this.logger.error(`Pool not found: ${poolName}`);
             return;
         }
-        
+
         pool.release(obj);
     }
-    
+
     /**
      * Release all objects from all pools
      */
@@ -363,7 +363,7 @@ class PoolManager {
             pool.releaseAll();
         });
     }
-    
+
     /**
      * Clear all pools
      */
@@ -372,7 +372,7 @@ class PoolManager {
             pool.clear();
         });
     }
-    
+
     /**
      * Get statistics for all pools
      * @returns {Object} Combined statistics
@@ -382,10 +382,10 @@ class PoolManager {
         this.pools.forEach((pool, name) => {
             stats[name] = pool.getStats();
         });
-        
+
         return stats;
     }
-    
+
     /**
      * Get total memory usage estimate
      * @returns {number} Estimated memory usage in bytes
@@ -396,7 +396,7 @@ class PoolManager {
             const poolStats = pool.getStats();
             total += poolStats.currentActive * 100; // Rough estimate
         });
-        
+
         return total;
     }
 }

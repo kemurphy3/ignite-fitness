@@ -62,7 +62,7 @@ class AIContextDatabase {
             // Calculate ATL (7-day) and CTL (28-day)
             const atl7 = this.calculateATL(data.slice(0, 7));
             const ctl28 = this.calculateCTL(data.slice(0, 28));
-            
+
             // Calculate monotony and strain
             const monotony = this.calculateMonotony(data.slice(0, 7));
             const strain = this.calculateStrain(data.slice(0, 7));
@@ -160,18 +160,18 @@ class AIContextDatabase {
 
             for (const activity of data) {
                 const date = new Date(activity.start_ts).toISOString().split('T')[0];
-                
+
                 if (activity.has_hr || activity.avg_hr) {
                     daysWithHR.add(date);
                 }
-                
+
                 // Calculate richness from source_set
                 if (activity.source_set && Object.keys(activity.source_set).length > 0) {
                     const sources = Object.values(activity.source_set);
                     const avgRichness = sources.reduce((sum, s) => sum + (s.richness || 0), 0) / sources.length;
                     totalRichness += avgRichness;
                 }
-                
+
                 totalActivities++;
             }
 
@@ -240,7 +240,7 @@ class AIContextDatabase {
      * Calculate ATL (Acute Training Load) - 7-day weighted average
      */
     calculateATL(data) {
-        if (!data || data.length === 0) return 0;
+        if (!data || data.length === 0) {return 0;}
 
         let weightedSum = 0;
         let totalWeight = 0;
@@ -259,7 +259,7 @@ class AIContextDatabase {
      * Calculate CTL (Chronic Training Load) - 28-day weighted average
      */
     calculateCTL(data) {
-        if (!data || data.length === 0) return 0;
+        if (!data || data.length === 0) {return 0;}
 
         let weightedSum = 0;
         let totalWeight = 0;
@@ -278,7 +278,7 @@ class AIContextDatabase {
      * Calculate monotony (variability of training load)
      */
     calculateMonotony(data) {
-        if (!data || data.length < 2) return 1.0;
+        if (!data || data.length < 2) {return 1.0;}
 
         const loads = data.map(d => (d.trimp || 0) + (d.tss || 0));
         const mean = loads.reduce((sum, load) => sum + load, 0) / loads.length;
@@ -301,14 +301,14 @@ class AIContextDatabase {
      * Calculate trend from activity data
      */
     calculateTrend(data) {
-        if (!data || data.length < 3) return 'flat';
+        if (!data || data.length < 3) {return 'flat';}
 
         // Simple trend analysis based on activity frequency
         const recent = data.slice(0, 3).length;
         const older = data.slice(3, 6).length;
 
-        if (recent > older * 1.2) return 'increasing';
-        if (recent < older * 0.8) return 'decreasing';
+        if (recent > older * 1.2) {return 'increasing';}
+        if (recent < older * 0.8) {return 'decreasing';}
         return 'stable';
     }
 
@@ -333,12 +333,12 @@ class AIContextDatabase {
 
         for (const activity of activities) {
             aggregated.duration_s += activity.duration_s || 0;
-            
+
             if (activity.avg_hr) {
                 totalHR += activity.avg_hr;
                 hrCount++;
             }
-            
+
             if (activity.max_hr && activity.max_hr > maxHR) {
                 maxHR = activity.max_hr;
             }
@@ -363,9 +363,9 @@ class AIContextDatabase {
         for (const activity of activities) {
             typeCounts[activity.type] = (typeCounts[activity.type] || 0) + (activity.duration_s || 0);
         }
-        
-        const primaryType = Object.keys(typeCounts).reduce((a, b) => 
-            typeCounts[a] > typeCounts[b] ? a : b, 
+
+        const primaryType = Object.keys(typeCounts).reduce((a, b) =>
+            typeCounts[a] > typeCounts[b] ? a : b,
             null
         );
         aggregated.type = primaryType;
@@ -392,15 +392,15 @@ class AIContextDatabase {
 
         for (const activity of data) {
             summary.totalDuration += activity.duration_s || 0;
-            
+
             const type = activity.type || 'unknown';
             summary.activityTypes[type] = (summary.activityTypes[type] || 0) + 1;
-            
+
             if (activity.avg_hr) {
                 totalHR += activity.avg_hr;
                 hrCount++;
             }
-            
+
             if (activity.max_hr && activity.max_hr > summary.maxHR) {
                 summary.maxHR = activity.max_hr;
             }

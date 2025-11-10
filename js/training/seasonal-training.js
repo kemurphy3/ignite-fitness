@@ -6,7 +6,7 @@ class SeasonalTrainingSystem {
         this.logger = window.SafeLogger || console;
         this.storageManager = window.StorageManager;
         this.authManager = window.AuthManager;
-        
+
         this.phases = {
             'off-season': {
                 name: 'Off-Season',
@@ -93,7 +93,7 @@ class SeasonalTrainingSystem {
                 }
             }
         };
-        
+
         this.currentPhase = this.detectCurrentPhase();
         this.seasonStartDate = this.getSeasonStartDate();
         this.gameSchedule = [];
@@ -104,13 +104,13 @@ class SeasonalTrainingSystem {
         const now = new Date();
         const month = now.getMonth();
         const day = now.getDate();
-        
+
         // Default phase detection based on calendar
-        if (month >= 0 && month <= 2) return 'off-season'; // Jan-Mar
-        if (month >= 3 && month <= 4) return 'pre-season'; // Apr-May
-        if (month >= 5 && month <= 10) return 'in-season'; // Jun-Nov
-        if (month >= 11) return 'playoffs'; // Dec
-        
+        if (month >= 0 && month <= 2) {return 'off-season';} // Jan-Mar
+        if (month >= 3 && month <= 4) {return 'pre-season';} // Apr-May
+        if (month >= 5 && month <= 10) {return 'in-season';} // Jun-Nov
+        if (month >= 11) {return 'playoffs';} // Dec
+
         return 'off-season';
     }
 
@@ -127,10 +127,10 @@ class SeasonalTrainingSystem {
                 this.logger.warn(`Invalid phase: ${phase}`);
                 return false;
             }
-            
+
             this.currentPhase = phase;
             this.savePhaseToStorage();
-            
+
             // Emit event for phase change
             if (window.EventBus) {
                 window.EventBus.emit('season:phaseChanged', {
@@ -138,7 +138,7 @@ class SeasonalTrainingSystem {
                     details: this.phases[this.currentPhase]
                 });
             }
-            
+
             return true;
         } catch (error) {
             this.logger.error('Failed to set phase:', error);
@@ -151,9 +151,9 @@ class SeasonalTrainingSystem {
         try {
             const phase = this.currentPhase || this.detectCurrentPhase();
             const phaseDetails = this.phases[phase] || this.phases['off-season'];
-            
+
             return {
-                phase: phase,
+                phase,
                 details: phaseDetails,
                 daysUntilSeason: this.getDaysUntilSeason(),
                 phaseProgress: this.calculatePhaseProgress(),
@@ -175,8 +175,8 @@ class SeasonalTrainingSystem {
     getNextPhase() {
         const phaseOrder = ['off-season', 'pre-season', 'in-season', 'playoffs', 'off-season'];
         const currentIndex = phaseOrder.indexOf(this.currentPhase);
-        return currentIndex >= 0 && currentIndex < phaseOrder.length - 1 
-            ? phaseOrder[currentIndex + 1] 
+        return currentIndex >= 0 && currentIndex < phaseOrder.length - 1
+            ? phaseOrder[currentIndex + 1]
             : 'off-season';
     }
 
@@ -185,7 +185,7 @@ class SeasonalTrainingSystem {
         try {
             const now = new Date();
             const month = now.getMonth();
-            
+
             switch (this.currentPhase) {
                 case 'off-season':
                     return Math.ceil((month + 1) / 4.33); // ~3 months
@@ -216,7 +216,7 @@ class SeasonalTrainingSystem {
     getPhaseProgress() {
         const now = new Date();
         const month = now.getMonth();
-        
+
         switch (this.currentPhase) {
             case 'off-season':
                 return Math.min((month + 1) / 3, 1); // Jan-Mar
@@ -234,8 +234,8 @@ class SeasonalTrainingSystem {
     // Generate phase-specific workout adjustments
     generatePhaseWorkoutPlan(baseWorkout) {
         const phaseDetails = this.phases[this.currentPhase];
-        const adjustments = phaseDetails.adjustments;
-        
+        const {adjustments} = phaseDetails;
+
         const adjustedWorkout = {
             ...baseWorkout,
             sessions: baseWorkout.sessions.map(session => ({
@@ -245,7 +245,7 @@ class SeasonalTrainingSystem {
                 exercises: this.adjustExercisesForPhase(session.exercises, phaseDetails)
             }))
         };
-        
+
         return adjustedWorkout;
     }
 
@@ -253,7 +253,7 @@ class SeasonalTrainingSystem {
     adjustExercisesForPhase(exercises, phaseDetails) {
         return exercises.map(exercise => {
             const adjusted = { ...exercise };
-            
+
             // Adjust sets based on phase
             if (phaseDetails.name === 'Off-Season') {
                 adjusted.sets = Math.ceil(exercise.sets * 1.2);
@@ -262,14 +262,14 @@ class SeasonalTrainingSystem {
             } else if (phaseDetails.name === 'Playoffs') {
                 adjusted.sets = Math.ceil(exercise.sets * 0.6);
             }
-            
+
             // Adjust reps based on phase
             if (phaseDetails.name === 'Off-Season') {
                 adjusted.reps = Math.ceil(exercise.reps * 1.1);
             } else if (phaseDetails.name === 'Pre-Season') {
                 adjusted.reps = Math.ceil(exercise.reps * 0.9);
             }
-            
+
             return adjusted;
         });
     }
@@ -281,18 +281,18 @@ class SeasonalTrainingSystem {
                 this.logger.warn('Invalid game data provided');
                 return false;
             }
-            
+
             const gameDate = new Date(game.date);
             if (isNaN(gameDate.getTime())) {
                 this.logger.warn('Invalid game date:', game.date);
                 return false;
             }
-            
+
             // Check for duplicates (same date)
-            const existingGame = this.gameSchedule.find(g => 
+            const existingGame = this.gameSchedule.find(g =>
                 g.date.toDateString() === gameDate.toDateString()
             );
-            
+
             if (existingGame) {
                 // Update existing game
                 Object.assign(existingGame, {
@@ -315,15 +315,15 @@ class SeasonalTrainingSystem {
                 this.gameSchedule.push(newGame);
                 this.logger.debug('Game added:', newGame);
             }
-            
+
             this.gameSchedule.sort((a, b) => a.date - b.date);
             this.saveScheduleToStorage();
-            
+
             // Emit event
             if (window.EventBus) {
                 window.EventBus.emit('season:gameAdded', { game: gameDate });
             }
-            
+
             return true;
         } catch (error) {
             this.logger.error('Failed to add game:', error);
@@ -346,15 +346,15 @@ class SeasonalTrainingSystem {
         weekStart.setDate(now.getDate() - now.getDay());
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekStart.getDate() + 6);
-        
-        return this.gameSchedule.filter(game => 
+
+        return this.gameSchedule.filter(game =>
             game.date >= weekStart && game.date <= weekEnd
         );
     }
 
     // Check if it's a game day
     isGameDay(date = new Date()) {
-        return this.gameSchedule.some(game => 
+        return this.gameSchedule.some(game =>
             game.date.toDateString() === date.toDateString()
         );
     }
@@ -429,7 +429,7 @@ class SeasonalTrainingSystem {
         try {
             const phase = this.phases[this.currentPhase] || this.phases['off-season'];
             const recommendations = [];
-            
+
             // General phase recommendations
             recommendations.push({
                 category: 'Training Focus',
@@ -437,7 +437,7 @@ class SeasonalTrainingSystem {
                 priority: 'high',
                 phase: this.currentPhase
             });
-            
+
             // Volume recommendations
             recommendations.push({
                 category: 'Volume',
@@ -445,7 +445,7 @@ class SeasonalTrainingSystem {
                 priority: 'medium',
                 multiplier: phase.adjustments.volumeMultiplier
             });
-            
+
             // Intensity recommendations
             recommendations.push({
                 category: 'Intensity',
@@ -453,7 +453,7 @@ class SeasonalTrainingSystem {
                 priority: 'medium',
                 multiplier: phase.adjustments.intensityMultiplier
             });
-            
+
             // Recovery recommendations
             if (phase.adjustments.recoveryDays > 2) {
                 recommendations.push({
@@ -463,7 +463,7 @@ class SeasonalTrainingSystem {
                     recoveryDays: phase.adjustments.recoveryDays
                 });
             }
-            
+
             // Session duration recommendations
             recommendations.push({
                 category: 'Duration',
@@ -471,7 +471,7 @@ class SeasonalTrainingSystem {
                 priority: 'low',
                 maxDuration: phase.adjustments.maxSessionDuration
             });
-            
+
             // Game-specific recommendations
             if (this.isGameDay()) {
                 recommendations.push({
@@ -481,7 +481,7 @@ class SeasonalTrainingSystem {
                     action: 'Use pre-game workout'
                 });
             }
-            
+
             const nextGame = this.getNextGame();
             if (nextGame) {
                 const daysUntil = Math.ceil((nextGame.date - new Date()) / (1000 * 60 * 60 * 24));
@@ -490,18 +490,18 @@ class SeasonalTrainingSystem {
                         category: 'Upcoming Game',
                         message: `Game in ${daysUntil} days - reduce training intensity`,
                         priority: 'high',
-                        daysUntil: daysUntil
+                        daysUntil
                     });
                 } else if (daysUntil <= 7) {
                     recommendations.push({
                         category: 'Upcoming Game',
                         message: `Game in ${daysUntil} days - start tapering intensity`,
                         priority: 'medium',
-                        daysUntil: daysUntil
+                        daysUntil
                     });
                 }
             }
-            
+
             // Phase progress recommendations
             const progress = this.calculatePhaseProgress();
             if (progress > 0.8) {
@@ -509,10 +509,10 @@ class SeasonalTrainingSystem {
                     category: 'Phase Transition',
                     message: `${phase.name} is almost complete. Prepare for ${this.getNextPhase()} phase.`,
                     priority: 'medium',
-                    progress: progress
+                    progress
                 });
             }
-            
+
             return recommendations;
         } catch (error) {
             this.logger.error('Failed to get phase recommendations:', error);
@@ -559,14 +559,14 @@ class SeasonalTrainingSystem {
         try {
             this.loadPhaseFromStorage();
             this.loadScheduleFromStorage();
-            
+
             // Re-detect phase if not set or if date-based detection is more accurate
             const detectedPhase = this.detectCurrentPhase();
             if (!this.currentPhase || this.currentPhase !== detectedPhase) {
                 this.currentPhase = detectedPhase;
                 this.savePhaseToStorage();
             }
-            
+
             this.logger.debug(`Seasonal Training System initialized - Current Phase: ${this.currentPhase}`);
             return true;
         } catch (error) {
@@ -585,10 +585,10 @@ class SeasonalTrainingSystem {
                 this.logger.warn('No workout provided for phase adjustment');
                 return null;
             }
-            
+
             const phaseDetails = this.phases[this.currentPhase] || this.phases['off-season'];
-            const adjustments = phaseDetails.adjustments;
-            
+            const {adjustments} = phaseDetails;
+
             const adjustedWorkout = {
                 ...workout,
                 phase: this.currentPhase,
@@ -599,20 +599,20 @@ class SeasonalTrainingSystem {
             // Adjust exercise parameters based on phase
             if (workout.exercises && Array.isArray(workout.exercises)) {
                 adjustedWorkout.exercises = workout.exercises.map(exercise => {
-                    if (!exercise) return exercise;
-                    
+                    if (!exercise) {return exercise;}
+
                     const adjusted = { ...exercise };
-                    
+
                     // Adjust sets based on phase (ensure minimum of 1)
                     if (typeof adjusted.sets === 'number') {
                         adjusted.sets = Math.max(1, Math.round(adjusted.sets * adjustments.volumeMultiplier));
                     }
-                    
+
                     // Adjust weight based on phase
                     if (adjusted.weight && typeof adjusted.weight === 'number') {
                         adjusted.weight = Math.max(0, Math.round(adjusted.weight * adjustments.intensityMultiplier));
                     }
-                    
+
                     // Adjust reps based on phase
                     if (typeof adjusted.reps === 'number') {
                         let repMultiplier = 1.0;
@@ -627,10 +627,10 @@ class SeasonalTrainingSystem {
                         }
                         adjusted.reps = Math.max(1, Math.ceil(adjusted.reps * repMultiplier));
                     }
-                    
+
                     // Add phase note
                     adjusted._phaseAdjusted = true;
-                    
+
                     return adjusted;
                 });
             }
@@ -642,7 +642,7 @@ class SeasonalTrainingSystem {
                     adjustments.maxSessionDuration
                 );
             }
-            
+
             // Add phase rationale
             adjustedWorkout.phaseRationale = `Workout adjusted for ${phaseDetails.name}: ${phaseDetails.focus}`;
 
@@ -658,7 +658,7 @@ class SeasonalTrainingSystem {
         const now = new Date();
         const month = now.getMonth();
         const day = now.getDate();
-        
+
         switch (this.currentPhase) {
             case 'off-season':
                 // January 1st to March 31st
@@ -667,7 +667,7 @@ class SeasonalTrainingSystem {
                 const offSeasonTotal = offSeasonEnd - offSeasonStart;
                 const offSeasonElapsed = now - offSeasonStart;
                 return Math.max(0, Math.min(offSeasonElapsed / offSeasonTotal, 1));
-                
+
             case 'pre-season':
                 // April 1st to May 31st
                 const preSeasonStart = new Date(now.getFullYear(), 3, 1);
@@ -675,7 +675,7 @@ class SeasonalTrainingSystem {
                 const preSeasonTotal = preSeasonEnd - preSeasonStart;
                 const preSeasonElapsed = now - preSeasonStart;
                 return Math.max(0, Math.min(preSeasonElapsed / preSeasonTotal, 1));
-                
+
             case 'in-season':
                 // June 1st to November 30th
                 const inSeasonStart = new Date(now.getFullYear(), 5, 1);
@@ -683,7 +683,7 @@ class SeasonalTrainingSystem {
                 const inSeasonTotal = inSeasonEnd - inSeasonStart;
                 const inSeasonElapsed = now - inSeasonStart;
                 return Math.max(0, Math.min(inSeasonElapsed / inSeasonTotal, 1));
-                
+
             case 'playoffs':
                 // December 1st to December 31st
                 const playoffsStart = new Date(now.getFullYear(), 11, 1);
@@ -691,7 +691,7 @@ class SeasonalTrainingSystem {
                 const playoffsTotal = playoffsEnd - playoffsStart;
                 const playoffsElapsed = now - playoffsStart;
                 return Math.max(0, Math.min(playoffsElapsed / playoffsTotal, 1));
-                
+
             default:
                 return 0;
         }

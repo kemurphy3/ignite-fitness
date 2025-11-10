@@ -459,7 +459,7 @@ class SportDefinitions {
      */
     getPosition(sportId, positionId) {
         const sport = this.getSport(sportId);
-        if (!sport || !sport.positions) return null;
+        if (!sport || !sport.positions) {return null;}
         return sport.positions[positionId] || null;
     }
 
@@ -471,7 +471,7 @@ class SportDefinitions {
      */
     getSeason(sportId, seasonId) {
         const sport = this.getSport(sportId);
-        if (!sport || !sport.seasons) return null;
+        if (!sport || !sport.seasons) {return null;}
         return sport.seasons[seasonId] || null;
     }
 
@@ -483,10 +483,10 @@ class SportDefinitions {
      */
     getInjuryRisks(sportId, positionId = null) {
         const sport = this.getSport(sportId);
-        if (!sport) return [];
+        if (!sport) {return [];}
 
         let risks = [...(sport.commonInjuries || [])];
-        
+
         if (positionId && sport.positions && sport.positions[positionId]) {
             const positionRisks = sport.positions[positionId].injuryRisks || [];
             risks = [...risks, ...positionRisks];
@@ -503,7 +503,7 @@ class SportDefinitions {
      */
     getTrainingFocus(sportId, positionId = null) {
         const sport = this.getSport(sportId);
-        if (!sport) return [];
+        if (!sport) {return [];}
 
         if (positionId && sport.positions && sport.positions[positionId]) {
             return sport.positions[positionId].trainingFocus || [];
@@ -552,7 +552,7 @@ class SportDefinitions {
      */
     getPositions(sportId) {
         const sport = this.getSport(sportId);
-        if (!sport || !sport.positions) return [];
+        if (!sport || !sport.positions) {return [];}
 
         return Object.keys(sport.positions).map(id => ({
             id,
@@ -567,7 +567,7 @@ class SportDefinitions {
      */
     getSeasons(sportId) {
         const sport = this.getSport(sportId);
-        if (!sport || !sport.seasons) return [];
+        if (!sport || !sport.seasons) {return [];}
 
         return Object.keys(sport.seasons).map(id => ({
             id,

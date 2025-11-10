@@ -43,19 +43,19 @@ exports.handler = async (event, context) => {
             case 'log_assessment':
                 result = await logPainAssessment(data);
                 break;
-            
+
             case 'log_modification':
                 result = await logExerciseModification(data);
                 break;
-            
+
             case 'get_assessment_history':
                 result = await getAssessmentHistory(data);
                 break;
-            
+
             case 'check_persistent_pain':
                 result = checkPersistentPain(data);
                 break;
-            
+
             default:
                 return {
                     statusCode: 400,
@@ -86,7 +86,7 @@ exports.handler = async (event, context) => {
  */
 async function logPainAssessment(data) {
     const timestamp = new Date().toISOString();
-    
+
     const assessment = {
         userId: data.userId,
         timestamp,
@@ -99,11 +99,11 @@ async function logPainAssessment(data) {
         disclaimer_accepted: data.disclaimerAccepted || false,
         disclaimers_viewed: data.disclaimers || []
     };
-    
+
     // Store in database
     // This would integrate with actual database
     console.log('Pain assessment logged:', assessment);
-    
+
     return {
         success: true,
         assessment,
@@ -118,7 +118,7 @@ async function logPainAssessment(data) {
  */
 async function logExerciseModification(data) {
     const timestamp = new Date().toISOString();
-    
+
     const modification = {
         userId: data.userId,
         timestamp,
@@ -129,9 +129,9 @@ async function logExerciseModification(data) {
         painLevel: data.painLevel,
         educational_note: data.educationalNote
     };
-    
+
     console.log('Exercise modification logged:', modification);
-    
+
     return {
         success: true,
         modification,
@@ -146,7 +146,7 @@ async function logExerciseModification(data) {
  */
 async function getAssessmentHistory(data) {
     const { userId, limit = 10 } = data;
-    
+
     // This would query actual database
     const history = [
         // Sample data
@@ -158,7 +158,7 @@ async function getAssessmentHistory(data) {
             modifications: ['switched_to_goblet_squats']
         }
     ];
-    
+
     return {
         success: true,
         history,
@@ -173,23 +173,23 @@ async function getAssessmentHistory(data) {
  */
 function checkPersistentPain(data) {
     const { history, currentPain } = data;
-    
+
     if (!history || history.length < 3) {
         return {
             persistent: false,
             recommendation: 'Continue monitoring'
         };
     }
-    
+
     // Check if same location has pain 3+ times in recent history
     const recentPain = history.filter(assessment => {
         const daysSince = (new Date() - new Date(assessment.timestamp)) / (1000 * 60 * 60 * 24);
         return daysSince <= 7; // Last week
     });
-    
+
     const painCount = recentPain.length;
     const avgIntensity = recentPain.reduce((sum, p) => sum + p.intensity, 0) / recentPain.length;
-    
+
     if (painCount >= 3 || avgIntensity >= 7) {
         return {
             persistent: true,
@@ -202,7 +202,7 @@ function checkPersistentPain(data) {
             ]
         };
     }
-    
+
     return {
         persistent: false,
         recommendation: 'Continue monitoring with modifications'

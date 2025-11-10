@@ -7,7 +7,7 @@ class TouchOptimizer {
         this.logger = window.SafeLogger || console;
         this.isTouchDevice = this.detectTouchDevice();
         this.interactions = new Map();
-        
+
         this.initializeOptimizations();
     }
 
@@ -16,8 +16,8 @@ class TouchOptimizer {
      * @returns {boolean} Is touch device
      */
     detectTouchDevice() {
-        return 'ontouchstart' in window || 
-               navigator.maxTouchPoints > 0 || 
+        return 'ontouchstart' in window ||
+               navigator.maxTouchPoints > 0 ||
                navigator.msMaxTouchPoints > 0;
     }
 
@@ -89,7 +89,7 @@ class TouchOptimizer {
      */
     optimizeScrolling() {
         document.documentElement.style.scrollBehavior = 'smooth';
-        
+
         const style = document.createElement('style');
         style.textContent = `
             * {
@@ -118,7 +118,7 @@ class TouchOptimizer {
         document.addEventListener('touchmove', (e) => {
             const touchY = e.touches[0].clientY;
             const touchDiff = touchStartY - touchY;
-            
+
             // Prevent overscroll
             if (touchDiff < 0 && window.scrollY === 0) {
                 e.preventDefault();
@@ -232,7 +232,7 @@ class TouchOptimizer {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     entry.target.classList.add('in-view');
-                    
+
                     // Trigger lazy loading
                     if (entry.target.dataset.lazyLoad) {
                         this.loadLazyContent(entry.target);
@@ -256,8 +256,8 @@ class TouchOptimizer {
      * @param {HTMLElement} element - Element to load
      */
     loadLazyContent(element) {
-        const src = element.dataset.src;
-        if (!src) return;
+        const {src} = element.dataset;
+        if (!src) {return;}
 
         element.setAttribute('src', src);
         element.removeAttribute('data-lazy-load');
@@ -272,7 +272,7 @@ class TouchOptimizer {
     isInteractiveElement(element) {
         const interactiveElements = ['BUTTON', 'A', 'INPUT', 'SELECT', 'TEXTAREA', 'LABEL'];
         const interactiveClasses = ['btn', 'clickable', 'card', 'clickable-item'];
-        
+
         return interactiveElements.includes(element.tagName) ||
                interactiveClasses.some(cls => element.classList.contains(cls));
     }
@@ -322,7 +322,7 @@ class TouchOptimizer {
         }, { passive: true });
 
         document.addEventListener('touchmove', (e) => {
-            if (isRefreshing) return;
+            if (isRefreshing) {return;}
 
             const touchY = e.touches[0].clientY;
             const pullDistance = touchY - touchStartY;
@@ -330,7 +330,7 @@ class TouchOptimizer {
             if (pullDistance > 80 && window.scrollY === 0) {
                 isRefreshing = true;
                 this.addHapticFeedback('medium');
-                
+
                 if (refreshCallback) {
                     refreshCallback();
                 }

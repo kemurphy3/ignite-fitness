@@ -353,7 +353,7 @@ class MinimalOnboarding {
 
                         <div class="summary-card">
                             <h3>🛡️ Safety</h3>
-                            <p>${this.onboardingData.injury_flags.length === 0 ? 'No current limitations' : this.onboardingData.injury_flags.length + ' area(s) to accommodate'}</p>
+                            <p>${this.onboardingData.injury_flags.length === 0 ? 'No current limitations' : `${this.onboardingData.injury_flags.length } area(s) to accommodate`}</p>
                         </div>
                     </div>
 

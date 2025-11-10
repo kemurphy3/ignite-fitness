@@ -44,13 +44,13 @@ class ScreeningResults {
     saveResult(result) {
         result.id = this.generateId();
         result.savedAt = new Date().toISOString();
-        
+
         this.results.push(result);
         this.saveToStorage();
-        
+
         // Generate insights
         const insights = this.generateInsights(result);
-        
+
         this.logger.audit('SCREENING_RESULT_SAVED', {
             resultId: result.id,
             screenId: result.screenId,
@@ -58,8 +58,8 @@ class ScreeningResults {
         });
 
         return {
-            result: result,
-            insights: insights
+            result,
+            insights
         };
     }
 
@@ -69,7 +69,7 @@ class ScreeningResults {
      * @returns {Array} User results
      */
     getUserResults(userId) {
-        return this.results.filter(result => 
+        return this.results.filter(result =>
             result.userProfile?.userId === userId
         ).sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
     }
@@ -83,7 +83,7 @@ class ScreeningResults {
     getLatestResult(screenId, userId) {
         const userResults = this.getUserResults(userId);
         const screenResults = userResults.filter(r => r.screenId === screenId);
-        
+
         return screenResults.length > 0 ? screenResults[0] : null;
     }
 
@@ -134,7 +134,7 @@ class ScreeningResults {
         Object.entries(issueFrequency).forEach(([issue, count]) => {
             if (count / results.length >= 0.5) {
                 patterns.recurringIssues.push({
-                    issue: issue,
+                    issue,
                     frequency: count / results.length,
                     priority: 'high'
                 });
@@ -165,10 +165,10 @@ class ScreeningResults {
         }
 
         // Check for asymmetries
-        const asymmetryCount = results.filter(r => 
+        const asymmetryCount = results.filter(r =>
             r.observations && Object.values(r.observations).some(obs => obs.asymmetry)
         ).length;
-        
+
         if (asymmetryCount / results.length > 0.3) {
             factors.push('significant_asymmetries');
             riskScore += 2;
@@ -176,7 +176,7 @@ class ScreeningResults {
 
         // Check for major compensations
         const majorCompCount = results.filter(r =>
-            r.observations && Object.values(r.observations).some(obs => 
+            r.observations && Object.values(r.observations).some(obs =>
                 obs.compensation === 'major'
             )
         ).length;
@@ -188,15 +188,15 @@ class ScreeningResults {
 
         // Determine risk level
         let riskLevel = 'low';
-        if (riskScore >= 7) riskLevel = 'very_high';
-        else if (riskScore >= 5) riskLevel = 'high';
-        else if (riskScore >= 3) riskLevel = 'moderate';
-        else if (riskScore >= 1) riskLevel = 'low_moderate';
+        if (riskScore >= 7) {riskLevel = 'very_high';}
+        else if (riskScore >= 5) {riskLevel = 'high';}
+        else if (riskScore >= 3) {riskLevel = 'moderate';}
+        else if (riskScore >= 1) {riskLevel = 'low_moderate';}
 
         return {
-            riskLevel: riskLevel,
+            riskLevel,
             score: riskScore,
-            factors: factors,
+            factors,
             recommendations: this.generateRiskRecommendations(riskLevel, factors)
         };
     }
@@ -210,7 +210,7 @@ class ScreeningResults {
     trackProgress(screenId, userId) {
         const userResults = this.getUserResults(userId);
         const screenResults = userResults.filter(r => r.screenId === screenId);
-        
+
         if (screenResults.length < 2) {
             return { available: false, message: 'Insufficient data for progress tracking' };
         }
@@ -223,9 +223,9 @@ class ScreeningResults {
         return {
             available: true,
             trend: this.calculateTrend(scores),
-            improvement: improvement,
-            latestScore: latestScore,
-            firstScore: firstScore,
+            improvement,
+            latestScore,
+            firstScore,
             progressPercentage: ((improvement / 3) * 100).toFixed(1),
             recommendations: this.generateProgressRecommendations(improvement)
         };
@@ -237,14 +237,14 @@ class ScreeningResults {
      * @returns {string} Trend
      */
     calculateTrend(scores) {
-        if (scores.length < 2) return 'insufficient_data';
+        if (scores.length < 2) {return 'insufficient_data';}
 
         const recentScores = scores.slice(-3);
         const latest = recentScores[recentScores.length - 1];
         const previous = recentScores[0];
 
-        if (latest > previous) return 'improving';
-        if (latest < previous) return 'declining';
+        if (latest > previous) {return 'improving';}
+        if (latest < previous) {return 'declining';}
         return 'stable';
     }
 
@@ -393,7 +393,7 @@ class ScreeningResults {
      */
     getUserSummary(userId) {
         const userResults = this.getUserResults(userId);
-        
+
         if (userResults.length === 0) {
             return {
                 available: false,
@@ -467,7 +467,7 @@ class ScreeningResults {
      */
     identifyImprovementAreas(earlierResult, laterResult) {
         const improvements = [];
-        
+
         // Check if score improved
         if (laterResult.score > earlierResult.score) {
             improvements.push('overall_movement_quality');
@@ -477,7 +477,7 @@ class ScreeningResults {
         if (earlierResult.observations && laterResult.observations) {
             const earlierComps = this.getCompensations(earlierResult.observations);
             const laterComps = this.getCompensations(laterResult.observations);
-            
+
             earlierComps.forEach(comp => {
                 if (!laterComps.includes(comp)) {
                     improvements.push(`${comp}_resolved`);
@@ -496,7 +496,7 @@ class ScreeningResults {
      */
     identifyDeteriorationAreas(earlierResult, laterResult) {
         const deteriorations = [];
-        
+
         // Check if score declined
         if (laterResult.score < earlierResult.score) {
             deteriorations.push('overall_movement_quality');
@@ -506,7 +506,7 @@ class ScreeningResults {
         if (earlierResult.observations && laterResult.observations) {
             const earlierComps = this.getCompensations(earlierResult.observations);
             const laterComps = this.getCompensations(laterResult.observations);
-            
+
             laterComps.forEach(comp => {
                 if (!earlierComps.includes(comp)) {
                     deteriorations.push(`${comp}_emerged`);
@@ -558,9 +558,9 @@ class ScreeningResults {
      */
     exportResults(userId) {
         const userResults = this.getUserResults(userId);
-        
+
         return {
-            userId: userId,
+            userId,
             exportDate: new Date().toISOString(),
             totalResults: userResults.length,
             results: userResults,

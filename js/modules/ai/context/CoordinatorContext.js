@@ -24,7 +24,7 @@ class CoordinatorContext {
                 const AIContextDatabase = require('../../netlify/functions/utils/ai-context-database.js');
                 this.dbClient = new AIContextDatabase();
             }
-            
+
             this.logger.info('Database client initialized for CoordinatorContext');
         } catch (error) {
             this.logger.warn('Failed to initialize database client, using fallback mode:', error.message);
@@ -39,7 +39,7 @@ class CoordinatorContext {
     async buildContext(baseContext) {
         try {
             const userId = baseContext.user?.id || baseContext.profile?.id;
-            
+
             if (!userId) {
                 this.logger.warn('No userId in context, returning base context');
                 return baseContext;
@@ -76,19 +76,19 @@ class CoordinatorContext {
             // Use real database queries if available
             if (this.dbClient) {
                 const metrics = await this.dbClient.getLoadMetrics(userId);
-                
+
                 // Cache the results
                 if (this.storageManager) {
                     await this.storageManager.setItem(`user_${userId}_load_metrics`, metrics);
                 }
-                
+
                 this.logger.debug('Load metrics fetched from database', {
                     userId,
                     atl7: metrics.atl7,
                     ctl28: metrics.ctl28,
                     dataPoints: metrics.dataPoints
                 });
-                
+
                 return metrics;
             }
 
@@ -124,20 +124,20 @@ class CoordinatorContext {
             // Use real database queries if available
             if (this.dbClient) {
                 const yesterdayActivity = await this.dbClient.getYesterdayActivity(userId);
-                
+
                 // Cache the results
                 if (this.storageManager) {
                     const yesterdayStr = this.getYesterdayDateStr();
                     await this.storageManager.setItem(`user_${userId}_yesterday_${yesterdayStr}`, yesterdayActivity);
                 }
-                
+
                 this.logger.debug('Yesterday activity fetched from database', {
                     userId,
                     activities: yesterdayActivity.activities,
                     duration: yesterdayActivity.duration_s,
                     type: yesterdayActivity.type
                 });
-                
+
                 return yesterdayActivity;
             }
 
@@ -174,14 +174,14 @@ class CoordinatorContext {
             // Use real database queries if available
             if (this.dbClient) {
                 const confidence = await this.dbClient.calculateDataConfidence(userId);
-                
+
                 this.logger.debug('Data confidence calculated from database', {
                     userId,
                     recent7days: confidence.recent7days,
                     sessionDetail: confidence.sessionDetail,
                     dataPoints: confidence.dataPoints
                 });
-                
+
                 return confidence;
             }
 

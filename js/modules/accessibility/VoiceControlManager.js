@@ -21,7 +21,7 @@ class VoiceControlManager {
             wakeWord: 'fitness',
             continuousListening: false
         };
-        
+
         this.init();
     }
 
@@ -63,7 +63,7 @@ class VoiceControlManager {
      * Setup speech recognition
      */
     setupRecognition() {
-        if (!this.recognition) return;
+        if (!this.recognition) {return;}
 
         this.recognition.continuous = this.userPreferences.continuousListening;
         this.recognition.interimResults = false;
@@ -235,10 +235,10 @@ class VoiceControlManager {
         EventBus.subscribe('voice:startListening', this.startListening.bind(this));
         EventBus.subscribe('voice:stopListening', this.stopListening.bind(this));
         EventBus.subscribe('voice:toggleListening', this.toggleListening.bind(this));
-        
+
         // Listen for preference changes
         EventBus.subscribe('accessibility:preferencesChanged', this.handlePreferencesChanged.bind(this));
-        
+
         // Listen for workout events
         EventBus.subscribe('workout:started', this.handleWorkoutStarted.bind(this));
         EventBus.subscribe('workout:paused', this.handleWorkoutPaused.bind(this));
@@ -253,20 +253,20 @@ class VoiceControlManager {
     handleRecognitionResult(event) {
         const result = event.results[event.resultIndex];
         const transcript = result[0].transcript.toLowerCase().trim();
-        
+
         this.logger.debug('Speech recognized:', transcript);
-        
+
         // Check for wake word
         if (this.userPreferences.wakeWord && !transcript.includes(this.userPreferences.wakeWord)) {
             return;
         }
-        
+
         // Remove wake word from transcript
         const command = transcript.replace(this.userPreferences.wakeWord, '').trim();
-        
+
         // Find matching command
         const matchedCommand = this.findMatchingCommand(command);
-        
+
         if (matchedCommand) {
             this.executeCommand(matchedCommand, command);
         } else {
@@ -284,21 +284,21 @@ class VoiceControlManager {
         if (this.commands.has(command)) {
             return { key: command, command: this.commands.get(command) };
         }
-        
+
         // Partial match
         for (const [key, cmd] of this.commands.entries()) {
             if (command.includes(key) || key.includes(command)) {
                 return { key, command: cmd };
             }
         }
-        
+
         // Fuzzy match
         for (const [key, cmd] of this.commands.entries()) {
             if (this.calculateSimilarity(command, key) > 0.7) {
                 return { key, command: cmd };
             }
         }
-        
+
         return null;
     }
 
@@ -311,9 +311,9 @@ class VoiceControlManager {
     calculateSimilarity(str1, str2) {
         const longer = str1.length > str2.length ? str1 : str2;
         const shorter = str1.length > str2.length ? str2 : str1;
-        
-        if (longer.length === 0) return 1.0;
-        
+
+        if (longer.length === 0) {return 1.0;}
+
         const distance = this.levenshteinDistance(longer, shorter);
         return (longer.length - distance) / longer.length;
     }
@@ -326,15 +326,15 @@ class VoiceControlManager {
      */
     levenshteinDistance(str1, str2) {
         const matrix = [];
-        
+
         for (let i = 0; i <= str2.length; i++) {
             matrix[i] = [i];
         }
-        
+
         for (let j = 0; j <= str1.length; j++) {
             matrix[0][j] = j;
         }
-        
+
         for (let i = 1; i <= str2.length; i++) {
             for (let j = 1; j <= str1.length; j++) {
                 if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
@@ -348,7 +348,7 @@ class VoiceControlManager {
                 }
             }
         }
-        
+
         return matrix[str2.length][str1.length];
     }
 
@@ -359,7 +359,7 @@ class VoiceControlManager {
      */
     executeCommand(matchedCommand, originalCommand) {
         const { key, command } = matchedCommand;
-        
+
         try {
             command.action();
             this.speak(`Executed: ${command.description}`);
@@ -376,7 +376,7 @@ class VoiceControlManager {
      */
     handleRecognitionError(event) {
         let errorMessage = 'Speech recognition error. ';
-        
+
         switch (event.error) {
             case 'no-speech':
                 errorMessage += 'No speech detected.';
@@ -393,7 +393,7 @@ class VoiceControlManager {
             default:
                 errorMessage += 'Unknown error.';
         }
-        
+
         this.speak(errorMessage);
     }
 
@@ -405,12 +405,12 @@ class VoiceControlManager {
             this.speak('Voice commands not available.');
             return;
         }
-        
+
         if (this.isListening) {
             this.speak('Already listening.');
             return;
         }
-        
+
         try {
             this.recognition.start();
             this.speak('Listening for voice commands.');
@@ -428,7 +428,7 @@ class VoiceControlManager {
             this.speak('Not currently listening.');
             return;
         }
-        
+
         this.recognition.stop();
         this.speak('Stopped listening.');
     }
@@ -453,42 +453,42 @@ class VoiceControlManager {
         if (!this.synthesis || !this.userPreferences.speechFeedback) {
             return;
         }
-        
+
         // Cancel any ongoing speech
         this.synthesis.cancel();
-        
+
         const utterance = new SpeechSynthesisUtterance(text);
-        
+
         // Set voice options
         utterance.rate = options.rate || this.userPreferences.voiceSpeed;
         utterance.pitch = options.pitch || this.userPreferences.voicePitch;
         utterance.volume = options.volume || this.userPreferences.voiceVolume;
         utterance.lang = options.lang || this.userPreferences.voiceLanguage;
-        
+
         // Set voice
         const voices = this.synthesis.getVoices();
-        const preferredVoice = voices.find(voice => 
-            voice.lang.startsWith(this.userPreferences.voiceLanguage) && 
+        const preferredVoice = voices.find(voice =>
+            voice.lang.startsWith(this.userPreferences.voiceLanguage) &&
             voice.name.includes('Google')
         );
-        
+
         if (preferredVoice) {
             utterance.voice = preferredVoice;
         }
-        
+
         // Event handlers
         utterance.onstart = () => {
             this.logger.debug('Speech started:', text);
         };
-        
+
         utterance.onend = () => {
             this.logger.debug('Speech ended');
         };
-        
+
         utterance.onerror = (event) => {
             this.logger.error('Speech synthesis error:', event.error);
         };
-        
+
         this.synthesis.speak(utterance);
     }
 
@@ -597,19 +597,19 @@ class VoiceControlManager {
      */
     generateHelpText() {
         let help = 'Available voice commands: ';
-        
+
         const categories = ['workout', 'exercise', 'timer', 'navigation', 'help', 'system'];
-        
+
         categories.forEach(category => {
             const categoryCommands = Array.from(this.commands.entries())
                 .filter(([key, cmd]) => cmd.category === category)
                 .map(([key, cmd]) => key);
-            
+
             if (categoryCommands.length > 0) {
                 help += `${category} commands: ${categoryCommands.join(', ')}. `;
             }
         });
-        
+
         return help;
     }
 

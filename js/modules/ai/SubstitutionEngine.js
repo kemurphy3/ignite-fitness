@@ -14,21 +14,21 @@ class SubstitutionEngine {
         this.modalityFactors = {
             // Base conversion factors for time equivalence
             timeFactors: {
-                'run_to_bike': 1.3,     // 1 min run = 1.3 min bike
-                'run_to_swim': 0.8,     // 1 min run = 0.8 min swim
-                'bike_to_run': 0.77,    // 1 min bike = 0.77 min run
-                'bike_to_swim': 0.62,   // 1 min bike = 0.62 min swim
-                'swim_to_run': 1.25,    // 1 min swim = 1.25 min run
-                'swim_to_bike': 1.61    // 1 min swim = 1.61 min bike
+                'run_to_bike': 1.3, // 1 min run = 1.3 min bike
+                'run_to_swim': 0.8, // 1 min run = 0.8 min swim
+                'bike_to_run': 0.77, // 1 min bike = 0.77 min run
+                'bike_to_swim': 0.62, // 1 min bike = 0.62 min swim
+                'swim_to_run': 1.25, // 1 min swim = 1.25 min run
+                'swim_to_bike': 1.61 // 1 min swim = 1.61 min bike
             },
 
             // Zone-specific intensity adjustments
             zoneAdjustments: {
-                'Z1': { bike: 1.35, swim: 0.75 },  // Easy sessions
-                'Z2': { bike: 1.3, swim: 0.8 },    // Aerobic base
-                'Z3': { bike: 1.2, swim: 0.8 },    // Tempo/threshold
-                'Z4': { bike: 1.15, swim: 0.85 },  // VO2 intervals
-                'Z5': { bike: 1.1, swim: 0.9 }     // Neuromuscular power
+                'Z1': { bike: 1.35, swim: 0.75 }, // Easy sessions
+                'Z2': { bike: 1.3, swim: 0.8 }, // Aerobic base
+                'Z3': { bike: 1.2, swim: 0.8 }, // Tempo/threshold
+                'Z4': { bike: 1.15, swim: 0.85 }, // VO2 intervals
+                'Z5': { bike: 1.1, swim: 0.9 } // Neuromuscular power
             },
 
             // MET values for cross-validation
@@ -40,10 +40,10 @@ class SubstitutionEngine {
         };
 
         this.guardrails = {
-            weeklyHardMinutes: 40,    // Max hard minutes per week per modality
-            dailyLoadCap: 100,        // Max daily load score
-            rampRateLimit: 0.1,       // Max 10% weekly increase
-            minRestBetweenHard: 24    // Hours between high-intensity sessions
+            weeklyHardMinutes: 40, // Max hard minutes per week per modality
+            dailyLoadCap: 100, // Max daily load score
+            rampRateLimit: 0.1, // Max 10% weekly increase
+            minRestBetweenHard: 24 // Hours between high-intensity sessions
         };
     }
 
@@ -68,7 +68,7 @@ class SubstitutionEngine {
             const substitutions = [];
 
             for (const modality of availableModalities) {
-                if (modality === originalModality) continue;
+                if (modality === originalModality) {continue;}
 
                 const equivalentWorkout = await this.findEquivalentWorkout(
                     plannedWorkout,
@@ -88,7 +88,7 @@ class SubstitutionEngine {
                             substituted: substitutedLoad,
                             variance: this.calculateLoadVariance(targetLoad, substitutedLoad)
                         },
-                        originalModality: originalModality,
+                        originalModality,
                         substitutedModality: modality
                     });
                 }
@@ -125,7 +125,7 @@ class SubstitutionEngine {
         try {
             // Get all workouts for target modality
             const modalityWorkouts = this.workoutCatalog.getWorkoutsByModality(targetModality);
-            
+
             // Flatten all categories into single array
             const allWorkouts = Object.values(modalityWorkouts).flat();
 
@@ -296,7 +296,7 @@ class SubstitutionEngine {
 
                 const workMinutes = (workDuration * sets) / 60;
                 const restMinutes = (restDuration * sets) / 60;
-                
+
                 totalLoad += (workMinutes * multiplier) + (restMinutes * 0.5); // Rest counts less
             } else {
                 // Continuous block
@@ -316,7 +316,7 @@ class SubstitutionEngine {
      * @returns {number} Variance as decimal (0.1 = 10%)
      */
     calculateLoadVariance(originalLoad, substitutedLoad) {
-        if (!originalLoad || originalLoad === 0) return 1;
+        if (!originalLoad || originalLoad === 0) {return 1;}
         return Math.abs(substitutedLoad - originalLoad) / originalLoad;
     }
 
@@ -338,7 +338,7 @@ class SubstitutionEngine {
         // Check time constraints
         const availableTime = constraints.availableTime || 120; // Default 2 hours
         const timeRequired = substitution.timeRequired || this.calculateTotalTime(substitution.structure || []);
-        
+
         if (timeRequired > availableTime) {
             this.logger.debug(`Substitution exceeds available time: ${timeRequired} > ${availableTime}`);
             return false;
@@ -350,7 +350,7 @@ class SubstitutionEngine {
         const substitutionHardMinutes = this.calculateHardMinutes(substitution);
 
         if (weeklyHardMinutes + substitutionHardMinutes > this.guardrails.weeklyHardMinutes) {
-            this.logger.debug(`Substitution exceeds weekly hard minutes cap`);
+            this.logger.debug('Substitution exceeds weekly hard minutes cap');
             return false;
         }
 
@@ -383,7 +383,7 @@ class SubstitutionEngine {
         // Equipment reason
         const originalEquipment = original.equipment || [];
         const substitutionEquipment = substitution.equipment || [];
-        
+
         if (originalEquipment.length > 0 && substitutionEquipment.length > 0) {
             const equipmentDiff = substitutionEquipment.filter(eq => !originalEquipment.includes(eq));
             if (equipmentDiff.length > 0) {
@@ -432,13 +432,13 @@ class SubstitutionEngine {
      */
     getAvailableModalities(constraints = {}) {
         const allModalities = ['running', 'cycling', 'swimming'];
-        
+
         if (!constraints || !constraints.equipment) {
             return allModalities;
         }
 
         const availableEquipment = constraints.equipment || [];
-        
+
         return allModalities.filter(modality => {
             // Check if user has equipment for this modality
             if (modality === 'running') {
@@ -459,17 +459,17 @@ class SubstitutionEngine {
      * @returns {string} Detected modality
      */
     detectModality(workout) {
-        if (workout.modality) return workout.modality;
-        if (workout.equipment && workout.equipment.includes('pool')) return 'swimming';
-        if (workout.equipment && workout.equipment.includes('track')) return 'running';
-        if (workout.equipment && workout.equipment.includes('bike')) return 'cycling';
-        
+        if (workout.modality) {return workout.modality;}
+        if (workout.equipment && workout.equipment.includes('pool')) {return 'swimming';}
+        if (workout.equipment && workout.equipment.includes('track')) {return 'running';}
+        if (workout.equipment && workout.equipment.includes('bike')) {return 'cycling';}
+
         // Default based on workout name
         const name = (workout.name || '').toLowerCase();
-        if (name.includes('swim') || name.includes('pool')) return 'swimming';
-        if (name.includes('bike') || name.includes('cycle') || name.includes('ride')) return 'cycling';
-        if (name.includes('run') || name.includes('track') || name.includes('mile')) return 'running';
-        
+        if (name.includes('swim') || name.includes('pool')) {return 'swimming';}
+        if (name.includes('bike') || name.includes('cycle') || name.includes('ride')) {return 'cycling';}
+        if (name.includes('run') || name.includes('track') || name.includes('mile')) {return 'running';}
+
         return 'running'; // Default fallback
     }
 
@@ -500,7 +500,7 @@ class SubstitutionEngine {
      * @returns {number} Total time in minutes
      */
     calculateTotalTime(structure) {
-        if (!structure || !Array.isArray(structure)) return 0;
+        if (!structure || !Array.isArray(structure)) {return 0;}
 
         return structure.reduce((total, block) => {
             if (block.duration) {
@@ -524,7 +524,7 @@ class SubstitutionEngine {
      * @returns {boolean} Whether adaptations are compatible
      */
     isCompatibleAdaptation(adaptation1, adaptation2) {
-        if (!adaptation1 || !adaptation2) return false;
+        if (!adaptation1 || !adaptation2) {return false;}
 
         const adaptationGroups = {
             'aerobic': ['aerobic', 'endurance', 'base', 'aerobic base', 'aerobic capacity'],
@@ -543,7 +543,7 @@ class SubstitutionEngine {
                 return true;
             }
         }
-        
+
         return false;
     }
 
@@ -553,7 +553,7 @@ class SubstitutionEngine {
      * @returns {number} Hard minutes
      */
     calculateHardMinutes(workout) {
-        if (!workout || !workout.structure) return 0;
+        if (!workout || !workout.structure) {return 0;}
 
         return workout.structure
             .filter(block => {
@@ -622,7 +622,7 @@ class SubstitutionEngine {
 
         return recentSessions.some(session => {
             const sessionDate = new Date(session.date || session.startTime || session.start_at);
-            if (sessionDate < twentyFourHoursAgo) return false;
+            if (sessionDate < twentyFourHoursAgo) {return false;}
 
             return this.isHighIntensity(session.workout || session);
         });
@@ -635,12 +635,12 @@ class SubstitutionEngine {
      * @returns {boolean} Whether user has equipment
      */
     hasRequiredEquipment(requiredEquipment = [], constraints = {}) {
-        if (!requiredEquipment || requiredEquipment.length === 0) return true;
+        if (!requiredEquipment || requiredEquipment.length === 0) {return true;}
 
         const availableEquipment = constraints.equipment || [];
-        
+
         return requiredEquipment.every(req => {
-            return availableEquipment.some(avail => 
+            return availableEquipment.some(avail =>
                 avail.toLowerCase().includes(req.toLowerCase()) ||
                 req.toLowerCase().includes(avail.toLowerCase())
             );
@@ -659,7 +659,7 @@ class SubstitutionEngine {
         const preferences = constraints.preferences || {};
         const preferredModality = preferences.modality || '';
 
-        if (substitution.modality && preferredModality && 
+        if (substitution.modality && preferredModality &&
             substitution.modality.toLowerCase() === preferredModality.toLowerCase()) {
             score += 10;
         }
@@ -667,9 +667,9 @@ class SubstitutionEngine {
         // Equipment preference
         const preferredEquipment = preferences.equipment || [];
         const substitutionEquipment = substitution.equipment || [];
-        
-        const equipmentMatch = substitutionEquipment.some(eq => 
-            preferredEquipment.some(pref => 
+
+        const equipmentMatch = substitutionEquipment.some(eq =>
+            preferredEquipment.some(pref =>
                 eq.toLowerCase().includes(pref.toLowerCase()) ||
                 pref.toLowerCase().includes(eq.toLowerCase())
             )

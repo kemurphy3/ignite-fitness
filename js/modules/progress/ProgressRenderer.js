@@ -13,7 +13,7 @@ class ProgressRenderer {
             cacheTime: null,
             ttl: 5 * 60 * 1000 // 5 minutes
         };
-        
+
         // Initialize on page load
         this.init();
     }
@@ -23,7 +23,7 @@ class ProgressRenderer {
      */
     async init() {
         this.logger.debug('Initializing ProgressRenderer');
-        
+
         // Initialize ChartManager
         try {
             if (typeof ChartManager === 'undefined') {
@@ -31,7 +31,7 @@ class ProgressRenderer {
                 this.chartManager = null;
                 return;
             }
-            
+
             this.chartManager = new ChartManager();
             await this.chartManager.init();
             this.logger.debug('ChartManager initialized');
@@ -48,10 +48,10 @@ class ProgressRenderer {
      */
     async renderCharts(container, options = {}) {
         try {
-            const element = typeof container === 'string' 
-                ? document.getElementById(container) 
+            const element = typeof container === 'string'
+                ? document.getElementById(container)
                 : container;
-            
+
             if (!element) {
                 this.logger.error('Progress chart container not found:', container);
                 return;
@@ -124,7 +124,7 @@ class ProgressRenderer {
             const userSessions = Object.values(allLogs)
                 .filter(log => log.userId === userId)
                 .sort((a, b) => new Date(a.date) - new Date(b.date));
-            
+
             return userSessions;
         } catch (error) {
             this.logger.error('Failed to get user sessions:', error);
@@ -143,7 +143,7 @@ class ProgressRenderer {
             const userEvents = Object.values(allEvents)
                 .filter(event => event.userId === userId)
                 .sort((a, b) => new Date(a.date) - new Date(b.date));
-            
+
             return userEvents;
         } catch (error) {
             this.logger.error('Failed to get progression events:', error);
@@ -161,7 +161,7 @@ class ProgressRenderer {
 
         sessions.forEach(session => {
             const weekKey = this.getWeekKey(new Date(session.date));
-            
+
             if (!weeklyData[weekKey]) {
                 weeklyData[weekKey] = {
                     week: weekKey,
@@ -175,11 +175,11 @@ class ProgressRenderer {
             const sessionVolume = this.calculateSessionVolume(session);
             weeklyData[weekKey].volume += sessionVolume;
             weeklyData[weekKey].workouts += 1;
-            
+
             // Track exercises
             if (session.exercises) {
                 session.exercises.forEach(ex => {
-                    if (ex.name) weeklyData[weekKey].exercises.add(ex.name);
+                    if (ex.name) {weeklyData[weekKey].exercises.add(ex.name);}
                 });
             }
         });
@@ -330,7 +330,7 @@ class ProgressRenderer {
      * @returns {boolean} Cache valid
      */
     isCacheValid() {
-        if (!this.cache.cacheTime) return false;
+        if (!this.cache.cacheTime) {return false;}
         return (Date.now() - this.cache.cacheTime) < this.cache.ttl;
     }
 
@@ -392,10 +392,10 @@ class ProgressRenderer {
 
             const canvas = chartContainer.querySelector('canvas');
             await this.chartManager.createChart('weekly-volume-chart', config, canvas);
-            
+
             // Add accessibility
             this.addChartAccessibility(chartContainer, 'weekly-volume-chart', data);
-            
+
         } catch (error) {
             this.logger.error('Failed to render weekly volume chart:', error);
             this.showError(chartContainer, error);
@@ -418,7 +418,7 @@ class ProgressRenderer {
         try {
             const prs = data.strengthPRs;
             const exercises = Object.keys(prs);
-            
+
             if (exercises.length === 0) {
                 chartContainer.innerHTML = '<p class="chart-empty">No personal records recorded yet. Start tracking your strength progress!</p>';
                 return;
@@ -497,10 +497,10 @@ class ProgressRenderer {
 
             const canvas = chartContainer.querySelector('canvas');
             await this.chartManager.createChart('pr-progression-chart', config, canvas);
-            
+
             // Add accessibility
             this.addChartAccessibility(chartContainer, 'pr-progression-chart', data);
-            
+
         } catch (error) {
             this.logger.error('Failed to render PR progression chart:', error);
             this.showError(chartContainer, error);
@@ -521,7 +521,7 @@ class ProgressRenderer {
         const chartContainer = this.createChartContainer(container, 'consistency-chart', 'Workout Consistency');
 
         try {
-            const consistency = data.consistency;
+            const {consistency} = data;
             const weeks = Object.keys(consistency).sort();
 
             if (weeks.length === 0) {
@@ -538,14 +538,14 @@ class ProgressRenderer {
                         data: weeks.map(w => consistency[w]),
                         backgroundColor: weeks.map(w => {
                             const count = consistency[w];
-                            if (count >= 3) return 'rgba(75, 192, 192, 0.6)'; // Good
-                            if (count >= 2) return 'rgba(255, 206, 86, 0.6)'; // Fair
+                            if (count >= 3) {return 'rgba(75, 192, 192, 0.6)';} // Good
+                            if (count >= 2) {return 'rgba(255, 206, 86, 0.6)';} // Fair
                             return 'rgba(255, 99, 132, 0.6)'; // Poor
                         }),
                         borderColor: weeks.map(w => {
                             const count = consistency[w];
-                            if (count >= 3) return 'rgba(75, 192, 192, 1)';
-                            if (count >= 2) return 'rgba(255, 206, 86, 1)';
+                            if (count >= 3) {return 'rgba(75, 192, 192, 1)';}
+                            if (count >= 2) {return 'rgba(255, 206, 86, 1)';}
                             return 'rgba(255, 99, 132, 1)';
                         }),
                         borderWidth: 1
@@ -586,10 +586,10 @@ class ProgressRenderer {
 
             const canvas = chartContainer.querySelector('canvas');
             await this.chartManager.createChart('consistency-chart', config, canvas);
-            
+
             // Add accessibility
             this.addChartAccessibility(chartContainer, 'consistency-chart', data);
-            
+
         } catch (error) {
             this.logger.error('Failed to render consistency chart:', error);
             this.showError(chartContainer, error);
@@ -607,7 +607,7 @@ class ProgressRenderer {
         const container = document.createElement('div');
         container.className = 'progress-chart-container';
         container.id = chartId;
-        
+
         const titleEl = document.createElement('h3');
         titleEl.textContent = title;
         container.appendChild(titleEl);
@@ -634,12 +634,12 @@ class ProgressRenderer {
      */
     addChartAccessibility(container, chartId, data) {
         const canvas = container.querySelector('canvas');
-        if (!canvas) return;
+        if (!canvas) {return;}
 
         // Add ARIA attributes
         canvas.setAttribute('role', 'img');
         canvas.setAttribute('aria-label', `${chartId} chart`);
-        
+
         // Add description (hidden)
         const description = document.createElement('div');
         description.className = 'sr-only';
@@ -657,22 +657,22 @@ class ProgressRenderer {
     generateChartDescription(chartId, data) {
         if (chartId === 'weekly-volume-chart') {
             const volumes = data.weeklyVolumes || [];
-            if (volumes.length === 0) return 'No volume data available.';
+            if (volumes.length === 0) {return 'No volume data available.';}
             const avg = Math.round(volumes.reduce((sum, w) => sum + w.volume, 0) / volumes.length);
             return `Weekly training volume chart showing ${volumes.length} weeks of data. Average weekly volume: ${avg} pounds.`;
         }
-        
+
         if (chartId === 'pr-progression-chart') {
             const prs = data.strengthPRs || {};
             const exercises = Object.keys(prs);
-            if (exercises.length === 0) return 'No personal records recorded yet.';
+            if (exercises.length === 0) {return 'No personal records recorded yet.';}
             return `Personal records chart showing ${exercises.length} exercises with recorded PRs.`;
         }
-        
+
         if (chartId === 'consistency-chart') {
             const consistency = data.consistency || {};
             const weeks = Object.keys(consistency);
-            if (weeks.length === 0) return 'No consistency data available.';
+            if (weeks.length === 0) {return 'No consistency data available.';}
             const total = Object.values(consistency).reduce((sum, count) => sum + count, 0);
             const avg = Math.round(total / weeks.length);
             return `Workout consistency chart showing ${weeks.length} weeks of data. Average workouts per week: ${avg}.`;

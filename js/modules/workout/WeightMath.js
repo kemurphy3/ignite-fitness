@@ -6,7 +6,7 @@ class WeightMath {
     constructor() {
         this.logger = window.SafeLogger || console;
         this.storageManager = window.StorageManager;
-        
+
         // Default equipment configurations
         this.configs = {
             us: {
@@ -22,14 +22,14 @@ class WeightMath {
                 name: 'Metric'
             }
         };
-        
+
         this.equipment = {
             availablePlates: this.configs.us.plates,
             mode: 'us',
             barWeight: this.configs.us.barWeight,
             unit: this.configs.us.unit
         };
-        
+
         // Exercise-specific progression minimums (lbs per side)
         this.progressionMins = {
             // Lower body - require larger jumps
@@ -41,7 +41,7 @@ class WeightMath {
             'rdl': 10,
             'leg press': 10,
             'bulgarian split squat': 5,
-            
+
             // Upper body - can use smaller increments
             'bench press': 2.5,
             'bench': 2.5,
@@ -50,14 +50,14 @@ class WeightMath {
             'shoulder press': 2.5,
             'incline bench': 2.5,
             'dumbbell press': 2.5,
-            
+
             // Accessory work - even smaller
             'curl': 2.5,
             'bicep curl': 2.5,
             'tricep extension': 2.5,
             'lateral raise': 2.5,
             'rear delt': 2.5,
-            
+
             // Default if not specified
             'default': 5
         };
@@ -74,13 +74,13 @@ class WeightMath {
         try {
             const equipment = { ...this.equipment, ...config };
             const plateSet = equipment.availablePlates || this.configs[equipment.mode || 'us'].plates;
-            
+
             const barWeight = equipment.barWeight || this.configs[equipment.mode || 'us'].barWeight;
             const unit = equipment.unit || this.configs[equipment.mode || 'us'].unit;
-            
+
             // Calculate weight per side
             const weightPerSide = (targetWeight - barWeight) / 2;
-            
+
             if (weightPerSide <= 0) {
                 return {
                     target: barWeight,
@@ -91,29 +91,29 @@ class WeightMath {
                     note: null
                 };
             }
-            
+
             // Find exact plate combination
             const exactCombination = this.findPlateCombination(weightPerSide, plateSet);
-            
+
             // If exact match found
             if (Math.abs(exactCombination.total - weightPerSide) < 0.1) {
                 const totalWeight = barWeight + (exactCombination.total * 2);
-                
+
                 return {
                     target: targetWeight,
-                    totalWeight: totalWeight,
+                    totalWeight,
                     sides: exactCombination.plates,
                     text: this.generateInstruction(totalWeight, barWeight, exactCombination.plates, unit),
                     exact: true,
                     note: null
                 };
             }
-            
+
             // No exact match - round to nearest achievable
             const roundedWeight = this.roundToNearestAchievable(weightPerSide, plateSet);
             const roundedCombination = this.findPlateCombination(roundedWeight, plateSet);
             const roundedTotal = barWeight + (roundedCombination.total * 2);
-            
+
             return {
                 target: targetWeight,
                 totalWeight: roundedTotal,
@@ -147,14 +147,14 @@ class WeightMath {
         const sortedPlates = [...plates].sort((a, b) => b - a);
         const combination = [];
         let total = 0;
-        
+
         for (const plate of sortedPlates) {
             while (total + plate <= target + 0.1) {
                 combination.push(plate);
                 total += plate;
             }
         }
-        
+
         return {
             plates,
             total,
@@ -186,25 +186,25 @@ class WeightMath {
         if (plates.length === 0) {
             return `Load ${barWeight} ${unit} bar only`;
         }
-        
+
         // Group plates and count
         const plateGroups = this.groupPlates(plates);
-        
+
         // Format: "Load 45 lb bar + 35 + 10 + 2.5 per side → 135 lb total"
         const barText = `${barWeight} ${unit} bar`;
-        
+
         if (plateGroups.length === 0) {
             return `Load ${barText} only`;
         }
-        
+
         // Build plate text
-        let plateText = plateGroups.map(p => {
+        const plateText = plateGroups.map(p => {
             if (p.count === 1) {
                 return `${p.weight}`;
             }
             return `${p.weight} × ${p.count}`;
         }).join(' + ');
-        
+
         return `Load ${barText} + ${plateText} per side → ${totalWeight} ${unit} total`;
     }
 
@@ -215,15 +215,15 @@ class WeightMath {
      */
     groupPlates(plates) {
         const groups = {};
-        
+
         plates.forEach(plate => {
             groups[plate] = (groups[plate] || 0) + 1;
         });
-        
+
         return Object.entries(groups)
             .map(([weight, count]) => ({
                 weight: parseFloat(weight),
-                count: count
+                count
             }))
             .sort((a, b) => b.weight - a.weight);
     }
@@ -234,7 +234,7 @@ class WeightMath {
      */
     updateEquipment(equipment) {
         this.equipment = { ...this.equipment, ...equipment };
-        
+
         this.logger.debug('Equipment updated', this.equipment);
     }
 
@@ -245,7 +245,7 @@ class WeightMath {
      */
     getDefaultEquipment(mode = 'us') {
         const config = this.configs[mode] || this.configs.us;
-        
+
         return {
             mode,
             barWeight: config.barWeight,
@@ -261,19 +261,19 @@ class WeightMath {
      */
     suggestAlternatives(targetLoad) {
         const neededPlates = targetLoad.sides;
-        const availablePlates = this.equipment.availablePlates;
-        
+        const {availablePlates} = this.equipment;
+
         const missingPlates = neededPlates.filter(plate => !availablePlates.includes(plate));
-        
+
         if (missingPlates.length === 0) {
             return null; // No missing plates
         }
-        
+
         // Suggest closest achievable weight without missing plates
         const filteredPlates = availablePlates.filter(p => !missingPlates.includes(p));
         const altWeightPerSide = this.estimateWeight(neededPlates) * 0.9; // 90% of target
         const altCombination = this.findPlateCombination(altWeightPerSide, filteredPlates);
-        
+
         return {
             target: targetLoad.target,
             totalWeight: this.equipment.barWeight + (altCombination.total * 2),
@@ -304,22 +304,22 @@ class WeightMath {
      * @returns {number} Minimum progression in lbs/kg
      */
     getProgressionMin(exerciseName) {
-        if (!exerciseName) return 5;
-        
+        if (!exerciseName) {return 5;}
+
         const normalized = exerciseName.toLowerCase().trim();
-        
+
         // Check exact match
         if (this.progressionMins[normalized]) {
             return this.progressionMins[normalized];
         }
-        
+
         // Check for partial match
         for (const [key, value] of Object.entries(this.progressionMins)) {
             if (normalized.includes(key) || key.includes(normalized)) {
                 return value;
             }
         }
-        
+
         // Default
         return this.progressionMins.default || 5;
     }
@@ -337,7 +337,7 @@ class WeightMath {
         const currentWeightPerSide = (currentWeight - barWeight) / 2;
         const nextWeightPerSide = currentWeightPerSide + minProgression;
         const targetWeight = barWeight + (nextWeightPerSide * 2);
-        
+
         // Round to nearest achievable
         const rounded = this.roundToNearestAchievable(targetWeight - barWeight, availablePlates);
         return barWeight + (rounded * 2);
@@ -354,16 +354,16 @@ class WeightMath {
         const change = newWeight - oldWeight;
         const changePerSide = change / 2;
         const minProgression = this.getProgressionMin(exerciseName);
-        
+
         const isValid = changePerSide >= minProgression;
         const suggestion = isValid ? null : oldWeight + (minProgression * 2);
-        
+
         return {
             isValid,
             change: changePerSide,
             minimum: minProgression,
             suggestion,
-            message: isValid 
+            message: isValid
                 ? `Valid progression: ${changePerSide} per side`
                 : `Progression too small. Minimum ${minProgression} per side. Suggest ${suggestion} lbs`
         };

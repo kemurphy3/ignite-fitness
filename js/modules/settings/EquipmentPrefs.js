@@ -23,7 +23,7 @@ class EquipmentPrefs {
                 'ez bar': true
             }
         };
-        
+
         this.loadPreferences();
     }
 
@@ -34,7 +34,7 @@ class EquipmentPrefs {
         try {
             const authManager = window.AuthManager;
             const userId = authManager?.getCurrentUsername();
-            
+
             if (userId) {
                 const prefs = await this.storageManager.getPreferences(userId);
                 if (prefs && prefs.equipment) {
@@ -54,13 +54,13 @@ class EquipmentPrefs {
     async savePreferences(userId, equipmentPrefs) {
         try {
             this.preferences = { ...this.preferences, ...equipmentPrefs };
-            
+
             const prefs = await this.storageManager.getPreferences(userId);
             await this.storageManager.savePreferences(userId, {
                 ...prefs,
                 equipment: this.preferences
             });
-            
+
             this.logger.debug('Equipment preferences saved', { userId });
         } catch (error) {
             this.logger.error('Failed to save equipment preferences', error);
@@ -75,16 +75,16 @@ class EquipmentPrefs {
     getAvailablePlates() {
         const unit = this.preferences.weightUnit;
         const plates = this.preferences.availablePlates[unit] || [];
-        
+
         // Filter out unavailable plates
         if (unit === 'us' && !this.preferences.has2_5lbPlates) {
             return plates.filter(p => p !== 2.5);
         }
-        
+
         if (unit === 'metric' && !this.preferences.has1_25kgPlates) {
             return plates.filter(p => p !== 1.25);
         }
-        
+
         return plates;
     }
 
@@ -109,7 +109,7 @@ class EquipmentPrefs {
             'trap bar': 'regular bar',
             'smith machine': 'free weights'
         };
-        
+
         return subs[equipmentName.toLowerCase()] || null;
     }
 
@@ -123,15 +123,15 @@ class EquipmentPrefs {
         const unit = this.preferences.weightUnit;
         const increment = unit === 'us' ? 5 : 2.5; // 5lb or 2.5kg
         const weightPerDumbbell = isPair ? targetWeight / 2 : targetWeight;
-        
+
         // Round to nearest available increment
         const adjustedWeight = Math.round(weightPerDumbbell / increment) * increment;
-        
+
         return {
             weightPerDumbbell: adjustedWeight,
             totalWeight: isPair ? adjustedWeight * 2 : adjustedWeight,
-            instruction: isPair 
-                ? `Use ${adjustedWeight}${unit === 'us' ? 'lb' : 'kg'} dumbbells (pair)` 
+            instruction: isPair
+                ? `Use ${adjustedWeight}${unit === 'us' ? 'lb' : 'kg'} dumbbells (pair)`
                 : `Use one ${adjustedWeight}${unit === 'us' ? 'lb' : 'kg'} dumbbell`,
             adjustment: Math.abs(weightPerDumbbell - adjustedWeight)
         };
@@ -160,7 +160,7 @@ class EquipmentPrefs {
                 alternative: 'barbell'
             }
         };
-        
+
         return suggestions[equipment] || { suggestion: 'Use alternative equipment' };
     }
 
@@ -187,7 +187,7 @@ class EquipmentPrefs {
                 suggestions: ['Choose most essential exercises', 'Prioritize compound movements']
             }
         };
-        
+
         return recommendations[gymType] || recommendations.commercial;
     }
 }

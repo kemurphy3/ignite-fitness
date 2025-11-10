@@ -18,10 +18,10 @@ class StravaHook {
     async fetchActivities(userId) {
         // MOCK: Return mock data for testing
         this.logger.debug('StravaHook: Fetching activities (mock)', { userId });
-        
+
         // Simulate API delay
         await new Promise(resolve => setTimeout(resolve, 500));
-        
+
         // Mock recent activity
         const mockActivity = {
             id: `strava_${Date.now()}`,
@@ -33,7 +33,7 @@ class StravaHook {
             timestamp: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
             source: 'strava'
         };
-        
+
         return [mockActivity];
     }
 
@@ -45,19 +45,19 @@ class StravaHook {
     async syncActivities(userId) {
         try {
             const activities = await this.fetchActivities(userId);
-            
+
             // Map to internal format
-            const mappedActivities = activities.map(activity => 
+            const mappedActivities = activities.map(activity =>
                 this.mapToInternal(activity)
             );
-            
+
             // Store in external_activities table
             for (const activity of mappedActivities) {
                 await this.storageManager.saveData(userId, 'external_activities', activity);
             }
-            
+
             this.lastSync = new Date();
-            
+
             return {
                 synced: mappedActivities.length,
                 activities: mappedActivities
@@ -101,7 +101,7 @@ class StravaHook {
             'Workout': 'strength',
             'Walk': 'walking'
         };
-        
+
         return typeMap[stravaType] || 'unknown';
     }
 
@@ -113,11 +113,11 @@ class StravaHook {
     async authenticate(userId) {
         // MOCK: Simulate authentication
         this.logger.debug('StravaHook: Authenticating (mock)', { userId });
-        
+
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
+
         this.isAuthenticated = true;
-        
+
         return true;
     }
 

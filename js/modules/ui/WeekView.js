@@ -35,7 +35,7 @@ class WeekView {
      * Initialize event listeners
      */
     initializeEventListeners() {
-        if (!this.eventBus) return;
+        if (!this.eventBus) {return;}
 
         this.eventBus.on(this.eventBus.TOPICS?.SESSION_COMPLETED, () => {
             this.refreshWeekView();
@@ -64,11 +64,11 @@ class WeekView {
 
             const weekData = await this.getWeekData();
             const loadAnalysis = this.analyzeWeeklyLoad(weekData);
-            
-            const userId = this.authManager?.getCurrentUsername?.() || 
+
+            const userId = this.authManager?.getCurrentUsername?.() ||
                           this.authManager?.getCurrentUser?.()?.username;
-            const guardrailStatus = userId ? 
-                await this.loadGuardrails?.getGuardrailStatus?.(userId) : 
+            const guardrailStatus = userId ?
+                await this.loadGuardrails?.getGuardrailStatus?.(userId) :
                 null;
 
             container.innerHTML = this.generateWeekViewHTML(weekData, loadAnalysis, guardrailStatus, options);
@@ -96,7 +96,7 @@ class WeekView {
      * @returns {Object} Week data with planned and completed sessions
      */
     async getWeekData() {
-        const userId = this.authManager?.getCurrentUsername?.() || 
+        const userId = this.authManager?.getCurrentUsername?.() ||
                       this.authManager?.getCurrentUser?.()?.username;
         if (!userId) {
             throw new Error('User not authenticated');
@@ -174,7 +174,7 @@ class WeekView {
         try {
             // Get from storageManager
             const sessions = await this.getUserSessions(userId);
-            
+
             return sessions.filter(s => {
                 const sessionDate = new Date(s.date || s.start_at || s.created_at);
                 return sessionDate >= startDate && sessionDate <= endDate && s.completed !== false;
@@ -199,7 +199,7 @@ class WeekView {
             if (this.storageManager?.getUserSessions) {
                 return await this.storageManager.getUserSessions(userId);
             }
-            
+
             // Fallback: try localStorage
             const stored = localStorage.getItem(`ignite_sessions_${userId}`);
             if (stored) {
@@ -358,7 +358,7 @@ class WeekView {
         const daysHTML = dailyBreakdown.map(day => {
             const dayStatus = this.determineDayStatus(day);
             const maxLoad = Math.max(...dailyBreakdown.map(d => Math.max(d.plannedLoad, d.completedLoad)), 1);
-            
+
             return `
                 <div class="day-card ${dayStatus.class}" data-date="${day.date}">
                     <div class="day-header">
@@ -416,7 +416,7 @@ class WeekView {
         }).join('');
 
         const moreCount = allSessions.length > 3 ? `+${allSessions.length - 3} more` : '';
-        
+
         return `
             <div class="day-sessions">
                 ${sessionsHTML}
@@ -455,7 +455,7 @@ class WeekView {
      * @returns {number} Normalized height percentage
      */
     normalizeLoadHeight(load, maxLoad = 100) {
-        if (maxLoad === 0) return 0;
+        if (maxLoad === 0) {return 0;}
         return Math.min((load / maxLoad) * 100, 100);
     }
 
@@ -690,7 +690,7 @@ class WeekView {
         const dayCards = container.querySelectorAll('.day-card');
         dayCards.forEach(card => {
             card.addEventListener('click', (e) => {
-                const date = e.currentTarget.dataset.date;
+                const {date} = e.currentTarget.dataset;
                 this.handleDayClick(date);
             });
         });
@@ -784,7 +784,7 @@ class WeekView {
      * @returns {number} Total load
      */
     calculateTotalLoad(sessions) {
-        if (!sessions || sessions.length === 0) return 0;
+        if (!sessions || sessions.length === 0) {return 0;}
 
         return sessions.reduce((total, session) => {
             const sessionLoad = this.loadCalculator?.calculateSessionLoad?.(session);
@@ -798,10 +798,10 @@ class WeekView {
      * @returns {string} Week label
      */
     getWeekLabel(offset) {
-        if (offset === 0) return 'This Week';
-        if (offset === -1) return 'Last Week';
-        if (offset === 1) return 'Next Week';
-        if (offset < 0) return `${Math.abs(offset)} Weeks Ago`;
+        if (offset === 0) {return 'This Week';}
+        if (offset === -1) {return 'Last Week';}
+        if (offset === 1) {return 'Next Week';}
+        if (offset < 0) {return `${Math.abs(offset)} Weeks Ago`;}
         return `${offset} Weeks Ahead`;
     }
 

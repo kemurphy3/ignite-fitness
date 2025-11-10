@@ -280,7 +280,7 @@ class DatabaseSeeder {
             const verification = await this.verifySeeding();
 
             if (verification) {
-                console.log(`\n✅ Database seeding completed successfully!`);
+                console.log('\n✅ Database seeding completed successfully!');
                 console.log(`📈 Total records seeded: ${verification.templates + verification.rules + verification.configs + verification.zones}`);
             } else {
                 console.log('\n⚠️ Seeding completed but verification failed');

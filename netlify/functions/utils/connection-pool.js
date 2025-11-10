@@ -37,7 +37,7 @@ class ConnectionPoolManager {
             retryDelay: 1000,
             retryCondition: (error) => {
               // Retry on network errors, timeouts, and temporary failures
-              return error.code === 'ECONNRESET' || 
+              return error.code === 'ECONNRESET' ||
                      error.code === 'ETIMEDOUT' ||
                      error.message.includes('timeout') ||
                      error.message.includes('connection');
@@ -61,15 +61,15 @@ class ConnectionPoolManager {
       this.pgPool = new Pool({
         connectionString: process.env.DATABASE_URL,
         // Pool configuration
-        max: 20,                    // Maximum connections in pool
-        min: 2,                     // Minimum connections in pool
-        idleTimeoutMillis: 30000,   // Close idle connections after 30s
+        max: 20, // Maximum connections in pool
+        min: 2, // Minimum connections in pool
+        idleTimeoutMillis: 30000, // Close idle connections after 30s
         connectionTimeoutMillis: 5000, // Timeout for new connections
-        statement_timeout: 30000,   // Query timeout
-        query_timeout: 30000,       // Query timeout
+        statement_timeout: 30000, // Query timeout
+        query_timeout: 30000, // Query timeout
         // SSL configuration
-        ssl: { 
-          rejectUnauthorized: false 
+        ssl: {
+          rejectUnauthorized: false
         },
         // Connection lifecycle
         allowExitOnIdle: true
@@ -114,7 +114,7 @@ class ConnectionPoolManager {
     if (operationType === 'query' || operationType === 'simple') {
       return this.getNeonClient();
     }
-    
+
     // Use PG pool for complex operations, transactions, or when connection reuse is critical
     if (operationType === 'transaction' || operationType === 'complex' || operationType === 'pool') {
       return this.getPgPool();
@@ -127,7 +127,7 @@ class ConnectionPoolManager {
   // Execute a query with automatic client selection
   async executeQuery(query, params = [], operationType = 'query') {
     const client = this.getClient(operationType);
-    
+
     try {
       if (operationType === 'transaction' || operationType === 'complex') {
         // Use PG pool for complex operations
@@ -151,7 +151,7 @@ class ConnectionPoolManager {
   async executeTransaction(callback) {
     const pool = this.getPgPool();
     const client = await pool.connect();
-    
+
     try {
       await client.query('BEGIN');
       const result = await callback(client);
@@ -209,15 +209,15 @@ class ConnectionPoolManager {
   // Graceful shutdown
   async shutdown() {
     console.log('🔄 Shutting down connection pools...');
-    
+
     if (this.pgPool) {
       await this.pgPool.end();
       this.pgPool = null;
     }
-    
+
     // Neon client doesn't need explicit shutdown
     this.neonClient = null;
-    
+
     console.log('✅ Connection pools shut down successfully');
   }
 

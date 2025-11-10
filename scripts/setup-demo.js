@@ -117,7 +117,7 @@ class DemoSetup {
         const envVars = {};
         envContent.split(/\r?\n/).forEach((line) => {
             const trimmed = line.trim();
-            if (!trimmed || trimmed.startsWith('#')) return;
+            if (!trimmed || trimmed.startsWith('#')) {return;}
             const equalsIndex = trimmed.indexOf('=');
             if (equalsIndex > 0) {
                 const key = trimmed.slice(0, equalsIndex).trim();

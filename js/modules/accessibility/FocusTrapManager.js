@@ -15,7 +15,7 @@ class FocusTrapManager {
             '[tabindex]:not([tabindex="-1"])',
             '[contenteditable="true"]'
         ];
-        
+
         this.init();
     }
 
@@ -34,7 +34,7 @@ class FocusTrapManager {
         // Listen for modal events
         EventBus.subscribe('modal:open', this.handleModalOpen.bind(this));
         EventBus.subscribe('modal:close', this.handleModalClose.bind(this));
-        
+
         // Listen for overlay events
         EventBus.subscribe('overlay:show', this.handleOverlayShow.bind(this));
         EventBus.subscribe('overlay:hide', this.handleOverlayHide.bind(this));
@@ -165,9 +165,9 @@ class FocusTrapManager {
      * @param {Object} trapData - Trap data object
      */
     updateFocusableElements(trapData) {
-        const container = trapData.container;
+        const {container} = trapData;
         const selector = this.focusableElements.join(', ');
-        
+
         trapData.focusableElements = Array.from(
             container.querySelectorAll(selector)
         ).filter(element => {
@@ -221,7 +221,7 @@ class FocusTrapManager {
      */
     handleTabKey(e, trapData) {
         const { firstFocusableElement, lastFocusableElement, focusableElements } = trapData;
-        
+
         if (focusableElements.length === 1) {
             e.preventDefault();
             firstFocusableElement.focus();
@@ -250,7 +250,7 @@ class FocusTrapManager {
      */
     handleEscapeKey(e, trapData) {
         e.preventDefault();
-        
+
         // Find container ID from trap data
         let containerId = null;
         for (const [id, data] of this.activeTraps.entries()) {
@@ -274,7 +274,7 @@ class FocusTrapManager {
      */
     handleFocus(e, trapData) {
         const { container, firstFocusableElement, lastFocusableElement } = trapData;
-        
+
         // Check if focus is within the container
         if (!container.contains(e.target)) {
             // Focus escaped, bring it back
@@ -289,7 +289,7 @@ class FocusTrapManager {
      */
     createAccessibleModal(options = {}) {
         const {
-            id = 'modal-' + Date.now(),
+            id = `modal-${ Date.now()}`,
             title = 'Modal',
             content = '',
             closeButton = true,

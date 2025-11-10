@@ -131,11 +131,11 @@ class RiskAssessment {
         const factors = this.calculateFactors(userData);
         const riskScore = this.calculateRiskScore(factors);
         const riskLevel = this.determineRiskLevel(riskScore);
-        
+
         const assessment = {
             score: riskScore,
             level: riskLevel,
-            factors: factors,
+            factors,
             weightedScore: this.calculateWeightedScore(factors),
             sportSpecificRisk: this.assessSportSpecificRisk(sportId, userData),
             recommendations: this.generateRecommendations(riskLevel, userData, sportId),
@@ -145,7 +145,7 @@ class RiskAssessment {
 
         this.logger.audit('RISK_ASSESSMENT_CALCULATED', {
             userId: userData.userId,
-            riskLevel: riskLevel,
+            riskLevel,
             score: riskScore
         });
 
@@ -201,7 +201,7 @@ class RiskAssessment {
      */
     calculateWeightedScore(factors) {
         const breakdown = {};
-        
+
         Object.entries(this.riskFactors).forEach(([key, config]) => {
             const value = factors[key];
             let contribution;
@@ -213,8 +213,8 @@ class RiskAssessment {
             }
 
             breakdown[key] = {
-                value: value,
-                contribution: contribution,
+                value,
+                contribution,
                 weight: config.weight,
                 threshold: this.checkThreshold(value, config.thresholds)
             };
@@ -229,10 +229,10 @@ class RiskAssessment {
      * @returns {string} Risk level
      */
     determineRiskLevel(riskScore) {
-        if (riskScore >= 7) return 'very_high';
-        if (riskScore >= 5) return 'high';
-        if (riskScore >= 3) return 'moderate';
-        if (riskScore >= 1) return 'low_moderate';
+        if (riskScore >= 7) {return 'very_high';}
+        if (riskScore >= 5) {return 'high';}
+        if (riskScore >= 3) {return 'moderate';}
+        if (riskScore >= 1) {return 'low_moderate';}
         return 'low';
     }
 
@@ -243,8 +243,8 @@ class RiskAssessment {
      * @returns {string} Threshold level
      */
     checkThreshold(value, thresholds) {
-        if (value <= thresholds.low) return 'low';
-        if (value <= thresholds.moderate) return 'moderate';
+        if (value <= thresholds.low) {return 'low';}
+        if (value <= thresholds.moderate) {return 'moderate';}
         return 'high';
     }
 
@@ -256,21 +256,21 @@ class RiskAssessment {
      */
     assessSportSpecificRisk(sportId, userData) {
         const sportRisk = this.sportSpecificRisk[sportId] || this.sportSpecificRisk.soccer;
-        
+
         const riskFactors = [];
-        
+
         if (userData.weeklyLoad > 250) {
             riskFactors.push('high_training_load');
         }
-        
+
         if (userData.soreness >= 6) {
             riskFactors.push('high_muscle_soreness');
         }
-        
+
         if (userData.lastScreenScore <= 1) {
             riskFactors.push('poor_movement_quality');
         }
-        
+
         if (userData.injuryRisk >= 2) {
             riskFactors.push('previous_injury_history');
         }
@@ -291,7 +291,7 @@ class RiskAssessment {
      */
     getPreventionPriorities(sportId, riskFactors) {
         const priorities = [];
-        
+
         if (riskFactors.includes('high_training_load')) {
             priorities.push({
                 type: 'training',
@@ -299,7 +299,7 @@ class RiskAssessment {
                 priority: 'high'
             });
         }
-        
+
         if (riskFactors.includes('poor_movement_quality')) {
             priorities.push({
                 type: 'movement',
@@ -313,7 +313,7 @@ class RiskAssessment {
         sportRisk.commonInjuries.forEach(injury => {
             priorities.push({
                 type: 'injury_prevention',
-                injury: injury,
+                injury,
                 message: `Implement ${injury} prevention strategies`,
                 priority: 'medium'
             });
@@ -512,8 +512,8 @@ class RiskAssessment {
 
         return {
             available: true,
-            trend: trend,
-            latestScore: latestScore,
+            trend,
+            latestScore,
             averageScore: scores.reduce((a, b) => a + b, 0) / scores.length,
             recommendation: this.getTrendRecommendation(trend)
         };
@@ -525,14 +525,14 @@ class RiskAssessment {
      * @returns {string} Trend direction
      */
     calculateTrend(scores) {
-        if (scores.length < 2) return 'insufficient_data';
-        
+        if (scores.length < 2) {return 'insufficient_data';}
+
         const recent = scores.slice(-3);
         const latest = recent[recent.length - 1];
         const previous = recent[0];
-        
-        if (latest > previous) return 'increasing';
-        if (latest < previous) return 'decreasing';
+
+        if (latest > previous) {return 'increasing';}
+        if (latest < previous) {return 'decreasing';}
         return 'stable';
     }
 

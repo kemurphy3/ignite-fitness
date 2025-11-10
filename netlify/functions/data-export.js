@@ -68,13 +68,13 @@ const okPreflight = () => ({
 });
 
 exports.handler = async (event) => {
-    if (event.httpMethod === 'OPTIONS') return okPreflight();
-    if (event.httpMethod !== 'POST') return methodNotAllowed();
+    if (event.httpMethod === 'OPTIONS') {return okPreflight();}
+    if (event.httpMethod !== 'POST') {return methodNotAllowed();}
 
     try {
         // Parse request body
         const { user_id, export_type, format } = JSON.parse(event.body || '{}');
-        
+
         if (!user_id) {
             return badReq('Missing user ID');
         }
@@ -86,37 +86,37 @@ exports.handler = async (event) => {
         }
 
         const jwtToken = authHeader.substring(7);
-        
+
         // Verify JWT token (simplified - in production, use proper JWT verification)
         if (!jwtToken || jwtToken.length < 10) {
             return unauthorized('Invalid JWT token');
         }
 
         logger.info('Data export request received', {
-            user_id: user_id,
-            export_type: export_type,
-            format: format
+            user_id,
+            export_type,
+            format
         });
 
         // Check if user has opted out of data collection
         const optOutStatus = await checkOptOutStatus(user_id);
         if (optOutStatus.opted_out) {
             logger.warn('Data export requested by opted-out user', {
-                user_id: user_id,
+                user_id,
                 opt_out_date: optOutStatus.opt_out_date
             });
-            
+
             return okJson({
                 success: true,
                 export_data: {
-                    user_id: user_id,
+                    user_id,
                     opt_out_status: true,
                     opt_out_date: optOutStatus.opt_out_date,
                     message: 'User has opted out of data collection. Limited data available.',
                     data_available: optOutStatus.data_available
                 },
-                export_type: export_type,
-                format: format,
+                export_type,
+                format,
                 exported_at: new Date().toISOString()
             });
         }
@@ -144,16 +144,16 @@ exports.handler = async (event) => {
         await logExportEvent(user_id, export_type, format, exportData);
 
         logger.info('Data export completed', {
-            user_id: user_id,
-            export_type: export_type,
+            user_id,
+            export_type,
             data_size: JSON.stringify(exportData).length
         });
 
         return okJson({
             success: true,
             export_data: exportData,
-            export_type: export_type,
-            format: format,
+            export_type,
+            format,
             exported_at: new Date().toISOString(),
             data_size: JSON.stringify(exportData).length
         });
@@ -195,7 +195,7 @@ async function checkOptOutStatus(userId) {
         if (error) {
             logger.error('Failed to check opt-out status', {
                 user_id: userId,
-                error: error
+                error
             });
             return { opted_out: false, data_available: true };
         }
@@ -242,9 +242,9 @@ async function exportCompleteData(userId) {
 
         return {
             user_profile: userProfile,
-            workouts: workouts,
-            activities: activities,
-            settings: settings,
+            workouts,
+            activities,
+            settings,
             privacy_preferences: preferences,
             consent_history: consentHistory,
             audit_log: auditLog,
@@ -273,9 +273,9 @@ async function exportCompleteData(userId) {
 async function exportWorkoutData(userId) {
     try {
         const workouts = await getWorkouts(userId);
-        
+
         return {
-            workouts: workouts,
+            workouts,
             export_metadata: {
                 export_type: 'workouts',
                 exported_at: new Date().toISOString(),
@@ -306,7 +306,7 @@ async function exportSettingsData(userId) {
         ]);
 
         return {
-            settings: settings,
+            settings,
             privacy_preferences: preferences,
             export_metadata: {
                 export_type: 'settings',
@@ -333,9 +333,9 @@ async function exportSettingsData(userId) {
 async function exportActivityData(userId) {
     try {
         const activities = await getActivities(userId);
-        
+
         return {
-            activities: activities,
+            activities,
             export_metadata: {
                 export_type: 'activities',
                 exported_at: new Date().toISOString(),
@@ -512,7 +512,7 @@ async function logExportEvent(userId, exportType, format, exportData) {
                 resource_id: userId,
                 details: {
                     export_type: exportType,
-                    format: format,
+                    format,
                     data_size: JSON.stringify(exportData).length,
                     exported_at: new Date().toISOString()
                 },
@@ -524,7 +524,7 @@ async function logExportEvent(userId, exportType, format, exportData) {
         if (error) {
             logger.error('Failed to log export event', {
                 user_id: userId,
-                error: error
+                error
             });
         }
 

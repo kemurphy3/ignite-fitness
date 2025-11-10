@@ -56,8 +56,8 @@ class InjuryHistory extends window.BaseComponent {
     }
 
     toggleLimitation(lim, selected) {
-        if (selected) this.limitations.add(lim);
-        else this.limitations.delete(lim);
+        if (selected) {this.limitations.add(lim);}
+        else {this.limitations.delete(lim);}
     }
 
     updatePastInjuries(text) {

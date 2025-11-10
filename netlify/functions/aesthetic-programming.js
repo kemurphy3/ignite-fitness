@@ -97,7 +97,7 @@ exports.handler = async (event, context) => {
         }
 
         const program = generateAestheticProgram(aestheticFocus, readinessLevel, equipmentAvailable);
-        
+
         return {
             statusCode: 200,
             headers,
@@ -122,31 +122,31 @@ exports.handler = async (event, context) => {
  */
 function generateAestheticProgram(aestheticFocus, readinessLevel = 8, equipmentAvailable = []) {
     const accessoryConfig = ACCESSORY_MATRIX[aestheticFocus] || ACCESSORY_MATRIX.functional;
-    
+
     // Adjust volume based on readiness
     const volumeMultiplier = readinessLevel <= 6 ? 0.7 : 1.0;
     const shouldReduceAccessories = readinessLevel <= 6;
-    
+
     // Select primary accessories (take 30% of training focus)
     const primaryAccessories = accessoryConfig.primary.map(acc => ({
         ...acc,
         adjustedSets: shouldReduceAccessories ? Math.max(1, Math.floor(acc.sets * volumeMultiplier)) : acc.sets
     }));
-    
+
     // Select secondary accessories if readiness is good
     const secondaryAccessories = readinessLevel > 6 ? accessoryConfig.secondary : [];
-    
+
     // Filter by equipment if provided
-    const filteredAccessories = equipmentAvailable.length > 0 
+    const filteredAccessories = equipmentAvailable.length > 0
         ? filterByEquipment([...primaryAccessories, ...secondaryAccessories], equipmentAvailable)
         : primaryAccessories;
-    
+
     return {
         aestheticFocus,
         split: accessoryConfig.split,
         tooltip: accessoryConfig.tooltip,
         primaryAccessories: filteredAccessories.slice(0, primaryAccessories.length),
-        secondaryAccessories: secondaryAccessories.length > 0 
+        secondaryAccessories: secondaryAccessories.length > 0
             ? filteredAccessories.slice(primaryAccessories.length)
             : [],
         volumeReduced: shouldReduceAccessories,
@@ -168,11 +168,11 @@ function generateAestheticProgram(aestheticFocus, readinessLevel = 8, equipmentA
 function filterByEquipment(accessories, equipmentAvailable) {
     // Simple keyword matching for equipment
     return accessories.filter(acc => {
-        const equipment = acc.name.toLowerCase() + ' ' + (acc.category || '');
-        
+        const equipment = `${acc.name.toLowerCase() } ${ acc.category || ''}`;
+
         // Check if we have required equipment
-        return equipmentAvailable.some(equip => 
-            equipment.includes(equip.toLowerCase()) || 
+        return equipmentAvailable.some(equip =>
+            equipment.includes(equip.toLowerCase()) ||
             equipment.includes('bodyweight') ||
             equipment.includes('dumbbell') ||
             equipment.includes('barbell')

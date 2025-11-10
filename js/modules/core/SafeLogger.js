@@ -40,7 +40,7 @@ class SafeLogger {
     }
 
     installGlobalHandlers() {
-        if (this._globalsInstalled) return;
+        if (this._globalsInstalled) {return;}
         this._globalsInstalled = true;
         window.addEventListener('error', (e) => {
             try {
@@ -70,8 +70,8 @@ class SafeLogger {
      * @returns {any} Masked data
      */
     maskSensitiveData(data) {
-        if (data === null || data === undefined) return data;
-        
+        if (data === null || data === undefined) {return data;}
+
         if (typeof data === 'string') {
             // Check if string contains sensitive patterns
             for (const pattern of this.sensitivePatterns) {
@@ -114,7 +114,7 @@ class SafeLogger {
         const timestamp = new Date().toISOString();
         // Actually call maskSensitiveData, don't just reference it
         const maskedArgs = args.map(arg => this.maskSensitiveData(arg));
-        
+
         return [
             `[${timestamp}] [${level.toUpperCase()}] ${message}`,
             ...maskedArgs
@@ -127,7 +127,7 @@ class SafeLogger {
      * @param {...any} args - Additional arguments
      */
     debug(message, ...args) {
-        if (!this.shouldLog('debug')) return;
+        if (!this.shouldLog('debug')) {return;}
         const formatted = this.formatLog('debug', message, ...args);
         console.debug(...formatted);
     }
@@ -138,7 +138,7 @@ class SafeLogger {
      * @param {...any} args - Additional arguments
      */
     info(message, ...args) {
-        if (!this.shouldLog('info')) return;
+        if (!this.shouldLog('info')) {return;}
         const formatted = this.formatLog('info', message, ...args);
         console.info(...formatted);
     }
@@ -149,7 +149,7 @@ class SafeLogger {
      * @param {...any} args - Additional arguments
      */
     warn(message, ...args) {
-        if (!this.shouldLog('warn')) return;
+        if (!this.shouldLog('warn')) {return;}
         const formatted = this.formatLog('warn', message, ...args);
         console.warn(...formatted);
     }
@@ -160,7 +160,7 @@ class SafeLogger {
      * @param {...any} args - Additional arguments
      */
     error(message, ...args) {
-        if (!this.shouldLog('error')) return;
+        if (!this.shouldLog('error')) {return;}
         const formatted = this.formatLog('error', message, ...args);
         console.error(...formatted);
         this.sendRemote('error', message, args);
@@ -182,7 +182,7 @@ class SafeLogger {
 
         this.info('AUDIT', auditData);
         this.sendRemote('audit', 'AUDIT', [auditData]);
-        
+
         // Emit audit event for other modules
         if (window.EventBus) {
             window.EventBus.emit('audit', auditData);
@@ -203,7 +203,7 @@ class SafeLogger {
 
         this.warn('SECURITY', securityData);
         this.sendRemote('security', 'SECURITY', [securityData]);
-        
+
         // Emit security event for other modules
         if (window.EventBus) {
             window.EventBus.emit('security', securityData);
@@ -226,7 +226,7 @@ class SafeLogger {
 
         this.info('PERFORMANCE', perfData);
         this.sendRemote('performance', 'PERFORMANCE', [perfData]);
-        
+
         // Emit performance event for other modules
         if (window.EventBus) {
             window.EventBus.emit('performance', perfData);
@@ -234,7 +234,7 @@ class SafeLogger {
     }
 
     async sendRemote(level, message, args = []) {
-        if (!this.remote.enabled || !this.remote.url) return;
+        if (!this.remote.enabled || !this.remote.url) {return;}
         try {
             const payload = {
                 level,

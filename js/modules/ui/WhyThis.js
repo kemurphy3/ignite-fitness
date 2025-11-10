@@ -20,17 +20,17 @@ class WhyThis {
     render(block, context, reason = null) {
         const chip = document.createElement('div');
         chip.className = 'why-this-chip';
-        
+
         // Generate reason if not provided
         if (!reason) {
-            reason = this.whyThisDecider?.generateWhyToday(block, context) || 
+            reason = this.whyThisDecider?.generateWhyToday(block, context) ||
                     'Standard progression aligned with your goals.';
         }
-        
+
         // Store expanded state
         chip.dataset.expanded = 'false';
         chip.dataset.reason = reason;
-        
+
         // Compact chip
         chip.innerHTML = `
             <button class="why-chip-button" aria-expanded="false">
@@ -41,11 +41,11 @@ class WhyThis {
                 <div class="why-reason">${reason}</div>
             </div>
         `;
-        
+
         // Toggle expansion
         const button = chip.querySelector('.why-chip-button');
         button.addEventListener('click', () => this.toggle(chip));
-        
+
         return chip;
     }
 
@@ -56,17 +56,17 @@ class WhyThis {
     toggle(chip) {
         const isExpanded = chip.dataset.expanded === 'true';
         chip.dataset.expanded = !isExpanded;
-        
+
         const button = chip.querySelector('.why-chip-button');
         const expansion = chip.querySelector('.why-expansion');
-        
+
         if (!isExpanded) {
             // Expand
             expansion.setAttribute('aria-hidden', 'false');
-            expansion.style.maxHeight = expansion.scrollHeight + 'px';
+            expansion.style.maxHeight = `${expansion.scrollHeight }px`;
             expansion.style.opacity = '1';
             button.setAttribute('aria-expanded', 'true');
-            
+
             // Log to progression_events
             this.logReasonView(chip.dataset.reason);
         } else {
@@ -85,8 +85,8 @@ class WhyThis {
     async logReasonView(reason) {
         try {
             const userId = window.AuthManager?.getCurrentUsername();
-            if (!userId) return;
-            
+            if (!userId) {return;}
+
             const event = {
                 userId,
                 eventType: 'WHY_REASON_VIEWED',
@@ -97,15 +97,15 @@ class WhyThis {
                     userAction: 'tapped_expand'
                 }
             };
-            
+
             await this.storageManager.logProgressionEvent(userId, event);
-            
+
             // Emit event
             this.eventBus?.emit(this.eventBus?.TOPICS?.PROFILE_UPDATED, {
                 type: 'reason_viewed',
                 data: event
             });
-            
+
             this.logger.debug('Reason view logged', event);
         } catch (error) {
             this.logger.error('Failed to log reason view', error);
@@ -134,7 +134,7 @@ class WhyThis {
      */
     attachToWorkout(container, blocks, context) {
         const exerciseElements = container.querySelectorAll('[data-exercise-block]');
-        
+
         exerciseElements.forEach((element, index) => {
             if (index < blocks.length) {
                 const chip = this.render(blocks[index], context);

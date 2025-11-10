@@ -7,7 +7,7 @@ class SportsCoach {
         this.logger = window.SafeLogger || console;
         this.storageManager = window.StorageManager;
         this.authManager = window.AuthManager;
-        
+
         // VO₂ Max zone definitions
         this.vo2MaxZones = {
             Z2: { min: 0.60, max: 0.70, name: 'Aerobic Base', description: 'Easy conversational pace' },
@@ -24,7 +24,7 @@ class SportsCoach {
      */
     propose({ user, season, schedule, history, readiness, preferences }) {
         const sport = user.sport || 'soccer';
-        
+
         const proposal = {
             blocks: [],
             constraints: [],
@@ -33,13 +33,13 @@ class SportsCoach {
 
         // Check for game day scheduling
         const daysUntilGame = this.getDaysUntilGame(schedule);
-        
+
         // Get training phase (from season or user preferences)
         const trainingPhase = this.getTrainingPhase(season, user, schedule);
-        
+
         // Power development or maintenance
         const powerWork = this.generatePowerWork(sport, season, daysUntilGame);
-        
+
         // Sport-specific conditioning (with training phase for running)
         const conditioning = this.generateConditioning(sport, readiness, trainingPhase);
 
@@ -54,12 +54,12 @@ class SportsCoach {
         ];
 
         proposal.constraints = [
-            { 
+            {
                 type: 'game_day_safety',
                 rule: daysUntilGame <= 2 ? 'Lower intensity, no heavy leg work' : 'Normal programming',
                 daysUntilGame
             },
-            { 
+            {
                 type: 'volume',
                 rule: `Total volume ${this.calculateVolume(readiness)}`
             }
@@ -74,13 +74,13 @@ class SportsCoach {
     }
 
     getDaysUntilGame(schedule) {
-        if (!schedule || !schedule.upcomingGames) return 99;
-        
+        if (!schedule || !schedule.upcomingGames) {return 99;}
+
         const nextGame = schedule.upcomingGames[0];
         const gameDate = new Date(nextGame.date);
         const today = new Date();
         const days = Math.ceil((gameDate - today) / (1000 * 60 * 60 * 24));
-        
+
         return days;
     }
 
@@ -94,7 +94,7 @@ class SportsCoach {
                 rationale: 'Game tomorrow - upper body power maintenance'
             }];
         }
-        
+
         if (daysUntilGame <= 2) {
             // Game -2: No heavy legs, moderate power
             return [{
@@ -123,14 +123,14 @@ class SportsCoach {
             'running': ['tempo_runs', 'hill_sprints', 'fartlek']
         };
 
-        const exercises = conditioningMap[sport] || conditioningMap['soccer'];
+        const exercises = conditioningMap[sport] || conditioningMap.soccer;
         const adjustedVolume = this.adjustForReadiness(readiness);
-        
+
         // For running sport, add VO₂ Max zone training
         if (sport === 'running') {
             return this.generateRunningZoneTraining(readiness, trainingPhase);
         }
-        
+
         return exercises.map(ex => ({
             name: ex,
             duration: adjustedVolume.duration,
@@ -150,7 +150,7 @@ class SportsCoach {
         if (user?.trainingPhase) {
             return user.trainingPhase;
         }
-        
+
         // Infer from season
         if (season?.phase) {
             const phaseMap = {
@@ -161,7 +161,7 @@ class SportsCoach {
             };
             return phaseMap[season.phase] || 'base';
         }
-        
+
         // Default based on days until game
         const daysUntilGame = this.getDaysUntilGame(schedule);
         if (daysUntilGame <= 3) {
@@ -170,7 +170,7 @@ class SportsCoach {
         if (daysUntilGame <= 7) {
             return 'peak'; // Peak phase
         }
-        
+
         return 'base'; // Default to base building
     }
 
@@ -184,9 +184,9 @@ class SportsCoach {
         const vo2Max = this.estimateVO2Max();
         const hrZones = this.calculateHeartRateZones(vo2Max);
         const targetZone = this.selectTargetZone(trainingPhase, readiness);
-        
+
         const zoneRecommendations = [];
-        
+
         switch (targetZone) {
             case 'Z2':
                 // Base building - easy aerobic work
@@ -200,7 +200,7 @@ class SportsCoach {
                     notes: 'Should feel easy, able to hold a conversation'
                 });
                 break;
-                
+
             case 'Z3':
                 // Moderate aerobic work
                 zoneRecommendations.push({
@@ -213,7 +213,7 @@ class SportsCoach {
                     notes: 'Comfortably hard, sustainable effort'
                 });
                 break;
-                
+
             case 'Z4':
                 // Lactate threshold work
                 zoneRecommendations.push({
@@ -227,7 +227,7 @@ class SportsCoach {
                     notes: 'Hard effort, can maintain for intervals'
                 });
                 break;
-                
+
             case 'Z5':
                 // VO₂ Max intervals
                 zoneRecommendations.push({
@@ -242,7 +242,7 @@ class SportsCoach {
                 });
                 break;
         }
-        
+
         return zoneRecommendations;
     }
 
@@ -254,8 +254,8 @@ class SportsCoach {
     estimateVO2Max() {
         try {
             const userId = this.authManager?.getCurrentUserId() || this.authManager?.getCurrentUsername();
-            if (!userId) return this.getDefaultVO2Max();
-            
+            if (!userId) {return this.getDefaultVO2Max();}
+
             // Check for stored VO₂ Max
             const storedVO2 = localStorage.getItem(`ignitefitness_vo2max_${userId}`);
             if (storedVO2) {
@@ -264,16 +264,16 @@ class SportsCoach {
                     return parsed;
                 }
             }
-            
+
             // Estimate from user profile if available
             const userProfile = this.getUserProfile();
             if (userProfile && userProfile.age && userProfile.restingHeartRate) {
                 return this.estimateVO2FromProfile(userProfile);
             }
-            
+
             // Default estimation based on age and fitness level
             return this.getDefaultVO2Max();
-            
+
         } catch (error) {
             this.logger.error('Failed to estimate VO₂ Max:', error);
             return this.getDefaultVO2Max();
@@ -290,15 +290,15 @@ class SportsCoach {
         const restingHR = profile.restingHeartRate || 60;
         const maxHR = 220 - age;
         const hrReserve = maxHR - restingHR;
-        
+
         // Simple estimation based on HR reserve (rough approximation)
         // Athletes typically have higher VO₂ Max
         const isAthlete = profile.sport && profile.sport !== 'general_fitness';
         const baseVO2 = isAthlete ? 45 : 35;
-        
+
         // Adjust based on HR reserve (better cardiovascular fitness = higher VO₂ Max)
         const hrReserveFactor = hrReserve > 50 ? 1.2 : hrReserve > 40 ? 1.0 : 0.8;
-        
+
         return Math.round(baseVO2 * hrReserveFactor);
     }
 
@@ -325,20 +325,20 @@ class SportsCoach {
                 this.logger.error('No user ID for VO₂ Max storage');
                 return false;
             }
-            
+
             // Validate VO₂ Max value
             if (typeof vo2Max !== 'number' || isNaN(vo2Max) || vo2Max < 20 || vo2Max > 80) {
                 this.logger.error('Invalid VO₂ Max value:', vo2Max);
                 return false;
             }
-            
+
             // Store in localStorage
             const storageKey = `ignitefitness_vo2max_${userId}`;
             localStorage.setItem(storageKey, vo2Max.toString());
-            
+
             this.logger.audit('VO2_MAX_STORED', { userId, vo2Max });
             return true;
-            
+
         } catch (error) {
             this.logger.error('Failed to store VO₂ Max:', error);
             return false;
@@ -361,15 +361,15 @@ class SportsCoach {
     getUserProfile() {
         try {
             const userId = this.authManager?.getCurrentUserId() || this.authManager?.getCurrentUsername();
-            if (!userId) return null;
-            
+            if (!userId) {return null;}
+
             const profileKey = `ignitefitness_profile_${userId}`;
             const stored = localStorage.getItem(profileKey);
-            
+
             if (stored) {
                 return JSON.parse(stored);
             }
-            
+
             return null;
         } catch (error) {
             this.logger.error('Failed to get user profile:', error);
@@ -388,16 +388,16 @@ class SportsCoach {
         const restingHR = userProfile?.restingHeartRate || 60;
         const maxHR = 220 - age; // Simple max HR estimation
         const hrReserve = maxHR - restingHR;
-        
+
         // Convert VO₂ Max zones to HR zones using Karvonen formula
         // VO₂ Max percentage ≈ HR percentage for trained individuals
         const zones = {};
-        
+
         for (const [zoneName, zoneConfig] of Object.entries(this.vo2MaxZones)) {
             // Use VO₂ Max percentages as HR percentages
             const minHR = restingHR + (hrReserve * zoneConfig.min);
             const maxHR = restingHR + (hrReserve * zoneConfig.max);
-            
+
             zones[zoneName] = {
                 min: Math.round(minHR),
                 max: Math.round(maxHR),
@@ -406,7 +406,7 @@ class SportsCoach {
                 vo2Range: `${Math.round(zoneConfig.min * 100)}-${Math.round(zoneConfig.max * 100)}%`
             };
         }
-        
+
         return zones;
     }
 
@@ -421,11 +421,11 @@ class SportsCoach {
         if (readiness < 5) {
             return 'Z2'; // Low readiness = easy base work
         }
-        
+
         if (readiness < 7) {
             return 'Z3'; // Moderate readiness = moderate work
         }
-        
+
         // Phase-based selection
         switch (trainingPhase) {
             case 'base':
@@ -457,22 +457,22 @@ class SportsCoach {
      */
     getZoneDuration(zone, readiness) {
         const readinessMultiplier = Math.max(0.5, readiness / 10);
-        
+
         const baseDurations = {
             Z2: { min: 30, max: 90 }, // Longer easy runs
             Z3: { min: 20, max: 60 }, // Moderate duration
             Z4: { min: 20, max: 40 }, // Threshold work
-            Z5: { min: 15, max: 30 }  // Shorter intense intervals
+            Z5: { min: 15, max: 30 } // Shorter intense intervals
         };
-        
+
         const base = baseDurations[zone] || baseDurations.Z3;
         const adjustedMin = Math.round(base.min * readinessMultiplier);
         const adjustedMax = Math.round(base.max * readinessMultiplier);
-        
+
         if (zone === 'Z4' || zone === 'Z5') {
             return `${adjustedMin}-${adjustedMax} min total (with intervals)`;
         }
-        
+
         return `${adjustedMin}-${adjustedMax} min`;
     }
 
@@ -486,29 +486,29 @@ class SportsCoach {
         if (zone === 'Z2' || zone === 'Z3') {
             return null; // Continuous effort zones
         }
-        
+
         const readinessMultiplier = Math.max(0.5, readiness / 10);
-        
+
         if (zone === 'Z4') {
             // Lactate threshold intervals: 5-8 min on, 1-2 min off
             const intervalMin = Math.round(5 * readinessMultiplier);
             const intervalMax = Math.round(8 * readinessMultiplier);
             const restMin = Math.max(1, Math.round(2 * readinessMultiplier));
             const sets = readiness >= 8 ? 4 : readiness >= 6 ? 3 : 2;
-            
+
             return `${sets}x${intervalMin}-${intervalMax} min @ Z4, ${restMin} min rest`;
         }
-        
+
         if (zone === 'Z5') {
             // VO₂ Max intervals: 3-5 min on, 2-3 min off
             const intervalMin = Math.round(3 * readinessMultiplier);
             const intervalMax = Math.round(5 * readinessMultiplier);
             const restMin = Math.max(2, Math.round(3 * readinessMultiplier));
             const sets = readiness >= 9 ? 5 : readiness >= 7 ? 4 : 3;
-            
+
             return `${sets}x${intervalMin}-${intervalMax} min @ Z5, ${restMin} min rest`;
         }
-        
+
         return null;
     }
 
@@ -523,8 +523,8 @@ class SportsCoach {
     }
 
     calculateVolume(readiness) {
-        if (readiness >= 8) return 'high';
-        if (readiness >= 5) return 'moderate';
+        if (readiness >= 8) {return 'high';}
+        if (readiness >= 5) {return 'moderate';}
         return 'low';
     }
 }

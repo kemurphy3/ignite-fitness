@@ -14,7 +14,7 @@ class WorkoutTracker {
         this.weightMath = window.WeightMath;
         this.substitutionEngine = window.SubstitutionEngine;
         this.guardrailManager = window.GuardrailManager;
-        
+
         this.currentSession = null;
         this.currentPlan = null; // Store current plan
         this.currentExerciseIndex = 0;
@@ -24,7 +24,7 @@ class WorkoutTracker {
         this.isActive = false;
         this.substitutionOptions = null; // Store substitution options
         this.guardrailValidation = null; // Store validation result
-        
+
         this.initializeSession();
     }
 
@@ -34,7 +34,7 @@ class WorkoutTracker {
      */
     async startWorkout(plan) {
         this.currentPlan = plan;
-        
+
         if (!plan || !plan.blocks) {
             this.logger.warn('No plan provided');
             return;
@@ -52,7 +52,7 @@ class WorkoutTracker {
             } else {
                 alert(`Workout blocked:\n${blockMessage}\n\nPlease adjust your plan or wait for recovery.`);
             }
-            
+
             // Show modified workout if available
             if (validationResult.autoAdjustments.length > 0) {
                 const modifiedPlan = this.guardrailManager.applyAutoAdjustments(
@@ -61,7 +61,7 @@ class WorkoutTracker {
                 );
                 this.showModifiedWorkout(modifiedPlan, validationResult);
             }
-            
+
             return; // Don't start blocked workout
         }
 
@@ -70,24 +70,24 @@ class WorkoutTracker {
         if (validationResult.autoAdjustments.length > 0) {
             finalPlan = this.guardrailManager.applyAutoAdjustments(plan, validationResult.autoAdjustments);
             this.currentPlan = finalPlan;
-            
+
             // Show confirmation for adjustments
             this.showAdjustmentConfirmation(finalPlan, validationResult);
         }
 
         // Store plan for overrides
         this.initializeSession({ exercises: this.extractExercises(finalPlan) });
-        
+
         // Generate substitution options (async, non-blocking)
         this.generateSubstitutionOptions(finalPlan).catch(err => {
             this.logger.warn('Failed to generate substitutions', err);
         });
-        
+
         // Start session timer
         if (this.workoutTimer) {
             this.workoutTimer.startSession();
         }
-        
+
         // Render workout view (includes warnings)
         this.render();
     }
@@ -112,10 +112,10 @@ class WorkoutTracker {
         try {
             // Get user profile
             const userProfile = await this.getUserProfile();
-            
+
             // Get recent sessions
             const recentSessions = await this.getRecentSessions() || [];
-            
+
             // Get readiness data
             const readinessData = await this.getReadinessData();
 
@@ -151,7 +151,7 @@ class WorkoutTracker {
     async getUserProfile() {
         const authManager = window.AuthManager;
         const userId = authManager?.getCurrentUsername();
-        const storageManager = this.storageManager;
+        const {storageManager} = this;
 
         if (!userId || !storageManager) {
             return { trainingLevel: 'intermediate' }; // Default
@@ -177,7 +177,7 @@ class WorkoutTracker {
     async getReadinessData() {
         const authManager = window.AuthManager;
         const userId = authManager?.getCurrentUsername();
-        const storageManager = this.storageManager;
+        const {storageManager} = this;
 
         if (!userId || !storageManager) {
             return {}; // No readiness data
@@ -187,7 +187,7 @@ class WorkoutTracker {
             // Get today's readiness check-in
             const today = new Date().toISOString().split('T')[0];
             const readinessData = storageManager.get(`readiness_${today}`, {}) || {};
-            
+
             // Also check passive readiness if available
             if (window.PassiveReadiness) {
                 const passiveReadiness = window.PassiveReadiness.getCurrentReadiness?.(userId);
@@ -328,10 +328,10 @@ class WorkoutTracker {
         try {
             // Convert plan to workout format for substitution engine
             const workoutFormat = this.convertPlanToWorkoutFormat(plan);
-            
+
             // Get user constraints
             const constraints = await this.getUserConstraints();
-            
+
             // Generate substitutions
             const substitutions = await this.substitutionEngine.generateSubstitutions(
                 workoutFormat,
@@ -339,11 +339,11 @@ class WorkoutTracker {
             );
 
             this.substitutionOptions = substitutions;
-            
+
             this.logger.debug('Substitution options generated', {
                 count: substitutions.length,
-                options: substitutions.map(s => ({ 
-                    name: s.name, 
+                options: substitutions.map(s => ({
+                    name: s.name,
                     modality: s.modality,
                     load: s.estimatedLoad
                 }))
@@ -401,7 +401,7 @@ class WorkoutTracker {
                         });
                         totalDuration += block.durationMin || 20;
                     }
-                    
+
                     // Track max intensity
                     block.items?.forEach(item => {
                         const zone = this.mapRPEToZone(item.targetRPE || 7);
@@ -457,10 +457,10 @@ class WorkoutTracker {
      * @returns {string} Zone (Z1-Z5)
      */
     mapRPEToZone(rpe) {
-        if (rpe <= 3) return 'Z1';
-        if (rpe <= 5) return 'Z2';
-        if (rpe <= 7) return 'Z3';
-        if (rpe <= 9) return 'Z4';
+        if (rpe <= 3) {return 'Z1';}
+        if (rpe <= 5) {return 'Z2';}
+        if (rpe <= 7) {return 'Z3';}
+        if (rpe <= 9) {return 'Z4';}
         return 'Z5';
     }
 
@@ -471,7 +471,7 @@ class WorkoutTracker {
     async getUserConstraints() {
         const authManager = window.AuthManager;
         const userId = authManager?.getCurrentUsername();
-        const storageManager = this.storageManager;
+        const {storageManager} = this;
 
         // Get user preferences
         const preferences = storageManager?.getPreferences?.(userId) || {};
@@ -486,11 +486,11 @@ class WorkoutTracker {
         })?.total || 0;
 
         return {
-            equipment: equipment,
+            equipment,
             availableTime: preferences.availableTime || 120, // Default 2 hours
-            preferences: preferences,
-            recentSessions: recentSessions,
-            todayLoad: todayLoad
+            preferences,
+            recentSessions,
+            todayLoad
         };
     }
 
@@ -527,7 +527,7 @@ class WorkoutTracker {
      */
     extractExercises(plan) {
         const exercises = [];
-        
+
         plan.blocks.forEach(block => {
             if (block.items) {
                 block.items.forEach(item => {
@@ -542,7 +542,7 @@ class WorkoutTracker {
                 });
             }
         });
-        
+
         return exercises;
     }
 
@@ -556,7 +556,7 @@ class WorkoutTracker {
         }
 
         const workoutView = document.getElementById('workout-view') || document.querySelector('.workout-view');
-        
+
         if (!workoutView) {
             this.logger.warn('Workout view container not found');
             return;
@@ -564,13 +564,13 @@ class WorkoutTracker {
 
         // Render why panel
         const whyPanelHtml = this.whyPanel?.render(this.currentPlan) || '';
-        
+
         // Render timer display
         const timerHtml = this.renderTimers();
-        
+
         // Render plan blocks
         const blocksHtml = this.renderPlanBlocks(this.currentPlan);
-        
+
         // Render substitution options if available
         const substitutionHtml = this.renderSubstitutionOptions();
 
@@ -604,7 +604,7 @@ class WorkoutTracker {
             return '';
         }
 
-        const warnings = this.guardrailValidation.warnings;
+        const {warnings} = this.guardrailValidation;
         const adjustments = this.guardrailValidation.autoAdjustments || [];
 
         return `
@@ -710,8 +710,8 @@ class WorkoutTracker {
                                         </span>
                                     </div>
                                     ${option.timeRequired ? `<div><strong>Duration:</strong> ${option.timeRequired} min</div>` : ''}
-                                    ${option.equipment && option.equipment.length > 0 ? 
-                                        `<div><strong>Equipment:</strong> ${option.equipment.join(', ')}</div>` : 
+                                    ${option.equipment && option.equipment.length > 0 ?
+                                        `<div><strong>Equipment:</strong> ${option.equipment.join(', ')}</div>` :
                                         '<div><strong>Equipment:</strong> None required</div>'
                                     }
                                     <div class="option-reason">
@@ -758,28 +758,28 @@ class WorkoutTracker {
         }
 
         const substitution = this.substitutionOptions[index];
-        
+
         try {
             // Convert substitution workout back to plan format
             const newPlan = this.convertWorkoutToPlanFormat(substitution);
-            
+
             // Update current plan
             this.currentPlan = newPlan;
-            
+
             // Re-initialize session with new plan
             this.initializeSession({ exercises: this.extractExercises(newPlan) });
-            
+
             // Close modal
             this.closeSubstitutionModal();
-            
+
             // Re-render workout view
             this.render();
-            
+
             // Show success message
             if (window.showSuccessNotification) {
                 window.showSuccessNotification(`Workout switched to ${substitution.name}`, 'success');
             }
-            
+
             this.logger.info('WORKOUT_SUBSTITUTED', {
                 from: this.currentPlan.name,
                 to: substitution.name,
@@ -801,7 +801,7 @@ class WorkoutTracker {
      */
     convertWorkoutToPlanFormat(workout) {
         const blocks = [];
-        
+
         if (workout.structure) {
             workout.structure.forEach(segment => {
                 if (segment.type === 'warmup') {
@@ -833,7 +833,7 @@ class WorkoutTracker {
                         }
                         blocks.push({
                             name: 'Main',
-                            items: items,
+                            items,
                             durationMin: Math.round((segment.work.duration * segment.sets) / 60)
                         });
                     } else {
@@ -893,7 +893,7 @@ class WorkoutTracker {
     estimateRepsFromDuration(duration) {
         // Rough estimate: 1 rep per 2 seconds
         const reps = Math.round(duration / 2);
-        if (reps <= 10) return `${reps}`;
+        if (reps <= 10) {return `${reps}`;}
         return `${reps - 2}-${reps}`;
     }
 
@@ -1035,7 +1035,7 @@ class WorkoutTracker {
      * @returns {string} HTML for preview
      */
     renderNextExercisePreview(exercise) {
-        if (!exercise) return '';
+        if (!exercise) {return '';}
 
         return `
             <div class="next-exercise-preview">
@@ -1140,7 +1140,7 @@ class WorkoutTracker {
         };
 
         const loadPlan = this.weightMath.gymLoadPlan(config, targetWeight);
-        
+
         return loadPlan.text;
     }
 
@@ -1172,7 +1172,7 @@ class WorkoutTracker {
             this.logger.warn('No workout provided');
             return;
         }
-        
+
         this.currentSession = {
             workoutId: workout.id || `workout_${Date.now()}`,
             workoutName: workout.name || 'Workout',
@@ -1181,14 +1181,14 @@ class WorkoutTracker {
             status: 'active',
             exercises: []
         };
-        
+
         this.currentExerciseIndex = 0;
         this.exerciseData = [];
         this.sessionStartTime = Date.now();
         this.isActive = true;
-        
+
         this.logger.debug('Workout session initialized', this.currentSession);
-        
+
         // Start session timer
         if (this.timerOverlay) {
             this.timerOverlay.startSessionTimer();
@@ -1204,13 +1204,13 @@ class WorkoutTracker {
             this.logger.warn('No active session');
             return null;
         }
-        
+
         const exercise = this.currentSession.exercises[this.currentExerciseIndex];
         if (!exercise) {
             this.logger.debug('All exercises completed');
             return null;
         }
-        
+
         const exerciseData = {
             exerciseId: exercise.id || `exercise_${Date.now()}`,
             exerciseName: exercise.name,
@@ -1222,9 +1222,9 @@ class WorkoutTracker {
             completedSets: [],
             rpeData: []
         };
-        
+
         this.exerciseData.push(exerciseData);
-        
+
         this.logger.debug('Exercise started', exerciseData);
         return exerciseData;
     }
@@ -1247,18 +1247,18 @@ class WorkoutTracker {
             completedAt: new Date().toISOString(),
             restCompleted: setData.restCompleted || false
         };
-        
+
         currentExercise.completedSets.push(set);
-        
+
         this.logger.debug('Set completed', set);
-        
+
         // Emit event
         this.eventBus.emit('workout:set_completed', {
             sessionId: this.currentSession.workoutId,
             exercise: currentExercise,
-                set 
+                set
             });
-            
+
         return currentExercise;
     }
 
@@ -1273,12 +1273,12 @@ class WorkoutTracker {
             this.logger.warn('Invalid RPE value:', rpe);
             return null;
         }
-        
+
         const currentExercise = this.getCurrentExercise();
         if (!currentExercise) {
             return null;
         }
-        
+
         const rpeData = {
             rpe,
             exerciseId: currentExercise.exerciseId,
@@ -1286,14 +1286,14 @@ class WorkoutTracker {
             recordedAt: new Date().toISOString(),
             ...context
         };
-        
+
         currentExercise.rpeData.push(rpeData);
-        
+
         this.logger.debug('RPE recorded', rpeData);
-        
+
         // Emit event
         this.eventBus.emit('workout:rpe_recorded', rpeData);
-        
+
         // Store in progression system
         if (this.progressionEngine) {
             this.progressionEngine.saveRPE(
@@ -1306,7 +1306,7 @@ class WorkoutTracker {
                 }
             );
         }
-        
+
         return currentExercise;
     }
 
@@ -1319,22 +1319,22 @@ class WorkoutTracker {
         if (!currentExercise) {
             return null;
         }
-        
+
         currentExercise.status = 'completed';
         currentExercise.endTime = new Date().toISOString();
         currentExercise.duration = Date.now() - new Date(currentExercise.startTime).getTime();
-        
+
         this.logger.debug('Exercise completed', currentExercise);
-        
+
         // Emit event
         this.eventBus.emit('workout:exercise_completed', {
             sessionId: this.currentSession.workoutId,
             exercise: currentExercise
         });
-        
+
         // Move to next exercise
         this.currentExerciseIndex++;
-        
+
         return this.startNextExercise();
     }
 
@@ -1347,10 +1347,10 @@ class WorkoutTracker {
         if (!this.currentSession) {
             return null;
         }
-        
+
         const currentIndex = this.currentExerciseIndex;
         const currentExercise = this.currentSession.exercises[currentIndex];
-        
+
         // Replace in session
         this.currentSession.exercises[currentIndex] = {
             ...alternativeExercise,
@@ -1358,19 +1358,19 @@ class WorkoutTracker {
             originalExercise: currentExercise.name,
             swappedAt: new Date().toISOString()
         };
-        
+
         this.logger.debug('Exercise swapped', {
             from: currentExercise.name,
             to: alternativeExercise.name
         });
-        
+
         // Emit event
         this.eventBus.emit('workout:exercise_swapped', {
             sessionId: this.currentSession.workoutId,
             from: currentExercise,
             to: alternativeExercise
         });
-        
+
         return this.currentSession;
     }
 
@@ -1382,7 +1382,7 @@ class WorkoutTracker {
         if (!this.exerciseData.length) {
             return null;
         }
-        
+
         return this.exerciseData[this.exerciseData.length - 1];
     }
 
@@ -1394,20 +1394,20 @@ class WorkoutTracker {
         if (!this.currentSession) {
             return { percentage: 0, completedExercises: 0, totalExercises: 0 };
         }
-        
+
         const totalExercises = this.currentSession.exercises.length;
         const completedExercises = this.currentExerciseIndex;
         const percentage = (completedExercises / totalExercises) * 100;
-        
+
         const currentExercise = this.getCurrentExercise();
         let exerciseProgress = 0;
-        
+
         if (currentExercise) {
             const totalSets = currentExercise.sets;
             const completedSets = currentExercise.completedSets.length;
             exerciseProgress = (completedSets / totalSets) * 100;
         }
-        
+
         return {
             percentage: Math.round(percentage),
             completedExercises,
@@ -1426,10 +1426,10 @@ class WorkoutTracker {
         if (!this.currentSession || !this.isActive) {
             return null;
         }
-        
+
         const endTime = new Date().toISOString();
         this.totalDuration = Date.now() - this.sessionStartTime;
-        
+
         const sessionData = {
             ...this.currentSession,
             status: 'completed',
@@ -1440,26 +1440,26 @@ class WorkoutTracker {
             totalVolume: this.calculateTotalVolume(),
             averageRPE: this.calculateAverageRPE()
         };
-        
+
         // Save to storage
         const userId = this.getUserId();
         if (userId) {
             const date = new Date().toISOString().split('T')[0];
             await this.storageManager.saveSessionLog(userId, date, sessionData);
         }
-        
+
         // Emit SESSION_COMPLETED event
         this.eventBus.emit(this.eventBus.TOPICS.SESSION_COMPLETED, sessionData);
-        
+
         // Stop timers
         if (this.timerOverlay) {
             this.timerOverlay.stopSessionTimer();
         }
-        
+
         this.isActive = false;
-        
+
         this.logger.audit('SESSION_COMPLETED', sessionData);
-        
+
         return sessionData;
     }
 
@@ -1482,8 +1482,8 @@ class WorkoutTracker {
      */
     calculateAverageRPE() {
         const allRPE = this.exerciseData.flatMap(ex => ex.rpeData.map(r => r.rpe));
-        if (allRPE.length === 0) return 0;
-        
+        if (allRPE.length === 0) {return 0;}
+
         const avg = allRPE.reduce((sum, rpe) => sum + rpe, 0) / allRPE.length;
         return Math.round(avg * 10) / 10;
     }
@@ -1495,7 +1495,7 @@ class WorkoutTracker {
         if (this.isActive && this.timerOverlay) {
             this.timerOverlay.pauseSessionTimer();
             this.isActive = false;
-            
+
             this.logger.debug('Session paused');
         }
     }
@@ -1509,7 +1509,7 @@ class WorkoutTracker {
             if (this.timerOverlay) {
                 this.timerOverlay.resumeSessionTimer();
             }
-            
+
             this.logger.debug('Session resumed');
         }
     }
@@ -1531,15 +1531,15 @@ class WorkoutTracker {
         if (!this.currentSession) {
             return null;
         }
-        
+
         const progress = this.getProgress();
-        
+
         return {
             sessionId: this.currentSession.workoutId,
             workoutName: this.currentSession.workoutName,
             status: this.currentSession.status,
-            progress: progress.percentage + '%',
-            completedExercises: progress.completedExercises + '/' + progress.totalExercises,
+            progress: `${progress.percentage }%`,
+            completedExercises: `${progress.completedExercises }/${ progress.totalExercises}`,
             elapsedTime: this.formatDuration(Date.now() - this.sessionStartTime),
             currentExercise: progress.currentExercise?.name || 'None',
             isActive: this.isActive
@@ -1555,7 +1555,7 @@ class WorkoutTracker {
         const seconds = Math.floor(ms / 1000);
         const minutes = Math.floor(seconds / 60);
         const remainingSeconds = seconds % 60;
-        
+
         return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
     }
 }

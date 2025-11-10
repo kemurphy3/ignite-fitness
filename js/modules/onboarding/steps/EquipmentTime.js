@@ -17,7 +17,7 @@ class EquipmentTimeStep {
         const sessionLength = existingData.session_length || '45';
         const equipment = existingData.equipment || 'commercial_gym';
         const dislikes = existingData.exercise_dislikes || [];
-        
+
         return `
             <div class="onboarding-step equipment-time-step">
                 <h2>Training Constraints</h2>
@@ -118,14 +118,14 @@ class EquipmentTimeStep {
     getSelectedValues() {
         const availableDays = Array.from(document.querySelectorAll('.day-checkbox input:checked'))
             .map(cb => cb.value);
-        
+
         const sessionLength = document.querySelector('input[name="session_length"]:checked')?.value || '45';
         const equipment = document.getElementById('equipment-available')?.value || 'commercial_gym';
         const exerciseDislikes = document.getElementById('exercise-dislikes')?.value
             .split(',')
             .map(s => s.trim())
             .filter(s => s.length > 0) || [];
-        
+
         return {
             available_days: availableDays,
             session_length: parseInt(sessionLength),

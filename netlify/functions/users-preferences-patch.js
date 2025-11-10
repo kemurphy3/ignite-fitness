@@ -1,14 +1,14 @@
 // PATCH /users/preferences - Update user preferences atomically
 const { neon } = require('@neondatabase/serverless');
 const jwt = require('jsonwebtoken');
-const { 
-  errorResponse, 
+const {
+  errorResponse,
   noContentResponse,
   validatePreferences,
   coercePreferences,
   filterKnownFields,
   checkRequestSize,
-  sanitizeForLog 
+  sanitizeForLog
 } = require('./utils/user-preferences');
 
 const { getNeonClient } = require('./utils/connection-pool');
@@ -42,7 +42,7 @@ exports.handler = async (event) => {
 
     const token = authHeader.substring(7);
     let externalId;
-    
+
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       externalId = decoded.sub;
@@ -88,7 +88,7 @@ exports.handler = async (event) => {
     const validationErrors = validatePreferences(filteredPreferences);
     if (validationErrors.length > 0) {
       console.error('Validation errors:', sanitizeForLog({ errors: validationErrors }));
-      
+
       // Return specific error codes for each validation failure
       if (validationErrors.includes('Invalid timezone')) {
         return errorResponse(400, 'INVALID_TIMEZONE', 'Invalid timezone');
@@ -108,7 +108,7 @@ exports.handler = async (event) => {
       if (validationErrors.includes('Invalid theme')) {
         return errorResponse(400, 'INVALID_THEME', 'Theme must be system, light, or dark');
       }
-      
+
       return errorResponse(400, 'VALIDATION_FAILED', 'Validation failed', validationErrors);
     }
 

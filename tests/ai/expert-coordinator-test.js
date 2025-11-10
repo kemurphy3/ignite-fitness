@@ -34,10 +34,10 @@ const fixtures = {
     gameTomorrow: {
         user: { sport: 'soccer', position: 'midfielder', weight: 75, height: 180, age: 25 },
         season: 'in-season',
-        schedule: { 
-            upcomingGames: [{ date: new Date(Date.now() + 86400000).toISOString().split('T')[0], type: 'game', importance: 'high' }], 
-            daysUntilGame: 1, 
-            isGameDay: false 
+        schedule: {
+            upcomingGames: [{ date: new Date(Date.now() + 86400000).toISOString().split('T')[0], type: 'game', importance: 'high' }],
+            daysUntilGame: 1,
+            isGameDay: false
         },
         history: { lastSession: { mainMovement: 'deadlift', averageRPE: 7 } },
         readiness: 8,
@@ -76,16 +76,16 @@ const fixtures = {
 // Run all tests
 async function runAllTests() {
     console.log('🧪 Expert Coordinator Tests\n');
-    
+
     if (!setupTestEnvironment()) {
         console.error('❌ Test environment not ready');
         return;
     }
-    
+
     const coordinator = new ExpertCoordinator();
     let passed = 0;
     let failed = 0;
-    
+
     // Test 1: Normal context
     console.log('Test 1: Normal Context');
     try {
@@ -97,13 +97,13 @@ async function runAllTests() {
         console.error('❌ FAILED:', e.message, '\n');
         failed++;
     }
-    
+
     // Test 2: Game tomorrow
     console.log('Test 2: Game Tomorrow');
     try {
         const plan = await coordinator.planToday(fixtures.gameTomorrow);
         const mainBlock = plan.blocks?.find(b => b.name === 'Main');
-        const hasHeavyLower = mainBlock?.items?.some(ex => 
+        const hasHeavyLower = mainBlock?.items?.some(ex =>
             ex.name && (ex.name.includes('squat') || ex.name.includes('deadlift'))
         );
         if (hasHeavyLower) {
@@ -118,7 +118,7 @@ async function runAllTests() {
         console.error('❌ FAILED:', e.message, '\n');
         failed++;
     }
-    
+
     // Test 3: Low readiness
     console.log('Test 3: Low Readiness');
     try {
@@ -135,7 +135,7 @@ async function runAllTests() {
         console.error('❌ FAILED:', e.message, '\n');
         failed++;
     }
-    
+
     // Test 4: Time-crunched
     console.log('Test 4: Time-Crunched');
     try {
@@ -144,7 +144,7 @@ async function runAllTests() {
         if (totalDuration > 25) {
             throw new Error('Plan too long for time limit');
         }
-        const hasTimeOptimization = plan.blocks?.some(b => 
+        const hasTimeOptimization = plan.blocks?.some(b =>
             b.items?.some(ex => ex.notes && ex.notes.includes('superset'))
         ) || plan.why?.some(r => r.toLowerCase().includes('time'));
         if (!hasTimeOptimization) {
@@ -156,12 +156,12 @@ async function runAllTests() {
         console.error('❌ FAILED:', e.message, '\n');
         failed++;
     }
-    
+
     // Test 5: Knee pain
     console.log('Test 5: Knee Pain');
     try {
         const plan = await coordinator.planToday(fixtures.kneePain);
-        const hasBSS = plan.blocks?.some(b => 
+        const hasBSS = plan.blocks?.some(b =>
             b.items?.some(ex => ex.name && ex.name.includes('Bulgarian Split Squat'))
         );
         if (hasBSS) {
@@ -176,7 +176,7 @@ async function runAllTests() {
         console.error('❌ FAILED:', e.message, '\n');
         failed++;
     }
-    
+
     // Summary
     console.log(`\n📊 Results: ${passed} passed, ${failed} failed`);
 }
@@ -201,9 +201,9 @@ function validatePlan(plan) {
     if (plan.why.length === 0) {
         throw new Error('Empty why array');
     }
-    
+
     plan.blocks.forEach(block => {
-        if (!block.name) throw new Error('Block missing name');
+        if (!block.name) {throw new Error('Block missing name');}
         if (!['Warm-up', 'Main', 'Accessories', 'Recovery'].includes(block.name)) {
             throw new Error('Invalid block name');
         }

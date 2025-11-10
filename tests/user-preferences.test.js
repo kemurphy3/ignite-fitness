@@ -3,9 +3,9 @@
 // Tests users-preferences-get.js, users-preferences-patch.js and related features
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { 
-  setupTestDB, 
-  teardownTestDB, 
+import {
+  setupTestDB,
+  teardownTestDB,
   getTestDatabase,
   createTestUser,
   cleanupTestData
@@ -17,7 +17,7 @@ describe('User Preferences Tests', () => {
 
   beforeEach(async () => {
     db = getTestDatabase();
-    
+
     if (process.env.MOCK_DATABASE === 'true' || !db) {
       console.log('⚠️  Mock database mode - skipping database integration tests');
       return;
@@ -25,7 +25,7 @@ describe('User Preferences Tests', () => {
 
     // Clean up any existing test data
     await cleanupTestData();
-    
+
     // Create a test user
     testUser = await createTestUser({
       external_id: `test_user_${Date.now()}`,
@@ -439,7 +439,7 @@ describe('User Preferences Tests', () => {
 
       expect(getResponse.statusCode).toBe(200);
       expect(getData.data).toBeDefined();
-      
+
       // Privacy preferences should be user-specific and protected
       // (handler enforces access control via JWT token)
       expect(getData.data.timezone).toBeDefined();
@@ -609,7 +609,7 @@ describe('User Preferences Tests', () => {
             headers: { 'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}` }
           });
           const getData = JSON.parse(getResponse.body);
-          
+
           // Check that no script tags remain
           const value = Object.values(maliciousPrefs)[0];
           const savedValue = getData.data[Object.keys(maliciousPrefs)[0]];
@@ -671,11 +671,11 @@ describe('User Preferences Tests', () => {
       expect(getResponse.statusCode).toBe(200);
 
       const getData = JSON.parse(getResponse.body);
-      
+
       // Verify preferences structure is valid (migration ensures compatibility)
       expect(getData.data).toBeDefined();
       const prefs = getData.data;
-      
+
       // All essential fields should be present (migration ensures this)
       expect(prefs.theme).toBeDefined();
       expect(prefs.units).toBeDefined();
@@ -703,11 +703,11 @@ describe('User Preferences Tests', () => {
       expect(getResponse.statusCode).toBe(200);
 
       const getData = JSON.parse(getResponse.body);
-      
+
       // Verify schema is valid and complete
       expect(getData.data).toBeDefined();
       const prefs = getData.data;
-      
+
       // Required fields should always be present regardless of schema version
       expect(typeof prefs.theme === 'string' || prefs.theme === null).toBe(true);
       expect(typeof prefs.units === 'string' || prefs.units === null).toBe(true);
@@ -772,7 +772,7 @@ describe('User Preferences Tests', () => {
         { units: 'imperial' }
       ];
 
-      const promises = concurrentUpdates.map(prefs => 
+      const promises = concurrentUpdates.map(prefs =>
         handler({
           httpMethod: 'PATCH',
           headers: {
@@ -817,10 +817,10 @@ describe('User Preferences Tests', () => {
       const duration = Date.now() - startTime;
 
       expect(response.statusCode).toBe(200);
-      
+
       // Query should complete within reasonable time (under 1 second)
       expect(duration).toBeLessThan(1000);
-      
+
       // Verify response structure
       const responseData = JSON.parse(response.body);
       expect(responseData.data).toBeDefined();
@@ -853,7 +853,7 @@ describe('User Preferences Tests', () => {
       // Verify response doesn't expose sensitive raw data
       // Preferences should be properly formatted, not raw encrypted strings
       const prefs = responseData.data;
-      
+
       // Values should be readable strings/numbers, not encrypted blobs
       if (prefs.theme) {
         expect(typeof prefs.theme === 'string').toBe(true);
@@ -881,10 +881,10 @@ describe('User Preferences Tests', () => {
       const responseData = JSON.parse(response.body);
 
       expect(response.statusCode).toBe(200);
-      
+
       // Verify user can access their own preferences
       expect(responseData.data).toBeDefined();
-      
+
       // Preferences should belong to the authenticated user
       // (handler enforces ownership via JWT token)
       expect(responseData.data).toBeDefined();
@@ -997,7 +997,7 @@ describe('User Preferences Tests', () => {
       const getData = JSON.parse(getResponse.body);
 
       expect(getResponse.statusCode).toBe(200);
-      
+
       // Training preferences should be available
       if (getData.data.workout_goal_per_week !== undefined) {
         expect(typeof getData.data.workout_goal_per_week).toBe('number');
@@ -1043,7 +1043,7 @@ describe('User Preferences Tests', () => {
       const getData = JSON.parse(getResponse.body);
 
       expect(getResponse.statusCode).toBe(200);
-      
+
       // Notification preferences should be available
       if (getData.data.notifications_enabled !== undefined) {
         expect(typeof getData.data.notifications_enabled).toBe('boolean');

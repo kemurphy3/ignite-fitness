@@ -69,21 +69,21 @@ class MockDedupRules {
 
         const timeDiffMs = Math.abs(new Date(activity1.startTs) - new Date(activity2.startTs));
         const timeDiffMinutes = timeDiffMs / (1000 * 60);
-        
+
         if (timeDiffMinutes > 6) {
             return false;
         }
 
         const duration1 = activity1.durationS || 0;
         const duration2 = activity2.durationS || 0;
-        
+
         if (duration1 === 0 || duration2 === 0) {
             return false;
         }
 
         const durationDiff = Math.abs(duration1 - duration2);
         const durationTolerance = Math.max(duration1, duration2) * 0.1;
-        
+
         return durationDiff <= durationTolerance;
     }
 }
@@ -111,7 +111,7 @@ class MockLoadMath {
         const maxHR = userProfile.maxHR || this.estimateMaxHR(userProfile.age, userProfile.gender);
         const restHR = userProfile.restHR || 60;
         const hrReserve = maxHR - restHR;
-        
+
         return {
             z1: restHR + (hrReserve * 0.5),
             z2: restHR + (hrReserve * 0.6),
@@ -122,10 +122,10 @@ class MockLoadMath {
     }
 
     static getHRZone(hr, zones) {
-        if (hr < zones.z1) return 'z1';
-        if (hr < zones.z2) return 'z2';
-        if (hr < zones.z3) return 'z3';
-        if (hr < zones.z4) return 'z4';
+        if (hr < zones.z1) {return 'z1';}
+        if (hr < zones.z2) {return 'z2';}
+        if (hr < zones.z3) {return 'z3';}
+        if (hr < zones.z4) {return 'z4';}
         return 'z5';
     }
 
@@ -139,7 +139,7 @@ class MockLoadMath {
 
     static computeTRIMP(activity, userProfile) {
         const { durationS, avgHr, hrStream } = activity;
-        
+
         if (!durationS || durationS === 0) {
             return 0;
         }
@@ -157,7 +157,7 @@ class MockLoadMath {
 
         if (hrStream && hrStream.length > 0) {
             let totalTRIMP = 0;
-            
+
             for (let i = 0; i < hrStream.length; i++) {
                 const hr = hrStream[i];
                 const hrReserve = maxHR - restHR;
@@ -165,7 +165,7 @@ class MockLoadMath {
                 const trimpFactor = hrReservePercent * Math.exp(1.92 * hrReservePercent);
                 totalTRIMP += trimpFactor;
             }
-            
+
             return totalTRIMP;
         }
 
@@ -175,7 +175,7 @@ class MockLoadMath {
     static estimateTRIMP(activity, userProfile) {
         const { durationS, type } = activity;
         const durationMinutes = durationS / 60;
-        
+
         const trimpFactors = {
             'Run': 1.0,
             'Ride': 0.8,
@@ -187,7 +187,7 @@ class MockLoadMath {
             'Yoga': 0.4,
             'Other': 0.5
         };
-        
+
         const factor = trimpFactors[type] || 0.5;
         return durationMinutes * factor;
     }

@@ -14,11 +14,11 @@ class ScreenReaderWorkflowManager {
             readingSpeed: 'normal',
             contentDensity: 'normal'
         };
-        
+
         this.shortcuts = new Map();
         this.audioCues = new Map();
         this.workflowStates = new Map();
-        
+
         this.init();
     }
 
@@ -43,13 +43,13 @@ class ScreenReaderWorkflowManager {
             'navigator.userAgentData' in window && navigator.userAgentData.mobile,
             window.speechSynthesis && window.speechSynthesis.getVoices().length > 0,
             document.querySelector('[aria-live]'),
-            window.navigator.userAgent.includes('NVDA') || 
+            window.navigator.userAgent.includes('NVDA') ||
             window.navigator.userAgent.includes('JAWS') ||
             window.navigator.userAgent.includes('VoiceOver')
         ];
 
         this.isScreenReaderMode = indicators.some(indicator => indicator);
-        
+
         if (this.isScreenReaderMode) {
             document.body.classList.add('screen-reader-mode');
             this.enableScreenReaderOptimizations();
@@ -62,13 +62,13 @@ class ScreenReaderWorkflowManager {
     enableScreenReaderOptimizations() {
         // Add screen reader specific classes
         document.body.classList.add('sr-optimized');
-        
+
         // Announce screen reader mode activation
         this.announce('Screen reader optimized mode activated');
-        
+
         // Enable simplified navigation
         this.enableSimplifiedNavigation();
-        
+
         // Setup audio cues
         this.enableAudioCues();
     }
@@ -217,9 +217,9 @@ class ScreenReaderWorkflowManager {
      * @param {KeyboardEvent} e - Keyboard event
      */
     handleKeyboardShortcuts(e) {
-        if (!this.userPreferences.shortcutKeys) return;
+        if (!this.userPreferences.shortcutKeys) {return;}
 
-        const shortcut = Array.from(this.shortcuts.values()).find(s => 
+        const shortcut = Array.from(this.shortcuts.values()).find(s =>
             s.key === e.key.toLowerCase() && s.ctrl === e.ctrlKey
         );
 
@@ -236,13 +236,13 @@ class ScreenReaderWorkflowManager {
     startWorkoutSession() {
         // Announce workout start
         this.playAudioCue('workout-start');
-        
+
         // Create simplified workout interface
         this.createSimplifiedWorkoutInterface();
-        
+
         // Announce current exercise
         this.announceCurrentExercise();
-        
+
         // Publish event
         EventBus.publish('workout:started', { screenReaderOptimized: true });
     }
@@ -252,16 +252,16 @@ class ScreenReaderWorkflowManager {
      */
     createSimplifiedWorkoutInterface() {
         const container = document.getElementById('workout-container');
-        if (!container) return;
+        if (!container) {return;}
 
         // Add screen reader optimized classes
         container.classList.add('sr-workout-optimized');
-        
+
         // Create simplified navigation
         const nav = document.createElement('nav');
         nav.className = 'sr-workout-nav';
         nav.setAttribute('aria-label', 'Workout navigation');
-        
+
         nav.innerHTML = `
             <button id="sr-next-exercise" class="sr-nav-btn" aria-label="Next exercise">
                 Next Exercise (Ctrl+N)
@@ -292,10 +292,10 @@ class ScreenReaderWorkflowManager {
     nextExercise() {
         // Play audio cue
         this.playAudioCue('exercise-start');
-        
+
         // Announce exercise details
         this.announceCurrentExercise();
-        
+
         // Publish event
         EventBus.publish('exercise:next', { screenReaderOptimized: true });
     }
@@ -306,10 +306,10 @@ class ScreenReaderWorkflowManager {
     previousExercise() {
         // Play audio cue
         this.playAudioCue('exercise-start');
-        
+
         // Announce exercise details
         this.announceCurrentExercise();
-        
+
         // Publish event
         EventBus.publish('exercise:previous', { screenReaderOptimized: true });
     }
@@ -320,10 +320,10 @@ class ScreenReaderWorkflowManager {
     completeSet() {
         // Play audio cue
         this.playAudioCue('set-complete');
-        
+
         // Announce set completion
         this.announce('Set completed');
-        
+
         // Publish event
         EventBus.publish('set:completed', { screenReaderOptimized: true });
     }
@@ -334,10 +334,10 @@ class ScreenReaderWorkflowManager {
     toggleTimer() {
         // Play audio cue
         this.playAudioCue('timer-pause');
-        
+
         // Announce timer state
         this.announce('Timer paused');
-        
+
         // Publish event
         EventBus.publish('timer:toggled', { screenReaderOptimized: true });
     }
@@ -348,10 +348,10 @@ class ScreenReaderWorkflowManager {
     completeWorkout() {
         // Play audio cue
         this.playAudioCue('workout-complete');
-        
+
         // Announce workout completion
         this.announce('Workout completed successfully');
-        
+
         // Publish event
         EventBus.publish('workout:completed', { screenReaderOptimized: true });
     }
@@ -361,13 +361,13 @@ class ScreenReaderWorkflowManager {
      */
     showHelp() {
         const helpContent = this.generateHelpContent();
-        
+
         // Create help modal
         const modal = document.createElement('div');
         modal.className = 'sr-help-modal';
         modal.setAttribute('role', 'dialog');
         modal.setAttribute('aria-labelledby', 'sr-help-title');
-        
+
         modal.innerHTML = `
             <h2 id="sr-help-title">Screen Reader Workout Help</h2>
             <div class="sr-help-content">
@@ -375,19 +375,19 @@ class ScreenReaderWorkflowManager {
             </div>
             <button class="sr-help-close" aria-label="Close help">Close</button>
         `;
-        
+
         document.body.appendChild(modal);
-        
+
         // Focus on modal
         modal.focus();
-        
+
         // Close on escape
         modal.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 modal.remove();
             }
         });
-        
+
         // Close on button click
         modal.querySelector('.sr-help-close').addEventListener('click', () => {
             modal.remove();
@@ -399,19 +399,19 @@ class ScreenReaderWorkflowManager {
      */
     generateHelpContent() {
         let content = '<h3>Keyboard Shortcuts</h3><ul>';
-        
+
         this.shortcuts.forEach((shortcut, key) => {
             content += `<li><strong>Ctrl+${shortcut.key.toUpperCase()}</strong>: ${shortcut.description}</li>`;
         });
-        
+
         content += '</ul>';
-        
+
         content += '<h3>Audio Cues</h3>';
         content += '<p>Audio cues are played for important workout events. You can disable them in preferences.</p>';
-        
+
         content += '<h3>Simplified Mode</h3>';
         content += '<p>Simplified mode reduces visual clutter and focuses on essential information.</p>';
-        
+
         return content;
     }
 
@@ -420,13 +420,13 @@ class ScreenReaderWorkflowManager {
      */
     openPreferences() {
         const preferences = this.generatePreferencesInterface();
-        
+
         // Create preferences modal
         const modal = document.createElement('div');
         modal.className = 'sr-preferences-modal';
         modal.setAttribute('role', 'dialog');
         modal.setAttribute('aria-labelledby', 'sr-preferences-title');
-        
+
         modal.innerHTML = `
             <h2 id="sr-preferences-title">Screen Reader Preferences</h2>
             <div class="sr-preferences-content">
@@ -435,12 +435,12 @@ class ScreenReaderWorkflowManager {
             <button class="sr-preferences-save" aria-label="Save preferences">Save</button>
             <button class="sr-preferences-cancel" aria-label="Cancel">Cancel</button>
         `;
-        
+
         document.body.appendChild(modal);
-        
+
         // Focus on modal
         modal.focus();
-        
+
         // Setup event listeners
         this.setupPreferencesEventListeners(modal);
     }
@@ -499,16 +499,16 @@ class ScreenReaderWorkflowManager {
     setupPreferencesEventListeners(modal) {
         const saveBtn = modal.querySelector('.sr-preferences-save');
         const cancelBtn = modal.querySelector('.sr-preferences-cancel');
-        
+
         saveBtn.addEventListener('click', () => {
             this.savePreferences(modal);
             modal.remove();
         });
-        
+
         cancelBtn.addEventListener('click', () => {
             modal.remove();
         });
-        
+
         // Close on escape
         modal.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
@@ -529,13 +529,13 @@ class ScreenReaderWorkflowManager {
             readingSpeed: modal.querySelector('#reading-speed').value,
             contentDensity: modal.querySelector('#content-density').value
         };
-        
+
         this.userPreferences = { ...this.userPreferences, ...preferences };
         this.saveUserPreferences();
-        
+
         // Apply preferences
         this.applyPreferences();
-        
+
         // Announce preferences saved
         this.announce('Preferences saved');
     }
@@ -550,11 +550,11 @@ class ScreenReaderWorkflowManager {
         } else {
             document.body.classList.remove('sr-simplified-mode');
         }
-        
+
         // Apply content density
         document.body.className = document.body.className.replace(/sr-density-\w+/g, '');
         document.body.classList.add(`sr-density-${this.userPreferences.contentDensity}`);
-        
+
         // Apply reading speed
         document.body.className = document.body.className.replace(/sr-speed-\w+/g, '');
         document.body.classList.add(`sr-speed-${this.userPreferences.readingSpeed}`);
@@ -565,14 +565,14 @@ class ScreenReaderWorkflowManager {
      * @param {string} cueName - Audio cue name
      */
     playAudioCue(cueName) {
-        if (!this.userPreferences.audioCues) return;
-        
+        if (!this.userPreferences.audioCues) {return;}
+
         const cue = this.audioCues.get(cueName);
-        if (!cue) return;
-        
+        if (!cue) {return;}
+
         // Announce text
         this.announce(cue.text);
-        
+
         // Play audio if available
         if (cue.audio && this.userPreferences.audioFeedback) {
             const audio = new Audio(`/audio/${cue.audio}`);

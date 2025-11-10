@@ -23,7 +23,7 @@ try {
         message: error.message || 'Unknown error'
     };
     chartJSAvailable = false;
-    
+
     // Try to send message - but if importScripts throws, execution may stop
     try {
         self.postMessage(initError);
@@ -50,23 +50,23 @@ class ChartWorker {
             });
             return;
         }
-        
+
         this.charts = new Map();
         this.canvas = null;
         this.ctx = null;
-        
+
         // Listen for messages from main thread
         self.addEventListener('message', this.handleMessage.bind(this));
-        
+
         console.log('ChartWorker initialized');
     }
-    
+
     /**
      * Handle messages from main thread
      */
     handleMessage(event) {
         const { type, data } = event.data;
-        
+
         try {
             switch (type) {
                 case 'CREATE_CHART':
@@ -93,7 +93,7 @@ class ChartWorker {
             });
         }
     }
-    
+
     /**
      * Create a new chart
      */
@@ -102,7 +102,7 @@ class ChartWorker {
             // Create OffscreenCanvas
             this.canvas = new OffscreenCanvas(canvasData.width, canvasData.height);
             this.ctx = this.canvas.getContext('2d');
-            
+
             // Create Chart.js instance
             const chart = new Chart(this.ctx, {
                 ...config,
@@ -119,20 +119,20 @@ class ChartWorker {
                     }
                 }
             });
-            
+
             // Store chart reference
             this.charts.set(chartId, chart);
-            
+
             // Convert canvas to image data
             const imageData = this.canvas.transferToImageBitmap();
-            
+
             // Send result back to main thread
             self.postMessage({
                 type: 'CHART_CREATED',
                 chartId,
                 imageData
             }, [imageData]);
-            
+
         } catch (error) {
             console.error('Failed to create chart:', error);
             self.postMessage({
@@ -142,7 +142,7 @@ class ChartWorker {
             });
         }
     }
-    
+
     /**
      * Update existing chart
      */
@@ -152,21 +152,21 @@ class ChartWorker {
             console.warn('Chart not found:', chartId);
             return;
         }
-        
+
         try {
             // Update chart data
             chart.data = data;
             chart.update('none'); // No animation
-            
+
             // Convert to image data
             const imageData = this.canvas.transferToImageBitmap();
-            
+
             self.postMessage({
                 type: 'CHART_UPDATED',
                 chartId,
                 imageData
             }, [imageData]);
-            
+
         } catch (error) {
             console.error('Failed to update chart:', error);
             self.postMessage({
@@ -176,7 +176,7 @@ class ChartWorker {
             });
         }
     }
-    
+
     /**
      * Destroy chart
      */
@@ -185,14 +185,14 @@ class ChartWorker {
         if (chart) {
             chart.destroy();
             this.charts.delete(chartId);
-            
+
             self.postMessage({
                 type: 'CHART_DESTROYED',
                 chartId
             });
         }
     }
-    
+
     /**
      * Resize chart
      */
@@ -202,24 +202,24 @@ class ChartWorker {
             console.warn('Chart not found for resize:', chartId);
             return;
         }
-        
+
         try {
             // Resize canvas
             this.canvas.width = width;
             this.canvas.height = height;
-            
+
             // Update chart
             chart.resize(width, height);
-            
+
             // Convert to image data
             const imageData = this.canvas.transferToImageBitmap();
-            
+
             self.postMessage({
                 type: 'CHART_RESIZED',
                 chartId,
                 imageData
             }, [imageData]);
-            
+
         } catch (error) {
             console.error('Failed to resize chart:', error);
             self.postMessage({

@@ -119,26 +119,26 @@ class SportSelection {
      */
     selectSport(sportId) {
         this.selectedSport = sportId;
-        
+
         // Update visual state
         document.querySelectorAll('.sport-card').forEach(card => {
             card.classList.remove('selected');
         });
-        
+
         const selectedCard = document.querySelector(`[data-sport="${sportId}"]`);
         if (selectedCard) {
             selectedCard.classList.add('selected');
         }
-        
+
         // Enable continue button
         const continueBtn = document.getElementById('continue-btn');
         if (continueBtn) {
             continueBtn.disabled = false;
         }
-        
+
         // Store selection
         this.storeSelection();
-        
+
         this.logger.debug('Sport selected:', sportId);
     }
 
@@ -148,7 +148,7 @@ class SportSelection {
     storeSelection() {
         if (this.selectedSport) {
             const sportData = this.sports.find(s => s.id === this.selectedSport);
-            
+
             // Store in onboarding data
             if (window.OnboardingManager) {
                 window.OnboardingManager.setData('sport', {
@@ -168,7 +168,7 @@ class SportSelection {
      * @returns {Object|null} Selected sport data
      */
     getSelectedSport() {
-        if (!this.selectedSport) return null;
+        if (!this.selectedSport) {return null;}
         return this.sports.find(s => s.id === this.selectedSport);
     }
 
@@ -295,20 +295,20 @@ class PositionSelection {
      */
     selectPosition(position) {
         this.selectedPosition = position;
-        
+
         // Update visual state
         document.querySelectorAll('.position-card').forEach(card => {
             card.classList.remove('selected');
         });
-        
+
         const selectedCard = document.querySelector(`[data-position="${position}"]`);
         if (selectedCard) {
             selectedCard.classList.add('selected');
         }
-        
+
         this.checkCanContinue();
         this.storeSelection();
-        
+
         this.logger.debug('Position selected:', position);
     }
 
@@ -318,20 +318,20 @@ class PositionSelection {
      */
     selectDiscipline(discipline) {
         this.selectedDiscipline = discipline;
-        
+
         // Update visual state
         document.querySelectorAll('.discipline-card').forEach(card => {
             card.classList.remove('selected');
         });
-        
+
         const selectedCard = document.querySelector(`[data-discipline="${discipline}"]`);
         if (selectedCard) {
             selectedCard.classList.add('selected');
         }
-        
+
         this.checkCanContinue();
         this.storeSelection();
-        
+
         this.logger.debug('Discipline selected:', discipline);
     }
 
@@ -340,12 +340,12 @@ class PositionSelection {
      */
     checkCanContinue() {
         const continueBtn = document.getElementById('continue-btn');
-        if (!continueBtn) return;
-        
+        if (!continueBtn) {return;}
+
         const sportData = window.OnboardingManager?.getData('sport');
-        const canContinue = this.selectedPosition && 
+        const canContinue = this.selectedPosition &&
                           (!sportData.disciplines || this.selectedDiscipline);
-        
+
         continueBtn.disabled = !canContinue;
     }
 
@@ -496,9 +496,9 @@ class ProfileSetup {
         if (event) {
             event.preventDefault();
         }
-        
+
         const formData = this.collectFormData();
-        
+
         if (this.validateForm(formData)) {
             this.storeProfileData(formData);
             onboardingManager.completeOnboarding();
@@ -514,7 +514,7 @@ class ProfileSetup {
     collectFormData() {
         const form = document.querySelector('.profile-form');
         const formData = new FormData(form);
-        
+
         const data = {
             age: parseInt(formData.get('age')),
             experience: formData.get('experience'),
@@ -522,7 +522,7 @@ class ProfileSetup {
             injuryHistory: formData.get('injury-history'),
             trainingFrequency: formData.get('training-frequency')
         };
-        
+
         return data;
     }
 
@@ -535,19 +535,19 @@ class ProfileSetup {
         if (!data.age || data.age < 13 || data.age > 100) {
             return false;
         }
-        
+
         if (!data.experience) {
             return false;
         }
-        
+
         if (!data.goals || data.goals.length === 0) {
             return false;
         }
-        
+
         if (!data.trainingFrequency) {
             return false;
         }
-        
+
         return true;
     }
 
@@ -567,7 +567,7 @@ class ProfileSetup {
         if (window.OnboardingManager) {
             window.OnboardingManager.setData('profile', data);
         }
-        
+
         this.logger.debug('Profile data stored:', data);
     }
 

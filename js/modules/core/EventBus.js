@@ -1,7 +1,7 @@
 /**
  * EventBus - Central event management system
  * Provides pub/sub pattern for loose coupling between modules
- * 
+ *
  * Core Topics:
  * - READINESS_UPDATED: Daily readiness check-in completed
  * - SESSION_COMPLETED: Workout session completed
@@ -12,7 +12,7 @@ class EventBus {
     constructor() {
         this.events = new Map();
         this.maxListeners = 50;
-        
+
         // Core event topics
         this.TOPICS = {
             READINESS_UPDATED: 'READINESS_UPDATED',
@@ -74,10 +74,10 @@ class EventBus {
      * @param {Object} context - Context
      */
     off(event, callback, context = null) {
-        if (!this.events.has(event)) return;
+        if (!this.events.has(event)) {return;}
 
         const listeners = this.events.get(event);
-        const index = listeners.findIndex(listener => 
+        const index = listeners.findIndex(listener =>
             listener.callback === callback && listener.context === context
         );
 
@@ -97,7 +97,7 @@ class EventBus {
      * @param {...any} args - Arguments to pass to callbacks
      */
     emit(event, ...args) {
-        if (!this.events.has(event)) return;
+        if (!this.events.has(event)) {return;}
 
         const listeners = this.events.get(event);
         const listenersToCall = [...listeners]; // Create copy to avoid issues with modifications during iteration

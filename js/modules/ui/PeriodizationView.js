@@ -8,7 +8,7 @@ class PeriodizationView {
         this.storageManager = window.StorageManager;
         this.seasonalPrograms = window.SeasonalPrograms;
         this.eventBus = window.EventBus;
-        
+
         this.currentPhase = null;
         this.periodizationData = null;
     }
@@ -20,9 +20,9 @@ class PeriodizationView {
     render() {
         const view = document.createElement('div');
         view.className = 'periodization-view';
-        
+
         this.loadPeriodizationData();
-        
+
         view.innerHTML = `
             <div class="periodization-header">
                 <h1>Training Plan</h1>
@@ -47,7 +47,7 @@ class PeriodizationView {
                 ${this.renderRecommendations()}
             </div>
         `;
-        
+
         return view;
     }
 
@@ -57,7 +57,7 @@ class PeriodizationView {
      */
     renderPhasePill() {
         const phase = this.currentPhase || { name: 'Unknown', color: '#6c757d' };
-        
+
         return `
             <div class="phase-pill" style="--phase-color: ${phase.color}">
                 <span class="phase-emoji">${phase.emoji || '⚙️'}</span>
@@ -75,13 +75,13 @@ class PeriodizationView {
         if (!this.periodizationData) {
             return '<div class="progress-placeholder">No periodization data</div>';
         }
-        
+
         const progress = this.periodizationData.summary?.phaseProgress || {
             percentage: 0,
             currentWeek: 0,
             totalWeeks: 0
         };
-        
+
         return `
             <div class="progress-section">
                 <div class="progress-header">
@@ -106,7 +106,7 @@ class PeriodizationView {
         if (!this.periodizationData || !this.periodizationData.blocks) {
             return '<div class="blocks-placeholder">Generating training blocks...</div>';
         }
-        
+
         return `
             <div class="blocks-container">
                 ${this.periodizationData.blocks.map((block, index) => `
@@ -131,15 +131,15 @@ class PeriodizationView {
      * @returns {string} Week HTML
      */
     renderWeek(week, weekNumber) {
-        const isDeload = week.isDeload;
+        const {isDeload} = week;
         const hasTaper = week.taper;
         const hasGame = week.gameConflict;
-        
+
         let className = 'week';
-        if (isDeload) className += ' deload';
-        if (hasTaper) className += ' taper';
-        if (hasGame) className += ' game';
-        
+        if (isDeload) {className += ' deload';}
+        if (hasTaper) {className += ' taper';}
+        if (hasGame) {className += ' game';}
+
         return `
             <div class="${className}">
                 <div class="week-number">W${weekNumber}</div>
@@ -161,7 +161,7 @@ class PeriodizationView {
         if (!this.periodizationData || !this.periodizationData.summary?.recommendations) {
             return '';
         }
-        
+
         return `
             <div class="recommendations-header">
                 <h3>💡 Recommendations</h3>
@@ -181,9 +181,9 @@ class PeriodizationView {
         try {
             const authManager = window.AuthManager;
             const userId = authManager?.getCurrentUsername();
-            
-            if (!userId) return;
-            
+
+            if (!userId) {return;}
+
             // Get current season phase
             const seasonPhase = window.SeasonPhase?.getCurrentPhase();
             if (seasonPhase) {
@@ -194,14 +194,14 @@ class PeriodizationView {
                     duration: seasonPhase.currentPhase?.expectedDuration
                 };
             }
-            
+
             // Generate periodization plan
             const sport = this.getUserSport();
             const season = seasonPhase?.name || 'off-season';
-            
+
             const periodization = this.generatePeriodization(sport, season);
             this.periodizationData = periodization;
-            
+
         } catch (error) {
             this.logger.error('Failed to load periodization data', error);
         }
@@ -221,7 +221,7 @@ class PeriodizationView {
                 return this.generateBlocksFromPhase(phase);
             }
         }
-        
+
         // Fallback generation
         return this.generateBasicPeriodization(sport, season);
     }
@@ -234,12 +234,12 @@ class PeriodizationView {
     generateBlocksFromPhase(phase) {
         const blocks = [];
         const totalBlocks = this.calculateTotalBlocks(phase.duration);
-        
+
         for (let i = 1; i <= totalBlocks; i++) {
             const block = this.seasonalPrograms.generateMicrocycle(phase, i);
             blocks.push(block);
         }
-        
+
         return {
             sport: 'soccer',
             season: phase.name,
@@ -294,11 +294,11 @@ class PeriodizationView {
     getUserSport() {
         try {
             const username = this.authManager?.getCurrentUsername();
-            if (!username) return 'soccer';
+            if (!username) {return 'soccer';}
 
             const users = JSON.parse(localStorage.getItem('ignitefitness_users') || '{}');
             const user = users[username];
-            if (!user) return 'soccer';
+            if (!user) {return 'soccer';}
 
             return user.onboardingData?.sport?.id || 'soccer';
         } catch (error) {
@@ -427,7 +427,7 @@ class PeriodizationView {
 
         let cells = '';
         for (let i = 0; i < startWeekday; i++) {
-            cells += `<div class="if-cal-cell" aria-disabled="true"></div>`;
+            cells += '<div class="if-cal-cell" aria-disabled="true"></div>';
         }
         for (let d = 1; d <= daysInMonth; d++) {
             const isToday = d === today.getDate() && month === today.getMonth() && year === today.getFullYear();
@@ -472,7 +472,7 @@ class PeriodizationView {
         this.eventBus.on(this.eventBus.TOPICS.READINESS_UPDATED, (data) => {
             this.updateBasedOnReadiness(data);
         });
-        
+
         // Listen for load changes
         this.eventBus.on('load:management_updated', (data) => {
             this.updateBasedOnLoad(data);

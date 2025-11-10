@@ -5,13 +5,13 @@ const { getDB } = require('./database');
 async function acquireRefreshLock(sql, userId, timeoutMs = 5000) {
   const lockId = hashUserId(userId);
   const unlockTime = new Date(Date.now() + timeoutMs);
-  
+
   try {
     // Try to acquire PostgreSQL advisory lock
     const result = await sql`
       SELECT pg_try_advisory_lock(${lockId}) as acquired
     `;
-    
+
     if (result[0].acquired) {
       // Also set a timeout in the tokens table as backup
       const updateResult = await sql`
@@ -21,7 +21,7 @@ async function acquireRefreshLock(sql, userId, timeoutMs = 5000) {
         AND (refresh_lock_until IS NULL OR refresh_lock_until < NOW())
         RETURNING id
       `;
-      
+
       if (updateResult.length > 0) {
         return { lockId, acquired: true, lockExpiry: unlockTime };
       } else {
@@ -30,23 +30,23 @@ async function acquireRefreshLock(sql, userId, timeoutMs = 5000) {
         return { lockId: null, acquired: false, reason: 'Token not found or already locked' };
       }
     }
-    
+
     // Check if another process has the lock
     const lockStatus = await sql`
       SELECT refresh_lock_until 
       FROM strava_tokens 
       WHERE user_id = ${userId}
     `;
-    
+
     if (lockStatus.length > 0 && lockStatus[0].refresh_lock_until && lockStatus[0].refresh_lock_until > new Date()) {
-      return { 
-        lockId: null, 
-        acquired: false, 
+      return {
+        lockId: null,
+        acquired: false,
         retryAfter: lockStatus[0].refresh_lock_until,
         reason: 'Another process is refreshing this token'
       };
     }
-    
+
     return { lockId: null, acquired: false, reason: 'Could not acquire lock' };
   } catch (error) {
     console.error('Lock acquisition failed:', error);
@@ -59,13 +59,13 @@ async function releaseLock(sql, lockId, userId) {
     if (lockId) {
       await sql`SELECT pg_advisory_unlock(${lockId})`;
     }
-    
+
     await sql`
       UPDATE strava_tokens 
       SET refresh_lock_until = NULL 
       WHERE user_id = ${userId}
     `;
-    
+
     return { success: true };
   } catch (error) {
     console.error('Lock release failed:', error);
@@ -87,25 +87,25 @@ async function isLockValid(sql, userId) {
       FROM strava_tokens 
       WHERE user_id = ${userId}
     `;
-    
+
     if (result.length === 0) {
       return { valid: false, reason: 'Token not found' };
     }
-    
+
     const lockExpiry = result[0].refresh_lock_until;
     if (!lockExpiry) {
       return { valid: false, reason: 'No lock set' };
     }
-    
+
     const now = new Date();
     if (lockExpiry > now) {
-      return { 
-        valid: true, 
+      return {
+        valid: true,
         expiresAt: lockExpiry,
         timeRemaining: lockExpiry.getTime() - now.getTime()
       };
     }
-    
+
     return { valid: false, reason: 'Lock expired' };
   } catch (error) {
     console.error('Lock validation failed:', error);
@@ -117,17 +117,17 @@ async function isLockValid(sql, userId) {
 async function forceReleaseLock(sql, userId) {
   try {
     const lockId = hashUserId(userId);
-    
+
     // Release advisory lock
     await sql`SELECT pg_advisory_unlock(${lockId})`;
-    
+
     // Clear database lock
     await sql`
       UPDATE strava_tokens 
       SET refresh_lock_until = NULL 
       WHERE user_id = ${userId}
     `;
-    
+
     return { success: true, message: 'Lock force released' };
   } catch (error) {
     console.error('Force lock release failed:', error);
@@ -151,11 +151,11 @@ async function getLockStatus(sql, userId) {
       FROM strava_tokens 
       WHERE user_id = ${userId}
     `;
-    
+
     if (result.length === 0) {
       return { status: 'not_found' };
     }
-    
+
     const token = result[0];
     return {
       status: token.lock_status,

@@ -84,14 +84,14 @@ class DataAccessibilityTester {
      */
     async runTest(testName, testData) {
         console.log(`Testing: ${testName}`);
-        
+
         this.results.totalTests++;
-        
+
         if (testData.violations.length === 0) {
             this.results.passedTests++;
             console.log(`✅ PASSED: ${testName}`);
             console.log(`   Score: ${testData.score}/100`);
-            
+
             if (testData.passes.length > 0) {
                 console.log('   Passes:');
                 testData.passes.forEach(pass => {
@@ -102,14 +102,14 @@ class DataAccessibilityTester {
             this.results.failedTests++;
             console.log(`❌ FAILED: ${testName}`);
             console.log(`   Score: ${testData.score}/100`);
-            
+
             console.log('   Violations:');
             testData.violations.forEach(violation => {
                 console.log(`     ✗ ${violation}`);
                 this.results.violations.push(violation);
             });
         }
-        
+
         console.log('');
     }
 
@@ -205,7 +205,7 @@ class DataAccessibilityTester {
     validateChartDescriptions() {
         const hasChartDescriptions = this.checkFileContains('js/modules/ui/charts/Trends.js', 'generateChartDescription');
         const hasDataTables = this.checkFileContains('js/modules/ui/charts/Trends.js', 'createDataTable');
-        
+
         return {
             passed: hasChartDescriptions && hasDataTables,
             status: (hasChartDescriptions && hasDataTables) ? 'PASS' : 'FAIL',
@@ -218,7 +218,7 @@ class DataAccessibilityTester {
      */
     validateErrorContrast() {
         const hasHighContrast = this.checkFileContains('styles/charts.css', '#dc2626');
-        
+
         return {
             passed: hasHighContrast,
             status: hasHighContrast ? 'PASS' : 'FAIL',
@@ -232,7 +232,7 @@ class DataAccessibilityTester {
     validateKeyboardNavigation() {
         const hasKeyboardNav = this.checkFileContains('js/modules/ui/BottomNavigation.js', 'setupKeyboardNavigation');
         const hasArrowKeys = this.checkFileContains('js/modules/ui/BottomNavigation.js', 'ArrowLeft');
-        
+
         return {
             passed: hasKeyboardNav && hasArrowKeys,
             status: (hasKeyboardNav && hasArrowKeys) ? 'PASS' : 'FAIL',
@@ -245,7 +245,7 @@ class DataAccessibilityTester {
      */
     validateChartControls() {
         const hasChartKeyboard = this.checkFileContains('js/modules/ui/charts/Trends.js', 'addKeyboardNavigation');
-        
+
         return {
             passed: hasChartKeyboard,
             status: hasChartKeyboard ? 'PASS' : 'FAIL',
@@ -259,7 +259,7 @@ class DataAccessibilityTester {
     validateChartRoles() {
         const hasChartRoles = this.checkFileContains('js/modules/ui/charts/Trends.js', 'role="img"');
         const hasAriaLabels = this.checkFileContains('js/modules/ui/charts/Trends.js', 'aria-label');
-        
+
         return {
             passed: hasChartRoles && hasAriaLabels,
             status: (hasChartRoles && hasAriaLabels) ? 'PASS' : 'FAIL',
@@ -274,7 +274,7 @@ class DataAccessibilityTester {
         const hasSemanticHTML = this.checkFileContains('index.html', 'role="main"');
         const hasSkipLinks = this.checkFileContains('index.html', 'skip-link');
         const hasLandmarks = this.checkFileContains('index.html', 'role="navigation"');
-        
+
         return {
             passed: hasSemanticHTML && hasSkipLinks && hasLandmarks,
             status: (hasSemanticHTML && hasSkipLinks && hasLandmarks) ? 'PASS' : 'FAIL',
@@ -301,7 +301,7 @@ class DataAccessibilityTester {
     generateTestingChecklist() {
         console.log('\n📋 Data Accessibility Testing Checklist');
         console.log('=====================================');
-        
+
         const checklist = [
             'Chart Data Tables',
             '  □ Screen readers can access chart data via tables',
@@ -357,12 +357,12 @@ class DataAccessibilityTester {
 // CLI interface
 if (require.main === module) {
     const tester = new DataAccessibilityTester();
-    
+
     tester.runTests()
         .then(() => {
             tester.validateDataAccessibilityCriteria();
             tester.generateTestingChecklist();
-            
+
             // Exit with appropriate code
             if (tester.results.score >= 95) {
                 console.log('\n🎉 All data accessibility tests passed!');

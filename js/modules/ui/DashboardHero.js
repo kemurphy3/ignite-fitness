@@ -7,7 +7,7 @@ class DashboardHero {
         this.logger = window.SafeLogger || console;
         this.authManager = window.AuthManager;
         this.seasonPhase = window.SeasonPhase;
-        
+
         // Listen for Simple Mode changes
         if (window.EventBus) {
             window.EventBus.on('simpleMode:changed', () => {
@@ -29,16 +29,16 @@ class DashboardHero {
         const username = this.authManager?.getCurrentUsername() || 'Athlete';
         const currentPhase = this.seasonPhase?.getCurrentPhase() || null;
         const userSport = this.getUserSport();
-        
+
         const hero = document.createElement('section');
         hero.className = 'dashboard-hero';
-        
+
         // Get readiness data (may be null if no check-in)
         const recoverySummary = window.RecoverySummary;
         const readinessData = recoverySummary?.getTodayReadiness();
-        
+
         // Handle null readiness - don't show circle if no data
-        const readinessCircleHTML = readinessData 
+        const readinessCircleHTML = readinessData
             ? `<div class="readiness-circle" 
                      style="--readiness-color: ${readinessData.color}"
                      role="status"
@@ -48,14 +48,14 @@ class DashboardHero {
                     <div class="readiness-label">Readiness</div>
                 </div>`
             : '<div class="readiness-placeholder" style="padding: 1rem; text-align: center; color: #6c757d; font-size: 0.875rem;">Complete daily check-in to see readiness</div>';
-        
+
         // Check Simple Mode
         const simpleMode = window.SimpleModeManager?.isEnabled() ?? true;
-        
+
         // In Simple Mode: show only 4 actions; hide season phase
         const seasonPhaseHTML = simpleMode ? '' : (currentPhase ? this.renderSeasonPhase(currentPhase) : '');
-        
-        const quickActionsHTML = simpleMode 
+
+        const quickActionsHTML = simpleMode
             ? `
                 <button class="action-card" data-route="#/workouts">
                     <div class="action-icon">💪</div>
@@ -88,7 +88,7 @@ class DashboardHero {
                     <div class="action-label">Training</div>
                 </button>
             `;
-        
+
         hero.innerHTML = `
             <div class="hero-content">
                 <div class="hero-greeting">
@@ -107,13 +107,13 @@ class DashboardHero {
                 ${quickActionsHTML}
             </div>
         `;
-        
+
         // Add click handlers
         hero.querySelectorAll('.action-card').forEach(card => {
             card.addEventListener('click', () => {
-                const route = card.dataset.route;
-                const action = card.dataset.action;
-                
+                const {route} = card.dataset;
+                const {action} = card.dataset;
+
                 if (action === 'ask-coach') {
                     // Open AI chat
                     if (window.CoachChat) {
@@ -131,7 +131,7 @@ class DashboardHero {
                 }
             });
         });
-        
+
         return hero;
     }
 
@@ -147,9 +147,9 @@ class DashboardHero {
             'in-season': { label: 'In-Season', color: '#10b981', icon: '⚡' },
             'post-season': { label: 'Recovery', color: '#8b5cf6', icon: '😌' }
         };
-        
+
         const config = phaseConfig[phase.name] || phaseConfig['off-season'];
-        
+
         return `
             <div class="season-phase-badge" style="--phase-color: ${config.color}">
                 <span class="phase-icon">${config.icon}</span>
@@ -167,7 +167,7 @@ class DashboardHero {
         if (!score || score === null || score === undefined) {
             return 'No data - Complete daily check-in for accurate readiness';
         }
-        
+
         if (score >= 8 && score <= 10) {
             return `Excellent (${score}/10) - Ready for full intensity training`;
         } else if (score >= 5 && score <= 7) {
@@ -186,11 +186,11 @@ class DashboardHero {
     getUserSport() {
         try {
             const username = this.authManager?.getCurrentUsername();
-            if (!username) return 'soccer';
+            if (!username) {return 'soccer';}
 
             const users = JSON.parse(localStorage.getItem('ignitefitness_users') || '{}');
             const user = users[username];
-            if (!user) return 'soccer';
+            if (!user) {return 'soccer';}
 
             return user.onboardingData?.sport?.id || 'soccer';
         } catch (error) {
@@ -204,7 +204,7 @@ class DashboardHero {
      */
     update(updates) {
         const hero = document.querySelector('.dashboard-hero');
-        if (!hero) return;
+        if (!hero) {return;}
 
         if (updates.username) {
             const usernameEl = hero.querySelector('.hero-username');

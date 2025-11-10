@@ -17,15 +17,15 @@ class UpgradeNudge {
     render(flagName, context = 'general') {
         const descriptions = this.featureFlags.getFlagDescriptions();
         const feature = descriptions[flagName];
-        
+
         if (!feature) {
             return null;
         }
-        
+
         const nudge = document.createElement('div');
         nudge.className = 'upgrade-nudge';
         nudge.dataset.flag = flagName;
-        
+
         nudge.innerHTML = `
             <div class="nudge-content">
                 <div class="nudge-icon">${feature.icon}</div>
@@ -38,7 +38,7 @@ class UpgradeNudge {
                 </div>
             </div>
         `;
-        
+
         return nudge;
     }
 
@@ -48,7 +48,7 @@ class UpgradeNudge {
      */
     handleUpgrade(flagName) {
         this.logger.audit('UPGRADE_NUDGE_CLICKED', { feature: flagName });
-        
+
         // For now, just show message
         // Later: redirect to upgrade flow
         alert(`Coming soon: ${flagName.replace(/_/g, ' ')}\n\nThis feature will be available soon!`);
@@ -73,7 +73,7 @@ class UpgradeNudge {
         if (!element || !this.shouldShowNudge(flagName)) {
             return;
         }
-        
+
         const nudge = this.render(flagName, context);
         if (nudge) {
             element.appendChild(nudge);
@@ -87,7 +87,7 @@ class UpgradeNudge {
     async showUpgradeModal(featureName) {
         const modal = document.createElement('div');
         modal.className = 'upgrade-modal';
-        
+
         modal.innerHTML = `
             <div class="modal-backdrop" onclick="this.closest('.upgrade-modal').remove()"></div>
             <div class="modal-content">
@@ -103,7 +103,7 @@ class UpgradeNudge {
                 </button>
             </div>
         `;
-        
+
         document.body.appendChild(modal);
     }
 }

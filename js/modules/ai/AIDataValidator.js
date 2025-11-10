@@ -19,32 +19,32 @@ class AIDataValidator {
             readiness: 6, // Slightly below average for safety
             energyLevel: 6,
             stressLevel: 5, // Moderate stress
-            
+
             // Training Load Metrics
             atl7: 50, // Moderate acute training load
             ctl28: 100, // Moderate chronic training load
             monotony: 1.2, // Low monotony (good)
             strain: 60, // Moderate strain
-            
+
             // Performance Metrics
             averageRPE: 6.5, // Moderate intensity
             progressionRate: 0.05, // Conservative 5% progression
             consistencyScore: 0.7, // Good consistency
-            
+
             // Training Frequency and Volume
             trainingFrequency: 3, // 3x per week
             workoutStreak: 0, // No streak assumption
             missedWorkouts: 0,
-            
+
             // Goals and Preferences
             primaryGoal: 'general_fitness',
             sport: 'general_fitness',
             seasonPhase: 'offseason',
-            
+
             // Trends (conservative assumptions)
             energyTrend: 'stable',
             stressTrend: 'stable',
-            
+
             // Safety Thresholds
             maxIntensity: 8, // Never exceed RPE 8
             minRestDays: 1, // At least 1 rest day per week
@@ -123,7 +123,7 @@ class AIDataValidator {
         if (typeof score !== 'number' || isNaN(score) || score <= 0) {
             return this.conservativeDefaults.readiness;
         }
-        
+
         // Cap at reasonable maximum for safety
         return Math.min(Math.max(score, 1), 10);
     }
@@ -137,7 +137,7 @@ class AIDataValidator {
         if (typeof level !== 'number' || isNaN(level) || level <= 0) {
             return this.conservativeDefaults.energyLevel;
         }
-        
+
         return Math.min(Math.max(level, 1), 10);
     }
 
@@ -150,7 +150,7 @@ class AIDataValidator {
         if (typeof level !== 'number' || isNaN(level) || level <= 0) {
             return this.conservativeDefaults.stressLevel;
         }
-        
+
         return Math.min(Math.max(level, 1), 10);
     }
 
@@ -164,7 +164,7 @@ class AIDataValidator {
         if (typeof load !== 'number' || isNaN(load) || load < 0) {
             return this.conservativeDefaults[type] || 0;
         }
-        
+
         // Cap at reasonable maximum to prevent extreme values
         const maxLoad = type === 'atl7' ? 200 : 400;
         return Math.min(load, maxLoad);
@@ -179,7 +179,7 @@ class AIDataValidator {
         if (typeof monotony !== 'number' || isNaN(monotony) || monotony < 1.0) {
             return this.conservativeDefaults.monotony;
         }
-        
+
         // Cap at reasonable maximum
         return Math.min(monotony, 5.0);
     }
@@ -193,7 +193,7 @@ class AIDataValidator {
         if (typeof strain !== 'number' || isNaN(strain) || strain < 0) {
             return this.conservativeDefaults.strain;
         }
-        
+
         // Cap at reasonable maximum
         return Math.min(strain, 1000);
     }
@@ -207,7 +207,7 @@ class AIDataValidator {
         if (typeof rpe !== 'number' || isNaN(rpe) || rpe <= 0) {
             return this.conservativeDefaults.averageRPE;
         }
-        
+
         // Cap at conservative maximum for safety
         return Math.min(Math.max(rpe, 1), this.conservativeDefaults.maxIntensity);
     }
@@ -221,7 +221,7 @@ class AIDataValidator {
         if (typeof rate !== 'number' || isNaN(rate) || rate < 0) {
             return this.conservativeDefaults.progressionRate;
         }
-        
+
         // Cap at conservative maximum
         return Math.min(rate, this.conservativeDefaults.maxVolumeIncrease);
     }
@@ -235,7 +235,7 @@ class AIDataValidator {
         if (typeof score !== 'number' || isNaN(score) || score < 0) {
             return this.conservativeDefaults.consistencyScore;
         }
-        
+
         return Math.min(Math.max(score, 0), 1);
     }
 
@@ -248,7 +248,7 @@ class AIDataValidator {
         if (typeof frequency !== 'number' || isNaN(frequency) || frequency <= 0) {
             return this.conservativeDefaults.trainingFrequency;
         }
-        
+
         return Math.min(Math.max(frequency, 1), 7);
     }
 
@@ -261,7 +261,7 @@ class AIDataValidator {
         if (typeof streak !== 'number' || isNaN(streak) || streak < 0) {
             return this.conservativeDefaults.workoutStreak;
         }
-        
+
         return streak;
     }
 
@@ -274,7 +274,7 @@ class AIDataValidator {
         if (typeof missed !== 'number' || isNaN(missed) || missed < 0) {
             return this.conservativeDefaults.missedWorkouts;
         }
-        
+
         return missed;
     }
 
@@ -285,14 +285,14 @@ class AIDataValidator {
      */
     validateGoal(goal) {
         const validGoals = [
-            'general_fitness', 'strength', 'endurance', 'muscle_gain', 
+            'general_fitness', 'strength', 'endurance', 'muscle_gain',
             'weight_loss', 'sport_specific', 'injury_prevention'
         ];
-        
+
         if (typeof goal !== 'string' || !validGoals.includes(goal)) {
             return this.conservativeDefaults.primaryGoal;
         }
-        
+
         return goal;
     }
 
@@ -303,14 +303,14 @@ class AIDataValidator {
      */
     validateSport(sport) {
         const validSports = [
-            'general_fitness', 'soccer', 'basketball', 'running', 
+            'general_fitness', 'soccer', 'basketball', 'running',
             'cycling', 'swimming', 'tennis', 'martial_arts'
         ];
-        
+
         if (typeof sport !== 'string' || !validSports.includes(sport)) {
             return this.conservativeDefaults.sport;
         }
-        
+
         return sport;
     }
 
@@ -321,11 +321,11 @@ class AIDataValidator {
      */
     validateSeasonPhase(phase) {
         const validPhases = ['offseason', 'preseason', 'inseason', 'playoffs'];
-        
+
         if (typeof phase !== 'string' || !validPhases.includes(phase)) {
             return this.conservativeDefaults.seasonPhase;
         }
-        
+
         return phase;
     }
 
@@ -336,11 +336,11 @@ class AIDataValidator {
      */
     validateTrend(trend) {
         const validTrends = ['increasing', 'decreasing', 'stable', 'volatile'];
-        
+
         if (typeof trend !== 'string' || !validTrends.includes(trend)) {
             return this.conservativeDefaults.energyTrend;
         }
-        
+
         return trend;
     }
 
@@ -353,12 +353,12 @@ class AIDataValidator {
         if (!Array.isArray(history)) {
             return [];
         }
-        
+
         // Filter out invalid entries
-        return history.filter(entry => 
-            entry && 
-            typeof entry === 'object' && 
-            entry.date && 
+        return history.filter(entry =>
+            entry &&
+            typeof entry === 'object' &&
+            entry.date &&
             entry.type
         );
     }
@@ -372,12 +372,12 @@ class AIDataValidator {
         if (!Array.isArray(workouts)) {
             return [];
         }
-        
+
         // Filter out invalid entries
-        return workouts.filter(workout => 
-            workout && 
-            typeof workout === 'object' && 
-            workout.date && 
+        return workouts.filter(workout =>
+            workout &&
+            typeof workout === 'object' &&
+            workout.date &&
             workout.duration > 0
         );
     }
@@ -391,16 +391,16 @@ class AIDataValidator {
         if (!data || typeof data !== 'object') {
             return {};
         }
-        
+
         const validated = {};
-        
+
         // Validate each progression metric
         for (const [key, value] of Object.entries(data)) {
             if (typeof value === 'number' && !isNaN(value) && value >= 0) {
                 validated[key] = value;
             }
         }
-        
+
         return validated;
     }
 
@@ -413,11 +413,11 @@ class AIDataValidator {
     applyConservativeScaling(baseIntensity, dataConfidence = 0.5) {
         const validatedIntensity = this.validateRPE(baseIntensity);
         const validatedConfidence = Math.min(Math.max(dataConfidence, 0), 1);
-        
+
         // Scale down intensity when data confidence is low
         const confidenceFactor = 0.5 + (validatedConfidence * 0.5); // 0.5 to 1.0
         const scaledIntensity = validatedIntensity * confidenceFactor;
-        
+
         // Ensure we don't exceed conservative maximum
         return Math.min(scaledIntensity, this.conservativeDefaults.maxIntensity);
     }
@@ -429,7 +429,7 @@ class AIDataValidator {
      */
     generateConservativeRecommendations(context) {
         const validatedContext = this.validateContext(context);
-        
+
         // Determine conservative intensity based on readiness
         let intensity = 'moderate';
         if (validatedContext.readinessScore <= 4) {
@@ -437,7 +437,7 @@ class AIDataValidator {
         } else if (validatedContext.readinessScore >= 8) {
             intensity = 'moderate-high';
         }
-        
+
         // Determine conservative volume based on recent load
         let volume = 'moderate';
         if (validatedContext.atl7 > 150) {
@@ -445,7 +445,7 @@ class AIDataValidator {
         } else if (validatedContext.atl7 < 30) {
             volume = 'moderate-high';
         }
-        
+
         return {
             intensity,
             volume,
@@ -463,23 +463,23 @@ class AIDataValidator {
      */
     generateSafetyFlags(context) {
         const flags = [];
-        
+
         if (context.readinessScore <= 4) {
             flags.push('Low readiness - consider light workout or rest');
         }
-        
+
         if (context.atl7 > 150) {
             flags.push('High training load - reduce volume');
         }
-        
+
         if (context.stressLevel >= 8) {
             flags.push('High stress - prioritize recovery');
         }
-        
+
         if (context.missedWorkouts >= 3) {
             flags.push('Multiple missed workouts - ease back gradually');
         }
-        
+
         return flags;
     }
 }

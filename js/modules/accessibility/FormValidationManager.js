@@ -8,7 +8,7 @@ class FormValidationManager {
         this.forms = new Map();
         this.validationRules = new Map();
         this.errorMessages = new Map();
-        
+
         this.init();
     }
 
@@ -193,7 +193,7 @@ class FormValidationManager {
     validateField(field, formData) {
         const fieldName = field.name;
         const fieldData = formData.fields.get(fieldName);
-        
+
         if (!fieldData) {
             return;
         }
@@ -324,7 +324,7 @@ class FormValidationManager {
             errorContainer.className = 'field-error';
             errorContainer.setAttribute('role', 'alert');
             errorContainer.setAttribute('aria-live', 'polite');
-            
+
             // Add error messages
             errors.forEach(error => {
                 const errorElement = document.createElement('div');
@@ -371,7 +371,7 @@ class FormValidationManager {
     handleFieldFocus(field, formData) {
         const fieldName = field.name;
         const fieldData = formData.fields.get(fieldName);
-        
+
         if (fieldData && fieldData.errors.length > 0) {
             // Announce existing errors when field is focused
             this.announceFieldErrors(field, fieldData.errors);
@@ -385,7 +385,7 @@ class FormValidationManager {
     handleFormSubmit(data) {
         const { formId } = data;
         const formData = this.forms.get(formId);
-        
+
         if (!formData) {
             this.logger.warn('Form not registered:', formId);
             return;
@@ -394,7 +394,7 @@ class FormValidationManager {
         // Validate all fields
         let isValid = true;
         formData.fields.forEach((fieldData, fieldName) => {
-            const field = fieldData.field;
+            const {field} = fieldData;
             const fieldValid = this.validateField(field, formData);
             if (!fieldValid) {
                 isValid = false;
@@ -502,10 +502,10 @@ class FormValidationManager {
     clearFormErrors(formData) {
         // Clear field errors
         formData.fields.forEach((fieldData, fieldName) => {
-            const field = fieldData.field;
+            const {field} = fieldData;
             const errorContainerId = `${fieldName}-error`;
             const errorContainer = document.getElementById(errorContainerId);
-            
+
             if (errorContainer) {
                 errorContainer.remove();
             }
@@ -534,14 +534,14 @@ class FormValidationManager {
     handleFormValidate(data) {
         const { formId } = data;
         const formData = this.forms.get(formId);
-        
+
         if (!formData) {
             return;
         }
 
         // Validate all fields
         formData.fields.forEach((fieldData, fieldName) => {
-            const field = fieldData.field;
+            const {field} = fieldData;
             this.validateField(field, formData);
         });
     }
@@ -553,7 +553,7 @@ class FormValidationManager {
     handleFormClear(data) {
         const { formId } = data;
         const formData = this.forms.get(formId);
-        
+
         if (!formData) {
             return;
         }

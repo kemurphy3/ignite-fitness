@@ -116,7 +116,7 @@ class TransactionRollbackManager {
 
             this.logger.debug(`Compensated insert in ${data.table} for ID ${data.id}`);
         } catch (error) {
-            this.logger.error(`Error compensating insert:`, error);
+            this.logger.error('Error compensating insert:', error);
             throw error;
         }
     }
@@ -138,7 +138,7 @@ class TransactionRollbackManager {
 
             this.logger.debug(`Compensated update in ${data.table} for ID ${data.id}`);
         } catch (error) {
-            this.logger.error(`Error compensating update:`, error);
+            this.logger.error('Error compensating update:', error);
             throw error;
         }
     }
@@ -159,7 +159,7 @@ class TransactionRollbackManager {
 
             this.logger.debug(`Compensated delete in ${data.table} for ID ${data.id}`);
         } catch (error) {
-            this.logger.error(`Error compensating delete:`, error);
+            this.logger.error('Error compensating delete:', error);
             throw error;
         }
     }
@@ -180,7 +180,7 @@ class TransactionRollbackManager {
      */
     getTransactionStatus(transactionId) {
         const transaction = this.compensatingActions.get(transactionId);
-        if (!transaction) return null;
+        if (!transaction) {return null;}
 
         return {
             id: transactionId,

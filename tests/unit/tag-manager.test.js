@@ -49,14 +49,14 @@ describe('TagManager', () => {
         // Mock window.ExerciseDatabase
         window.ExerciseDatabase = mockExerciseDatabase;
         window.SafeLogger = console;
-        
+
         tagManager = new TagManager();
     });
 
     describe('getAllTags', () => {
         it('should return base tags and soccer-shape tags', () => {
             const tags = tagManager.getAllTags();
-            
+
             expect(tags).toHaveProperty('acceleration');
             expect(tags).toHaveProperty('COD');
             expect(tags).toHaveProperty('VO2');
@@ -66,7 +66,7 @@ describe('TagManager', () => {
 
         it('should include soccer-shape tag metadata', () => {
             const tags = tagManager.getAllTags();
-            
+
             expect(tags.acceleration).toHaveProperty('name', 'Acceleration');
             expect(tags.acceleration).toHaveProperty('description');
             expect(tags.acceleration).toHaveProperty('color');
@@ -320,7 +320,7 @@ describe('TagManager', () => {
 
         it('should calculate tag statistics', () => {
             const stats = tagManager.getTagStatistics(workouts);
-            
+
             expect(stats.totalWorkouts).toBe(5);
             expect(stats.uniqueTags).toBeGreaterThan(0);
             expect(stats.tagStats).toBeDefined();

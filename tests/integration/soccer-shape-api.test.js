@@ -31,7 +31,7 @@ describe('Soccer-Shape API Integration', () => {
     describe('GET /workouts-soccer-shape', () => {
         it('should return at least 8 soccer-shape workouts', async () => {
             const response = await fetch(WORKOUTS_SOCCER_SHAPE_ENDPOINT, {
-                headers: { 
+                headers: {
                     'X-API-Key': apiKey,
                     'Content-Type': 'application/json'
                 }
@@ -57,7 +57,7 @@ describe('Soccer-Shape API Integration', () => {
 
         it('should filter by experience level', async () => {
             const response = await fetch(`${WORKOUTS_SOCCER_SHAPE_ENDPOINT}?experience_level=beginner`, {
-                headers: { 
+                headers: {
                     'X-API-Key': apiKey,
                     'Content-Type': 'application/json'
                 }
@@ -67,7 +67,7 @@ describe('Soccer-Shape API Integration', () => {
 
             expect(response.status).toBe(200);
             expect(result.success).toBe(true);
-            
+
             if (result.data.workouts.length > 0) {
                 result.data.workouts.forEach(workout => {
                     expect(workout.difficulty_level).toBe('beginner');
@@ -77,7 +77,7 @@ describe('Soccer-Shape API Integration', () => {
 
         it('should filter by tags correctly', async () => {
             const response = await fetch(`${WORKOUTS_SOCCER_SHAPE_ENDPOINT}?tags=acceleration,COD`, {
-                headers: { 
+                headers: {
                     'X-API-Key': apiKey,
                     'Content-Type': 'application/json'
                 }
@@ -87,7 +87,7 @@ describe('Soccer-Shape API Integration', () => {
 
             expect(response.status).toBe(200);
             expect(result.success).toBe(true);
-            
+
             if (result.data.workouts.length > 0) {
                 result.data.workouts.forEach(workout => {
                     const hasAcceleration = workout.tags.includes('acceleration');
@@ -99,7 +99,7 @@ describe('Soccer-Shape API Integration', () => {
 
         it('should filter by equipment', async () => {
             const response = await fetch(`${WORKOUTS_SOCCER_SHAPE_ENDPOINT}?equipment=track`, {
-                headers: { 
+                headers: {
                     'X-API-Key': apiKey,
                     'Content-Type': 'application/json'
                 }
@@ -109,7 +109,7 @@ describe('Soccer-Shape API Integration', () => {
 
             expect(response.status).toBe(200);
             expect(result.success).toBe(true);
-            
+
             if (result.data.workouts.length > 0) {
                 result.data.workouts.forEach(workout => {
                     expect(workout.equipment).toContain('track');
@@ -119,7 +119,7 @@ describe('Soccer-Shape API Integration', () => {
 
         it('should return workouts with calculated load', async () => {
             const response = await fetch(WORKOUTS_SOCCER_SHAPE_ENDPOINT, {
-                headers: { 
+                headers: {
                     'X-API-Key': apiKey,
                     'Content-Type': 'application/json'
                 }
@@ -136,7 +136,7 @@ describe('Soccer-Shape API Integration', () => {
 
         it('should return substitution count for each workout', async () => {
             const response = await fetch(WORKOUTS_SOCCER_SHAPE_ENDPOINT, {
-                headers: { 
+                headers: {
                     'X-API-Key': apiKey,
                     'Content-Type': 'application/json'
                 }
@@ -158,7 +158,7 @@ describe('Soccer-Shape API Integration', () => {
         beforeAll(async () => {
             // Get a soccer-shape workout to test substitutions
             const response = await fetch(WORKOUTS_SOCCER_SHAPE_ENDPOINT, {
-                headers: { 
+                headers: {
                     'X-API-Key': apiKey,
                     'Content-Type': 'application/json'
                 }
@@ -182,8 +182,8 @@ describe('Soccer-Shape API Integration', () => {
                     'X-API-Key': apiKey,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ 
-                    template_id: testWorkout.template_id 
+                body: JSON.stringify({
+                    template_id: testWorkout.template_id
                 })
             });
 
@@ -211,7 +211,7 @@ describe('Soccer-Shape API Integration', () => {
 
             // Find a workout that requires track
             const trackWorkout = await fetch(`${WORKOUTS_SOCCER_SHAPE_ENDPOINT}?equipment=track`, {
-                headers: { 
+                headers: {
                     'X-API-Key': apiKey,
                     'Content-Type': 'application/json'
                 }
@@ -233,8 +233,8 @@ describe('Soccer-Shape API Integration', () => {
                 },
                 body: JSON.stringify({
                     template_id: testTrackWorkout.template_id,
-                    constraints: { 
-                        equipment: ['field', 'bodyweight'] 
+                    constraints: {
+                        equipment: ['field', 'bodyweight']
                     }
                 })
             });
@@ -243,7 +243,7 @@ describe('Soccer-Shape API Integration', () => {
 
             expect(response.status).toBe(200);
             expect(result.success).toBe(true);
-            
+
             if (result.data.substitutions.length > 0) {
                 result.data.substitutions.forEach(sub => {
                     const hasAllowedEquipment = sub.equipment.some(eq =>
@@ -266,8 +266,8 @@ describe('Soccer-Shape API Integration', () => {
                     'X-API-Key': apiKey,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ 
-                    template_id: testWorkout.template_id 
+                body: JSON.stringify({
+                    template_id: testWorkout.template_id
                 })
             });
 
@@ -292,8 +292,8 @@ describe('Soccer-Shape API Integration', () => {
                     'X-API-Key': apiKey,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ 
-                    template_id: 'non_existent_workout_id_12345' 
+                body: JSON.stringify({
+                    template_id: 'non_existent_workout_id_12345'
                 })
             });
 
@@ -312,7 +312,7 @@ describe('Soccer-Shape API Integration', () => {
 
             for (const tag of requiredTags) {
                 const response = await fetch(`${WORKOUTS_SOCCER_SHAPE_ENDPOINT}?tags=${tag}`, {
-                    headers: { 
+                    headers: {
                         'X-API-Key': apiKey,
                         'Content-Type': 'application/json'
                     }
@@ -332,7 +332,7 @@ describe('Soccer-Shape API Integration', () => {
 
         it('should correctly calculate load for tagged workouts', async () => {
             const response = await fetch(`${WORKOUTS_SOCCER_SHAPE_ENDPOINT}?tags=anaerobic_capacity`, {
-                headers: { 
+                headers: {
                     'X-API-Key': apiKey,
                     'Content-Type': 'application/json'
                 }
@@ -355,7 +355,7 @@ describe('Soccer-Shape API Integration', () => {
     describe('Database Integration', () => {
         it('should persist soccer-shape workouts correctly', async () => {
             const response = await fetch(WORKOUTS_SOCCER_SHAPE_ENDPOINT, {
-                headers: { 
+                headers: {
                     'X-API-Key': apiKey,
                     'Content-Type': 'application/json'
                 }
@@ -399,7 +399,7 @@ describe('Soccer-Shape API Integration', () => {
 
         it('should reject invalid API key', async () => {
             const response = await fetch(WORKOUTS_SOCCER_SHAPE_ENDPOINT, {
-                headers: { 
+                headers: {
                     'X-API-Key': 'invalid_key_12345',
                     'Content-Type': 'application/json'
                 }
@@ -415,9 +415,9 @@ describe('Soccer-Shape API Integration', () => {
     describe('Performance', () => {
         it('should respond within 200ms', async () => {
             const startTime = Date.now();
-            
+
             const response = await fetch(WORKOUTS_SOCCER_SHAPE_ENDPOINT, {
-                headers: { 
+                headers: {
                     'X-API-Key': apiKey,
                     'Content-Type': 'application/json'
                 }

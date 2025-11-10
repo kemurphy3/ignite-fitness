@@ -19,13 +19,13 @@ const exerciseSchema = {
         superset_group: { type: 'string', maxLength: 10 },
         order_index: { type: 'integer', minimum: 0 },
         equipment_type: { type: 'string', maxLength: 50 },
-        muscle_groups: { 
-            type: 'array', 
-            items: { 
-                enum: ['chest', 'back', 'shoulders', 'biceps', 'triceps', 
-                       'quadriceps', 'hamstrings', 'glutes', 'calves', 
-                       'abs', 'obliques', 'forearms', 'lats', 'traps'] 
-            } 
+        muscle_groups: {
+            type: 'array',
+            items: {
+                enum: ['chest', 'back', 'shoulders', 'biceps', 'triceps',
+                       'quadriceps', 'hamstrings', 'glutes', 'calves',
+                       'abs', 'obliques', 'forearms', 'lats', 'traps']
+            }
         },
         exercise_type: { enum: ['strength', 'cardio', 'flexibility', 'plyometric', 'isometric'] }
     },
@@ -50,7 +50,7 @@ function sanitizeForLog(data) {
 exports.handler = async (event) => {
     const { getNeonClient } = require('./utils/connection-pool');
 const sql = getNeonClient();
-    
+
     // CORS headers
     const headers = {
         'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGINS || '*',
@@ -58,11 +58,11 @@ const sql = getNeonClient();
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Content-Type': 'application/json'
     };
-    
+
     if (event.httpMethod === 'OPTIONS') {
         return { statusCode: 204, headers };
     }
-    
+
     try {
         // Extract session ID from path
         const sessionId = event.path.match(/\/sessions\/([^\/]+)\/exercises/)?.[1];
@@ -70,33 +70,33 @@ const sql = getNeonClient();
             return {
                 statusCode: 400,
                 headers,
-                body: JSON.stringify({ 
-                    error: { 
-                        message: 'Invalid path format', 
-                        code: 'VAL_001' 
+                body: JSON.stringify({
+                    error: {
+                        message: 'Invalid path format',
+                        code: 'VAL_001'
                     }
                 })
             };
         }
-        
+
         // Authenticate - JWT sub IS the user ID
         const authHeader = event.headers.authorization;
         if (!authHeader?.startsWith('Bearer ')) {
             return {
                 statusCode: 401,
                 headers,
-                body: JSON.stringify({ 
-                    error: { 
-                        message: 'Authorization required', 
-                        code: 'AUTH_001' 
+                body: JSON.stringify({
+                    error: {
+                        message: 'Authorization required',
+                        code: 'AUTH_001'
                     }
                 })
             };
         }
-        
+
         const token = authHeader.substring(7);
         let userId;
-        
+
         try {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             userId = decoded.sub; // Direct mapping
@@ -104,16 +104,16 @@ const sql = getNeonClient();
             return {
                 statusCode: 401,
                 headers,
-                body: JSON.stringify({ 
-                    error: { 
-                        message: 'Invalid token', 
+                body: JSON.stringify({
+                    error: {
+                        message: 'Invalid token',
                         code: 'AUTH_002',
-                        details: err.message 
+                        details: err.message
                     }
                 })
             };
         }
-        
+
         // Check sliding window rate limit
         const rateCheck = await sql`
             SELECT * FROM check_rate_limit(
@@ -123,17 +123,17 @@ const sql = getNeonClient();
                 60   -- per 60 seconds
             )
         `;
-        
+
         if (!rateCheck[0].allowed) {
             return {
                 statusCode: 429,
-                headers: { 
-                    ...headers, 
-                    'Retry-After': String(rateCheck[0].retry_after) 
+                headers: {
+                    ...headers,
+                    'Retry-After': String(rateCheck[0].retry_after)
                 },
-                body: JSON.stringify({ 
-                    error: { 
-                        message: 'Rate limit exceeded', 
+                body: JSON.stringify({
+                    error: {
+                        message: 'Rate limit exceeded',
                         code: 'RATE_001',
                         details: {
                             current_count: rateCheck[0].current_count,
@@ -143,74 +143,74 @@ const sql = getNeonClient();
                 })
             };
         }
-        
+
         // Log rate limit request
         await sql`
             INSERT INTO exercise_rate_limits (user_id, endpoint)
             VALUES (${userId}, 'POST /exercises')
         `;
-        
+
         // Verify session ownership (separate query for clarity)
         const sessionCheck = await sql`
             SELECT user_id FROM sessions 
             WHERE id = ${sessionId}
         `;
-        
+
         if (!sessionCheck.length) {
             return {
                 statusCode: 404,
                 headers,
-                body: JSON.stringify({ 
-                    error: { 
-                        message: 'Session not found', 
-                        code: 'SESS_001' 
+                body: JSON.stringify({
+                    error: {
+                        message: 'Session not found',
+                        code: 'SESS_001'
                     }
                 })
             };
         }
-        
+
         if (sessionCheck[0].user_id !== userId) {
             return {
                 statusCode: 403,
                 headers,
-                body: JSON.stringify({ 
-                    error: { 
-                        message: 'Access denied', 
-                        code: 'AUTHZ_001' 
+                body: JSON.stringify({
+                    error: {
+                        message: 'Access denied',
+                        code: 'AUTHZ_001'
                     }
                 })
             };
         }
-        
+
         // Parse and validate input
         const { exercises, client_request_id } = JSON.parse(event.body);
-        
+
         if (!Array.isArray(exercises) || exercises.length === 0) {
             return {
                 statusCode: 400,
                 headers,
-                body: JSON.stringify({ 
-                    error: { 
-                        message: 'Exercises array required', 
-                        code: 'VAL_002' 
+                body: JSON.stringify({
+                    error: {
+                        message: 'Exercises array required',
+                        code: 'VAL_002'
                     }
                 })
             };
         }
-        
+
         if (exercises.length > 50) {
             return {
                 statusCode: 400,
                 headers,
-                body: JSON.stringify({ 
-                    error: { 
-                        message: 'Maximum 50 exercises per request', 
-                        code: 'VAL_003' 
+                body: JSON.stringify({
+                    error: {
+                        message: 'Maximum 50 exercises per request',
+                        code: 'VAL_003'
                     }
                 })
             };
         }
-        
+
         // Generate request hash for idempotency
         const requestData = exercises.map(e => ({
             name: e.name,
@@ -218,11 +218,11 @@ const sql = getNeonClient();
             reps: e.reps,
             order_index: e.order_index
         }));
-        
+
         const requestHash = crypto.createHash('sha256')
             .update(userId + sessionId + JSON.stringify(requestData) + new Date().toISOString().split('T')[0])
             .digest('hex');
-        
+
         // Check idempotency with user scope
         const existing = await sql`
             SELECT id, created_at FROM session_exercises 
@@ -230,34 +230,34 @@ const sql = getNeonClient();
             AND request_hash = ${requestHash}
             LIMIT 1
         `;
-        
+
         if (existing.length > 0) {
-            console.log('Idempotent request detected:', sanitizeForLog({ 
-                user_id: userId, 
-                request_hash: requestHash 
+            console.log('Idempotent request detected:', sanitizeForLog({
+                user_id: userId,
+                request_hash: requestHash
             }));
-            
+
             return {
                 statusCode: 200,
                 headers,
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     message: 'Exercises already created (idempotent)',
                     idempotent: true,
                     created_at: existing[0].created_at
                 })
             };
         }
-        
+
         // Validate each exercise
         const ajv = new Ajv();
         const validate = ajv.compile(exerciseSchema);
-        
+
         const results = [];
         const errors = [];
-        
+
         for (let i = 0; i < exercises.length; i++) {
             const exercise = exercises[i];
-            
+
             if (!validate(exercise)) {
                 errors.push({
                     index: i,
@@ -266,7 +266,7 @@ const sql = getNeonClient();
                 });
                 continue;
             }
-            
+
             // Sanitize and prepare
             results.push({
                 ...exercise,
@@ -275,7 +275,7 @@ const sql = getNeonClient();
                 order_index: exercise.order_index ?? i
             });
         }
-        
+
         // If any validation errors, return them all
         if (errors.length > 0) {
             return {
@@ -290,10 +290,10 @@ const sql = getNeonClient();
                 })
             };
         }
-        
+
         // Begin transaction for atomic operation
         let insertedExercises = [];
-        
+
         try {
             await sql.begin(async sql => {
                 // Bulk insert exercises
@@ -315,12 +315,12 @@ const sql = getNeonClient();
                     exercise_type: ex.exercise_type || 'strength',
                     request_hash: requestHash
                 }));
-                
+
                 insertedExercises = await sql`
                     INSERT INTO session_exercises ${sql(insertData)}
                     RETURNING id, name, order_index, created_at
                 `;
-                
+
                 // Log bulk creation in history
                 await sql`
                     INSERT INTO session_exercise_history (
@@ -336,17 +336,17 @@ const sql = getNeonClient();
                     FROM session_exercises
                     WHERE id = ANY(${insertedExercises.map(e => e.id)})
                 `;
-                
+
                 // Reindex to ensure no gaps
                 await sql`SELECT reindex_session_exercises(${sessionId})`;
             });
-            
+
             console.log('Exercises created:', sanitizeForLog({
                 session_id: sessionId,
                 user_id: userId,
                 count: insertedExercises.length
             }));
-            
+
             return {
                 statusCode: 201,
                 headers,
@@ -361,35 +361,35 @@ const sql = getNeonClient();
                     }))
                 })
             };
-            
+
         } catch (txError) {
-            console.error('Transaction failed:', sanitizeForLog({ 
+            console.error('Transaction failed:', sanitizeForLog({
                 error: txError.message,
-                session_id: sessionId 
+                session_id: sessionId
             }));
-            
+
             return {
                 statusCode: 500,
                 headers,
-                body: JSON.stringify({ 
-                    error: { 
-                        message: 'Transaction failed - no exercises were created', 
-                        code: 'SYS_001' 
+                body: JSON.stringify({
+                    error: {
+                        message: 'Transaction failed - no exercises were created',
+                        code: 'SYS_001'
                     }
                 })
             };
         }
-        
+
     } catch (error) {
         console.error('Error creating exercises:', sanitizeForLog({ error: error.message }));
-        
+
         return {
             statusCode: 500,
             headers,
-            body: JSON.stringify({ 
-                error: { 
-                    message: 'Internal server error', 
-                    code: 'SYS_002' 
+            body: JSON.stringify({
+                error: {
+                    message: 'Internal server error',
+                    code: 'SYS_002'
                 }
             })
         };

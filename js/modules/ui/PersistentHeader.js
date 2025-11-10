@@ -7,7 +7,7 @@ class PersistentHeader {
         this.logger = window.SafeLogger || console;
         this.isOnline = navigator.onLine;
         this.connectionStatus = 'online';
-        
+
         this.setupNetworkListeners();
         this.createHeader();
     }
@@ -37,7 +37,7 @@ class PersistentHeader {
     createHeader() {
         // Remove existing header if present
         const existing = document.getElementById('persistent-header');
-        if (existing) existing.remove();
+        if (existing) {existing.remove();}
 
         const header = document.createElement('header');
         header.id = 'persistent-header';
@@ -59,18 +59,18 @@ class PersistentHeader {
             let syncTimer = null;
             window.EventBus.on(window.EventBus.TOPICS?.SYNC_QUEUE_UPDATED || 'sync:queue', ({ queueLength }) => {
                 const header = document.getElementById('persistent-header');
-                if (!header) return;
+                if (!header) {return;}
                 const right = header.querySelector('.header-right');
-                if (!right) return;
+                if (!right) {return;}
 
                 const existing = right.querySelector('.sync-indicator');
                 const show = queueLength > 0;
 
                 if (show) {
-                    if (syncTimer) clearTimeout(syncTimer);
+                    if (syncTimer) {clearTimeout(syncTimer);}
                     // Show after 500ms
                     syncTimer = setTimeout(() => {
-                        if (right.querySelector('.sync-indicator')) return;
+                        if (right.querySelector('.sync-indicator')) {return;}
                         const el = document.createElement('div');
                         el.className = 'sync-indicator';
                         el.style.cssText = 'display:flex;align-items:center;gap:6px;margin-left:8px;color:#9CA3AF;font-size:12px;';
@@ -79,19 +79,19 @@ class PersistentHeader {
                         window.LiveRegionManager?.announce('Sync started', 'polite');
                     }, 500);
                 } else {
-                    if (syncTimer) clearTimeout(syncTimer);
-                    if (existing) existing.remove();
+                    if (syncTimer) {clearTimeout(syncTimer);}
+                    if (existing) {existing.remove();}
                     window.LiveRegionManager?.announce('Sync complete', 'polite');
                 }
             });
         }
-        
+
         // Update season phase
         this.updateSeasonPhase();
-        
+
         // Listen for phase changes
         window.addEventListener('phase:changed', () => this.updateSeasonPhase());
-        
+
         // Update sign-in button on auth state changes (initially and on events)
         this.updateSignInButton();
         if (window.EventBus) {
@@ -120,10 +120,10 @@ class PersistentHeader {
     generateHeaderHTML() {
         // Check auth state for Sign In button
         const authState = window.AuthManager?.getAuthState() || { isAuthenticated: false };
-        const signInButton = !authState.isAuthenticated 
+        const signInButton = !authState.isAuthenticated
             ? '<button onclick="window.Router?.navigate(\'#/login\')" class="header-sign-in-btn" style="padding: 0.5rem 1rem; background: #4299e1; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem; font-weight: 600;">Sign In</button>'
             : '';
-        
+
         const simpleEnabled = authState.isAuthenticated ? (window.SimpleModeManager?.isEnabled() ?? true) : (window.SimpleModeManager?.isEnabled() ?? true);
         const simpleLabel = simpleEnabled ? 'Simple Mode' : 'Advanced Mode';
         return `
@@ -155,13 +155,13 @@ class PersistentHeader {
      */
     renderSeasonPhasePill() {
         const phase = window.SeasonPhase?.getCurrentPhase();
-        
+
         if (!phase || !phase.config) {
             return '<div class="season-phase-pill"><span class="phase-emoji">🏔️</span><span class="phase-label">Off-Season</span></div>';
         }
 
-        const config = phase.config;
-        
+        const {config} = phase;
+
         return `
             <div class="season-phase-pill" style="--phase-color: ${config.color}">
                 <span class="phase-emoji">${config.emoji}</span>
@@ -175,7 +175,7 @@ class PersistentHeader {
      */
     updateConnectionStatus() {
         const statusEl = document.getElementById('connection-status');
-        if (!statusEl) return;
+        if (!statusEl) {return;}
 
         const statusDot = statusEl.querySelector('.status-dot');
         const statusText = statusEl.querySelector('.status-text');
@@ -188,7 +188,7 @@ class PersistentHeader {
             statusEl.className = 'connection-indicator offline';
             statusDot.style.background = '#ef4444';
             statusText.textContent = 'Offline';
-            
+
             // Show sync icon if offline
             statusEl.innerHTML = `
                 <span class="status-dot"></span>
@@ -203,7 +203,7 @@ class PersistentHeader {
      */
     updateSeasonPhase() {
         const container = document.getElementById('season-phase-container');
-        if (!container) return;
+        if (!container) {return;}
 
         container.innerHTML = this.renderSeasonPhasePill();
     }
@@ -213,12 +213,12 @@ class PersistentHeader {
      */
     updateSignInButton() {
         const header = document.getElementById('persistent-header');
-        if (!header) return;
-        
+        if (!header) {return;}
+
         const authState = window.AuthManager?.getAuthState() || { isAuthenticated: false };
         const headerRight = header.querySelector('.header-right');
-        if (!headerRight) return;
-        
+        if (!headerRight) {return;}
+
         const existingBtn = headerRight.querySelector('.header-sign-in-btn');
         if (authState.isAuthenticated && existingBtn) {
             existingBtn.remove();
@@ -239,7 +239,7 @@ class PersistentHeader {
      */
     showNotification(message, type = 'info') {
         const existing = document.querySelector('.header-notification');
-        if (existing) existing.remove();
+        if (existing) {existing.remove();}
 
         const notification = document.createElement('div');
         notification.className = `header-notification notification-${type}`;

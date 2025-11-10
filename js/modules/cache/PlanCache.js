@@ -9,12 +9,12 @@ class PlanCache {
         this.storageManager = window.StorageManager;
         this.coordinator = window.ExpertCoordinator;
         this.eventBus = window.EventBus;
-        
+
         // LRU Cache configuration
         this.maxMemoryMB = options.maxMemoryMB || 50;
         this.maxEntries = options.maxEntries || 100;
         this.entryTTL = options.entryTTL || 5 * 60 * 1000; // 5 minutes
-        
+
         // Initialize LRU Cache
         this.cache = new LRUCache({
             maxSize: this.maxEntries,
@@ -22,10 +22,10 @@ class PlanCache {
             ttl: this.entryTTL,
             cleanupInterval: 2 * 60 * 1000 // 2 minutes
         });
-        
+
         // Legacy compatibility
         this.lastRefresh = new Map();
-        
+
         this.logger.info('PlanCache initialized with LRU cache', {
             maxMemoryMB: this.maxMemoryMB,
             maxEntries: this.maxEntries,
@@ -62,18 +62,18 @@ class PlanCache {
      * @returns {string|null} LRU key or null
      */
     getLRUKey() {
-        if (this.accessOrder.size === 0) return null;
-        
+        if (this.accessOrder.size === 0) {return null;}
+
         let oldestKey = null;
         let oldestTime = Infinity;
-        
+
         for (const [key, time] of this.accessOrder) {
             if (time < oldestTime) {
                 oldestTime = time;
                 oldestKey = key;
             }
         }
-        
+
         return oldestKey;
     }
 
@@ -83,13 +83,13 @@ class PlanCache {
      */
     evictLRUEntries(requiredBytes = 0) {
         const maxMemoryBytes = this.maxMemoryMB * 1024 * 1024;
-        
-        while ((this.currentMemoryBytes + requiredBytes > maxMemoryBytes || 
+
+        while ((this.currentMemoryBytes + requiredBytes > maxMemoryBytes ||
                 this.cache.size >= this.maxEntries) && this.cache.size > 0) {
-            
+
             const lruKey = this.getLRUKey();
-            if (!lruKey) break;
-            
+            if (!lruKey) {break;}
+
             this.evictEntry(lruKey);
         }
     }
@@ -100,12 +100,12 @@ class PlanCache {
      */
     evictEntry(key) {
         const entrySize = this.entrySizes.get(key) || 0;
-        
+
         this.cache.delete(key);
         this.accessOrder.delete(key);
         this.entrySizes.delete(key);
         this.currentMemoryBytes -= entrySize;
-        
+
         this.logger.debug('Cache entry evicted', {
             key,
             size: entrySize,
@@ -121,15 +121,15 @@ class PlanCache {
      */
     setCacheEntry(key, value, ttl = this.entryTTL) {
         const entrySize = this.estimateObjectSize(value);
-        
+
         // Evict entries if needed
         this.evictLRUEntries(entrySize);
-        
+
         // Remove existing entry if it exists
         if (this.cache.has(key)) {
             this.evictEntry(key);
         }
-        
+
         // Add new entry
         const now = Date.now();
         this.cache.set(key, {
@@ -138,11 +138,11 @@ class PlanCache {
             ttl,
             expiresAt: now + ttl
         });
-        
+
         this.accessOrder.set(key, now);
         this.entrySizes.set(key, entrySize);
         this.currentMemoryBytes += entrySize;
-        
+
         this.logger.debug('Cache entry added', {
             key,
             size: entrySize,
@@ -159,7 +159,7 @@ class PlanCache {
     getCacheEntry(key) {
         return this.cache.get(key);
     }
-    
+
     /**
      * Set entry in cache with LRU management
      * @param {string} key - Cache key
@@ -185,24 +185,24 @@ class PlanCache {
             entryTTL: this.entryTTL
         };
     }
-    
+
     /**
      * Clean up expired entries
      */
     cleanupExpiredEntries() {
         const now = Date.now();
         const expiredKeys = [];
-        
+
         for (const [key, entry] of this.cache) {
             if (now > entry.expiresAt) {
                 expiredKeys.push(key);
             }
         }
-        
+
         for (const key of expiredKeys) {
             this.evictEntry(key);
         }
-        
+
         if (expiredKeys.length > 0) {
             this.logger.info('Expired entries cleaned up', {
                 count: expiredKeys.length,
@@ -271,14 +271,14 @@ class PlanCache {
 
             for (const date of dates) {
                 const cacheKey = `${userId}_${date}`;
-                
+
                 // Build context for this date
                 const context = await this.buildContextForDate(userId, date);
 
                 // Generate plan
                 if (this.coordinator && typeof this.coordinator.planToday === 'function') {
                     const plan = await this.coordinator.planToday(context);
-                    
+
                     // Add note about data sync if applicable
                     if (this.shouldAddSyncNote(date)) {
                         plan.why.push('Plan updated after new data sync.');
@@ -350,7 +350,7 @@ class PlanCache {
     async getPlan(userId, date) {
         try {
             const cacheKey = `${userId}_${date}`;
-            
+
             // Check in-memory cache with LRU
             const cachedPlan = this.getCacheEntry(cacheKey);
             if (cachedPlan) {
@@ -365,7 +365,7 @@ class PlanCache {
                     // Restore to in-memory cache with LRU
                     this.setCacheEntry(cacheKey, storedPlan);
                     this.lastRefresh.set(cacheKey, Date.now());
-                    
+
                     this.logger.info('Plan retrieved from storage', { userId, date });
                     return storedPlan;
                 }
@@ -405,7 +405,7 @@ class PlanCache {
         try {
             for (const date of dates) {
                 const cacheKey = `${userId}_${date}`;
-                
+
                 // Clear in-memory cache using LRU eviction
                 this.evictEntry(cacheKey);
                 this.lastRefresh.delete(cacheKey);
@@ -476,7 +476,7 @@ class PlanCache {
         // Add note if cache was warmed recently (within last 10 seconds)
         const cacheKey = `warm_${date}`;
         const lastWarmTime = this.lastRefresh.get(cacheKey);
-        
+
         return lastWarmTime && (Date.now() - lastWarmTime) < 10 * 1000;
     }
 
@@ -535,11 +535,11 @@ class PlanCache {
         if (this.cleanupInterval) {
             clearInterval(this.cleanupInterval);
         }
-        
+
         this.cleanupInterval = setInterval(() => {
             this.cleanupExpiredEntries();
         }, intervalMs);
-        
+
         this.logger.info('Periodic cleanup started', { intervalMs });
     }
 

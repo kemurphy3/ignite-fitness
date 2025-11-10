@@ -1,12 +1,12 @@
 // GET /api/admin/health - System health with proper auth
 const { neon } = require('@neondatabase/serverless');
 const crypto = require('crypto');
-const { 
-  verifyAdmin, 
-  auditLog, 
-  errorResponse, 
+const {
+  verifyAdmin,
+  auditLog,
+  errorResponse,
   withTimeout,
-  successResponse 
+  successResponse
 } = require('./utils/admin-auth');
 
 const { getNeonClient } = require('./utils/connection-pool');
@@ -15,37 +15,37 @@ const sql = getNeonClient();
 exports.handler = async (event) => {
   const startTime = Date.now();
   const requestId = crypto.randomUUID();
-  
+
   try {
     await sql`SET statement_timeout = '5s'`;
-    
+
     // Auth required even for health check
     const token = event.headers.authorization?.split(' ')[1];
     if (!token) {
       return errorResponse(401, 'MISSING_TOKEN', 'Authorization header required', requestId);
     }
-    
+
     const { adminId } = await verifyAdmin(token, requestId);
-    
+
     // Database checks
     const dbCheck = await withTimeout(async () => {
       return await sql`SELECT NOW() as time, version() as version`;
     });
-    
+
     const migrations = await sql`
       SELECT version, applied_at 
       FROM schema_migrations 
       ORDER BY applied_at DESC 
       LIMIT 1
     `;
-    
+
     // Materialized view freshness
     const viewFreshness = await sql`
       SELECT view_name, last_refresh, row_version,
         EXTRACT(EPOCH FROM (NOW() - last_refresh)) as seconds_stale
       FROM mv_refresh_log
     `;
-    
+
     // Strava status
     const stravaStatus = await sql`
       SELECT 
@@ -54,7 +54,7 @@ exports.handler = async (event) => {
       FROM integrations_strava
       WHERE last_run_at IS NOT NULL
     `;
-    
+
     const health = {
       database: {
         connected: true,
@@ -77,9 +77,9 @@ exports.handler = async (event) => {
         version: process.env.APP_VERSION || '1.0.0'
       }
     };
-    
+
     await auditLog(adminId, '/admin/health', 'GET', {}, 200, Date.now() - startTime, requestId);
-    
+
     return successResponse(
       health,
       {
@@ -88,7 +88,7 @@ exports.handler = async (event) => {
       requestId,
       'no-store'
     );
-    
+
   } catch (error) {
     // Auth errors return proper status
     if (error.message.includes('Authentication failed')) {
@@ -97,7 +97,7 @@ exports.handler = async (event) => {
     if (error.message.includes('Admin access')) {
       return errorResponse(403, 'FORBIDDEN', 'Admin access required', requestId);
     }
-    
+
     // Database error returns degraded status
     return {
       statusCode: 200,

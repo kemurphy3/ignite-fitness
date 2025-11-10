@@ -13,7 +13,7 @@ function sanitizeForLog(value) {
             .replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, '[EMAIL]')
             .substring(0, 200);
     }
-    
+
     if (typeof value === 'object' && value !== null) {
         // Recursively sanitize object values
         const sanitized = {};
@@ -28,7 +28,7 @@ function sanitizeForLog(value) {
         }
         return sanitized;
     }
-    
+
     return '[SANITIZED]';
 }
 
@@ -55,9 +55,9 @@ function validateInput(input) {
         /exec\s*\(/gi, // Command injection
         /eval\s*\(/gi, // Code injection
     ];
-    
+
     const inputStr = typeof input === 'string' ? input : JSON.stringify(input);
-    
+
     for (const pattern of attacks) {
         if (pattern.test(inputStr)) {
             return {
@@ -67,7 +67,7 @@ function validateInput(input) {
             };
         }
     }
-    
+
     return { valid: true };
 }
 
@@ -80,7 +80,7 @@ function sanitizeInput(input) {
             .replace(/[;]/g, '') // Remove semicolons
             .trim();
     }
-    
+
     if (typeof input === 'object' && input !== null) {
         const sanitized = {};
         for (const [key, value] of Object.entries(input)) {
@@ -88,7 +88,7 @@ function sanitizeInput(input) {
         }
         return sanitized;
     }
-    
+
     return input;
 }
 
@@ -108,10 +108,10 @@ function isValidUUID(uuid) {
 function checkRateLimit(userId, requests, limit = 10, windowMs = 3600000) {
     const now = Date.now();
     const windowStart = now - windowMs;
-    
+
     // Filter requests within the time window
     const recentRequests = requests.filter(req => req.timestamp > windowStart);
-    
+
     return {
         allowed: recentRequests.length < limit,
         remaining: Math.max(0, limit - recentRequests.length),
@@ -142,7 +142,7 @@ function validateJSONSize(jsonString, maxSize = 1024 * 1024) { // 1MB default
             size: jsonString.length
         };
     }
-    
+
     return { valid: true };
 }
 
@@ -157,28 +157,28 @@ function escapeSQL(input) {
             .replace(/\r/g, '\\r')
             .replace(/\x1a/g, '\\Z');
     }
-    
+
     return input;
 }
 
 // Validate numeric ranges
 function validateNumericRange(value, min, max, fieldName) {
     const num = Number(value);
-    
+
     if (isNaN(num)) {
         return {
             valid: false,
             reason: `${fieldName} must be a valid number`
         };
     }
-    
+
     if (num < min || num > max) {
         return {
             valid: false,
             reason: `${fieldName} must be between ${min} and ${max}`
         };
     }
-    
+
     return { valid: true };
 }
 
@@ -191,16 +191,16 @@ function detectSuspiciousPatterns(input) {
         { name: 'COMMAND_INJECTION', regex: /[;&|`$()]/g },
         { name: 'LDAP_INJECTION', regex: /[()=*!&|]/g }
     ];
-    
+
     const inputStr = typeof input === 'string' ? input : JSON.stringify(input);
     const detected = [];
-    
+
     for (const pattern of patterns) {
         if (pattern.regex.test(inputStr)) {
             detected.push(pattern.name);
         }
     }
-    
+
     return {
         suspicious: detected.length > 0,
         patterns: detected

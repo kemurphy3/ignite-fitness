@@ -18,13 +18,13 @@ exports.handler = async (event, context) => {
         switch (action) {
             case 'seed':
                 return await seedDatabase();
-            
+
             case 'migrate':
                 return await migrateDatabase();
-            
+
             case 'status':
                 return await getDatabaseStatus();
-            
+
             default:
                 return {
                     statusCode: 400,

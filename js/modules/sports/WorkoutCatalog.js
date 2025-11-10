@@ -1231,7 +1231,7 @@ class WorkoutCatalog {
     getWorkoutsByAdaptation(adaptation) {
         const results = [];
         const searchTerm = adaptation.toLowerCase();
-        
+
         for (const modality of Object.keys(this.workouts)) {
             for (const category of Object.keys(this.workouts[modality])) {
                 this.workouts[modality][category].forEach(workout => {
@@ -1241,7 +1241,7 @@ class WorkoutCatalog {
                 });
             }
         }
-        
+
         return results;
     }
 
@@ -1253,7 +1253,7 @@ class WorkoutCatalog {
     getWorkoutsByEquipment(equipment) {
         const results = [];
         const searchTerm = equipment.toLowerCase();
-        
+
         for (const modality of Object.keys(this.workouts)) {
             for (const category of Object.keys(this.workouts[modality])) {
                 this.workouts[modality][category].forEach(workout => {
@@ -1264,7 +1264,7 @@ class WorkoutCatalog {
                 });
             }
         }
-        
+
         return results;
     }
 

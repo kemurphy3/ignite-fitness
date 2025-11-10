@@ -9,7 +9,7 @@ class LoadCalculator {
         this.authManager = window.AuthManager;
         this.storageManager = window.StorageManager;
         this.stravaProcessor = window.StravaProcessor;
-        
+
         this.loadThresholds = this.initializeLoadThresholds();
         this.recoveryFactors = this.initializeRecoveryFactors();
         this.intensityGuidelines = this.initializeIntensityGuidelines();
@@ -130,7 +130,7 @@ class LoadCalculator {
         let intensityLoad = 0;
 
         // Check if this is a soccer-shape session
-        const isSoccerShape = session.category === 'soccer_shape' || 
+        const isSoccerShape = session.category === 'soccer_shape' ||
                              session.tags?.includes('soccer_shape') ||
                              session.subcategory === 'soccer_shape';
 
@@ -152,7 +152,7 @@ class LoadCalculator {
                     }
 
                     // Change of direction work: Base load × 1.2 neuromotor factor
-                    if (exercise.tags?.includes('change_of_direction') || 
+                    if (exercise.tags?.includes('change_of_direction') ||
                         exercise.tags?.includes('COD') ||
                         exercise.tags?.includes('agility')) {
                         intensityLoad *= 1.2;
@@ -182,7 +182,7 @@ class LoadCalculator {
 
         // Prevent division by zero in ratio calculations
         const safeTotalLoad = totalLoad > 0 ? totalLoad : 1;
-        
+
         return {
             total: totalLoad,
             volume: Math.max(0, volumeLoad),
@@ -202,7 +202,7 @@ class LoadCalculator {
         const mean = loads.reduce((sum, load) => sum + load, 0) / loads.length;
         const variance = loads.reduce((sum, load) => sum + Math.pow(load - mean, 2), 0) / loads.length;
         const standardDeviation = Math.sqrt(variance);
-        
+
         return mean > 0 ? standardDeviation / mean : 0;
     }
 
@@ -245,13 +245,13 @@ class LoadCalculator {
     suggestNextDayIntensity(totalLoad, averageDailyLoad) {
         const userLevel = this.getUserTrainingLevel();
         const thresholds = this.loadThresholds[userLevel];
-        
+
         // Bounds checking: ensure thresholds are positive and totalLoad/averageDailyLoad are non-negative
         const safeWeeklyLoad = Math.max(1, thresholds.weeklyLoad);
         const safeDailyLoad = Math.max(1, thresholds.dailyLoad);
         const safeTotalLoad = Math.max(0, totalLoad);
         const safeAverageDailyLoad = Math.max(0, averageDailyLoad);
-        
+
         // Cap ratios to prevent extreme values
         const loadRatio = Math.min(Math.max(0.1, safeTotalLoad / safeWeeklyLoad), 10.0);
         const dailyRatio = Math.min(Math.max(0.1, safeAverageDailyLoad / safeDailyLoad), 10.0);
@@ -305,8 +305,8 @@ class LoadCalculator {
                 // Add to recovery timeline
                 recoveryTimeline.push({
                     date: activity.start_time,
-                    type: type,
-                    debt: debt,
+                    type,
+                    debt,
                     remaining: debt
                 });
             });
@@ -382,7 +382,7 @@ class LoadCalculator {
             });
         }
 
-        if (recoveryByType['Run'] > 12) {
+        if (recoveryByType.Run > 12) {
             recommendations.push({
                 priority: 'medium',
                 action: 'Reduce leg training',
@@ -390,7 +390,7 @@ class LoadCalculator {
             });
         }
 
-        if (recoveryByType['Ride'] > 12) {
+        if (recoveryByType.Ride > 12) {
             recommendations.push({
                 priority: 'medium',
                 action: 'Focus on upper body',
@@ -419,24 +419,24 @@ class LoadCalculator {
         try {
             // Calculate internal training load
             const weeklyLoad = this.calculateWeeklyLoad(sessions);
-            
+
             // Calculate external activity load
             const externalLoad = this.calculateExternalLoad(activities);
-            
+
             // Calculate recovery debt
             const recoveryDebt = this.calculateRecoveryDebt(activities);
-            
+
             // Combine loads with bounds checking
             const safeWeeklyLoad = Math.max(0, weeklyLoad?.totalLoad || 0);
             const safeExternalLoad = Math.max(0, externalLoad?.totalLoad || 0);
             const totalLoad = safeWeeklyLoad + safeExternalLoad;
-            
+
             const combinedRecommendation = this.getCombinedRecommendation(
                 { ...weeklyLoad, totalLoad: safeWeeklyLoad },
                 { ...externalLoad, totalLoad: safeExternalLoad },
                 recoveryDebt
             );
-            
+
             return {
                 internal: weeklyLoad,
                 external: externalLoad,
@@ -484,7 +484,7 @@ class LoadCalculator {
 
             // Ensure non-negative total load and safe division
             const safeTotalLoad = Math.max(0, totalLoad);
-            
+
             return {
                 totalLoad: safeTotalLoad,
                 loadByType,
@@ -579,7 +579,7 @@ class LoadCalculator {
         return {
             score: riskScore,
             level: riskLevel,
-            factors: factors,
+            factors,
             recommendation: this.getRiskRecommendation(riskLevel)
         };
     }
@@ -625,9 +625,9 @@ class LoadCalculator {
         try {
             const sessions = this.getRecentSessions(7);
             const activities = this.stravaProcessor?.getRecentActivities(7) || [];
-            
+
             const comprehensiveLoad = this.calculateComprehensiveLoad(sessions, activities);
-            
+
             return {
                 load: comprehensiveLoad,
                 summary: {
@@ -651,39 +651,39 @@ class LoadCalculator {
         try {
             const sessions = this.getRecentSessions(7);
             const activities = this.stravaProcessor?.getRecentActivities(7) || [];
-            
+
             // Calculate current week's load
             const weeklyLoad = this.calculateWeeklyLoad(sessions);
             const externalLoad = this.calculateExternalLoad(activities);
             const totalCurrentLoad = weeklyLoad.totalLoad + externalLoad.totalLoad;
-            
+
             // Calculate 7-day average for comparison
             const sevenDayAverage = this.calculateSevenDayAverage(sessions, activities);
-            
+
             // Detect load spikes
             const loadSpike = this.detectLoadSpike(totalCurrentLoad, sevenDayAverage);
-            
+
             // Generate workout intensity recommendations
             const workoutRecommendations = this.generateWorkoutIntensityRecommendations(
-                totalCurrentLoad, 
-                sevenDayAverage, 
+                totalCurrentLoad,
+                sevenDayAverage,
                 loadSpike
             );
-            
+
             return {
                 currentLoad: totalCurrentLoad,
-                sevenDayAverage: sevenDayAverage,
-                loadSpike: loadSpike,
+                sevenDayAverage,
+                loadSpike,
                 recommendations: workoutRecommendations,
                 weeklyBreakdown: weeklyLoad,
                 externalBreakdown: externalLoad
             };
         } catch (error) {
             this.logger.error('Failed to get current load status', error);
-            return { 
-                currentLoad: 0, 
-                sevenDayAverage: 0, 
-                loadSpike: false, 
+            return {
+                currentLoad: 0,
+                sevenDayAverage: 0,
+                loadSpike: false,
                 recommendations: { intensity: 1.0, volume: 1.0, message: 'Unable to calculate load' }
             };
         }
@@ -700,27 +700,27 @@ class LoadCalculator {
             // Get last 7 days of data
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-            
+
             // Filter sessions from last 7 days
             const recentSessions = sessions.filter(session => {
                 const sessionDate = new Date(session.date || session.start_at);
                 return sessionDate >= sevenDaysAgo;
             });
-            
+
             // Filter activities from last 7 days
             const recentActivities = activities.filter(activity => {
                 const activityDate = new Date(activity.start_time);
                 return activityDate >= sevenDaysAgo;
             });
-            
+
             // Calculate total load for the period
             const sessionLoad = this.calculateWeeklyLoad(recentSessions).totalLoad;
             const activityLoad = this.calculateExternalLoad(recentActivities).totalLoad;
-            
+
             // Ensure non-negative values
             const safeSessionLoad = Math.max(0, sessionLoad || 0);
             const safeActivityLoad = Math.max(0, activityLoad || 0);
-            
+
             return Math.max(0, safeSessionLoad + safeActivityLoad);
         } catch (error) {
             this.logger.error('Failed to calculate 7-day average', error);
@@ -739,14 +739,14 @@ class LoadCalculator {
         // Bounds checking: ensure non-negative values
         const safeCurrentLoad = Math.max(0, currentLoad || 0);
         const safeSevenDayAverage = Math.max(0, sevenDayAverage || 0);
-        
+
         if (safeSevenDayAverage === 0) {
             return { isSpike: false, ratio: 1.0, severity: 'none' };
         }
-        
+
         // Cap ratio to prevent extreme values that could cause issues
         const ratio = Math.min(Math.max(0.1, safeCurrentLoad / safeSevenDayAverage), 10.0);
-        
+
         let severity = 'none';
         if (ratio > 1.5) {
             severity = 'high';
@@ -755,11 +755,11 @@ class LoadCalculator {
         } else if (ratio > 1.1) {
             severity = 'low';
         }
-        
+
         return {
             isSpike: ratio > 1.1,
-            ratio: ratio,
-            severity: severity,
+            ratio,
+            severity,
             message: this.getLoadSpikeMessage(ratio, severity)
         };
     }
@@ -777,7 +777,7 @@ class LoadCalculator {
             low: `Slight load increase (${(ratio * 100).toFixed(0)}% of average) - monitor recovery`,
             none: 'Load within normal range'
         };
-        
+
         return messages[severity] || messages.none;
     }
 
@@ -791,27 +791,27 @@ class LoadCalculator {
     generateWorkoutIntensityRecommendations(currentLoad, sevenDayAverage, loadSpike) {
         const userLevel = this.getUserTrainingLevel();
         const thresholds = this.loadThresholds[userLevel];
-        
+
         // Bounds checking: ensure all values are non-negative
         const safeCurrentLoad = Math.max(0, currentLoad || 0);
         const safeSevenDayAverage = Math.max(0, sevenDayAverage || 0);
-        
+
         // Calculate load ratio with bounds checking
         // Use safe default of 1.0 if average is 0, and cap ratio to prevent extreme values
         const rawRatio = safeSevenDayAverage > 0 ? safeCurrentLoad / safeSevenDayAverage : 1.0;
         const loadRatio = Math.min(Math.max(0.1, rawRatio), 10.0);
-        
+
         // Base recommendations
         let intensity = 1.0;
         let volume = 1.0;
         let message = 'Normal training load';
         let recoveryRecommended = false;
-        
+
         // High weekly load (>7 day average) reduces volume by 20%
         if (loadRatio > 1.0) {
             volume = 0.8; // 20% reduction
             message = 'Reduced volume due to high training load';
-            
+
             // More aggressive reduction for higher loads
             if (loadRatio > 1.3) {
                 volume = 0.6; // 40% reduction
@@ -819,7 +819,7 @@ class LoadCalculator {
                 message = 'Significantly reduced volume and intensity due to high training load';
             }
         }
-        
+
         // Load spike detection triggers recovery day recommendation
         if (loadSpike.isSpike) {
             if (loadSpike.severity === 'high') {
@@ -833,7 +833,7 @@ class LoadCalculator {
                 message = 'Reduced intensity due to load spike';
             }
         }
-        
+
         // Additional adjustments based on absolute load
         // Ensure thresholds.weeklyLoad is positive before comparison
         const safeThreshold = Math.max(1, thresholds.weeklyLoad);
@@ -842,24 +842,24 @@ class LoadCalculator {
             volume *= 0.7;
             message = 'High absolute load - reduced intensity and volume';
         }
-        
+
         // Log if bounds checking was triggered (for monitoring)
         if (currentLoad !== safeCurrentLoad || sevenDayAverage !== safeSevenDayAverage) {
             this.logger.debug('LOAD_BOUNDS_CHECK', {
                 originalCurrentLoad: currentLoad,
                 originalAverage: sevenDayAverage,
-                safeCurrentLoad: safeCurrentLoad,
+                safeCurrentLoad,
                 safeAverage: safeSevenDayAverage,
-                loadRatio: loadRatio
+                loadRatio
             });
         }
-        
+
         return {
             intensity: Math.max(0.3, Math.min(1.0, intensity)),
             volume: Math.max(0.3, Math.min(1.0, volume)),
-            message: message,
-            recoveryRecommended: recoveryRecommended,
-            loadRatio: loadRatio,
+            message,
+            recoveryRecommended,
+            loadRatio,
             adjustments: {
                 intensityReduction: Math.round((1 - intensity) * 100),
                 volumeReduction: Math.round((1 - volume) * 100)
@@ -888,7 +888,7 @@ class LoadCalculator {
 
         session.structure.forEach(block => {
             if (block.block_type === 'main' && block.intensity) {
-                const intensity = block.intensity;
+                const {intensity} = block;
                 const zone = intensity.includes('Z') ? intensity.split('-')[0] : 'Z3';
                 const multiplier = zoneMultipliers[zone] || 4.0;
 
@@ -934,7 +934,7 @@ class LoadCalculator {
             const sessions = this.storageManager?.get('training_sessions', []);
             const cutoffDate = new Date();
             cutoffDate.setDate(cutoffDate.getDate() - days);
-            
+
             return sessions.filter(session => {
                 const sessionDate = new Date(session.date);
                 return sessionDate >= cutoffDate;
@@ -979,8 +979,8 @@ class LoadCalculator {
             return { safe: true, reason: 'guardrails_unavailable' };
         }
 
-        const thresholds = guardrails.rampRateThresholds[experienceLevel] || 
-                          guardrails.rampRateThresholds['intermediate'];
+        const thresholds = guardrails.rampRateThresholds[experienceLevel] ||
+                          guardrails.rampRateThresholds.intermediate;
 
         const currentLoad = weeklyLoads[0];
         const previousLoad = weeklyLoads[1];

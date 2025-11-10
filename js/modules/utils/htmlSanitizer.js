@@ -13,7 +13,7 @@ class HtmlSanitizer {
      * Initialize DOMPurify if available
      */
     async initialize() {
-        if (this.initialized) return;
+        if (this.initialized) {return;}
 
         try {
             if (typeof window !== 'undefined' && window.DOMPurify) {
@@ -37,8 +37,8 @@ class HtmlSanitizer {
      * @returns {string} Sanitized text
      */
     sanitize(text) {
-        if (!text) return '';
-        if (typeof text !== 'string') return String(text);
+        if (!text) {return '';}
+        if (typeof text !== 'string') {return String(text);}
 
         // Use basic escaping as fallback if DOMPurify not available
         return this.basicEscape(text);
@@ -61,8 +61,8 @@ class HtmlSanitizer {
      * @returns {string} Escaped text
      */
     escapeHtml(text) {
-        if (!text) return '';
-        if (typeof text !== 'string') return String(text);
+        if (!text) {return '';}
+        if (typeof text !== 'string') {return String(text);}
 
         // Use basic escaping for now (DOMPurify initialization is async)
         return this.basicEscape(text);

@@ -54,7 +54,7 @@ class SimpleModeToggle {
         const isSimple = mode === 'simple';
         const isActive = isSimple === this.simpleMode;
         const isSelected = isActive;
-        
+
         const option = isSimple ? {
             icon: '🎯',
             title: 'Simple Mode',
@@ -133,7 +133,7 @@ class SimpleModeToggle {
      */
     selectMode(mode) {
         const isSimple = mode === 'simple';
-        
+
         // Update visual selection
         const options = this.container.querySelectorAll('.toggle-option');
         options.forEach(option => {
@@ -142,13 +142,13 @@ class SimpleModeToggle {
             option.classList.toggle('selected', isSelected);
             option.style.border = isSelected ? '2px solid #4299e1' : '2px solid #e2e8f0';
             option.style.background = isSelected ? '#edf2f7' : 'white';
-            
+
             const radio = option.querySelector(`input[value="${optionMode}"]`);
             if (radio) {
                 radio.checked = isSelected;
             }
         });
-        
+
         this.selectedMode = mode;
     }
 
@@ -161,17 +161,17 @@ class SimpleModeToggle {
             this.logger.warn('No mode selected');
             return;
         }
-        
+
         const isSimple = selectedMode === 'simple';
-        
+
         // Update Simple Mode Manager
         if (window.SimpleModeManager) {
             window.SimpleModeManager.setEnabled(isSimple);
         }
-        
+
         // Show success message
         this.showSuccess(`Switched to ${selectedMode === 'simple' ? 'Simple' : 'Advanced'} mode successfully!`);
-        
+
         // Refresh interface
         this.refreshInterface();
     }
@@ -190,17 +190,17 @@ class SimpleModeToggle {
     refreshInterface() {
         // Trigger re-render of adaptive components
         if (window.EventBus) {
-            window.EventBus.emit('simpleMode:changed', { 
-                enabled: window.SimpleModeManager?.isEnabled() 
+            window.EventBus.emit('simpleMode:changed', {
+                enabled: window.SimpleModeManager?.isEnabled()
             });
         }
-        
+
         // Smooth transition
         document.body.classList.add('mode-transitioning');
         setTimeout(() => {
             document.body.classList.remove('mode-transitioning');
         }, 500);
-        
+
         // Reload current view
         if (window.Router) {
             const currentRoute = window.Router.getCurrentRoute?.() || '#/dashboard';
@@ -229,7 +229,7 @@ class SimpleModeToggle {
         `;
         notification.textContent = message;
         document.body.appendChild(notification);
-        
+
         setTimeout(() => {
             notification.remove();
         }, 3000);
@@ -246,7 +246,7 @@ window.createSimpleModeToggle = function(containerId) {
         console.error('Container not found:', containerId);
         return null;
     }
-    
+
     window.SimpleModeToggleInstance = new SimpleModeToggle(container);
     window.SimpleModeToggleInstance.render();
     return window.SimpleModeToggleInstance;

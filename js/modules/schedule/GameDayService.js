@@ -8,7 +8,7 @@ class GameDayService {
         this.logger = window.SafeLogger || console;
         this.storageManager = window.StorageManager;
         this.eventBus = window.EventBus;
-        
+
         // Standard game data structure
         this.GAME_TYPES = {
             REGULAR: 'regular',
@@ -17,7 +17,7 @@ class GameDayService {
             PLAYOFF: 'playoff',
             PRACTICE: 'practice'
         };
-        
+
         this.PRIORITY_LEVELS = {
             LOW: 'low',
             MEDIUM: 'medium',
@@ -36,7 +36,7 @@ class GameDayService {
         const upcomingGames = this.getUpcomingGames(userId, 10); // Next 10 games
         const proximityDate = new Date(date);
         proximityDate.setHours(0, 0, 0, 0);
-        
+
         const result = {
             hasGame: false,
             isGameDay: false,
@@ -57,18 +57,18 @@ class GameDayService {
             maxRPE: null,
             coachMessage: null
         };
-        
+
         if (!upcomingGames || upcomingGames.length === 0) {
             return result;
         }
-        
+
         // Find next game
         const nextGame = upcomingGames.find(game => {
             const gameDate = new Date(game.date);
             gameDate.setHours(0, 0, 0, 0);
             return gameDate >= proximityDate;
         });
-        
+
         // Find previous game
         const previousGame = upcomingGames
             .filter(game => {
@@ -77,12 +77,12 @@ class GameDayService {
                 return gameDate < proximityDate;
             })
             .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-        
+
         if (nextGame) {
             const gameDate = new Date(nextGame.date);
             gameDate.setHours(0, 0, 0, 0);
             const daysUntil = Math.floor((gameDate - proximityDate) / (1000 * 60 * 60 * 24));
-            
+
             result.hasGame = true;
             result.nextGame = nextGame;
             result.daysUntil = daysUntil;
@@ -91,12 +91,12 @@ class GameDayService {
             result.isTomorrow = daysUntil === 1;
             result.isWithin48h = daysUntil <= 1;
             result.isWithinWeek = daysUntil <= 7;
-            
+
             // Calculate adjustments based on days until game
             const adjustments = this.calculateAdjustments(nextGame, daysUntil);
             Object.assign(result, adjustments);
         }
-        
+
         if (previousGame) {
             const gameDate = new Date(previousGame.date);
             gameDate.setHours(0, 0, 0, 0);
@@ -104,7 +104,7 @@ class GameDayService {
             result.previousGame = previousGame;
             result.daysSinceLast = daysSince;
         }
-        
+
         return result;
     }
 
@@ -125,11 +125,11 @@ class GameDayService {
             maxRPE: null,
             coachMessage: null
         };
-        
+
         if (daysUntil < 0) {
             return adjustments; // Game already passed
         }
-        
+
         // Game day (0 days)
         if (daysUntil === 0) {
             adjustments.adjustIntensity = true;
@@ -139,7 +139,7 @@ class GameDayService {
             adjustments.coachMessage = 'Game day - Light movement only. Save energy for competition.';
             return adjustments;
         }
-        
+
         // Game -1 day (tomorrow)
         if (daysUntil === 1) {
             adjustments.suppressHeavyLower = true;
@@ -152,7 +152,7 @@ class GameDayService {
             adjustments.coachMessage = 'Game tomorrow - Upper body light session only. Avoid heavy legs.';
             return adjustments;
         }
-        
+
         // Game -2 days
         if (daysUntil === 2) {
             adjustments.suppressHeavyLower = true;
@@ -164,7 +164,7 @@ class GameDayService {
             adjustments.coachMessage = 'Game in 2 days - Moderate session. Keep leg work light (RPE ≤ 7).';
             return adjustments;
         }
-        
+
         // Game -3 days
         if (daysUntil === 3) {
             adjustments.suppressHeavyLower = false; // Can do legs, but moderate
@@ -173,7 +173,7 @@ class GameDayService {
             adjustments.coachMessage = 'Game in 3 days - Normal training, slightly reduced volume.';
             return adjustments;
         }
-        
+
         // Within week but >3 days - minimal adjustments for key matches only
         if (daysUntil <= 7 && game.priority === 'high' || game.priority === 'critical') {
             adjustments.intensityMultiplier = 0.9;
@@ -181,7 +181,7 @@ class GameDayService {
             adjustments.coachMessage = 'Key match upcoming - Slightly reduced volume for optimal preparation.';
             return adjustments;
         }
-        
+
         return adjustments;
     }
 
@@ -229,15 +229,15 @@ class GameDayService {
             // Get games from user profile or preferences
             const profile = this.storageManager.getUserProfile(userId);
             const preferences = this.storageManager.getPreferences(userId);
-            
+
             // Check multiple sources for games
             let games = [];
-            
+
             // Source 1: User profile game schedule
             if (profile?.gameSchedule) {
                 games = games.concat(profile.gameSchedule);
             }
-            
+
             // Source 2: Seasonal programs calendar
             if (profile?.seasonCalendar) {
                 const calendar = profile.seasonCalendar;
@@ -260,19 +260,19 @@ class GameDayService {
                     })));
                 }
             }
-            
+
             // Source 3: Preferences schedule
             if (preferences?.schedule?.upcomingGames) {
                 games = games.concat(preferences.schedule.upcomingGames);
             }
-            
+
             // Normalize game objects to standard structure
             const normalizedGames = games.map(game => this.normalizeGame(game));
-            
+
             // Filter to future games and sort by date
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            
+
             const upcoming = normalizedGames
                 .filter(game => {
                     const gameDate = new Date(game.date);
@@ -281,7 +281,7 @@ class GameDayService {
                 })
                 .sort((a, b) => new Date(a.date) - new Date(b.date))
                 .slice(0, limit);
-            
+
             return upcoming;
         } catch (error) {
             this.logger.error('Failed to get upcoming games:', error);
@@ -297,7 +297,7 @@ class GameDayService {
     normalizeGame(game) {
         // Handle string dates
         const date = game.date ? new Date(game.date) : new Date();
-        
+
         return {
             date: date.toISOString().split('T')[0], // YYYY-MM-DD format
             type: game.type || game.gameType || this.GAME_TYPES.REGULAR,
@@ -319,22 +319,22 @@ class GameDayService {
     async addGame(userId, game) {
         try {
             const normalizedGame = this.normalizeGame(game);
-            
+
             // Get current profile
             const profile = this.storageManager.getUserProfile(userId) || {};
-            
+
             // Initialize game schedule if needed
             if (!profile.gameSchedule) {
                 profile.gameSchedule = [];
             }
-            
+
             // Check for duplicates (same date)
             const gameDate = new Date(normalizedGame.date);
             const existingIndex = profile.gameSchedule.findIndex(g => {
                 const existingDate = new Date(g.date);
                 return existingDate.getTime() === gameDate.getTime();
             });
-            
+
             if (existingIndex >= 0) {
                 // Update existing game
                 profile.gameSchedule[existingIndex] = normalizedGame;
@@ -344,13 +344,13 @@ class GameDayService {
                 profile.gameSchedule.push(normalizedGame);
                 this.logger.debug('Game added:', normalizedGame);
             }
-            
+
             // Save updated profile
             await this.storageManager.saveUserProfile(userId, profile);
-            
+
             // Emit event
             this.eventBus?.emit?.('game:added', { userId, game: normalizedGame });
-            
+
             return normalizedGame;
         } catch (error) {
             this.logger.error('Failed to add game:', error);
@@ -366,35 +366,35 @@ class GameDayService {
      */
     async removeGame(userId, gameDate) {
         try {
-            const date = gameDate instanceof Date 
-                ? gameDate.toISOString().split('T')[0] 
+            const date = gameDate instanceof Date
+                ? gameDate.toISOString().split('T')[0]
                 : gameDate;
-            
+
             // Get current profile
             const profile = this.storageManager.getUserProfile(userId);
             if (!profile || !profile.gameSchedule) {
                 return false;
             }
-            
+
             // Remove game
             const initialLength = profile.gameSchedule.length;
             profile.gameSchedule = profile.gameSchedule.filter(game => {
-                const gameDateStr = game.date instanceof Date 
-                    ? game.date.toISOString().split('T')[0] 
+                const gameDateStr = game.date instanceof Date
+                    ? game.date.toISOString().split('T')[0]
                     : game.date;
                 return gameDateStr !== date;
             });
-            
+
             if (profile.gameSchedule.length === initialLength) {
                 return false; // Game not found
             }
-            
+
             // Save updated profile
             await this.storageManager.saveUserProfile(userId, profile);
-            
+
             // Emit event
             this.eventBus?.emit?.('game:removed', { userId, date });
-            
+
             return true;
         } catch (error) {
             this.logger.error('Failed to remove game:', error);
@@ -411,7 +411,7 @@ class GameDayService {
      */
     getGameDayAdjustments(userId, date = new Date()) {
         const proximity = this.getGameProximity(userId, date);
-        
+
         return {
             intensityMultiplier: proximity.intensityMultiplier,
             volumeMultiplier: proximity.volumeMultiplier,
@@ -430,8 +430,8 @@ class GameDayService {
      */
     getScheduleContext(userId, date = new Date()) {
         const proximity = this.getGameProximity(userId, date);
-        const nextGame = proximity.nextGame;
-        
+        const {nextGame} = proximity;
+
         return {
             isGameDay: proximity.isGameDay,
             daysUntilGame: proximity.daysUntilNext,

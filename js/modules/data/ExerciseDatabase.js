@@ -11,7 +11,7 @@ class ExerciseDatabase {
         this.equipment = [];
         this.logger = window.SafeLogger || console;
         this.eventBus = window.EventBus;
-        
+
         // Sport-specific exercise libraries
         this.sportLibraries = {
             soccer: window.SoccerExercises,
@@ -19,7 +19,7 @@ class ExerciseDatabase {
             running: null, // Would be implemented
             general: null // Would be implemented
         };
-        
+
         this.initializeDatabase();
     }
 
@@ -30,13 +30,13 @@ class ExerciseDatabase {
         try {
             // Load from localStorage first
             this.loadFromStorage();
-            
+
             // Try to load from server
             await this.loadFromServer();
-            
-            this.logger.info('Exercise database initialized', { 
+
+            this.logger.info('Exercise database initialized', {
                 exercises: this.exercises.length,
-                categories: this.categories.length 
+                categories: this.categories.length
             });
         } catch (error) {
             this.logger.error('Failed to initialize exercise database', error);
@@ -73,7 +73,7 @@ class ExerciseDatabase {
                     this.categories = response.data.categories || [];
                     this.muscleGroups = response.data.muscleGroups || [];
                     this.equipment = response.data.equipment || [];
-                    
+
                     // Save to localStorage
                     this.saveToStorage();
                 }
@@ -169,11 +169,11 @@ class ExerciseDatabase {
             const exerciseTags = exercise.tags || [];
 
             // Must have all required tags
-            const hasRequired = requiredTags.length === 0 || 
+            const hasRequired = requiredTags.length === 0 ||
                 requiredTags.every(tag => exerciseTags.includes(tag));
 
             // Must not have any excluded tags
-            const hasExcluded = excludedTags.length > 0 && 
+            const hasExcluded = excludedTags.length > 0 &&
                 excludedTags.some(tag => exerciseTags.includes(tag));
 
             return hasRequired && !hasExcluded;
@@ -192,7 +192,7 @@ class ExerciseDatabase {
         // Apply text search
         if (query && query.trim()) {
             const searchTerm = query.toLowerCase();
-            results = results.filter(exercise => 
+            results = results.filter(exercise =>
                 exercise.name.toLowerCase().includes(searchTerm) ||
                 exercise.description?.toLowerCase().includes(searchTerm) ||
                 exercise.instructions?.toLowerCase().includes(searchTerm)
@@ -201,25 +201,25 @@ class ExerciseDatabase {
 
         // Apply filters
         if (filters.category) {
-            results = results.filter(exercise => 
+            results = results.filter(exercise =>
                 exercise.category === filters.category
             );
         }
 
         if (filters.muscleGroup) {
-            results = results.filter(exercise => 
+            results = results.filter(exercise =>
                 exercise.muscleGroups?.includes(filters.muscleGroup)
             );
         }
 
         if (filters.equipment) {
-            results = results.filter(exercise => 
+            results = results.filter(exercise =>
                 exercise.equipment === filters.equipment
             );
         }
 
         if (filters.difficulty) {
-            results = results.filter(exercise => 
+            results = results.filter(exercise =>
                 exercise.difficulty === filters.difficulty
             );
         }
@@ -251,7 +251,7 @@ class ExerciseDatabase {
      * @returns {Array} Exercises
      */
     getExercisesByMuscleGroup(muscleGroup) {
-        return this.exercises.filter(exercise => 
+        return this.exercises.filter(exercise =>
             exercise.muscleGroups?.includes(muscleGroup)
         );
     }
@@ -311,10 +311,10 @@ class ExerciseDatabase {
 
             this.exercises.push(customExercise);
             this.saveToStorage();
-            
+
             this.logger.audit('CUSTOM_EXERCISE_ADDED', { name: exercise.name });
             this.eventBus?.emit('exercise:added', customExercise);
-            
+
             return { success: true, exercise: customExercise };
         } catch (error) {
             this.logger.error('Failed to add custom exercise', error);
@@ -347,10 +347,10 @@ class ExerciseDatabase {
             };
 
             this.saveToStorage();
-            
+
             this.logger.audit('CUSTOM_EXERCISE_UPDATED', { id, name: exercise.name });
             this.eventBus?.emit('exercise:updated', this.exercises[exerciseIndex]);
-            
+
             return { success: true, exercise: this.exercises[exerciseIndex] };
         } catch (error) {
             this.logger.error('Failed to update custom exercise', error);
@@ -377,10 +377,10 @@ class ExerciseDatabase {
 
             this.exercises.splice(exerciseIndex, 1);
             this.saveToStorage();
-            
+
             this.logger.audit('CUSTOM_EXERCISE_DELETED', { id, name: exercise.name });
             this.eventBus?.emit('exercise:deleted', { id, name: exercise.name });
-            
+
             return { success: true };
         } catch (error) {
             this.logger.error('Failed to delete custom exercise', error);
@@ -404,7 +404,7 @@ class ExerciseDatabase {
         };
 
         const suggestedNames = suggestions[workoutType] || [];
-        return this.exercises.filter(exercise => 
+        return this.exercises.filter(exercise =>
             suggestedNames.includes(exercise.name)
         ).slice(0, count);
     }
@@ -416,7 +416,7 @@ class ExerciseDatabase {
      * @returns {Array} Random exercises
      */
     getRandomExercises(count = 5, filters = {}) {
-        let exercises = this.exercises;
+        let {exercises} = this;
 
         // Apply filters
         if (filters.category) {
@@ -532,7 +532,7 @@ class ExerciseDatabase {
         }
 
         const sportExercises = this.getSportExercises(sportId);
-        
+
         // Add sport exercises to general database
         sportExercises.forEach(exercise => {
             const existingIndex = this.exercises.findIndex(ex => ex.id === exercise.id);

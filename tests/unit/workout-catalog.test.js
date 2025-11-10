@@ -25,7 +25,7 @@ describe('WorkoutCatalog', () => {
         // Load WorkoutCatalog
         const module = await import('../../js/modules/sports/WorkoutCatalog.js');
         WorkoutCatalog = module.default || module.WorkoutCatalog || window.WorkoutCatalog?.constructor;
-        
+
         // Create new instance for each test
         catalog = new WorkoutCatalog();
     });
@@ -48,12 +48,12 @@ describe('WorkoutCatalog', () => {
             expect(catalog.workouts.running.tempo.length).toBeGreaterThan(0);
             expect(catalog.workouts.running.hills.length).toBeGreaterThan(0);
             expect(catalog.workouts.running.soccer.length).toBeGreaterThan(0);
-            
+
             expect(catalog.workouts.cycling.endurance.length).toBeGreaterThan(0);
             expect(catalog.workouts.cycling.tempo.length).toBeGreaterThan(0);
             expect(catalog.workouts.cycling.vo2.length).toBeGreaterThan(0);
             expect(catalog.workouts.cycling.cadence.length).toBeGreaterThan(0);
-            
+
             expect(catalog.workouts.swimming.aerobic.length).toBeGreaterThan(0);
             expect(catalog.workouts.swimming.threshold.length).toBeGreaterThan(0);
             expect(catalog.workouts.swimming.vo2.length).toBeGreaterThan(0);
@@ -63,7 +63,7 @@ describe('WorkoutCatalog', () => {
     describe('Workout Structure', () => {
         it('should have valid workout structure for all workouts', () => {
             const allWorkouts = [];
-            
+
             for (const modality of Object.keys(catalog.workouts)) {
                 for (const category of Object.keys(catalog.workouts[modality])) {
                     catalog.workouts[modality][category].forEach(workout => {
@@ -82,7 +82,7 @@ describe('WorkoutCatalog', () => {
                 expect(typeof workout.estimatedLoad).toBe('number');
                 expect(workout.equipment).toBeDefined();
                 expect(Array.isArray(workout.equipment)).toBe(true);
-                
+
                 if (workout.timeRequired) {
                     expect(typeof workout.timeRequired).toBe('number');
                 }
@@ -91,7 +91,7 @@ describe('WorkoutCatalog', () => {
 
         it('should have valid intensity zones (Z1-Z5)', () => {
             const allWorkouts = [];
-            
+
             for (const modality of Object.keys(catalog.workouts)) {
                 for (const category of Object.keys(catalog.workouts[modality])) {
                     catalog.workouts[modality][category].forEach(workout => {
@@ -184,7 +184,7 @@ describe('WorkoutCatalog', () => {
             const workouts = catalog.getWorkoutsByAdaptation('VO2 max');
             expect(Array.isArray(workouts)).toBe(true);
             expect(workouts.length).toBeGreaterThan(0);
-            
+
             workouts.forEach(workout => {
                 expect(workout.adaptation.toLowerCase()).toContain('vo2');
             });
@@ -194,7 +194,7 @@ describe('WorkoutCatalog', () => {
             const workouts = catalog.getWorkoutsByAdaptation('threshold');
             expect(Array.isArray(workouts)).toBe(true);
             expect(workouts.length).toBeGreaterThan(0);
-            
+
             workouts.forEach(workout => {
                 expect(workout.adaptation.toLowerCase()).toContain('threshold');
             });
@@ -217,7 +217,7 @@ describe('WorkoutCatalog', () => {
             const workouts = catalog.getWorkoutsByEquipment('track');
             expect(Array.isArray(workouts)).toBe(true);
             expect(workouts.length).toBeGreaterThan(0);
-            
+
             workouts.forEach(workout => {
                 expect(workout.equipment.some(eq => eq.toLowerCase().includes('track'))).toBe(true);
             });
@@ -266,7 +266,7 @@ describe('WorkoutCatalog', () => {
 
         it('should match actual workout counts', () => {
             const counts = catalog.getWorkoutCounts();
-            
+
             const runningCount = catalog.workouts.running.track.length +
                                  catalog.workouts.running.tempo.length +
                                  catalog.workouts.running.hills.length +

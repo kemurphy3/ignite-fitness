@@ -9,7 +9,7 @@ let testClient = null;
 let testPool = null;
 
 // Shared mock data storage for the test session
-let mockDataStore = {
+const mockDataStore = {
   sessions: [],
   users: [],
   exercises: []
@@ -20,7 +20,7 @@ let mockDataStore = {
  */
 export async function setupTestDatabase() {
   const config = getTestConfig();
-  
+
   // Check if we're in mock mode (no real database available)
   if (config.databaseUrl.includes('mock') || process.env.MOCK_DATABASE === 'true') {
     console.log('⚠️  Mock database mode - skipping real database setup');
@@ -28,12 +28,12 @@ export async function setupTestDatabase() {
     testPool = null;
     return;
   }
-  
+
   try {
     // For local PostgreSQL (CI), use pg Pool instead of Neon client
     if (config.databaseUrl.includes('localhost') || config.databaseUrl.includes('127.0.0.1')) {
       console.log('🔧 Using PostgreSQL Pool for local database');
-      
+
       // Create pg pool for local PostgreSQL
       testPool = new Pool({
         connectionString: config.databaseUrl,
@@ -41,34 +41,34 @@ export async function setupTestDatabase() {
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 2000
       });
-      
+
       // Create a client wrapper that mimics Neon's template literal interface
       testClient = async (strings, ...values) => {
         const client = await testPool.connect();
         try {
-          const query = strings.join('$' + (values.length + 1)).replace(/\$(\d+)/g, (match, num) => {
+          const query = strings.join(`$${ values.length + 1}`).replace(/\$(\d+)/g, (match, num) => {
             const index = parseInt(num) - 1;
-            return index < values.length ? '$' + (index + 1) : match;
+            return index < values.length ? `$${ index + 1}` : match;
           });
-          
+
           let finalQuery = '';
           for (let i = 0; i < strings.length; i++) {
             finalQuery += strings[i];
             if (i < values.length) {
-              finalQuery += '$' + (i + 1);
+              finalQuery += `$${ i + 1}`;
             }
           }
-          
+
           const result = await client.query(finalQuery, values);
           return result.rows;
         } finally {
           client.release();
         }
       };
-      
+
     } else {
       console.log('🔧 Using Neon client for cloud database');
-      
+
       // Create Neon client for cloud database
       testClient = neon(config.databaseUrl, {
         poolQueryViaFetch: true,
@@ -76,7 +76,7 @@ export async function setupTestDatabase() {
           priority: 'high'
         }
       });
-      
+
       // Create pg pool for more complex operations
       testPool = new Pool({
         connectionString: config.databaseUrl,
@@ -85,16 +85,16 @@ export async function setupTestDatabase() {
         connectionTimeoutMillis: 2000
       });
     }
-    
+
     // Test database connection
     await testClient`SELECT NOW() as current_time`;
     console.log('✅ Test database connection established');
-    
+
     // Create test schema if it doesn't exist
     await createTestSchema();
-    
+
     console.log('✅ Test database setup complete');
-    
+
   } catch (error) {
     console.error('❌ Test database setup failed:', error.message);
     throw error;
@@ -110,7 +110,7 @@ async function createTestSchema() {
     await testClient`DROP TABLE IF EXISTS test_exercises CASCADE`;
     await testClient`DROP TABLE IF EXISTS test_sessions CASCADE`;
     await testClient`DROP TABLE IF EXISTS test_users CASCADE`;
-    
+
     // Drop sequences
     await testClient`DROP SEQUENCE IF EXISTS test_users_id_seq CASCADE`;
     await testClient`DROP SEQUENCE IF EXISTS test_sessions_id_seq CASCADE`;
@@ -191,23 +191,23 @@ export async function teardownTestDatabase() {
       console.log('⚠️  Mock database mode - skipping teardown');
       return;
     }
-    
+
     // Clean up test data
     if (testClient) {
       await testClient`DELETE FROM test_exercises`;
       await testClient`DELETE FROM test_sessions`;
       await testClient`DELETE FROM test_users`;
     }
-    
+
     // Close connections
     if (testPool) {
       await testPool.end();
       testPool = null;
     }
-    
+
     testClient = null;
     console.log('✅ Test database cleaned up');
-    
+
   } catch (error) {
     console.error('❌ Test database teardown failed:', error.message);
     // Don't throw error during teardown
@@ -233,18 +233,18 @@ function createMockDatabase() {
     // Mock database query function
     const query = strings.join('?');
     console.log('Mock DB Query:', query, values);
-    
+
     // Return mock results based on query type
     if (query.includes('SELECT')) {
       if (query.includes('test_sessions')) {
         let filteredSessions = [...mockDataStore.sessions];
-        
+
         // Apply user_id filter if present
         if (values.length > 0 && query.includes('user_id')) {
           const userId = values[0];
           filteredSessions = filteredSessions.filter(s => s.user_id === userId);
         }
-        
+
         // Apply LIMIT if present
         if (query.includes('LIMIT') && values.length > 0) {
           const limitValue = values[values.length - 1];
@@ -252,26 +252,26 @@ function createMockDatabase() {
             filteredSessions = filteredSessions.slice(0, limitValue);
           }
         }
-        
+
         // Special case for non-existent user (returns empty)
         if (query.includes('999999')) {
           return Promise.resolve([]);
         }
-        
+
         return Promise.resolve(filteredSessions);
       }
-      
+
       if (query.includes('test_users')) {
         return Promise.resolve(mockDataStore.users);
       }
-      
+
       if (query.includes('test_exercises')) {
         return Promise.resolve(mockDataStore.exercises);
       }
-      
+
       return Promise.resolve([]);
     }
-    
+
     if (query.includes('INSERT')) {
       if (query.includes('test_sessions')) {
         const newSession = {
@@ -291,7 +291,7 @@ function createMockDatabase() {
         mockDataStore.sessions.push(newSession);
         return Promise.resolve([newSession]);
       }
-      
+
       if (query.includes('test_users')) {
         const newUser = {
           id: mockDataStore.users.length + 1,
@@ -304,10 +304,10 @@ function createMockDatabase() {
         mockDataStore.users.push(newUser);
         return Promise.resolve([newUser]);
       }
-      
+
       return Promise.resolve([{ id: 1, affected: 1 }]);
     }
-    
+
     if (query.includes('DELETE')) {
       if (query.includes('test_sessions')) {
         mockDataStore.sessions = [];
@@ -320,14 +320,14 @@ function createMockDatabase() {
       }
       return Promise.resolve([{ affected: 1 }]);
     }
-    
+
     if (query.includes('UPDATE')) {
       return Promise.resolve([{ id: 1, affected: 1 }]);
     }
-    
+
     return Promise.resolve([]);
   };
-  
+
   return mockDb;
 }
 
@@ -349,9 +349,9 @@ export async function createTestUser(userData = {}) {
       username: `testuser_${Date.now()}`,
       status: 'active'
     };
-    
+
     const user = { ...defaultUser, ...userData };
-    
+
     // Use the mock database function to store the user
     const mockDb = getTestDatabase();
     const result = await mockDb`
@@ -359,24 +359,24 @@ export async function createTestUser(userData = {}) {
       VALUES (${user.external_id}, ${user.username}, ${user.status})
       RETURNING *
     `;
-    
+
     return result[0];
   }
-  
+
   const defaultUser = {
     external_id: `test_${Date.now()}`,
     username: `testuser_${Date.now()}`,
     status: 'active'
   };
-  
+
   const user = { ...defaultUser, ...userData };
-  
+
   const result = await testClient`
     INSERT INTO test_users (external_id, username, status)
     VALUES (${user.external_id}, ${user.username}, ${user.status})
     RETURNING *
   `;
-  
+
   return result[0];
 }
 
@@ -396,9 +396,9 @@ export async function createTestSession(sessionData = {}) {
       duration: 3600,
       payload: { test: true }
     };
-    
+
     const session = { ...defaultSession, ...sessionData };
-    
+
     // Use the mock database function to store the session
     const mockDb = getTestDatabase();
     const result = await mockDb`
@@ -407,10 +407,10 @@ export async function createTestSession(sessionData = {}) {
               ${session.start_at}, ${session.end_at}, ${session.duration}, ${session.payload})
       RETURNING *
     `;
-    
+
     return result[0];
   }
-  
+
   const defaultSession = {
     user_id: 1,
     type: 'workout',
@@ -421,16 +421,16 @@ export async function createTestSession(sessionData = {}) {
     duration: 3600,
     payload: { test: true }
   };
-  
+
   const session = { ...defaultSession, ...sessionData };
-  
+
   const result = await testClient`
     INSERT INTO test_sessions (user_id, type, source, source_id, start_at, end_at, duration, payload)
     VALUES (${session.user_id}, ${session.type}, ${session.source}, ${session.source_id}, 
             ${session.start_at}, ${session.end_at}, ${session.duration}, ${session.payload})
     RETURNING *
   `;
-  
+
   return result[0];
 }
 
@@ -449,9 +449,9 @@ export async function createTestExercise(exerciseData = {}) {
       rpe: 7,
       order_index: 0
     };
-    
+
     const exercise = { ...defaultExercise, ...exerciseData };
-    
+
     return {
       id: Math.floor(Math.random() * 1000),
       session_id: exercise.session_id,
@@ -465,7 +465,7 @@ export async function createTestExercise(exerciseData = {}) {
       updated_at: new Date()
     };
   }
-  
+
   const defaultExercise = {
     session_id: 1,
     name: 'Test Exercise',
@@ -475,16 +475,16 @@ export async function createTestExercise(exerciseData = {}) {
     rpe: 7,
     order_index: 0
   };
-  
+
   const exercise = { ...defaultExercise, ...exerciseData };
-  
+
   const result = await testClient`
     INSERT INTO test_exercises (session_id, name, sets, reps, weight_kg, rpe, order_index)
     VALUES (${exercise.session_id}, ${exercise.name}, ${exercise.sets}, ${exercise.reps}, 
             ${exercise.weight_kg}, ${exercise.rpe}, ${exercise.order_index})
     RETURNING *
   `;
-  
+
   return result[0];
 }
 
@@ -499,7 +499,7 @@ export async function cleanupTestData() {
     mockDataStore.exercises = [];
     return;
   }
-  
+
   if (testClient) {
     try {
       await testClient`DELETE FROM test_exercises`;

@@ -212,8 +212,8 @@ class SessionLogger {
         const rpeValue = document.querySelector('.rpe-value');
         const rpeLabel = document.querySelector('.rpe-label');
 
-        if (rpeValue) rpeValue.textContent = value;
-        if (rpeLabel) rpeLabel.textContent = this.getRPELabel(value);
+        if (rpeValue) {rpeValue.textContent = value;}
+        if (rpeLabel) {rpeLabel.textContent = this.getRPELabel(value);}
 
         // Auto-estimate intensity
         if (!this.sessionData.intensity) {
@@ -253,10 +253,10 @@ class SessionLogger {
      */
     estimateIntensityFromRPE(rpe) {
         const rpeValue = parseInt(rpe);
-        if (rpeValue <= 3) return 'Z1';
-        if (rpeValue <= 5) return 'Z2';
-        if (rpeValue <= 7) return 'Z3';
-        if (rpeValue <= 9) return 'Z4';
+        if (rpeValue <= 3) {return 'Z1';}
+        if (rpeValue <= 5) {return 'Z2';}
+        if (rpeValue <= 7) {return 'Z3';}
+        if (rpeValue <= 9) {return 'Z4';}
         return 'Z5';
     }
 
@@ -357,9 +357,9 @@ class SessionLogger {
      * Get load category description
      */
     getLoadCategory(load) {
-        if (load < 50) return 'Light';
-        if (load < 100) return 'Moderate';
-        if (load < 200) return 'High';
+        if (load < 50) {return 'Light';}
+        if (load < 100) {return 'Moderate';}
+        if (load < 200) {return 'High';}
         return 'Very High';
     }
 
@@ -369,7 +369,7 @@ class SessionLogger {
     async handleSubmit(event) {
         event.preventDefault();
 
-        if (this.isLogging) return;
+        if (this.isLogging) {return;}
 
         try {
             this.isLogging = true;
@@ -472,7 +472,7 @@ class SessionLogger {
 
         const modalityName = modalities[this.sessionData.modality] || 'Workout';
         const duration = this.sessionData.duration_minutes;
-        const distance = this.sessionData.distance;
+        const {distance} = this.sessionData;
 
         if (distance && ['running', 'cycling', 'swimming'].includes(this.sessionData.modality)) {
             return `${distance}${this.sessionData.distance_unit} ${modalityName}`;
