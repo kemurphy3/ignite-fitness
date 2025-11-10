@@ -78,30 +78,31 @@ class LoadCalculator {
      */
     calculateWeeklyLoad(sessions) {
         try {
+            const safeSessions = Array.isArray(sessions) ? sessions : [];
             let totalLoad = 0;
             let volumeLoad = 0;
             let intensityLoad = 0;
             const dailyLoads = {};
 
-            sessions.forEach(session => {
+            safeSessions.forEach(session => {
                 const sessionLoad = this.calculateSessionLoad(session);
                 totalLoad += sessionLoad.total;
                 volumeLoad += sessionLoad.volume;
                 intensityLoad += sessionLoad.intensity;
 
-                // Track daily loads
-                const date = session.date || new Date().toISOString().split('T')[0];
-                if (!dailyLoads[date]) {
-                    dailyLoads[date] = { total: 0, volume: 0, intensity: 0 };
+                const dateKey = this.safeDateKey(session.date);
+                if (!dailyLoads[dateKey]) {
+                    dailyLoads[dateKey] = { total: 0, volume: 0, intensity: 0 };
                 }
-                dailyLoads[date].total += sessionLoad.total;
-                dailyLoads[date].volume += sessionLoad.volume;
-                dailyLoads[date].intensity += sessionLoad.intensity;
+                dailyLoads[dateKey].total += sessionLoad.total;
+                dailyLoads[dateKey].volume += sessionLoad.volume;
+                dailyLoads[dateKey].intensity += sessionLoad.intensity;
             });
 
             const averageDailyLoad = totalLoad / 7;
-            const peakDailyLoad = Math.max(...Object.values(dailyLoads).map(d => d.total));
-            const loadVariation = this.calculateLoadVariation(dailyLoads);
+            const dailyValues = Object.values(dailyLoads);
+            const peakDailyLoad = dailyValues.length ? Math.max(...dailyValues.map(d => d.total)) : 0;
+            const loadVariation = dailyValues.length ? this.calculateLoadVariation(dailyLoads) : 0;
 
             return {
                 totalLoad,
@@ -125,52 +126,54 @@ class LoadCalculator {
      * @param {Object} session - Training session data
      * @returns {Object} Session load breakdown
      */
-    calculateSessionLoad(session) {
+    calculateSessionLoad(session = {}) {
+        const sanitize = (value) => {
+            const num = Number(value);
+            return Number.isFinite(num) ? num : 0;
+        };
+        const clampPositive = (value) => Math.max(0, sanitize(value));
+
         let volumeLoad = 0;
         let intensityLoad = 0;
 
-        // Check if this is a soccer-shape session
         const isSoccerShape = session.category === 'soccer_shape' ||
                              session.tags?.includes('soccer_shape') ||
                              session.subcategory === 'soccer_shape';
 
-        if (session.exercises) {
-            session.exercises.forEach(exercise => {
-                // Volume load: sets × reps × weight
-                const exerciseVolume = exercise.sets * exercise.reps * exercise.weight;
-                volumeLoad += exerciseVolume;
+        const exercises = Array.isArray(session.exercises) ? session.exercises : [];
+        exercises.forEach(exercise => {
+            const sets = clampPositive(exercise.sets);
+            const reps = clampPositive(exercise.reps);
+            const weight = clampPositive(exercise.weight);
+            const baseVolume = sets * reps * weight;
+            volumeLoad += baseVolume;
 
-                // Intensity factor (RPE/10)
-                const intensityFactor = exercise.rpe / 10;
-                intensityLoad += exerciseVolume * intensityFactor;
+            const rpe = Math.min(10, clampPositive(exercise.rpe));
+            let exerciseIntensity = baseVolume * (rpe > 0 ? rpe / 10 : 0);
 
-                // Soccer-shape specific adjustments
-                if (isSoccerShape) {
-                    // High-intensity intervals: RPE × minutes × 1.3 multiplier
-                    if (exercise.intensity === 'Z4' || exercise.intensity === 'Z5') {
-                        intensityLoad *= 1.3;
-                    }
-
-                    // Change of direction work: Base load × 1.2 neuromotor factor
-                    if (exercise.tags?.includes('change_of_direction') ||
-                        exercise.tags?.includes('COD') ||
-                        exercise.tags?.includes('agility')) {
-                        intensityLoad *= 1.2;
-                    }
+            if (isSoccerShape) {
+                const zone = String(exercise.intensity || '').toUpperCase();
+                if (zone === 'Z4' || zone === 'Z5') {
+                    exerciseIntensity *= 1.3;
                 }
-            });
-        }
 
-        // Add external activity load if present
-        if (session.externalActivities) {
-            session.externalActivities.forEach(activity => {
-                const activityLoad = activity.training_stress_score || 0;
-                volumeLoad += activityLoad;
-                intensityLoad += activityLoad;
-            });
-        }
+                const tags = Array.isArray(exercise.tags) ? exercise.tags.map(tag => String(tag).toLowerCase()) : [];
+                const hasCod = tags.some(tag => tag.includes('change_of_direction') || tag.includes('cod') || tag.includes('agility'));
+                if (hasCod) {
+                    exerciseIntensity *= 1.2;
+                }
+            }
 
-        // Soccer-shape specific load calculation for structured workouts
+            intensityLoad += exerciseIntensity;
+        });
+
+        const externalActivities = Array.isArray(session.externalActivities) ? session.externalActivities : [];
+        externalActivities.forEach(activity => {
+            const activityLoad = clampPositive(activity.training_stress_score);
+            volumeLoad += activityLoad;
+            intensityLoad += activityLoad;
+        });
+
         if (isSoccerShape && session.structure) {
             const soccerLoad = this.calculateSoccerShapeLoad(session);
             if (soccerLoad > 0) {
@@ -178,17 +181,20 @@ class LoadCalculator {
             }
         }
 
+        volumeLoad = Math.max(0, volumeLoad);
+        intensityLoad = Math.max(0, intensityLoad);
         const totalLoad = Math.max(0, volumeLoad + intensityLoad);
-
-        // Prevent division by zero in ratio calculations
         const safeTotalLoad = totalLoad > 0 ? totalLoad : 1;
+
+        const volumeRatio = totalLoad > 0 ? Math.max(0, Math.min(1, volumeLoad / safeTotalLoad)) : 0;
+        const intensityRatio = totalLoad > 0 ? Math.max(0, Math.min(1, intensityLoad / safeTotalLoad)) : 0;
 
         return {
             total: totalLoad,
-            volume: Math.max(0, volumeLoad),
-            intensity: Math.max(0, intensityLoad),
-            volumeRatio: totalLoad > 0 ? Math.max(0, Math.min(1, volumeLoad / safeTotalLoad)) : 0,
-            intensityRatio: totalLoad > 0 ? Math.max(0, Math.min(1, intensityLoad / safeTotalLoad)) : 0
+            volume: volumeLoad,
+            intensity: intensityLoad,
+            volumeRatio,
+            intensityRatio
         };
     }
 
@@ -199,11 +205,30 @@ class LoadCalculator {
      */
     calculateLoadVariation(dailyLoads) {
         const loads = Object.values(dailyLoads).map(d => d.total);
+        if (!loads.length) {
+            return 0;
+        }
         const mean = loads.reduce((sum, load) => sum + load, 0) / loads.length;
+        if (mean === 0) {
+            return 0;
+        }
         const variance = loads.reduce((sum, load) => sum + Math.pow(load - mean, 2), 0) / loads.length;
         const standardDeviation = Math.sqrt(variance);
 
-        return mean > 0 ? standardDeviation / mean : 0;
+        return standardDeviation / mean;
+    }
+
+    /**
+     * Normalize date values to ISO date key
+     * @param {string} value - Date string
+     * @returns {string} ISO date string (YYYY-MM-DD)
+     */
+    safeDateKey(value) {
+        const date = value ? new Date(value) : new Date();
+        if (Number.isNaN(date.getTime())) {
+            return new Date().toISOString().split('T')[0];
+        }
+        return date.toISOString().split('T')[0];
     }
 
     /**
@@ -417,14 +442,17 @@ class LoadCalculator {
      */
     calculateComprehensiveLoad(sessions, activities) {
         try {
+            const safeSessions = Array.isArray(sessions) ? sessions : [];
+            const safeActivities = Array.isArray(activities) ? activities : [];
+
             // Calculate internal training load
-            const weeklyLoad = this.calculateWeeklyLoad(sessions);
+            const weeklyLoad = this.calculateWeeklyLoad(safeSessions);
 
             // Calculate external activity load
-            const externalLoad = this.calculateExternalLoad(activities);
+            const externalLoad = this.calculateExternalLoad(safeActivities);
 
             // Calculate recovery debt
-            const recoveryDebt = this.calculateRecoveryDebt(activities);
+            const recoveryDebt = this.calculateRecoveryDebt(safeActivities);
 
             // Combine loads with bounds checking
             const safeWeeklyLoad = Math.max(0, weeklyLoad?.totalLoad || 0);
@@ -459,38 +487,36 @@ class LoadCalculator {
      * @returns {Object} External load analysis
      */
     calculateExternalLoad(activities) {
+        const safeActivities = Array.isArray(activities) ? activities : [];
         let totalLoad = 0;
         const loadByType = {};
         const dailyLoads = {};
 
-        activities.forEach(activity => {
-            const load = activity.training_stress_score || 0;
+        safeActivities.forEach(activity => {
+            const load = Math.max(0, Number(activity.training_stress_score) || 0);
             totalLoad += load;
 
-            // Track by type
-            const type = activity.activity_type;
+            const type = activity.activity_type || 'Unknown';
             if (!loadByType[type]) {
                 loadByType[type] = 0;
             }
             loadByType[type] += load;
 
-            // Track by day
-            const date = activity.start_time.split('T')[0];
-            if (!dailyLoads[date]) {
-                dailyLoads[date] = 0;
+            const dateKey = activity.start_time ? this.safeDateKey(activity.start_time) : this.safeDateKey();
+            if (!dailyLoads[dateKey]) {
+                dailyLoads[dateKey] = 0;
             }
-            dailyLoads[date] += load;
+            dailyLoads[dateKey] += load;
         });
 
-            // Ensure non-negative total load and safe division
-            const safeTotalLoad = Math.max(0, totalLoad);
+        const safeTotalLoad = Math.max(0, totalLoad);
 
-            return {
-                totalLoad: safeTotalLoad,
-                loadByType,
-                dailyLoads,
-                averageDailyLoad: Math.max(0, safeTotalLoad / 7)
-            };
+        return {
+            totalLoad: safeTotalLoad,
+            loadByType,
+            dailyLoads,
+            averageDailyLoad: Number((safeTotalLoad / 7).toFixed(2))
+        };
     }
 
     /**
@@ -697,35 +723,30 @@ class LoadCalculator {
      */
     calculateSevenDayAverage(sessions, activities) {
         try {
-            // Get last 7 days of data
+            const safeSessions = Array.isArray(sessions) ? sessions : [];
+            const safeActivities = Array.isArray(activities) ? activities : [];
+
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-            // Filter sessions from last 7 days
-            const recentSessions = sessions.filter(session => {
-                const sessionDate = new Date(session.date || session.start_at);
-                return sessionDate >= sevenDaysAgo;
+            const recentSessions = safeSessions.filter(session => {
+                const sessionDate = new Date(session.date || session.start_at || session.start_time);
+                return !Number.isNaN(sessionDate.getTime()) && sessionDate >= sevenDaysAgo;
             });
 
-            // Filter activities from last 7 days
-            const recentActivities = activities.filter(activity => {
+            const recentActivities = safeActivities.filter(activity => {
                 const activityDate = new Date(activity.start_time);
-                return activityDate >= sevenDaysAgo;
+                return !Number.isNaN(activityDate.getTime()) && activityDate >= sevenDaysAgo;
             });
 
-            // Calculate total load for the period
-            const sessionLoad = this.calculateWeeklyLoad(recentSessions).totalLoad;
-            const activityLoad = this.calculateExternalLoad(recentActivities).totalLoad;
+            const sessionLoad = this.calculateWeeklyLoad(recentSessions).totalLoad || 0;
+            const activityLoad = this.calculateExternalLoad(recentActivities).totalLoad || 0;
 
-            // Ensure non-negative values
-            const safeSessionLoad = Math.max(0, sessionLoad || 0);
-            const safeActivityLoad = Math.max(0, activityLoad || 0);
-
-            return Math.max(0, safeSessionLoad + safeActivityLoad);
+            const totalLoad = Math.max(0, sessionLoad + activityLoad);
+            return Number((totalLoad / 7).toFixed(2));
         } catch (error) {
             this.logger.error('Failed to calculate 7-day average', error);
-            // Return conservative default instead of 0 to prevent division issues downstream
-            return 1;
+            return 0;
         }
     }
 
@@ -788,7 +809,7 @@ class LoadCalculator {
      * @param {Object} loadSpike - Load spike detection
      * @returns {Object} Workout intensity recommendations
      */
-    generateWorkoutIntensityRecommendations(currentLoad, sevenDayAverage, loadSpike) {
+    generateWorkoutIntensityRecommendations(currentLoad, sevenDayAverage, loadSpike = { isSpike: false, ratio: 1.0, severity: 'none' }) {
         const userLevel = this.getUserTrainingLevel();
         const thresholds = this.loadThresholds[userLevel];
 
@@ -1010,10 +1031,9 @@ class LoadCalculator {
     }
 }
 
-// Create global instance
-window.LoadCalculator = new LoadCalculator();
-
-// Export for module systems
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = LoadCalculator;
+// Create global instance when running in browser-like environments
+if (typeof window !== 'undefined') {
+    window.LoadCalculator = new LoadCalculator();
 }
+
+export default LoadCalculator;

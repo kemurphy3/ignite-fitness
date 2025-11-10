@@ -4,6 +4,14 @@
  * Deterministic behavior for consistent substitution mathematics
  */
 
+const RPE_ZONE_MULTIPLIERS = {
+    Z1: 0.5,
+    Z2: 1.0,
+    Z3: 1.5,
+    Z4: 2.0,
+    Z5: 2.5
+};
+
 class LoadCalculationEngine {
     /**
      * Compute training load for a session using multiple methods
@@ -13,6 +21,13 @@ class LoadCalculationEngine {
     static compute_load(session) {
         if (!session || typeof session !== 'object') {
             throw new Error('Session object is required');
+        }
+
+        if (typeof session.duration_minutes !== 'undefined') {
+            const durationValue = Number(session.duration_minutes);
+            if (!Number.isFinite(durationValue) || durationValue <= 0) {
+                throw new Error('Session duration must be positive');
+            }
         }
 
         const result = {
@@ -83,39 +98,46 @@ class LoadCalculationEngine {
     static calculateTRIMP(session) {
         const { hr_data, duration_minutes, user_profile } = session;
 
-        if (!hr_data.avg_hr || !duration_minutes) {
+        const duration = Number(duration_minutes);
+        const averageHr = Number(hr_data?.avg_hr);
+
+        if (!Number.isFinite(duration) || duration <= 0) {
+            return { valid: false };
+        }
+        if (!Number.isFinite(averageHr) || averageHr <= 0) {
             return { valid: false };
         }
 
-        // Get user HR parameters or use defaults
         const max_hr = user_profile?.max_hr || this.estimateMaxHR(user_profile?.age, user_profile?.gender);
         const rest_hr = user_profile?.rest_hr || 60;
-        const gender_factor = user_profile?.gender === 'female' ? 1.67 : 1.92;
-
-        // Calculate Heart Rate Reserve (HRR)
         const hr_reserve = max_hr - rest_hr;
-        const avg_hrr = (hr_data.avg_hr - rest_hr) / hr_reserve;
+        if (!Number.isFinite(hr_reserve) || hr_reserve <= 0) {
+            return { valid: false };
+        }
 
-        // Clamp HRR to reasonable bounds
-        const clamped_hrr = Math.max(0, Math.min(1.2, avg_hrr));
+        const deltaHr = averageHr - rest_hr;
+        const ratio = deltaHr / hr_reserve;
+        const clampedRatio = Math.max(0, Math.min(1, ratio));
 
-        // Banister TRIMP formula
-        const trimp_score = duration_minutes * 0.64 * Math.exp(gender_factor * clamped_hrr);
+        const genderFactor = user_profile?.gender === 'female' ? 1.67 : 1.92;
+        const exponentialComponent = Math.pow(genderFactor, clampedRatio);
+        const trimpScore = duration * clampedRatio * exponentialComponent;
 
         return {
             valid: true,
-            trimp_score: Math.round(trimp_score * 10) / 10,
+            trimp_score: Number(trimpScore.toFixed(2)),
             breakdown: {
-                duration_minutes,
-                avg_hr: hr_data.avg_hr,
-                hrr_fraction: Math.round(clamped_hrr * 1000) / 1000,
-                gender_factor
+                duration_minutes: duration,
+                avg_hr: averageHr,
+                hrr_fraction: Number(clampedRatio.toFixed(3)),
+                gender_factor: genderFactor
             },
             details: {
                 max_hr,
                 rest_hr,
                 hr_reserve,
-                exponential_factor: Math.round(Math.exp(gender_factor * clamped_hrr) * 100) / 100
+                delta_hr: Number(clampedRatio.toFixed(3)),
+                exponential_factor: Number(exponentialComponent.toFixed(3))
             }
         };
     }
@@ -132,40 +154,59 @@ class LoadCalculationEngine {
         if (!zone_distribution || !duration_minutes) {
             return { valid: false };
         }
+        const duration = Number(duration_minutes);
+        if (!Number.isFinite(duration) || duration <= 0) {
+            return { valid: false };
+        }
 
-        // Zone intensity multipliers (relative effort)
-        const zone_multipliers = {
-            Z1: 1.0, // Recovery/easy
-            Z2: 2.0, // Aerobic base
-            Z3: 4.0, // Tempo/threshold
-            Z4: 7.0, // VO2 max
-            Z5: 10.0 // Neuromuscular power
+        const zoneLoadMultipliers = {
+            Z1: 1.0,
+            Z2: 2.0,
+            Z3: 4.0,
+            Z4: 7.0,
+            Z5: 10.0
         };
 
         let total_load = 0;
         const breakdown = {};
 
-        // Calculate load for each zone
-        Object.entries(zone_distribution).forEach(([zone, minutes]) => {
-            if (minutes > 0 && zone_multipliers[zone]) {
-                const zone_load = minutes * zone_multipliers[zone];
-                total_load += zone_load;
-                breakdown[zone] = {
-                    minutes: Math.round(minutes * 10) / 10,
-                    multiplier: zone_multipliers[zone],
-                    load_contribution: Math.round(zone_load * 10) / 10
-                };
+        Object.entries(zone_distribution).forEach(([zoneKey, minutes]) => {
+            const minutesValue = Number(minutes);
+            if (!Number.isFinite(minutesValue) || minutesValue <= 0) {
+                return;
             }
+
+            const zone = this.normalizeZone(zoneKey);
+            if (!zone) {
+                return;
+            }
+
+            const multiplier = zoneLoadMultipliers[zone];
+            if (!multiplier) {
+                return;
+            }
+
+            const zoneLoad = minutesValue * multiplier;
+            total_load += zoneLoad;
+            breakdown[zone] = {
+                minutes: Number(minutesValue.toFixed(2)),
+                multiplier,
+                load_contribution: Number(zoneLoad.toFixed(2))
+            };
         });
+
+        if (total_load === 0) {
+            return { valid: false };
+        }
 
         return {
             valid: true,
-            load_score: Math.round(total_load * 10) / 10,
+            load_score: Number(total_load.toFixed(2)),
             breakdown,
             details: {
-                total_minutes: duration_minutes,
+                total_minutes: duration,
                 zones_used: Object.keys(breakdown),
-                avg_intensity: total_load / duration_minutes
+                avg_intensity: Number((total_load / duration).toFixed(3))
             }
         };
     }
@@ -178,25 +219,40 @@ class LoadCalculationEngine {
     static calculateRPELoad(session) {
         const { rpe, duration_minutes } = session;
 
-        if (!rpe || !duration_minutes) {
+        const duration = Number(duration_minutes);
+        const perceivedExertion = Number(rpe);
+
+        if (!Number.isFinite(duration) || duration <= 0) {
+            return { valid: false };
+        }
+        if (!Number.isFinite(perceivedExertion)) {
             return { valid: false };
         }
 
-        // Clamp RPE to valid range
-        const clamped_rpe = Math.max(1, Math.min(10, rpe));
-        const load_score = clamped_rpe * duration_minutes;
+        const baseRpe = perceivedExertion <= 0 ? 1 : perceivedExertion;
+        const clamped_rpe = Math.min(10, Math.max(1, baseRpe));
+        const zone = this.normalizeZone(session.intensity);
+        const zoneMultiplier = zone ? (RPE_ZONE_MULTIPLIERS[zone] || 1) : 1;
+        const load_score = clamped_rpe * duration * zoneMultiplier;
+
+        const calculationString = zoneMultiplier === 1
+            ? `${clamped_rpe} × ${duration}`
+            : `${clamped_rpe} × ${duration} × ${zoneMultiplier}`;
 
         return {
             valid: true,
-            load_score: Math.round(load_score * 10) / 10,
+            load_score: Number(load_score.toFixed(2)),
             breakdown: {
                 rpe: clamped_rpe,
-                duration_minutes,
-                calculation: `${clamped_rpe} × ${duration_minutes}`
+                duration_minutes: duration,
+                zone: zone || 'N/A',
+                zone_multiplier: zoneMultiplier,
+                calculation: calculationString
             },
             details: {
                 rpe_scale: '1-10 (Borg CR10)',
-                intensity_category: this.getRPECategory(clamped_rpe)
+                intensity_category: this.getRPECategory(clamped_rpe),
+                effective_load: Number(load_score.toFixed(2))
             }
         };
     }
@@ -230,19 +286,24 @@ class LoadCalculationEngine {
             return { valid: false };
         }
 
-        const met_minutes = met_value * duration_minutes;
+        const durationValue = Number(duration_minutes);
+        if (!Number.isFinite(durationValue) || durationValue <= 0) {
+            return { valid: false };
+        }
+
+        const met_minutes = met_value * durationValue;
         // Convert MET-minutes to comparable load scale (rough approximation)
         const load_score = met_minutes * 0.8;
 
         return {
             valid: true,
-            load_score: Math.round(load_score * 10) / 10,
+            load_score: Number(load_score.toFixed(2)),
             breakdown: {
                 modality,
                 intensity,
-                duration_minutes,
+                duration_minutes: durationValue,
                 met_value,
-                met_minutes
+                met_minutes: Number(met_minutes.toFixed(2))
             },
             details: {
                 conversion_factor: 0.8,
@@ -287,6 +348,17 @@ class LoadCalculationEngine {
         if (met_value < 6) {return 'Light Intensity';}
         if (met_value < 12) {return 'Moderate Intensity';}
         return 'Vigorous Intensity';
+    }
+
+    /**
+     * Normalize a zone identifier to canonical Z1-Z5 format
+     * @param {string} zone - Zone identifier
+     * @returns {string|null} Normalized zone or null if not recognized
+     */
+    static normalizeZone(zone) {
+        if (!zone) {return null;}
+        const match = String(zone).toUpperCase().match(/Z[1-5]/);
+        return match ? match[0] : null;
     }
 
     /**

@@ -1202,10 +1202,17 @@ class ExerciseAdapter {
     }
 }
 
-// Create global instance
-window.ExerciseAdapter = new ExerciseAdapter();
+const exerciseAdapterSingleton = new ExerciseAdapter();
 
-// Export for module systems
+if (typeof window !== 'undefined') {
+    window.ExerciseAdapter = ExerciseAdapter;
+    window.exerciseAdapter = exerciseAdapterSingleton;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = ExerciseAdapter;
+    module.exports.instance = exerciseAdapterSingleton;
 }
+
+export { exerciseAdapterSingleton };
+export default ExerciseAdapter;

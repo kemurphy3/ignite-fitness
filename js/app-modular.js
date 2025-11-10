@@ -1140,7 +1140,10 @@ function submitExerciseFeedback() {
     }
 
     // Process feedback with ExerciseAdapter
-    const result = window.ExerciseAdapter?.processExerciseFeedback(
+    const exerciseAdapter = window.exerciseAdapter
+        || (window.ExerciseAdapter ? new window.ExerciseAdapter() : null);
+
+    const result = exerciseAdapter?.processExerciseFeedback(
         window.currentExerciseName,
         feedbackType,
         window.currentExerciseData

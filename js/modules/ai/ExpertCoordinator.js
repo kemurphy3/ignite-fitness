@@ -1388,4 +1388,12 @@ class ExpertCoordinator {
     }
 }
 
-window.ExpertCoordinator = ExpertCoordinator;
+if (typeof window !== 'undefined') {
+    window.ExpertCoordinator = ExpertCoordinator;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = ExpertCoordinator;
+}
+
+export default ExpertCoordinator;
