@@ -2,8 +2,7 @@ module.exports = {
   env: {
     browser: true,
     es2021: true,
-    node: true,
-    vitest: true
+    node: true
   },
   extends: [
     'eslint:recommended'
@@ -55,8 +54,15 @@ module.exports = {
   overrides: [
     {
       files: ['**/*.test.js', '**/*.spec.js', '**/tests/**/*.js'],
-      env: {
-        vitest: true
+      globals: {
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        vi: 'readonly'
       },
       rules: {
         'no-console': 'off',
