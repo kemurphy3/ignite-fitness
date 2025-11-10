@@ -10,12 +10,10 @@
     "analyze": "webpack --mode=production --analyze",
     "clean": "rimraf dist",
     "prebuild": "npm run clean",
-
     "perf:budget": "node scripts/perf-budget.js",
     "perf:lighthouse": "lhci autorun",
     "perf:check": "npm run build && npm run perf:budget",
     "test:perf": "npm run perf:check",
-
     "prepare": "husky install",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -24,7 +22,6 @@
     "lint:fix": "eslint js/ scripts/ netlify/functions/ tests/ --ext .js --fix",
     "typecheck": "npx tsc --noEmit --project jsconfig.json",
     "typecheck:watch": "npx tsc --noEmit --project jsconfig.json --watch",
-
     "test": "vitest run",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
@@ -37,19 +34,15 @@
     "test:health": "node -e \"require('http').createServer((req, res) => { res.writeHead(200); res.end('OK'); }).listen(8001, () => console.log('Health check server running on :8001'));\"",
     "test:all": "npm run test:imports && npm run test:syntax && npm run test:dom && npm run test:perf",
     "test:ci": "npm run test:unit && npm run test:integration",
-
     "quality:check": "npm run format:check && npm run lint:check && npm run typecheck",
     "quality:fix": "npm run lint:fix && npm run format",
     "pre-commit": "npm run quality:check && npm run test:ci",
-
     "serve": "npx http-server . -p 3000 -c-1 || python3 -m http.server 3000 || echo 'No server available, install http-server or use Python'",
     "start": "npm run serve",
-
     "db:migrate": "psql $DATABASE_URL -f database-beta-workout-templates.sql && psql $DATABASE_URL -f database-beta-substitution-engine.sql && psql $DATABASE_URL -f database-beta-safety-guardrails.sql && psql $DATABASE_URL -f database-beta-enhanced-sessions.sql",
     "db:seed": "node scripts/seed-database.js",
     "db:setup": "npm run db:migrate && npm run db:seed",
     "test:acceptance": "npm run db:setup && npm run test:integration",
-
     "test:load-calc": "vitest run tests/unit/load-calculation-engine.test.js",
     "test:substitution": "vitest run tests/unit/substitution-engine.test.js",
     "test:substitution-api": "vitest run tests/integration/substitution-api.test.js",
@@ -60,22 +53,18 @@
     "test:week-view": "vitest run tests/unit/week-view.test.js",
     "test:load-performance": "vitest run tests/performance/load-calculations.test.js",
     "test:load-all": "vitest run tests/unit/load-guardrails.test.js tests/unit/week-view.test.js tests/performance/load-calculations.test.js",
-
     "demo": "node scripts/setup-demo.js && npm run serve",
     "demo:seed": "node scripts/seed-demo-data.js",
     "demo:reset": "node scripts/reset-demo-data.js && npm run demo:seed",
     "demo:quick": "DEMO_MODE=true npm run serve",
     "demo:serve": "npm run serve",
-
     "beta:setup": "node scripts/beta-setup.js",
     "beta:validate": "node scripts/validate-beta.js",
-
     "dev:beta": "DEMO_MODE=true npm run dev",
     "test:beta": "npm run test && npm run test:integration",
     "validate:env": "node scripts/validate-env.js",
     "validate:post-merge": "node scripts/post-merge-validation.js",
     "validate:quick": "node scripts/post-merge-validation.js --quick",
-
     "ci:install": "npm ci --prefer-offline --no-audit",
     "ci:test": "npm run quality:check && npm run test:ci",
     "ci:build": "NODE_ENV=production npm run build"
@@ -94,19 +83,20 @@
   },
   "devDependencies": {
     "@babel/core": "^7.23.0",
-    "@babel/preset-env": "^7.23.0",
     "@babel/plugin-syntax-dynamic-import": "^7.8.3",
-    "@babel/plugin-transform-optional-chaining": "^7.23.0",
     "@babel/plugin-transform-nullish-coalescing-operator": "^7.23.0",
-    "@vitest/coverage-v8": "^2.0.0",
+    "@babel/plugin-transform-optional-chaining": "^7.23.0",
+    "@babel/preset-env": "^7.23.0",
+    "@vitest/coverage-v8": "^4.0.8",
     "autoprefixer": "^10.4.16",
     "babel-loader": "^9.1.3",
     "css-loader": "^6.8.1",
     "css-minimizer-webpack-plugin": "^5.0.1",
     "cssnano": "^6.0.1",
     "eslint": "^8.57.0",
-    "husky": "^9.0.11",
     "html-webpack-plugin": "^5.5.3",
+    "husky": "^9.0.11",
+    "jsdom": "^27.1.0",
     "lint-staged": "^15.2.2",
     "mini-css-extract-plugin": "^2.7.6",
     "playwright": "^1.40.0",
@@ -116,7 +106,7 @@
     "rimraf": "^5.0.5",
     "terser-webpack-plugin": "^5.3.9",
     "typescript": "^5.3.0",
-    "vitest": "^2.0.0",
+    "vitest": "^4.0.8",
     "webpack": "^5.89.0",
     "webpack-bundle-analyzer": "^4.9.1",
     "webpack-cli": "^5.1.4",
