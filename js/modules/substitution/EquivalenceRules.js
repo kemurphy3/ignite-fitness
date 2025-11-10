@@ -5,70 +5,63 @@
  */
 
 export const EquivalenceRules = {
-    // Base time conversion factors between modalities
-    TIME_FACTORS: {
-        'running_to_cycling': 1.30, // 1 min run = 1.3 min bike
-        'running_to_swimming': 0.80, // 1 min run = 0.8 min swim
-        'cycling_to_running': 0.77, // 1 min bike = 0.77 min run
-        'cycling_to_swimming': 0.62, // 1 min bike = 0.62 min swim
-        'swimming_to_running': 1.25, // 1 min swim = 1.25 min run
-        'swimming_to_cycling': 1.61 // 1 min swim = 1.61 min bike
-    },
-
-    // Zone-specific adjustments to base factors
-    ZONE_ADJUSTMENTS: {
-        'running_to_cycling': {
-            Z1: 0.05, // Easy sessions: 30% + 5% = 35% longer
-            Z2: 0.03, // Aerobic: 30% + 3% = 33% longer
-            Z3: 0.00, // Tempo: exactly 30% longer
-            Z4: -0.05, // VO2: 30% - 5% = 25% longer
-            Z5: -0.10 // Power: 30% - 10% = 20% longer
-        },
-        'running_to_swimming': {
-            Z1: -0.05, // Easy: 20% - 5% = 15% shorter
-            Z2: 0.00, // Aerobic: exactly 20% shorter
-            Z3: 0.00, // Tempo: exactly 20% shorter
-            Z4: 0.05, // VO2: 20% - 5% = 15% shorter
-            Z5: 0.10 // Power: 20% - 10% = 10% shorter
-        },
-        'cycling_to_running': {
-            Z1: -0.05, // Reverse of running_to_cycling
-            Z2: -0.03,
-            Z3: 0.00,
-            Z4: 0.05,
-            Z5: 0.10
-        },
-        'cycling_to_swimming': {
-            Z1: -0.10,
-            Z2: -0.05,
-            Z3: 0.00,
-            Z4: 0.05,
-            Z5: 0.15
-        },
-        'swimming_to_running': {
-            Z1: 0.05, // Reverse of running_to_swimming
-            Z2: 0.00,
-            Z3: 0.00,
-            Z4: -0.05,
-            Z5: -0.10
-        },
-        'swimming_to_cycling': {
-            Z1: 0.10, // Reverse of cycling_to_swimming
-            Z2: 0.05,
-            Z3: 0.00,
-            Z4: -0.05,
-            Z5: -0.15
+    timeMultiplier(fromModality, toModality, zone) {
+        if (fromModality === 'running' && toModality === 'cycling') {
+            const zoneScale = {
+                Z1: 1.35,
+                Z2: 1.33,
+                Z3: 1.30,
+                Z4: 1.25,
+                Z5: 1.20
+            };
+            return zoneScale[zone] || 1.30;
         }
+        if (fromModality === 'running' && toModality === 'swimming') {
+            return 0.75;
+        }
+        if (fromModality === 'cycling' && toModality === 'running') {
+            const inverse = {
+                Z1: 1 / 1.35,
+                Z2: 1 / 1.33,
+                Z3: 1 / 1.30,
+                Z4: 1 / 1.25,
+                Z5: 1 / 1.20
+            };
+            return inverse[zone] || (1 / 1.30);
+        }
+        if (fromModality === 'swimming' && toModality === 'running') {
+            return 1 / 0.75;
+        }
+        if (fromModality === 'cycling' && toModality === 'swimming') {
+            return 0.75 * this.timeMultiplier(fromModality, 'running', zone);
+        }
+        if (fromModality === 'swimming' && toModality === 'cycling') {
+            return this.timeMultiplier('running', 'cycling', zone) * (1 / 0.75);
+        }
+        return 1.0;
     },
 
-    // Load equivalence factors (for double-checking)
+    loadEquivalenceFactor(fromModality, toModality) {
+        const key = `${fromModality}_to_${toModality}`;
+        const factors = {
+            'running_to_cycling': 0.85,
+            'cycling_to_running': 1 / 0.85,
+            'running_to_swimming': 1.10,
+            'swimming_to_running': 1 / 1.10,
+            'cycling_to_swimming': 0.85 * 1.10,
+            'swimming_to_cycling': 1 / (0.85 * 1.10)
+        };
+        return factors[key] || 1.0;
+    },
+
+    // Load equivalence factors (for reference)
     LOAD_FACTORS: {
-        'running_to_cycling': 0.85, // Cycling load 85% of running
-        'running_to_swimming': 1.20, // Swimming load 120% of running
-        'cycling_to_running': 1.18, // Running load 118% of cycling
-        'cycling_to_swimming': 1.41, // Swimming load 141% of cycling
-        'swimming_to_running': 0.83, // Running load 83% of swimming
-        'swimming_to_cycling': 0.71 // Cycling load 71% of swimming
+        'running_to_cycling': 0.85,
+        'cycling_to_running': 1 / 0.85,
+        'running_to_swimming': 1.10,
+        'swimming_to_running': 1 / 1.10,
+        'cycling_to_swimming': 0.85 * 1.10,
+        'swimming_to_cycling': 1 / (0.85 * 1.10)
     },
 
     // Adaptation compatibility matrix
@@ -133,17 +126,7 @@ export const EquivalenceRules = {
      * @returns {number} Time conversion factor
      */
     getTimeFactor(fromModality, toModality, zone) {
-        if (fromModality === toModality) {return 1.0;}
-
-        const conversionKey = `${fromModality}_to_${toModality}`;
-        const baseFactor = this.TIME_FACTORS[conversionKey];
-
-        if (!baseFactor) {
-            throw new Error(`No conversion factor for ${conversionKey}`);
-        }
-
-        const zoneAdjustment = this.ZONE_ADJUSTMENTS[conversionKey]?.[zone] || 0;
-        return baseFactor + zoneAdjustment;
+        return this.timeMultiplier(fromModality, toModality, zone);
     },
 
     /**
@@ -153,10 +136,7 @@ export const EquivalenceRules = {
      * @returns {number} Load conversion factor
      */
     getLoadFactor(fromModality, toModality) {
-        if (fromModality === toModality) {return 1.0;}
-
-        const conversionKey = `${fromModality}_to_${toModality}`;
-        return this.LOAD_FACTORS[conversionKey] || 1.0;
+        return this.loadEquivalenceFactor(fromModality, toModality);
     },
 
     /**
@@ -166,8 +146,8 @@ export const EquivalenceRules = {
      * @returns {Object} Compatibility result
      */
     checkAdaptationCompatibility(sourceAdaptation, targetAdaptation) {
-        const normalizedSource = sourceAdaptation.toLowerCase().replace(/[^a-z_]/g, '');
-        const normalizedTarget = targetAdaptation.toLowerCase().replace(/[^a-z_]/g, '');
+        const normalizedSource = (sourceAdaptation || 'general').toLowerCase().replace(/[^a-z_]/g, '');
+        const normalizedTarget = (targetAdaptation || 'general').toLowerCase().replace(/[^a-z_]/g, '');
 
         if (normalizedSource === normalizedTarget) {
             return { compatible: true, match: 'exact', confidence_bonus: 0.10 };
@@ -227,38 +207,52 @@ export const EquivalenceRules = {
             targetModality,
             zone,
             duration,
-            loadVariance
+            loadVariance,
+            userProfile = {}
         } = params;
 
-        let confidence = this.CONFIDENCE_FACTORS.base_confidence;
+        const adaptationCheck = this.checkAdaptationCompatibility(
+            sourceAdaptation || 'general',
+            targetAdaptation || 'general'
+        );
+        const adaptationFactor = adaptationCheck.match === 'exact'
+            ? 1.0
+            : adaptationCheck.match === 'compatible'
+                ? 0.85
+                : 0.65;
 
-        // Adaptation compatibility
-        const adaptationCheck = this.checkAdaptationCompatibility(sourceAdaptation, targetAdaptation);
-        confidence += adaptationCheck.confidence_bonus;
+        const loadAccuracy = Math.max(0.4, 1 - Math.min(loadVariance, 0.6));
 
-        // Common conversion bonus
+        const experienceLevel = (userProfile.training_level || '').toLowerCase();
+        const experienceFactor = {
+            beginner: 0.80,
+            novice: 0.80,
+            intermediate: 0.90,
+            advanced: 1.0,
+            elite: 1.05
+        }[experienceLevel] || 0.90;
+
+        let confidence = adaptationFactor * loadAccuracy * experienceFactor;
+
         if ((sourceModality === 'running' && targetModality === 'cycling') ||
             (sourceModality === 'cycling' && targetModality === 'running')) {
-            confidence += this.CONFIDENCE_FACTORS.common_conversion;
+            confidence *= 1.05;
         }
 
-        // Zone penalty
         const zonePenalty = this.CONFIDENCE_FACTORS.zone_penalty[zone] || 0;
-        confidence += zonePenalty;
+        confidence *= (1 + zonePenalty);
 
-        // Duration penalties
         if (duration < 10) {
-            confidence += this.CONFIDENCE_FACTORS.duration_penalty.very_short;
+            confidence *= (1 + this.CONFIDENCE_FACTORS.duration_penalty.very_short);
         } else if (duration > 120) {
-            confidence += this.CONFIDENCE_FACTORS.duration_penalty.very_long;
+            confidence *= (1 + this.CONFIDENCE_FACTORS.duration_penalty.very_long);
         }
 
-        // Load variance penalty
         if (loadVariance > this.LOAD_TOLERANCE.acceptable) {
-            confidence -= 0.10;
+            confidence *= 0.9;
         }
 
-        return Math.max(0, Math.min(1, confidence));
+        return Math.max(0, Math.min(1, Number(confidence.toFixed(3))));
     }
 };
 

@@ -51,7 +51,8 @@ class SubstitutionEngine {
                     sessionAnalysis,
                     targetLoad.total_load,
                     planned_session.modality,
-                    target_modality
+                    target_modality,
+                    user_context
                 )
             );
 
@@ -132,6 +133,12 @@ class SubstitutionEngine {
             // Simple intensity-based parsing
             analysis.primary_zone = planned_session.intensity;
             analysis.zone_distribution[planned_session.intensity] = analysis.duration_minutes;
+        } else {
+            const fallbackZone = planned_session.primary_zone || 'Z2';
+            analysis.primary_zone = fallbackZone;
+            if (analysis.duration_minutes > 0) {
+                analysis.zone_distribution[fallbackZone] = analysis.duration_minutes;
+            }
         }
 
         // Determine intensity profile
@@ -209,48 +216,55 @@ class SubstitutionEngine {
      * @param {string} targetModality - Target modality
      * @returns {Object} Scaled workout with load calculations
      */
-    scaleWorkoutForEquivalence(candidate, sessionAnalysis, targetLoad, sourceModality, targetModality) {
+    scaleWorkoutForEquivalence(candidate, sessionAnalysis, targetLoad, sourceModality, targetModality, userContext = {}) {
         const primaryZone = sessionAnalysis.primary_zone;
 
         // Get time conversion factor
         const timeFactor = EquivalenceRules.getTimeFactor(sourceModality, targetModality, primaryZone);
+        if (!Number.isFinite(timeFactor) || timeFactor <= 0) {
+            throw new Error(`Invalid time conversion factor for ${sourceModality} -> ${targetModality} in ${primaryZone}`);
+        }
 
         // Calculate scaled duration
-        const originalDuration = candidate.time_required;
-        const scaledDuration = Math.round(originalDuration * timeFactor);
-
-        // Scale the workout structure
-        const scaledStructure = candidate.structure.map(block => {
-            if (block.block_type === 'main') {
-                if (block.sets) {
-                    // Interval workout - scale work duration
-                    const scaledWorkDuration = Math.round(block.work_duration * timeFactor);
-                    return {
-                        ...block,
-                        work_duration: scaledWorkDuration
-                    };
-                } else {
-                    // Continuous workout - scale total duration
-                    const scaledBlockDuration = Math.round(block.duration * timeFactor);
-                    return {
-                        ...block,
-                        duration: scaledBlockDuration
-                    };
-                }
-            }
-            return block; // Keep warmup/cooldown unchanged
-        });
+        const scaledStructure = this.scaleStructure(candidate.structure, timeFactor);
+        let metrics = this.calculateStructureMetrics(scaledStructure, primaryZone);
 
         // Calculate load for scaled workout
-        const scaledSession = {
+        let scaledSession = {
             modality: targetModality,
-            duration_minutes: scaledDuration,
+            duration_minutes: metrics.totalMinutes,
             structure: scaledStructure,
-            adaptation: candidate.adaptation
+            adaptation: candidate.adaptation,
+            zone_distribution: metrics.zoneDistribution
         };
 
-        const scaledLoad = LoadCalculationEngine.compute_load(scaledSession);
-        const loadVariance = Math.abs(scaledLoad.total_load - targetLoad) / targetLoad;
+        let scaledLoad = LoadCalculationEngine.compute_load(scaledSession);
+        let loadVariance = Math.abs(scaledLoad.total_load - targetLoad) / Math.max(targetLoad, 1);
+
+        // If outside acceptable variance, apply corrective scaling once
+        if (scaledLoad.total_load > 0) {
+            const correctionFactor = targetLoad / scaledLoad.total_load;
+            if (Math.abs(1 - correctionFactor) > 0.05) {
+                const boundedCorrection = Math.max(0.8, Math.min(1.2, correctionFactor));
+                const correctedStructure = this.scaleStructure(scaledStructure, boundedCorrection);
+                const correctedMetrics = this.calculateStructureMetrics(correctedStructure, primaryZone);
+                const correctedSession = {
+                    modality: targetModality,
+                    duration_minutes: correctedMetrics.totalMinutes,
+                    structure: correctedStructure,
+                    adaptation: candidate.adaptation,
+                    zone_distribution: correctedMetrics.zoneDistribution
+                };
+                const correctedLoad = LoadCalculationEngine.compute_load(correctedSession);
+                const correctedVariance = Math.abs(correctedLoad.total_load - targetLoad) / Math.max(targetLoad, 1);
+                if (correctedVariance < loadVariance) {
+                    scaledLoad = correctedLoad;
+                    loadVariance = correctedVariance;
+                    metrics = correctedMetrics;
+                    scaledSession = correctedSession;
+                }
+            }
+        }
 
         // Calculate confidence score
         const confidence = EquivalenceRules.calculateConfidence({
@@ -259,21 +273,121 @@ class SubstitutionEngine {
             sourceModality,
             targetModality,
             zone: primaryZone,
-            duration: scaledDuration,
-            loadVariance
+            duration: metrics.totalMinutes,
+            loadVariance,
+            userProfile: userContext.user_profile || {}
         });
 
         return {
             ...candidate,
-            scaled_duration: scaledDuration,
-            scaled_structure: scaledStructure,
+            scaled_duration: Math.round(metrics.totalMinutes),
+            scaled_structure: scaledSession.structure,
             scaling_factor: timeFactor,
             calculated_load: scaledLoad.total_load,
+            load_equivalence_target: targetLoad,
             load_variance: loadVariance,
             load_variance_percentage: Math.round(loadVariance * 1000) / 10, // One decimal place
             confidence_score: Math.round(confidence * 100) / 100,
             is_substitution: true,
             substitution_method: 'time_factor_scaling'
+        };
+    }
+
+    /**
+     * Scale workout structure by factor without mutating original
+     * @param {Array} structure - Workout structure blocks
+     * @param {number} factor - Scaling factor
+     * @returns {Array} Scaled structure
+     */
+    scaleStructure(structure = [], factor = 1) {
+        if (!Array.isArray(structure) || structure.length === 0) {
+            return [];
+        }
+
+        return structure.map(block => {
+            if (!block || block.block_type !== 'main') {
+                return { ...block };
+            }
+
+            const scaledBlock = { ...block };
+
+            if (block.sets && block.work_duration) {
+                const scaledWork = Math.max(10, Math.round(Number(block.work_duration) * factor));
+                scaledBlock.work_duration = scaledWork;
+                if (block.rest_duration) {
+                    const scaledRest = Math.max(5, Math.round(Number(block.rest_duration) * Math.min(1.2, factor)));
+                    scaledBlock.rest_duration = scaledRest;
+                }
+            } else if (block.duration) {
+                const scaledDuration = Math.max(1, Math.round(Number(block.duration) * factor));
+                scaledBlock.duration = scaledDuration;
+            }
+
+            return scaledBlock;
+        });
+    }
+
+    /**
+     * Calculate total duration and zone distribution from structure
+     * @param {Array} structure - Workout structure blocks
+     * @returns {Object} Metrics { totalMinutes, zoneDistribution }
+     */
+    calculateStructureMetrics(structure = [], fallbackZone = null) {
+        let totalMinutes = 0;
+        const zoneDistribution = {};
+
+        structure.forEach(block => {
+            if (!block) {
+                return;
+            }
+
+            let blockMinutes = 0;
+
+            if (block.sets && block.work_duration) {
+                const workSeconds = Number(block.work_duration);
+                const restSeconds = Number(block.rest_duration || 0);
+                const sets = Number(block.sets);
+                if (Number.isFinite(workSeconds) && Number.isFinite(sets) && sets > 0) {
+                    blockMinutes += (workSeconds * sets) / 60;
+                    if (Number.isFinite(restSeconds) && restSeconds > 0) {
+                        blockMinutes += (restSeconds * sets) / 60;
+                    }
+                }
+            } else if (block.duration) {
+                const durationMinutes = Number(block.duration);
+                if (Number.isFinite(durationMinutes) && durationMinutes > 0) {
+                    blockMinutes += durationMinutes;
+                }
+            }
+
+            totalMinutes += blockMinutes;
+
+            if (block.intensity) {
+                const zone = (block.intensity || '').toString().toUpperCase();
+                if (zone) {
+                    const workMinutes = block.sets && block.work_duration
+                        ? (Number(block.work_duration) * Number(block.sets || 0)) / 60
+                        : Number(block.duration || 0);
+
+                    if (Number.isFinite(workMinutes) && workMinutes > 0) {
+                        zoneDistribution[zone] = (zoneDistribution[zone] || 0) + workMinutes;
+                    }
+                }
+            }
+        });
+
+        if (Object.keys(zoneDistribution).length === 0 && fallbackZone) {
+            zoneDistribution[fallbackZone] = Math.max(totalMinutes, 1);
+        }
+
+        return {
+            totalMinutes: Math.max(totalMinutes, 1),
+            zoneDistribution: Object.fromEntries(
+                Object.entries(zoneDistribution).map(([zone, minutes]) => [
+                    zone,
+                    Number(minutes.toFixed(2))
+                ])
+            )
         };
     }
 

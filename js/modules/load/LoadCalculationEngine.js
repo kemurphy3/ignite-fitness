@@ -52,8 +52,15 @@ class LoadCalculationEngine {
         }
 
         // Method 2: Zone-based RPE*min (second priority)
-        if (session.zone_distribution && session.duration_minutes) {
-            const zoneResult = this.calculateZoneBasedLoad(session);
+        const zoneDistribution = session.zone_distribution && Object.keys(session.zone_distribution).length > 0
+            ? session.zone_distribution
+            : this.extractZoneDistribution(session.structure);
+
+        if (zoneDistribution && session.duration_minutes) {
+            const zoneResult = this.calculateZoneBasedLoad({
+                ...session,
+                zone_distribution: zoneDistribution
+            });
             if (zoneResult.valid) {
                 result.total_load = zoneResult.load_score;
                 result.method_used = 'Zone_RPE';
@@ -159,14 +166,6 @@ class LoadCalculationEngine {
             return { valid: false };
         }
 
-        const zoneLoadMultipliers = {
-            Z1: 1.0,
-            Z2: 2.0,
-            Z3: 4.0,
-            Z4: 7.0,
-            Z5: 10.0
-        };
-
         let total_load = 0;
         const breakdown = {};
 
@@ -181,7 +180,7 @@ class LoadCalculationEngine {
                 return;
             }
 
-            const multiplier = zoneLoadMultipliers[zone];
+            const multiplier = RPE_ZONE_MULTIPLIERS[zone];
             if (!multiplier) {
                 return;
             }
@@ -209,6 +208,50 @@ class LoadCalculationEngine {
                 avg_intensity: Number((total_load / duration).toFixed(3))
             }
         };
+    }
+
+    /**
+     * Extract zone distribution from session structure
+     * @param {Array} structure - Workout structure blocks
+     * @returns {Object|null} Zone distribution in minutes
+     */
+    static extractZoneDistribution(structure) {
+        if (!Array.isArray(structure) || structure.length === 0) {
+            return null;
+        }
+
+        const distribution = {};
+
+        structure.forEach(block => {
+            if (!block || !block.intensity) {
+                return;
+            }
+
+            const zone = this.normalizeZone(block.intensity);
+            if (!zone) {
+                return;
+            }
+
+            let minutes = 0;
+            if (block.sets && block.work_duration) {
+                const workSeconds = Number(block.work_duration);
+                const sets = Number(block.sets);
+                if (Number.isFinite(workSeconds) && workSeconds > 0 && Number.isFinite(sets) && sets > 0) {
+                    minutes += (workSeconds * sets) / 60;
+                }
+            } else if (block.duration) {
+                const durationMinutes = Number(block.duration);
+                if (Number.isFinite(durationMinutes) && durationMinutes > 0) {
+                    minutes += durationMinutes;
+                }
+            }
+
+            if (minutes > 0) {
+                distribution[zone] = (distribution[zone] || 0) + minutes;
+            }
+        });
+
+        return Object.keys(distribution).length > 0 ? distribution : null;
     }
 
     /**
