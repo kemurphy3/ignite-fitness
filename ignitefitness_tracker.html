@@ -2097,13 +2097,6 @@
         let stravaData = [];
         let sleepData = [];
         
-        // Strava API configuration
-        const STRAVA_CONFIG = {
-            clientId: '', // You'll need to get this from Strava
-            redirectUri: window.location.origin + '/strava-callback.html',
-            scope: 'read,activity:read_all,profile:read_all'
-        };
-        
         // 4-Week Progression Targets
         const progressionTargets = {
             1: { bench: 40, squat: 75, pullups: -60, description: 'Gentle Return' },
@@ -3178,13 +3171,32 @@
 
         // Strava Integration Functions
         function authenticateStrava() {
-            const authUrl = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CONFIG.clientId}&redirect_uri=${STRAVA_CONFIG.redirectUri}&response_type=code&scope=${STRAVA_CONFIG.scope}`;
+            const config = getStravaConfig();
+            if (!config.clientId) {
+                informMissingStravaConfig();
+                return;
+            }
+            const authUrl = `https://www.strava.com/oauth/authorize?client_id=${encodeURIComponent(config.clientId)}&redirect_uri=${encodeURIComponent(config.redirectUri)}&response_type=code&scope=${encodeURIComponent(config.scope)}`;
             window.open(authUrl, '_blank');
         }
 
         async function refreshStravaToken() {
+            if (typeof STRAVA_TOKENS === 'undefined') {
+                informMissingStravaConfig();
+                throw new Error('Strava token configuration is not loaded.');
+            }
+
             if (!STRAVA_TOKENS.refreshToken || STRAVA_TOKENS.refreshToken === 'your_refresh_token_here') {
                 throw new Error('No refresh token available');
+            }
+            
+            const config = getStravaConfig();
+            const clientId = STRAVA_TOKENS.clientId || config.clientId;
+            const clientSecret = STRAVA_TOKENS.clientSecret;
+            
+            if (!clientId || !clientSecret) {
+                informMissingStravaConfig();
+                throw new Error('Strava client credentials are not configured on this environment.');
             }
             
             // Note: Strava integration is handled server-side via API endpoints
@@ -3194,8 +3206,8 @@
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
                 body: new URLSearchParams({
-                    'client_id': STRAVA_TOKENS.clientId || 'your_client_id',
-                    'client_secret': STRAVA_TOKENS.clientSecret || 'your_client_secret',
+                    'client_id': clientId,
+                    'client_secret': clientSecret,
                     'refresh_token': STRAVA_TOKENS.refreshToken,
                     'grant_type': 'refresh_token'
                 })
@@ -3549,6 +3561,12 @@
             
             console.log('Checking Strava tokens...', typeof STRAVA_TOKENS);
             
+            const config = getStravaConfig();
+            if (!config.clientId) {
+                informMissingStravaConfig();
+                return;
+            }
+            
             if (typeof STRAVA_TOKENS === 'undefined') {
                 statusElement.innerHTML = '❌ Config file not loaded';
                 statusElement.style.color = '#fc8181';
@@ -3566,6 +3584,39 @@
                 statusElement.innerHTML = '✅ Tokens configured';
                 statusElement.style.color = '#68d391';
             }
+        }
+
+        // Strava API configuration helpers
+        function getStravaConfig() {
+            let integrations = {};
+            try {
+                if (typeof window !== 'undefined' && window.configLoader && typeof window.configLoader.get === 'function') {
+                    integrations = window.configLoader.get('integrations') || {};
+                }
+            } catch (error) {
+                console.warn('Unable to load integrations from configLoader:', error);
+            }
+            const stravaSettings = integrations.strava || {};
+            const tokenConfig = typeof STRAVA_TOKENS !== 'undefined' ? STRAVA_TOKENS : {};
+            const clientId = stravaSettings.clientId || tokenConfig.clientId || '';
+            const redirectUri = stravaSettings.redirectUri || (typeof window !== 'undefined' ? `${window.location.origin}/strava-callback.html` : '');
+            const scope = stravaSettings.scope || 'read,activity:read_all,profile:read_all';
+            return { clientId, redirectUri, scope };
+        }
+
+        function informMissingStravaConfig() {
+            const message = '⚠️ Strava configuration required. Set STRAVA_CLIENT_ID in environment settings.';
+            const statusDiv = document.getElementById('stravaStatus');
+            const tokenStatusDiv = document.getElementById('tokenStatus');
+            if (statusDiv) {
+                statusDiv.innerHTML = message;
+                statusDiv.style.color = '#fbd38d';
+            }
+            if (tokenStatusDiv) {
+                tokenStatusDiv.innerHTML = message;
+                tokenStatusDiv.style.color = '#fbd38d';
+            }
+            console.warn('[IgniteFitness] ' + message);
         }
     </script>
 </body>

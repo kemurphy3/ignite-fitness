@@ -237,6 +237,11 @@ class IntegrationPanel extends BaseComponent {
      */
     async connectStrava() {
         const stravaAuthUrl = this.buildStravaAuthUrl();
+        if (!stravaAuthUrl) {
+            this.logger.warn('Strava client configuration missing, aborting OAuth flow');
+            this.showError('Strava configuration required. Please set STRAVA_CLIENT_ID in your environment.');
+            return;
+        }
         window.open(stravaAuthUrl, '_blank', 'width=600,height=700');
         
         // Listen for auth completion
@@ -247,17 +252,47 @@ class IntegrationPanel extends BaseComponent {
         });
     }
     
+    getStravaIntegrationConfig() {
+        try {
+            const integrations = typeof window !== 'undefined' && window.configLoader?.get?.('integrations')
+                ? window.configLoader.get('integrations')
+                : {};
+            const strava = integrations?.strava || {};
+            const fallbackRedirect = typeof window !== 'undefined'
+                ? `${window.location.origin}/auth/strava/callback`
+                : '';
+            return {
+                clientId: strava.clientId || '',
+                redirectUri: strava.redirectUri || fallbackRedirect,
+                scope: strava.scope || 'read,activity:read'
+            };
+        } catch (error) {
+            this.logger.warn('Failed to resolve Strava integration config', error);
+            const fallbackRedirect = typeof window !== 'undefined'
+                ? `${window.location.origin}/auth/strava/callback`
+                : '';
+            return {
+                clientId: '',
+                redirectUri: fallbackRedirect,
+                scope: 'read,activity:read'
+            };
+        }
+    }
+    
     /**
      * Build Strava authorization URL
-     * @returns {string} Authorization URL
+     * @returns {string|null} Authorization URL or null when config missing
      */
     buildStravaAuthUrl() {
-        const clientId = process.env.STRAVA_CLIENT_ID || 'your_client_id';
-        const redirectUri = encodeURIComponent(window.location.origin + '/auth/strava/callback');
-        const scope = 'read,activity:read';
+        const { clientId, redirectUri, scope } = this.getStravaIntegrationConfig();
+        if (!clientId) {
+            return null;
+        }
+        const encodedRedirect = encodeURIComponent(redirectUri);
+        const encodedScope = encodeURIComponent(scope);
         const state = this.generateState();
         
-        return `https://www.strava.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=${state}`;
+        return `https://www.strava.com/oauth/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodedRedirect}&response_type=code&scope=${encodedScope}&state=${state}`;
     }
     
     /**

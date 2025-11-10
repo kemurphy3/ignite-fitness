@@ -458,6 +458,9 @@ class OnboardingManager {
     async saveCompleteProfile() {
         try {
             const userId = this.getUserId();
+            const existingProfile = this.storageManager?.getUserProfile?.(userId);
+            const programStartDate = this.determineProgramStartDate(existingProfile);
+            this.onboardingData.programStartDate = programStartDate;
             
             // Combine all onboarding data into single object
             const completeProfile = {
@@ -478,6 +481,8 @@ class OnboardingManager {
                     currentInjuries: this.onboardingData.currentInjuries || [],
                     pastInjuries: this.onboardingData.pastInjuries || [],
                     limitations: this.onboardingData.limitations || [],
+                    programStartDate,
+                    program_start_date: programStartDate,
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString()
                 },
@@ -494,7 +499,9 @@ class OnboardingManager {
                     aesthetic_focus: this.onboardingData.aesthetic_focus || 'functional',
                     training_mode: 'simple', // Default to simple mode
                     onboarding_version: this.onboardingVersion,
-                    completed_at: new Date().toISOString()
+                    completed_at: new Date().toISOString(),
+                    programStartDate,
+                    program_start_date: programStartDate
                 }
             };
             
@@ -548,6 +555,33 @@ class OnboardingManager {
             valid: errors.length === 0,
             errors: errors
         };
+    }
+    
+    determineProgramStartDate(existingProfile = {}) {
+        const candidateValues = [
+            this.onboardingData?.programStartDate,
+            this.onboardingData?.trainingStartDate,
+            this.onboardingData?.seasonStartDate,
+            existingProfile?.user_profile?.programStartDate,
+            existingProfile?.user_profile?.program_start_date,
+            existingProfile?.preferences?.programStartDate,
+            existingProfile?.preferences?.program_start_date,
+            existingProfile?.user_profile?.created_at
+        ].filter(Boolean);
+
+        const validDates = candidateValues
+            .map(value => {
+                const date = new Date(value);
+                return Number.isNaN(date.getTime()) ? null : date;
+            })
+            .filter(Boolean);
+
+        if (validDates.length === 0) {
+            return new Date().toISOString();
+        }
+
+        validDates.sort((a, b) => a - b);
+        return validDates[0].toISOString();
     }
     
     /**

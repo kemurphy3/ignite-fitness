@@ -82,6 +82,15 @@ exports.handler = async (event, context) => {
                 pwa: true
             },
             
+            // Public integration settings
+            integrations: {
+                strava: {
+                    clientId: process.env.STRAVA_CLIENT_ID || '',
+                    redirectUri: process.env.STRAVA_PUBLIC_REDIRECT_URI || `${process.env.NETLIFY_URL || 'http://localhost:8888'}/strava-callback.html`,
+                    scope: 'read,activity:read_all,profile:read_all'
+                }
+            },
+            
             // UI configuration
             ui: {
                 theme: 'default',

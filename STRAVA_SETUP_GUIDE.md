@@ -48,15 +48,15 @@ This guide explains how to connect your Ignite Fitness app to real Strava accoun
    - In your deployment platform (Netlify, Vercel, etc.)
    - Add environment variable:
      ```
-     STRAVA_CLIENT_ID=your_client_id_here
-     STRAVA_CLIENT_SECRET=your_client_secret_here
+     STRAVA_CLIENT_ID=YOUR_STRAVA_CLIENT_ID
+     STRAVA_CLIENT_SECRET=YOUR_STRAVA_CLIENT_SECRET
      ```
 
 2. **Update netlify.toml or environment config**
    ```toml
    [build.environment]
-     STRAVA_CLIENT_ID = "your_client_id"
-     STRAVA_CLIENT_SECRET = "your_client_secret"
+     STRAVA_CLIENT_ID = "YOUR_STRAVA_CLIENT_ID"
+     STRAVA_CLIENT_SECRET = "YOUR_STRAVA_CLIENT_SECRET"
    ```
 
 ## Step 3: Backend Setup (Required for Token Exchange)

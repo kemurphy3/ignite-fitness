@@ -47,6 +47,15 @@ const PUBLIC_CONFIG = {
         baseUrl: '', // Will be populated from public-config endpoint
         timeout: 30000, // 30 seconds
         retryAttempts: 3
+    },
+    
+    // Third-party integrations (public values only)
+    integrations: {
+        strava: {
+            clientId: '',
+            redirectUri: '',
+            scope: 'read,activity:read_all,profile:read_all'
+        }
     }
 };
 

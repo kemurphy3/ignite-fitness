@@ -89,11 +89,12 @@ function generatePeriodization(sport, season, gameDates = [], preferences = {}) 
     };
 
     const macrocycle = macrocycles[season] || macrocycles['off-season'];
+    const resolvedStartDate = resolveProgramStartDate(preferences) || new Date();
     
     // Generate 4-week microcycle blocks
     const blocks = [];
     for (let i = 1; i <= macrocycle.blocks; i++) {
-        const block = generateMicrocycleBlock(i, macrocycle, gameDates);
+        const block = generateMicrocycleBlock(i, macrocycle, gameDates, resolvedStartDate);
         blocks.push(block);
     }
 
@@ -114,7 +115,8 @@ function generatePeriodization(sport, season, gameDates = [], preferences = {}) 
         summary: {
             totalWeeks: blocks.length * 4,
             totalBlocks: blocks.length,
-            phaseProgress: calculatePhaseProgress(blocks),
+            programStartDate: resolvedStartDate.toISOString(),
+            phaseProgress: calculatePhaseProgress(blocks, resolvedStartDate),
             recommendations: generateRecommendations(season, blocks)
         }
     };
@@ -125,12 +127,14 @@ function generatePeriodization(sport, season, gameDates = [], preferences = {}) 
  * @param {number} blockNumber - Block number
  * @param {Object} macrocycle - Macrocycle config
  * @param {Array} gameDates - Game dates
+ * @param {Date} programStartDate - The start date of the training program
  * @returns {Object} Microcycle block
  */
-function generateMicrocycleBlock(blockNumber, macrocycle, gameDates) {
+function generateMicrocycleBlock(blockNumber, macrocycle, gameDates, programStartDate = new Date()) {
     const weeks = [];
     
     for (let week = 1; week <= 4; week++) {
+        const weekStartDate = calculateWeekStartDate(week, blockNumber, programStartDate);
         const weekData = {
             week: `${blockNumber}-${week}`,
             volumeMultiplier: calculateVolumeMultiplier(week),
@@ -138,7 +142,8 @@ function generateMicrocycleBlock(blockNumber, macrocycle, gameDates) {
             isDeload: week === 4,
             focus: macrocycle.focus,
             trainingLoad: macrocycle.intensity,
-            gameConflict: hasGameConflict(week, blockNumber, gameDates)
+            gameConflict: hasGameConflict(week, blockNumber, gameDates),
+            startDate: weekStartDate
         };
         
         // Apply taper if game is close
@@ -157,8 +162,12 @@ function generateMicrocycleBlock(blockNumber, macrocycle, gameDates) {
         blockNumber,
         phase: macrocycle.focus,
         weeks,
-        startDate: calculateBlockStartDate(blockNumber),
-        endDate: calculateBlockEndDate(blockNumber)
+        startDate: calculateBlockStartDate(blockNumber, programStartDate),
+        endDate: calculateBlockEndDate(blockNumber, programStartDate),
+        focusAreas: determineFocusAreas(blockNumber, macrocycle),
+        deloadWeek: 4,
+        taperWeeks: identifyTaperWeeks(weeks),
+        readinessFocus: determineReadinessFocus(macrocycle, blockNumber)
     };
 }
 
@@ -192,7 +201,7 @@ function calculateIntensityMultiplier(week) {
 function hasGameConflict(week, blockNumber, gameDates) {
     if (!gameDates || gameDates.length === 0) return false;
     
-    const weekStartDate = calculateWeekStartDate(week, blockNumber);
+    const weekStartDate = calculateWeekStartDate(week, blockNumber, new Date());
     const weekEndDate = new Date(weekStartDate);
     weekEndDate.setDate(weekEndDate.getDate() + 7);
     
@@ -222,7 +231,7 @@ function calculateAutoTaper(gameDates, blocks) {
         
         blocks.forEach(block => {
             block.weeks.forEach(week => {
-                const weekStart = calculateWeekStartDate(week.week.split('-')[1], block.blockNumber);
+                const weekStart = calculateWeekStartDate(week.week.split('-')[1], block.blockNumber, new Date());
                 const weekEnd = new Date(weekStart);
                 weekEnd.setDate(weekEnd.getDate() + 7);
                 
@@ -253,7 +262,7 @@ function calculateAutoTaper(gameDates, blocks) {
 function calculateTaperAdjustment(week, blockNumber, gameDates) {
     if (!gameDates || gameDates.length === 0) return null;
     
-    const weekStartDate = calculateWeekStartDate(week, blockNumber);
+    const weekStartDate = calculateWeekStartDate(week, blockNumber, new Date());
     
     for (const gameDate of gameDates) {
         const game = new Date(gameDate);
@@ -276,15 +285,16 @@ function calculateTaperAdjustment(week, blockNumber, gameDates) {
 
 /**
  * Calculate week start date
- * @param {number} week - Week in block
+ * @param {number} week - Week number within block
  * @param {number} blockNumber - Block number
  * @returns {Date} Week start date
  */
-function calculateWeekStartDate(week, blockNumber) {
-    const now = new Date();
+function calculateWeekStartDate(week, blockNumber, programStartDate) {
+    const baseDate = programStartDate ? new Date(programStartDate) : new Date();
     const weeksOffset = ((blockNumber - 1) * 4) + (week - 1);
-    now.setDate(now.getDate() + (weeksOffset * 7));
-    return now;
+    const computedStart = new Date(baseDate.getTime());
+    computedStart.setDate(computedStart.getDate() + (weeksOffset * 7));
+    return computedStart;
 }
 
 /**
@@ -292,11 +302,12 @@ function calculateWeekStartDate(week, blockNumber) {
  * @param {number} blockNumber - Block number
  * @returns {Date} Block start date
  */
-function calculateBlockStartDate(blockNumber) {
-    const now = new Date();
+function calculateBlockStartDate(blockNumber, programStartDate) {
+    const baseDate = programStartDate ? new Date(programStartDate) : new Date();
+    const computedStart = new Date(baseDate.getTime());
     const weeksOffset = (blockNumber - 1) * 4;
-    now.setDate(now.getDate() + (weeksOffset * 7));
-    return now;
+    computedStart.setDate(computedStart.getDate() + (weeksOffset * 7));
+    return computedStart;
 }
 
 /**
@@ -304,8 +315,8 @@ function calculateBlockStartDate(blockNumber) {
  * @param {number} blockNumber - Block number
  * @returns {Date} Block end date
  */
-function calculateBlockEndDate(blockNumber) {
-    const startDate = calculateBlockStartDate(blockNumber);
+function calculateBlockEndDate(blockNumber, programStartDate) {
+    const startDate = calculateBlockStartDate(blockNumber, programStartDate);
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + 28); // 4 weeks
     return endDate;
@@ -325,17 +336,56 @@ function calculateDaysUntil(gameDate) {
 /**
  * Calculate phase progress
  * @param {Array} blocks - Training blocks
+ * @param {Date} programStartDate - The start date of the training program
  * @returns {Object} Phase progress
  */
-function calculatePhaseProgress(blocks) {
+function calculatePhaseProgress(blocks, programStartDate) {
     const totalWeeks = blocks.length * 4;
-    const currentWeek = 1; // TODO: Calculate from actual date
-    
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const msPerWeek = msPerDay * 7;
+    let currentWeek = 1;
+
+    const startDateCandidate = programStartDate ? new Date(programStartDate) : null;
+    const normalizedStart = startDateCandidate && !Number.isNaN(startDateCandidate.getTime())
+        ? startDateCandidate
+        : null;
+
+    if (normalizedStart) {
+        const now = new Date();
+        const diffMs = now.getTime() - normalizedStart.getTime();
+        if (diffMs >= 0) {
+            const diffWeeks = Math.floor(diffMs / msPerWeek);
+            currentWeek = diffWeeks + 1;
+        } else {
+            currentWeek = 1;
+        }
+    } else if (blocks.length > 0 && blocks[0]?.startDate) {
+        const firstBlockStart = new Date(blocks[0].startDate);
+        if (!Number.isNaN(firstBlockStart.getTime())) {
+            const now = new Date();
+            const diffMs = now.getTime() - firstBlockStart.getTime();
+            if (diffMs >= 0) {
+                const diffWeeks = Math.floor(diffMs / msPerWeek);
+                currentWeek = diffWeeks + 1;
+            }
+        }
+    }
+
+    if (!Number.isFinite(currentWeek) || currentWeek < 1) {
+        currentWeek = 1;
+    }
+
+    if (totalWeeks > 0) {
+        currentWeek = Math.min(currentWeek, totalWeeks);
+    }
+
+    const percentage = totalWeeks > 0 ? Math.min(100, (currentWeek / totalWeeks) * 100) : 0;
+
     return {
         totalWeeks,
         currentWeek,
-        percentage: (currentWeek / totalWeeks) * 100,
-        completed: false
+        percentage,
+        completed: totalWeeks > 0 ? currentWeek >= totalWeeks : false
     };
 }
 
@@ -365,5 +415,42 @@ function generateRecommendations(season, blocks) {
     return recommendations;
 }
 
+/**
+ * Resolve the program start date from preferences.
+ * @param {Object} preferences - User preferences
+ * @returns {Date|null} Resolved program start date or null
+ */
+function resolveProgramStartDate(preferences = {}) {
+    const candidates = [
+        preferences.programStartDate,
+        preferences.program_start_date,
+        preferences.trainingStartDate,
+        preferences.training_start_date,
+        preferences.startDate,
+        preferences.start_date,
+        preferences.seasonStartDate,
+        preferences.season_start_date,
+        preferences?.user_profile?.programStartDate,
+        preferences?.user_profile?.program_start_date,
+        preferences?.user_profile?.created_at,
+        preferences?.profile?.programStartDate,
+        preferences?.profile?.program_start_date
+    ].filter(Boolean);
+
+    const validDates = candidates
+        .map(value => {
+            const parsed = new Date(value);
+            return Number.isNaN(parsed.getTime()) ? null : parsed;
+        })
+        .filter(Boolean);
+
+    if (validDates.length === 0) {
+        return null;
+    }
+
+    validDates.sort((a, b) => a - b);
+    return validDates[0];
+}
+
 // Export for testing
-module.exports = { generatePeriodization, generateMicrocycleBlock };
+module.exports = { generatePeriodization, generateMicrocycleBlock, calculatePhaseProgress, resolveProgramStartDate };

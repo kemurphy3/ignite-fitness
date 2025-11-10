@@ -46,8 +46,8 @@ cp env-strava-template.txt .env.local
 ```bash
 # Required
 DATABASE_URL=postgresql://user:password@host:port/database?sslmode=require
-STRAVA_CLIENT_ID=your_client_id
-STRAVA_CLIENT_SECRET=your_client_secret
+STRAVA_CLIENT_ID=YOUR_STRAVA_CLIENT_ID
+STRAVA_CLIENT_SECRET=YOUR_STRAVA_CLIENT_SECRET
 URL=https://your-site.netlify.app
 
 # Generate fallback encryption key
