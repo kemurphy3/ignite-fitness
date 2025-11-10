@@ -92,6 +92,13 @@ class GuardrailManager {
                         reason: 'Excessive weekly progression'
                     });
                 }
+            if (rampCheck.hiitReduction) {
+                result.autoAdjustments.push({
+                    type: 'hiit_reduction',
+                    reduction: rampCheck.hiitReduction,
+                    reason: 'Weekly ramp rate exceeded'
+                });
+            }
             }
 
             // 3. Check recovery requirements
@@ -211,9 +218,22 @@ class GuardrailManager {
             };
         }
 
+        // Missed days guardrail
+        const missedDays = this.calculateMissedTrainingDays(recentSessions);
+        if (missedDays >= this.limits.injury.missedDaysAutoDeload) {
+            const reductionPercent = Math.min(missedDays * 15, 40);
+            const reductionFactor = Math.max(0, Math.min(1, reductionPercent / 100));
+            result.warnings.push(`Detected ${missedDays} missed training days. Applying ${reductionPercent}% load reduction for safe return.`);
+            result.autoAdjustments.push({
+                type: 'load_reduction',
+                factor: reductionFactor,
+                reason: 'missed_days'
+            });
+        }
+
         // Check hard minutes
         const projectedHardMinutes = currentHardMinutes + workoutHardMinutes;
-        if (projectedHardMinutes > limits.hard) {
+        if (projectedHardMinutes >= limits.hard) {
             return {
                 passed: false,
                 message: `Weekly hard minutes exceeded. Current: ${Math.round(currentHardMinutes)}, limit: ${limits.hard}`,
@@ -240,7 +260,7 @@ class GuardrailManager {
      * @returns {Object} Validation result
      */
     checkRampRate(workout, userProfile, recentSessions) {
-        if (recentSessions.length < 7) {
+        if (recentSessions.length < 2) {
             return { passed: true }; // Not enough data
         }
 
@@ -287,11 +307,12 @@ class GuardrailManager {
         if (weeklyIncrease > this.limits.rampRates.load) {
             const safeIncrease = lastWeekLoad * (1 + this.limits.rampRates.load);
             const suggestedAdjustment = Math.max(0, safeIncrease - currentWeekLoad);
-
             return {
                 passed: false,
                 message: `Weekly increase too high: ${Math.round(weeklyIncrease * 100)}%. Max: ${this.limits.rampRates.load * 100}%`,
-                suggestedAdjustment
+                suggestedAdjustment,
+                hiitReduction: 0.25,
+                actions: ['reduce_hiits']
             };
         }
 
@@ -312,30 +333,7 @@ class GuardrailManager {
             return { passed: true }; // Easy sessions don't need recovery checks
         }
 
-        // Check time since last hard session
-        const lastHardSession = recentSessions
-            .filter(session => this.isHardSession(session))
-            .sort((a, b) => {
-                const dateA = new Date(a.date || a.startTime || a.start_at || 0);
-                const dateB = new Date(b.date || b.startTime || b.start_at || 0);
-                return dateB - dateA;
-            })[0];
-
-        if (lastHardSession) {
-            const lastHardDate = new Date(lastHardSession.date || lastHardSession.startTime || lastHardSession.start_at || 0);
-            const hoursSinceHard = (Date.now() - lastHardDate.getTime()) / (1000 * 60 * 60);
-
-            if (hoursSinceHard < this.limits.recovery.minRestBetweenHard) {
-                return {
-                    passed: false,
-                    severity: 'block',
-                    message: `Insufficient recovery: ${Math.round(hoursSinceHard)}h since last hard session. Need ${this.limits.recovery.minRestBetweenHard}h minimum.`,
-                    alternative: 'Z2' // Suggest easy alternative
-                };
-            }
-        }
-
-        // Check consecutive hard days
+        // Check consecutive hard days first to provide softer warning before hard block
         const last3Days = recentSessions
             .filter(session => {
                 const sessionDate = new Date(session.date || session.startTime || session.start_at || 0);
@@ -351,6 +349,30 @@ class GuardrailManager {
                 message: `Too many consecutive hard days (${last3Days.length}). Consider an easy session.`,
                 alternative: 'Z1'
             };
+        }
+
+        // Check time since last hard session
+        const lastHardSession = recentSessions
+            .filter(session => this.isHardSession(session))
+            .sort((a, b) => {
+                const dateA = new Date(a.date || a.startTime || a.start_at || 0);
+                const dateB = new Date(b.date || b.startTime || b.start_at || 0);
+                return dateB - dateA;
+            })[0];
+
+        if (lastHardSession) {
+            const lastHardDate = new Date(lastHardSession.date || lastHardSession.startTime || lastHardSession.start_at || 0);
+            const hoursSinceHard = (Date.now() - lastHardDate.getTime()) / (1000 * 60 * 60);
+            const restThresholdHours = this.limits.recovery.minRestBetweenHard + 12; // add buffer for safety
+
+            if (hoursSinceHard <= restThresholdHours) {
+                return {
+                    passed: false,
+                    severity: 'block',
+                    message: `Insufficient recovery: ${Math.round(hoursSinceHard)}h since last hard session. Need at least ${restThresholdHours}h rest.`,
+                    alternative: 'Z2' // Suggest easy alternative
+                };
+            }
         }
 
         return { passed: true };
@@ -370,11 +392,15 @@ class GuardrailManager {
         // Check for pain flags
         const painLevel = readinessData.painLevel || readinessData.pain || 0;
         if (painLevel >= this.limits.injury.painThreshold) {
+            const intensityReductionPercent = 30 + Math.max(0, (painLevel - 5) * 5);
+            const reductionFactor = Math.min(1, Math.max(0, intensityReductionPercent / 100));
             return {
                 passed: false,
                 severity: 'block',
                 message: `Pain level too high (${painLevel}/10). Rest recommended.`,
-                reason: 'Pain threshold exceeded'
+                reason: 'Pain threshold exceeded',
+                loadReduction: reductionFactor,
+                recoveryDays: 14
             };
         }
 
@@ -515,6 +541,10 @@ class GuardrailManager {
                     modifiedWorkout = this.adjustWorkoutLoad(modifiedWorkout, adjustment.newLoad);
                     appliedModifications.push('Ramp rate adjusted');
                     break;
+                case 'hiit_reduction':
+                    modifiedWorkout = this.applyHIITReduction(modifiedWorkout, adjustment.reduction || 0.25);
+                    appliedModifications.push(`HIIT volume reduced by ${Math.round((adjustment.reduction || 0.25) * 100)}%`);
+                    break;
             }
         }
 
@@ -586,6 +616,62 @@ class GuardrailManager {
                         intensity: newIntensity,
                         work: block.work ? { ...block.work, intensity: newIntensity } : undefined
                     };
+                }
+                return block;
+            });
+        }
+
+        return modified;
+    }
+
+    /**
+     * Apply reduction to high-intensity intervals
+     * @param {Object} workout - Workout to modify
+     * @param {number} reduction - Reduction factor (0-1)
+     * @returns {Object} Modified workout
+     */
+    applyHIITReduction(workout, reduction = 0.25) {
+        const modified = JSON.parse(JSON.stringify(workout));
+        const multiplier = Math.max(0, 1 - reduction);
+
+        if (modified.structure) {
+            modified.structure = modified.structure.map(block => {
+                const intensity = block.intensity || block.work?.intensity;
+                if (block.type === 'main' && intensity && ['Z4', 'Z5'].includes(intensity)) {
+                    const updatedBlock = { ...block };
+                    if (block.sets) {
+                        updatedBlock.sets = Math.max(1, Math.round(block.sets * multiplier));
+                    }
+                    if (block.duration) {
+                        updatedBlock.duration = Math.max(60, Math.round(block.duration * multiplier));
+                    }
+                    if (block.work?.duration) {
+                        updatedBlock.work = {
+                            ...block.work,
+                            duration: Math.max(30, Math.round(block.work.duration * multiplier))
+                        };
+                    }
+                    return updatedBlock;
+                }
+                return block;
+            });
+        } else if (modified.blocks) {
+            modified.blocks = modified.blocks.map(block => {
+                if (block.items) {
+                    block.items = block.items.map(item => {
+                        const targetRPE = item.targetRPE || 7;
+                        if (targetRPE >= 8) {
+                            const updatedItem = { ...item };
+                            if (item.sets) {
+                                updatedItem.sets = Math.max(1, Math.round(item.sets * multiplier));
+                            }
+                            if (item.reps && typeof item.reps === 'number') {
+                                updatedItem.reps = Math.max(1, Math.round(item.reps * multiplier));
+                            }
+                            return updatedItem;
+                        }
+                        return item;
+                    });
                 }
                 return block;
             });
@@ -694,6 +780,29 @@ class GuardrailManager {
     }
 
     /**
+     * Calculate missed training days based on recent sessions
+     * @param {Array} recentSessions - Recent training sessions
+     * @returns {number} Number of missed days since last session
+     */
+    calculateMissedTrainingDays(recentSessions) {
+        if (!recentSessions || recentSessions.length === 0) {
+            return 0;
+        }
+
+        const mostRecent = recentSessions
+            .map(session => new Date(session.date || session.startTime || session.start_at || 0))
+            .filter(date => !Number.isNaN(date.getTime()))
+            .sort((a, b) => b - a)[0];
+
+        if (!mostRecent) {
+            return 0;
+        }
+
+        const diffDays = Math.floor((Date.now() - mostRecent.getTime()) / (1000 * 60 * 60 * 24));
+        return Math.max(0, diffDays);
+    }
+
+    /**
      * Check if session is hard
      * @param {Object} session - Training session
      * @returns {boolean} Whether session is hard
@@ -763,39 +872,45 @@ class GuardrailManager {
     calculateConsecutiveTrainingWeeks(sessions) {
         if (!sessions || sessions.length === 0) {return 0;}
 
-        const sortedSessions = sessions
-            .map(session => ({
-                date: new Date(session.date || session.startTime || session.start_at || 0),
-                session
-            }))
-            .filter(s => !isNaN(s.date.getTime()))
-            .sort((a, b) => b.date - a.date);
+        const WEEK_MS = 1000 * 60 * 60 * 24 * 7;
+        const weekStarts = sessions
+            .map(session => {
+                const date = new Date(session.date || session.startTime || session.start_at || 0);
+                if (Number.isNaN(date.getTime())) {return null;}
+                const weekStart = new Date(date);
+                weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+                weekStart.setHours(0, 0, 0, 0);
+                return weekStart.getTime();
+            })
+            .filter(value => value !== null)
+            .sort((a, b) => b - a);
 
-        if (sortedSessions.length === 0) {return 0;}
+        if (weekStarts.length === 0) {return 0;}
 
-        let weeks = 0;
-        let currentWeek = null;
+        const uniqueWeeks = [...new Set(weekStarts)];
+        let streak = 0;
+        let expectedWeek = null;
 
-        for (const { date } of sortedSessions) {
-            const weekStart = new Date(date);
-            weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-            weekStart.setHours(0, 0, 0, 0);
+        for (const week of uniqueWeeks) {
+            if (expectedWeek === null) {
+                expectedWeek = week;
+                streak = 1;
+                continue;
+            }
 
-            if (currentWeek === null) {
-                currentWeek = weekStart.getTime();
-                weeks = 1;
-            } else {
-                const weekDiff = (currentWeek - weekStart.getTime()) / (1000 * 60 * 60 * 24 * 7);
-                if (weekDiff === 1) {
-                    weeks++;
-                    currentWeek = weekStart.getTime();
-                } else if (weekDiff > 1) {
-                    break; // Gap in training
-                }
+            const diff = Math.round((expectedWeek - week) / WEEK_MS);
+            if (diff === 0) {
+                continue;
+            }
+            if (diff === 1) {
+                streak += 1;
+                expectedWeek = week;
+            } else if (diff > 1) {
+                break;
             }
         }
 
-        return weeks;
+        return streak;
     }
 
     /**
