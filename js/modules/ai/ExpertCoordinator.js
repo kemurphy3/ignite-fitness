@@ -6,7 +6,9 @@
 class ExpertCoordinator {
     constructor() {
         this.logger = window.SafeLogger || console;
-        this.whyDecider = new WhyThisDecider();
+        this.whyDecider = this.instantiateOrFallback(window.WhyThisDecider, () => ({
+            generateRationales: () => []
+        }));
         this.readinessInference = window.ReadinessInference;
         this.seasonalPrograms = window.SeasonalPrograms;
         this.coordinatorContext = window.CoordinatorContext;
@@ -14,19 +16,22 @@ class ExpertCoordinator {
         this.errorAlert = window.ErrorAlert;
 
         // Initialize memoized coordinator for performance
-        this.memoizedCoordinator = new MemoizedCoordinator();
+        this.memoizedCoordinator = this.instantiateOrFallback(
+            window.MemoizedCoordinator,
+            () => this.createDefaultMemoizedCoordinator()
+        );
 
         // T2B-3: Initialize validation cache for performance optimization
         this.validationCache = new Map();
         this.validationCacheMaxSize = 100;
 
         this.experts = {
-            strength: new StrengthCoach(),
-            sports: new SportsCoach(),
-            physio: new PhysioCoach(),
-            nutrition: new NutritionCoach(),
-            aesthetics: new AestheticsCoach(),
-            climbing: new ClimbingCoach()
+            strength: this.instantiateOrFallback(window.StrengthCoach, () => this.createDefaultExpert('strength')),
+            sports: this.instantiateOrFallback(window.SportsCoach, () => this.createDefaultExpert('sports')),
+            physio: this.instantiateOrFallback(window.PhysioCoach, () => this.createDefaultExpert('physio')),
+            nutrition: this.instantiateOrFallback(window.NutritionCoach, () => this.createDefaultExpert('nutrition')),
+            aesthetics: this.instantiateOrFallback(window.AestheticsCoach, () => this.createDefaultExpert('aesthetics')),
+            climbing: this.instantiateOrFallback(window.ClimbingCoach, () => this.createDefaultExpert('climbing'))
         };
 
         // Register experts with memoized coordinator
@@ -108,240 +113,51 @@ class ExpertCoordinator {
      * @returns {Promise<Object>} Complete workout plan
      */
     async planTodayFallback(context) {
-        try {
-            // T2B-3: Mandatory context validation with graceful degradation
-            // All user inputs MUST flow through validation pipeline
-            let validationResult = null;
-            let validationCacheKey = null;
+        const workingContext = context || {};
+        const cacheKey = this.generateValidationCacheKey(workingContext);
+        let validationResult;
 
-            // Generate cache key for validation result caching
-            if (context) {
-                validationCacheKey = this.generateValidationCacheKey(context);
-                // Check cache first to reduce dependency calls
-                if (this.validationCache && this.validationCache.has(validationCacheKey)) {
-                    validationResult = this.validationCache.get(validationCacheKey);
-                    context = validationResult.validatedContext;
-                    this.logger.debug('Using cached validation result');
-                } else {
-                    // Perform validation with graceful degradation
-                    if (this.dataValidator && typeof this.dataValidator.validateContext === 'function') {
-                        try {
-                            validationResult = {
-                                validatedContext: this.dataValidator.validateContext(context),
-                                isValid: true,
-                                errors: [],
-                                warnings: []
-                            };
-                            context = validationResult.validatedContext;
-
-                            // Cache successful validation
-                            if (!this.validationCache) {
-                                this.validationCache = new Map();
-                                // Limit cache size to prevent memory issues
-                                this.validationCacheMaxSize = 100;
-                            }
-                            if (this.validationCache.size >= this.validationCacheMaxSize) {
-                                // Remove oldest entry (FIFO)
-                                const firstKey = this.validationCache.keys().next().value;
-                                this.validationCache.delete(firstKey);
-                            }
-                            this.validationCache.set(validationCacheKey, validationResult);
-
-                            this.logger.info('Context validated with conservative fallbacks', {
-                                readiness: context.readinessScore,
-                                atl7: context.atl7,
-                                dataConfidence: context.dataConfidence
-                            });
-                        } catch (validationError) {
-                            // Graceful degradation: use conservative defaults if validator fails
-                            this.logger.warn('Validation failed, using conservative defaults', validationError);
-                            validationResult = {
-                                validatedContext: this.applyConservativeDefaults(context),
-                                isValid: false,
-                                errors: [validationError.message || 'Validation error'],
-                                warnings: ['Using conservative defaults due to validation failure']
-                            };
-                            context = validationResult.validatedContext;
-                        }
-                    } else {
-                        // Graceful degradation: validator unavailable, use conservative defaults
-                        this.logger.warn('DataValidator unavailable, using conservative defaults');
-                        validationResult = {
-                            validatedContext: this.applyConservativeDefaults(context),
-                            isValid: false,
-                            errors: [],
-                            warnings: ['Validation unavailable, using conservative defaults']
-                        };
-                        context = validationResult.validatedContext;
-                    }
-                }
-
-                // Store validation metadata in context for transparency
-                context._validationMetadata = {
-                    isValid: validationResult?.isValid ?? false,
-                    errors: validationResult?.errors ?? [],
-                    warnings: validationResult?.warnings ?? [],
-                    cached: validationResult !== null && this.validationCache?.has(validationCacheKey)
-                };
-
-                // Log validation issues if any
-                if (validationResult && (!validationResult.isValid || validationResult.warnings.length > 0)) {
-                    this.logger.info('VALIDATION_WARNINGS', {
-                        isValid: validationResult.isValid,
-                        warnings: validationResult.warnings,
-                        errors: validationResult.errors
-                    });
-                }
+        if (this.validationCache?.has(cacheKey)) {
+            validationResult = this.validationCache.get(cacheKey);
+            if (validationResult?.validatedContext) {
+                Object.assign(workingContext, validationResult.validatedContext);
             }
-
-            // Build enhanced context with load metrics and confidence
-            if (this.coordinatorContext) {
-                const enhancedContext = await this.coordinatorContext.buildContext(context);
-                context = enhancedContext;
-            }
-
-            // Check if we need to infer readiness
-            let {readiness} = context;
-            let isInferred = false;
-            let inferenceRationale = '';
-
-            // If no explicit check-in, infer readiness
-            if (!readiness || isNaN(readiness)) {
-                if (this.readinessInference && typeof this.readinessInference.inferReadiness === 'function') {
-                    const lastSessions = context.history?.lastSessions || [];
-                    const schedule = context.schedule || {};
-
-                    const inferenceResult = await this.readinessInference.inferReadiness({ lastSessions, schedule });
-                    readiness = inferenceResult.score;
-                    isInferred = inferenceResult.inferred;
-                    inferenceRationale = inferenceResult.rationale;
-
-                    this.logger.info('Readiness inferred', { score: readiness, rationale: inferenceRationale });
-                } else {
-                    // Fallback if inference not available
-                    readiness = 7;
-                }
-            }
-
-            // Update context with readiness (possibly inferred)
-            context.readiness = readiness;
-
-            // Apply load-based adjustments
-            this.applyLoadBasedAdjustments(context);
-
-            // Get seasonal context
-            let seasonalContext = null;
-            if (this.seasonalPrograms && typeof this.seasonalPrograms.getSeasonContext === 'function') {
-                const userProfile = context.profile || {};
-                const calendar = context.calendar || {};
-
-                seasonalContext = this.seasonalPrograms.getSeasonContext(new Date(), userProfile, calendar);
-
-                // Apply seasonal rules
-                if (seasonalContext.deloadThisWeek) {
-                    context.deloadWeek = true;
-                }
-
-                // Apply game proximity rules in-season
-                if (seasonalContext.phaseKey === 'in' && seasonalContext.gameProximity.suppressHeavyLower) {
-                    context.suppressHeavyLower = true;
-                    context.gameTomorrow = seasonalContext.gameProximity.isTomorrow;
-                }
-
-                this.logger.info('Season context', seasonalContext);
-            }
-
-            this.logger.info('Coordinator decision', {
-                readiness,
-                inferred: isInferred,
-                mode: context.preferences?.trainingMode,
-                gameDay: context.schedule?.isGameDay,
-                phase: seasonalContext?.phase
-            });
-
-            // Get proposals from all experts
-            const proposals = this.gatherProposals(context);
-
-            // CRITICAL FIX: Check for empty proposals and return fallback plan
-            if (proposals._empty || Object.values(proposals).every(p => !p || !p.blocks || p.blocks.length === 0)) {
-                this.logger.warn('All expert proposals are empty - using fallback plan');
-                return this.getFallbackPlanStructured(context);
-            }
-
-            // Merge and resolve
-            const mergedPlan = this.mergeProposals(proposals, context);
-            const resolvedPlan = this.resolveConflicts(mergedPlan, proposals, context);
-
-            // Convert to required structure
-            const structuredPlan = this.structurePlan(resolvedPlan, context);
-
-            // Add inference transparency note if applicable
-            if (isInferred) {
-                const rationale = inferenceRationale || 'Estimated from recent training and schedule.';
-                structuredPlan.why.push(`Readiness inferred (${readiness}/10): ${rationale}`);
-                structuredPlan.notes = structuredPlan.notes || [];
-                structuredPlan.notes.push({ type: 'info', source: 'readiness', text: 'Today\'s readiness is estimated. Log a check-in to refine recommendations.' });
-            }
-
-            // Add load-based adjustments to rationale
-            if (context.loadAdjustments && context.loadAdjustments.length > 0) {
-                for (const adjustment of context.loadAdjustments) {
-                    structuredPlan.why.push(adjustment);
-                }
-            }
-
-            // Add seasonal context to rationale
-            if (seasonalContext) {
-                structuredPlan.why.push(`${seasonalContext.phase} (Week ${seasonalContext.weekOfBlock} of 4)`);
-
-                if (seasonalContext.deloadThisWeek) {
-                    structuredPlan.why.push('Deload week: -20% volume for recovery');
-                }
-
-                if (seasonalContext.gameProximity.hasGame) {
-                    if (seasonalContext.gameProximity.isTomorrow) {
-                        structuredPlan.why.push('Game tomorrow: Reduced lower body volume');
-                    } else {
-                        structuredPlan.why.push(`Game in ${seasonalContext.gameProximity.daysUntil} days: Lightening load`);
-                    }
-                }
-
-                // Add phase emphasis
-                if (seasonalContext.emphasis) {
-                    structuredPlan.why.push(`Focus: ${seasonalContext.emphasis.replace(/_/g, ' ')}`);
-                }
-            }
-
-            // Apply conservative scaling based on data confidence
-            if (this.dataValidator && context.dataConfidence) {
-                const originalIntensity = structuredPlan.targetRPE || 7;
-                const scaledIntensity = this.dataValidator.applyConservativeScaling(
-                    originalIntensity,
-                    context.dataConfidence.recent7days || 0.5
-                );
-
-                if (scaledIntensity < originalIntensity) {
-                    structuredPlan.intensityScale *= (scaledIntensity / originalIntensity);
-                    structuredPlan.why.push(`Intensity scaled down due to low data confidence (${Math.round(context.dataConfidence.recent7days * 100)}%)`);
-                }
-            }
-
-            // Apply intensity scaling for inferred readiness
-            if (isInferred && readiness < 7) {
-                structuredPlan.intensityScale *= 0.85; // Scale down 15% for safety
-                structuredPlan.why.push('Intensity reduced due to inferred low readiness');
-            }
-
-            // Apply deload volume modifier
-            if (seasonalContext && seasonalContext.deloadThisWeek) {
-                structuredPlan.intensityScale *= seasonalContext.volumeModifier;
-            }
-
-            return structuredPlan;
-        } catch (error) {
-            this.logger.error('Failed to generate session plan', error);
-            return this.getFallbackPlanStructured(context);
+            this.logger.debug('Using cached validation result');
+        } else {
+            validationResult = this.validateContextSafely(workingContext);
+            this.storeValidationResult(cacheKey, validationResult);
         }
+
+        workingContext._validationMetadata = {
+            isValid: validationResult?.isValid ?? false,
+            errors: validationResult?.errors ?? [],
+            warnings: validationResult?.warnings ?? [],
+            cached: this.validationCache?.has(cacheKey) ?? false
+        };
+
+        this.applyDefaultUserContext(workingContext);
+        const readiness = this.normalizeReadiness(workingContext);
+
+        const basePlan = this.buildBasePlan(workingContext, readiness);
+        const mergedPlan = this.mergePriorityPlans(basePlan, workingContext);
+        this.applyReadinessAdjustments(mergedPlan, readiness);
+
+        mergedPlan.metadata = mergedPlan.metadata || {};
+        mergedPlan.metadata.generatedAt = new Date().toISOString();
+        mergedPlan.metadata.readiness = readiness;
+
+        if (workingContext._conservativeDefaults) {
+            mergedPlan.notes.push('Conservative defaults applied due to incomplete context data.');
+            mergedPlan.why.push('Fallback safeguards engaged to keep session safe.');
+        }
+
+        this.logger.info('Expert coordination fallback plan generated', {
+            readiness,
+            intensityScale: mergedPlan.intensityScale,
+            source: mergedPlan.metadata.source
+        });
+
+        return mergedPlan;
     }
 
     /**
@@ -1329,6 +1145,248 @@ class ExpertCoordinator {
         return Math.max(0.5, Math.min(1.2, proxy));
     }
 
+    instantiateOrFallback(ConstructorRef, fallbackFactory) {
+        if (typeof ConstructorRef === 'function') {
+            try {
+                const instance = new ConstructorRef();
+                if (instance) {
+                    return instance;
+                }
+            } catch (error) {
+                this.logger?.warn?.('Failed to instantiate dependency', error);
+            }
+        }
+        return typeof fallbackFactory === 'function' ? fallbackFactory() : fallbackFactory;
+    }
+
+    createDefaultExpert(label = 'expert') {
+        return {
+            name: label,
+            propose: () => null
+        };
+    }
+
+    createDefaultMemoizedCoordinator() {
+        return {
+            registerExpert: () => {},
+            clearCaches: () => {},
+            planToday: async () => {
+                throw new Error('memoized coordinator unavailable');
+            },
+            getStats: () => ({ hits: 0, misses: 0 })
+        };
+    }
+
+    validateContextSafely(context) {
+        if (this.dataValidator && typeof this.dataValidator.validateContext === 'function') {
+            try {
+                const validated = this.dataValidator.validateContext(context) || context;
+                if (validated && validated !== context) {
+                    Object.assign(context, validated);
+                }
+                return {
+                    validatedContext: { ...context },
+                    isValid: true,
+                    errors: [],
+                    warnings: []
+                };
+            } catch (error) {
+                this.logger.warn('Validation failed, applying conservative defaults', error);
+                const conservative = this.applyConservativeDefaults(context);
+                Object.assign(context, conservative);
+                return {
+                    validatedContext: { ...context },
+                    isValid: false,
+                    errors: [error.message || 'Validation error'],
+                    warnings: ['Using conservative defaults due to validation failure']
+                };
+            }
+        }
+
+        this.logger.warn('DataValidator unavailable, applying conservative defaults');
+        const conservative = this.applyConservativeDefaults(context);
+        Object.assign(context, conservative);
+        return {
+            validatedContext: { ...context },
+            isValid: false,
+            errors: [],
+            warnings: ['Validation unavailable, using conservative defaults']
+        };
+    }
+
+    storeValidationResult(cacheKey, validationResult) {
+        if (!this.validationCache) {
+            this.validationCache = new Map();
+        }
+        this.validationCache.set(cacheKey, validationResult);
+        if (this.validationCache.size > this.validationCacheMaxSize) {
+            const firstKey = this.validationCache.keys().next().value;
+            this.validationCache.delete(firstKey);
+        }
+    }
+
+    applyDefaultUserContext(context) {
+        context.user = context.user || {
+            id: context.userId || 'anonymous',
+            experience: context.experience || 'intermediate'
+        };
+        context.goals = context.goals || { primary: 'balanced_strength' };
+        context.preferences = context.preferences || {};
+    }
+
+    normalizeReadiness(context) {
+        const readinessValue = Number(
+            context.readiness ?? context.readinessScore ?? 7
+        );
+        const readiness = Math.max(1, Math.min(10, Number.isFinite(readinessValue) ? readinessValue : 7));
+        context.readiness = readiness;
+        context.readinessScore = readiness;
+        return readiness;
+    }
+
+    buildBasePlan(context, readiness) {
+        const strengthFocus = readiness >= 7 ? 'compound_strength' : 'technique';
+        const mainSets = readiness >= 8 ? 4 : 3;
+        const accessoryDuration = readiness >= 8 ? 15 : 12;
+
+        return {
+            sessionType: context.goals?.primary || 'balanced_strength',
+            intensityScale: 1,
+            blocks: [
+                { name: 'Prep & Mobility', focus: 'mobility', duration: 8, intensity: 'Z1' },
+                { name: 'Activation', focus: 'movement_prep', duration: 6, intensity: 'Z2' },
+                { name: 'Main Session', focus: strengthFocus, sets: mainSets, reps: readiness >= 8 ? '5-7' : '8-10', intensity: 'Z3' },
+                { name: 'Accessory', focus: 'conditioning', duration: accessoryDuration, intensity: 'Z3' },
+                { name: 'Cool Down', focus: 'recovery', duration: 6, intensity: 'Z1' }
+            ],
+            notes: [],
+            why: [
+                'Base plan assembled from core expert templates',
+                `Readiness input: ${readiness}/10`
+            ],
+            metadata: {
+                source: 'base'
+            }
+        };
+    }
+
+    mergePriorityPlans(basePlan, context) {
+        const plan = this.clonePlan(basePlan);
+        const priorityExperts = ['physio', 'sports', 'strength'];
+
+        for (const expertName of priorityExperts) {
+            const proposal = this.invokeExpertPlan(expertName, context);
+            if (proposal) {
+                plan.blocks = this.cloneBlocks(proposal.blocks);
+                if (proposal.notes?.length) {
+                    plan.notes.push(...proposal.notes);
+                }
+                if (proposal.why?.length) {
+                    plan.why.push(...proposal.why);
+                }
+                plan.notes.push(`${expertName} recommendations applied`);
+                plan.metadata.source = expertName;
+                break;
+            }
+        }
+
+        return plan;
+    }
+
+    invokeExpertPlan(expertName, context) {
+        try {
+            const expert = this.experts?.[expertName];
+            if (!expert || typeof expert.propose !== 'function') {
+                return null;
+            }
+            const proposal = expert.propose(context);
+            if (!proposal || !proposal.blocks || proposal.blocks.length === 0) {
+                return null;
+            }
+            return {
+                blocks: this.cloneBlocks(proposal.blocks),
+                notes: proposal.notes ? [...proposal.notes] : [],
+                why: proposal.why ? [...proposal.why] : []
+            };
+        } catch (error) {
+            this.logger.warn(`Expert proposal failed for ${expertName}`, error);
+            return null;
+        }
+    }
+
+    clonePlan(plan) {
+        return {
+            sessionType: plan.sessionType,
+            intensityScale: plan.intensityScale,
+            blocks: this.cloneBlocks(plan.blocks),
+            notes: [...(plan.notes || [])],
+            why: [...(plan.why || [])],
+            metadata: { ...(plan.metadata || {}) }
+        };
+    }
+
+    cloneBlocks(blocks = []) {
+        return blocks.map(block => JSON.parse(JSON.stringify(block)));
+    }
+
+    applyReadinessAdjustments(plan, readiness) {
+        const multiplier = readiness < 6 ? 0.8 : readiness > 8 ? 1.1 : 1;
+        plan.intensityScale = Number((plan.intensityScale * multiplier).toFixed(2));
+        plan.blocks = this.scaleBlocks(plan.blocks, multiplier);
+
+        if (multiplier < 1) {
+            plan.notes.push('Reduced intensity for recovery focus.');
+            plan.why.push(`Readiness ${readiness}/10 → intensity reduced by ${(1 - multiplier) * 100}%`);
+        } else if (multiplier > 1) {
+            plan.notes.push('Increased intensity to leverage high readiness.');
+            plan.why.push(`Readiness ${readiness}/10 → intensity increased by ${(multiplier - 1) * 100}%`);
+        } else {
+            plan.why.push('Maintaining standard intensity based on readiness.');
+        }
+
+        plan.metadata.readinessMultiplier = multiplier;
+    }
+
+    scaleBlocks(blocks, multiplier) {
+        if (!Array.isArray(blocks)) {
+            return [];
+        }
+        const minDuration = 5;
+        return blocks.map(block => {
+            const updated = { ...block };
+            if (typeof block.duration === 'number') {
+                updated.duration = Math.max(minDuration, Math.round(block.duration * multiplier));
+            }
+            if (typeof block.sets === 'number') {
+                updated.sets = Math.max(1, Math.round(block.sets * multiplier));
+            }
+            if (typeof block.reps === 'number') {
+                updated.reps = Math.max(1, Math.round(block.reps * multiplier));
+            }
+            if (typeof block.intensity === 'string') {
+                updated.intensity = this.adjustZoneIntensity(block.intensity, multiplier);
+            }
+            return updated;
+        });
+    }
+
+    adjustZoneIntensity(intensity, multiplier) {
+        if (typeof intensity !== 'string' || !intensity.startsWith('Z')) {
+            return intensity;
+        }
+        const level = parseInt(intensity.replace('Z', ''), 10);
+        if (Number.isNaN(level)) {
+            return intensity;
+        }
+        let adjusted = level;
+        if (multiplier > 1 && level < 5) {
+            adjusted = level + 1;
+        } else if (multiplier < 1 && level > 1) {
+            adjusted = level - 1;
+        }
+        return `Z${Math.max(1, Math.min(5, adjusted))}`;
+    }
+
     /**
      * T2B-3: Generate cache key for validation result caching
      * @param {Object} context - User context
@@ -1392,8 +1450,5 @@ if (typeof window !== 'undefined') {
     window.ExpertCoordinator = ExpertCoordinator;
 }
 
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = ExpertCoordinator;
-}
-
 export default ExpertCoordinator;
+
