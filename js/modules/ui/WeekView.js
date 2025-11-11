@@ -23,9 +23,9 @@ class WeekView {
      */
     initializeLoadThresholds() {
         return {
-            onTrack: { min: 0.9, max: 1.1, color: '#10b981', label: 'On Track' },
-            slightlyOver: { min: 1.1, max: 1.2, color: '#f59e0b', label: 'Slightly Over' },
-            slightlyUnder: { min: 0.8, max: 0.9, color: '#f59e0b', label: 'Slightly Under' },
+            onTrack: { min: 0.95, max: 1.05, color: '#10b981', label: 'On Track' },
+            slightlyOver: { min: 1.05, max: 1.2, color: '#f59e0b', label: 'Slightly Over' },
+            slightlyUnder: { min: 0.8, max: 0.95, color: '#f59e0b', label: 'Slightly Under' },
             significantlyOver: { min: 1.2, max: Infinity, color: '#ef4444', label: 'Too Much' },
             significantlyUnder: { min: 0, max: 0.8, color: '#ef4444', label: 'Too Little' }
         };
@@ -226,6 +226,8 @@ class WeekView {
         const loadStatus = this.determineLoadStatus(loadRatio);
         const variance = Math.abs(completedLoad - plannedLoad);
         const variancePercentage = plannedLoad > 0 ? (variance / plannedLoad) * 100 : 0;
+        const weeklyVolume = this.calculateWeeklyVolume(weekData.completedSessions);
+        const consistency = this.calculateConsistencyScore(weekData.plannedSessions, weekData.completedSessions);
 
         return {
             plannedLoad: Math.round(plannedLoad),
@@ -235,7 +237,9 @@ class WeekView {
             variancePercentage: Math.round(variancePercentage),
             status: loadStatus,
             message: this.generateLoadMessage(loadStatus, variancePercentage),
-            recommendation: this.generateLoadRecommendation(loadStatus, weekData)
+            recommendation: this.generateLoadRecommendation(loadStatus, weekData),
+            weeklyVolume: Math.round(weeklyVolume),
+            consistency
         };
     }
 
@@ -258,6 +262,29 @@ class WeekView {
             key: 'onTrack',
             ...this.loadThresholds.onTrack
         };
+    }
+
+    /**
+     * Determine daily status label based on planned/completed load
+     * @param {number} plannedLoad - Planned load for the day
+     * @param {number} completedLoad - Completed load for the day
+     * @param {number} percentage - Completion percentage
+     * @returns {string} Daily status key
+     */
+    getDailyStatus(plannedLoad, completedLoad, percentage) {
+        if (plannedLoad === 0 && completedLoad === 0) {
+            return 'no_data';
+        }
+        if (plannedLoad === 0 && completedLoad > 0) {
+            return 'unplanned';
+        }
+        if (percentage < 80) {
+            return 'too_little';
+        }
+        if (percentage > 120) {
+            return 'too_much';
+        }
+        return 'on_track';
     }
 
     /**
@@ -355,9 +382,10 @@ class WeekView {
      * @returns {string} Daily breakdown HTML
      */
     generateDailyBreakdownHTML(dailyBreakdown, simple = false) {
+        const maxLoad = Math.max(...dailyBreakdown.map(d => Math.max(d.plannedLoad, d.completedLoad)), 1);
+
         const daysHTML = dailyBreakdown.map(day => {
             const dayStatus = this.determineDayStatus(day);
-            const maxLoad = Math.max(...dailyBreakdown.map(d => Math.max(d.plannedLoad, d.completedLoad)), 1);
 
             return `
                 <div class="day-card ${dayStatus.class}" data-date="${day.date}">
@@ -381,6 +409,7 @@ class WeekView {
                             <span class="planned">${day.plannedLoad}</span>
                             <span class="separator">/</span>
                             <span class="completed">${day.completedLoad}</span>
+                            <span class="percentage">${day.percentage}%</span>
                         </div>
                     </div>
                     ${simple ? '' : this.generateDaySessionsHTML(day)}
@@ -431,20 +460,26 @@ class WeekView {
      * @returns {Object} Day status
      */
     determineDayStatus(day) {
-        if (day.isToday) {
-            return { class: 'today', color: '#3b82f6' };
-        }
-        if (day.isPast) {
-            return { class: 'past', color: '#6b7280' };
-        }
+        const statusStyles = {
+            on_track: { class: 'on-track', color: '#10b981' },
+            too_little: { class: 'too-little', color: '#ef4444' },
+            too_much: { class: 'too-much', color: '#ef4444' },
+            unplanned: { class: 'unplanned', color: '#8b5cf6' },
+            no_data: { class: 'no-data', color: '#6b7280' }
+        };
 
-        // Calculate day load ratio
-        const ratio = day.plannedLoad > 0 ? day.completedLoad / day.plannedLoad : 0;
-        const status = this.determineLoadStatus(ratio);
+        const baseStatus = statusStyles[day.status] || statusStyles.on_track;
+        let classNames = baseStatus.class;
+
+        if (day.isToday) {
+            classNames = `${classNames} today`;
+        } else if (day.isPast) {
+            classNames = `${classNames} past`;
+        }
 
         return {
-            class: status.key.replace(/([A-Z])/g, '-$1').toLowerCase(),
-            color: status.color
+            class: classNames.trim(),
+            color: baseStatus.color
         };
     }
 
@@ -457,6 +492,41 @@ class WeekView {
     normalizeLoadHeight(load, maxLoad = 100) {
         if (maxLoad === 0) {return 0;}
         return Math.min((load / maxLoad) * 100, 100);
+    }
+
+    /**
+     * Normalize various date inputs to yyyy-mm-dd format
+     * @param {Date|string} value - Input date
+     * @returns {string|null} Normalized date string or null if invalid
+     */
+    normalizeDateKey(value) {
+        if (!value) {return null;}
+        if (value instanceof Date) {
+            if (Number.isNaN(value.getTime())) {return null;}
+            return [
+                value.getFullYear(),
+                String(value.getMonth() + 1).padStart(2, '0'),
+                String(value.getDate()).padStart(2, '0')
+            ].join('-');
+        }
+        if (typeof value === 'string') {
+            const trimmed = value.trim();
+            if (trimmed.length === 0) {return null;}
+            if (trimmed.includes('T')) {
+                return trimmed.split('T')[0];
+            }
+            if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+                return trimmed;
+            }
+            const parsed = new Date(trimmed);
+            if (!Number.isNaN(parsed.getTime())) {
+                return parsed.toISOString().split('T')[0];
+            }
+            return null;
+        }
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {return null;}
+        return date.toISOString().split('T')[0];
     }
 
     /**
@@ -608,16 +678,28 @@ class WeekView {
         for (let i = 0; i < 7; i++) {
             const currentDate = new Date(weekStart);
             currentDate.setDate(currentDate.getDate() + i);
-            const dateString = currentDate.toISOString().split('T')[0];
+            const dateString = this.normalizeDateKey(currentDate);
 
             const dayPlanned = plannedSessions.filter(s => {
-                const sDate = new Date(s.date || s.planned_date || s.start_at);
-                return sDate.toISOString().split('T')[0] === dateString;
+                const normalized = this.normalizeDateKey(s.date || s.planned_date || s.start_at);
+                return normalized === dateString;
             });
             const dayCompleted = completedSessions.filter(s => {
-                const sDate = new Date(s.date || s.start_at || s.created_at);
-                return sDate.toISOString().split('T')[0] === dateString;
+                const normalized = this.normalizeDateKey(s.date || s.start_at || s.created_at);
+                return normalized === dateString;
             });
+
+            const calculatedPlannedLoad = this.calculateTotalLoad(dayPlanned);
+            const fallbackPlannedLoad = dayPlanned.reduce((sum, session) => sum + (Number(session.load) || 0), 0);
+            const plannedLoad = Math.round(calculatedPlannedLoad || fallbackPlannedLoad);
+
+            const calculatedCompletedLoad = this.calculateTotalLoad(dayCompleted);
+            const fallbackCompletedLoad = dayCompleted.reduce((sum, session) => sum + (Number(session.load) || 0), 0);
+            const completedLoad = Math.round(calculatedCompletedLoad || fallbackCompletedLoad);
+            const percentage = plannedLoad > 0
+                ? Math.round((completedLoad / plannedLoad) * 100)
+                : (completedLoad > 0 ? 100 : 0);
+            const status = this.getDailyStatus(plannedLoad, completedLoad, percentage);
 
             days.push({
                 date: dateString,
@@ -625,8 +707,12 @@ class WeekView {
                 dateNumber: currentDate.getDate(),
                 plannedSessions: dayPlanned,
                 completedSessions: dayCompleted,
-                plannedLoad: Math.round(this.calculateTotalLoad(dayPlanned)),
-                completedLoad: Math.round(this.calculateTotalLoad(dayCompleted)),
+                plannedLoad,
+                completedLoad,
+                plannedVolume: this.calculateWeeklyVolume(dayPlanned),
+                completedVolume: this.calculateWeeklyVolume(dayCompleted),
+                percentage,
+                status,
                 isToday: this.isToday(currentDate),
                 isPast: currentDate < new Date() && !this.isToday(currentDate)
             });
@@ -788,8 +874,38 @@ class WeekView {
 
         return sessions.reduce((total, session) => {
             const sessionLoad = this.loadCalculator?.calculateSessionLoad?.(session);
-            return total + (sessionLoad?.total || session.load || 0);
+            const volume = Number(session.volume) || 0;
+            const fallback = session.load ?? session.session_load ?? volume;
+            return total + (sessionLoad?.total ?? fallback ?? 0);
         }, 0);
+    }
+
+    /**
+     * Calculate aggregate training volume for sessions
+     * @param {Array} sessions - Array of session objects
+     * @returns {number} Total volume
+     */
+    calculateWeeklyVolume(sessions = []) {
+        if (!Array.isArray(sessions) || sessions.length === 0) {return 0;}
+        return sessions.reduce((sum, session) => {
+            const volume = Number(session?.volume) || 0;
+            return sum + volume;
+        }, 0);
+    }
+
+    /**
+     * Calculate consistency between planned and completed sessions
+     * @param {Array} plannedSessions - Planned sessions for the week
+     * @param {Array} completedSessions - Completed sessions for the week
+     * @returns {number} Consistency percentage
+     */
+    calculateConsistencyScore(plannedSessions = [], completedSessions = []) {
+        const planned = Array.isArray(plannedSessions) ? plannedSessions.length : 0;
+        const completed = Array.isArray(completedSessions) ? completedSessions.length : 0;
+        if (planned === 0) {
+            return completed > 0 ? 100 : 0;
+        }
+        return Math.round((completed / planned) * 100);
     }
 
     /**

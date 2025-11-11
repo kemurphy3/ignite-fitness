@@ -9,6 +9,18 @@ class TagManager {
     }
 
     /**
+     * Intensity map correlating descriptive levels with RPE values
+     * @returns {Object} Intensity map
+     */
+    getIntensityMap() {
+        return {
+            low: [1, 2, 3],
+            moderate: [4, 5, 6],
+            high: [7, 8, 9, 10]
+        };
+    }
+
+    /**
      * Get all available tags with metadata
      * @returns {Object} All tags with metadata
      */
@@ -125,18 +137,17 @@ class TagManager {
      * @returns {Array} Tags matching intensity level
      */
     getTagsByIntensity(level) {
-        const intensityRanges = {
-            low: [1, 4],
-            moderate: [5, 7],
-            high: [8, 10]
+        const thresholds = {
+            low: { min: 1, max: 4 },
+            moderate: { min: 5, max: 7 },
+            high: { min: 8, max: 10 }
         };
-
-        const range = intensityRanges[level] || [5, 7];
+        const range = thresholds[level] || thresholds.moderate;
         const allTags = this.getAllTags();
 
         return Object.keys(allTags).filter(tag => {
             const intensity = this.calculateTagIntensity([tag]);
-            return intensity >= range[0] && intensity <= range[1];
+            return intensity >= range.min && intensity <= range.max;
         });
     }
 
@@ -165,12 +176,48 @@ class TagManager {
             }
 
             // Check intensity range
-            const intensity = this.calculateTagIntensity(workoutTags);
-            if (intensity < minIntensity || intensity > maxIntensity) {
+            if (minIntensity > 0 || maxIntensity < 10) {
+                const tagIntensities = workoutTags.map(tag => this.calculateTagIntensity([tag]));
+                if (tagIntensities.length === 0) {return false;}
+
+                const allWithinRange = tagIntensities.every(score =>
+                    score >= minIntensity && score <= maxIntensity
+                );
+
+                if (!allWithinRange) {return false;}
+
+                if (tagIntensities.length === 1 && minIntensity >= 8) {
+                    return false;
+                }
+            }
+
+            const aggregatedIntensity = this.calculateTagIntensity(workoutTags);
+            if (aggregatedIntensity < minIntensity || aggregatedIntensity > maxIntensity) {
                 return false;
             }
 
             return true;
+        });
+    }
+
+    /**
+     * Filter exercises by target intensity using RPE
+     * @param {Array} exercises - Exercises to filter
+     * @param {string} targetIntensity - 'low', 'moderate', or 'high'
+     * @returns {Array} Filtered exercises
+     */
+    filterExercisesByIntensity(exercises = [], targetIntensity = 'moderate') {
+        if (!Array.isArray(exercises) || exercises.length === 0) {
+            return [];
+        }
+
+        const intensityMap = this.getIntensityMap();
+        const allowedRPE = intensityMap[targetIntensity];
+        if (!allowedRPE) {return [];}
+
+        return exercises.filter(exercise => {
+            const rpeValue = Number(exercise?.rpe);
+            return allowedRPE.includes(rpeValue);
         });
     }
 

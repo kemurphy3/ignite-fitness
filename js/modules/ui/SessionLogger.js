@@ -5,14 +5,46 @@
 
 import LoadCalculationEngine from '../load/LoadCalculationEngine.js';
 
+const RPE_MULTIPLIERS = {
+    1: 0.6,
+    2: 0.65,
+    3: 0.7,
+    4: 0.8,
+    5: 0.9,
+    6: 1.0,
+    7: 1.1,
+    8: 1.2,
+    9: 1.3,
+    10: 1.4
+};
+
 class SessionLogger {
     constructor() {
         this.logger = window.SafeLogger || console;
         this.storageManager = window.StorageManager;
         this.authManager = window.AuthManager;
         this.eventBus = window.EventBus;
+        this.isLogging = false;
+        this.intensityManuallySet = false;
 
-        this.sessionData = {
+        Object.defineProperty(this, 'sessionData', {
+            configurable: true,
+            enumerable: true,
+            get: () => this._sessionData,
+            set: (value) => {
+                this._sessionData = this.mergeSessionData(value);
+            }
+        });
+
+        this.sessionData = this.getDefaultSessionData();
+    }
+
+    /**
+     * Default session data template
+     * @returns {Object} Default session data
+     */
+    getDefaultSessionData() {
+        return {
             date: new Date().toISOString().split('T')[0],
             workout_name: '',
             modality: '',
@@ -25,10 +57,40 @@ class SessionLogger {
                 max_hr: ''
             },
             intensity: '',
-            notes: ''
+            notes: '',
+            sets: 0,
+            reps: 0,
+            weight: 0
+        };
+    }
+
+    /**
+     * Merge incoming session data with defaults
+     * @param {Object} data - Incoming session data
+     * @returns {Object} Merged session data
+     */
+    mergeSessionData(data = {}) {
+        const defaults = this.getDefaultSessionData();
+        const incoming = data || {};
+
+        const merged = {
+            ...defaults,
+            ...incoming
         };
 
-        this.isLogging = false;
+        merged.hr_data = {
+            ...defaults.hr_data,
+            ...(incoming.hr_data || {})
+        };
+
+        merged.sets = Number(incoming.sets ?? defaults.sets) || 0;
+        merged.reps = Number(incoming.reps ?? defaults.reps) || 0;
+        merged.weight = Number(incoming.weight ?? defaults.weight) || 0;
+
+        // Reset manual flag unless explicitly set through updateField
+        this.intensityManuallySet = false;
+
+        return merged;
     }
 
     /**
@@ -178,11 +240,24 @@ class SessionLogger {
      * Update form field
      */
     updateField(field, value) {
-        this.sessionData[field] = value;
-
-        // Auto-estimate intensity from RPE if not manually set
-        if (field === 'rpe' && !this.sessionData.intensity) {
-            this.sessionData.intensity = this.estimateIntensityFromRPE(value);
+        if (field === 'intensity') {
+            this.intensityManuallySet = Boolean(value);
+            this.sessionData.intensity = value;
+        } else if (field === 'rpe') {
+            const numericValue = value === '' ? '' : parseInt(value, 10);
+            this.sessionData.rpe = numericValue;
+            if (!this.intensityManuallySet) {
+                const estimated = this.estimateIntensityFromRPE(numericValue);
+                this.sessionData.intensity = estimated;
+                const intensitySelect = document.getElementById('intensity');
+                if (intensitySelect) {
+                    intensitySelect.value = estimated;
+                }
+            }
+        } else if (field === 'sets' || field === 'reps' || field === 'weight') {
+            this.sessionData[field] = Number(value) || 0;
+        } else {
+            this.sessionData[field] = value;
         }
 
         // Update load preview if we can calculate it
@@ -195,7 +270,10 @@ class SessionLogger {
      * Update HR field
      */
     updateHRField(field, value) {
-        this.sessionData.hr_data[field] = value;
+        if (!this.sessionData.hr_data) {
+            this.sessionData.hr_data = { avg_hr: '', max_hr: '' };
+        }
+        this.sessionData.hr_data[field] = value || '';
 
         if (this.canCalculateLoad()) {
             this.updateLoadPreview();
@@ -206,7 +284,8 @@ class SessionLogger {
      * Update RPE and refresh display
      */
     updateRPE(value) {
-        this.sessionData.rpe = parseInt(value);
+        const numericValue = parseInt(value, 10);
+        this.sessionData.rpe = isNaN(numericValue) ? '' : numericValue;
 
         // Update display
         const rpeValue = document.querySelector('.rpe-value');
@@ -216,11 +295,12 @@ class SessionLogger {
         if (rpeLabel) {rpeLabel.textContent = this.getRPELabel(value);}
 
         // Auto-estimate intensity
-        if (!this.sessionData.intensity) {
-            this.sessionData.intensity = this.estimateIntensityFromRPE(value);
+        if (!this.intensityManuallySet) {
+            const estimated = this.estimateIntensityFromRPE(numericValue);
+            this.sessionData.intensity = estimated;
             const intensitySelect = document.getElementById('intensity');
             if (intensitySelect) {
-                intensitySelect.value = this.sessionData.intensity;
+                intensitySelect.value = estimated;
             }
         }
 
@@ -252,7 +332,8 @@ class SessionLogger {
      * Estimate training zone from RPE
      */
     estimateIntensityFromRPE(rpe) {
-        const rpeValue = parseInt(rpe);
+        const rpeValue = parseInt(rpe, 10);
+        if (!Number.isFinite(rpeValue)) {return '';}
         if (rpeValue <= 3) {return 'Z1';}
         if (rpeValue <= 5) {return 'Z2';}
         if (rpeValue <= 7) {return 'Z3';}
@@ -264,8 +345,11 @@ class SessionLogger {
      * Check if we can calculate load
      */
     canCalculateLoad() {
-        return this.sessionData.duration_minutes &&
-               (this.sessionData.rpe || this.sessionData.hr_data.avg_hr || this.sessionData.intensity);
+        const duration = Number(this.sessionData.duration_minutes) || 0;
+        const hasRPE = Number(this.sessionData.rpe) > 0;
+        const hasHR = !!(this.sessionData.hr_data && this.sessionData.hr_data.avg_hr);
+        const hasIntensity = this.intensityManuallySet && !!this.sessionData.intensity;
+        return duration > 0 && (hasRPE || hasHR || hasIntensity);
     }
 
     /**
@@ -322,20 +406,40 @@ class SessionLogger {
             duration_minutes: this.sessionData.duration_minutes,
             rpe: this.sessionData.rpe,
             modality: this.sessionData.modality,
-            intensity: this.sessionData.intensity
+            intensity: this.sessionData.intensity,
+            user_profile: this.getUserProfile()
         };
 
-        // Add HR data if available
-        if (this.sessionData.hr_data.avg_hr) {
+        if (this.sessionData?.hr_data?.avg_hr) {
             session.hr_data = {
                 avg_hr: this.sessionData.hr_data.avg_hr
             };
-
-            // Add user profile for TRIMP calculation
-            session.user_profile = this.getUserProfile();
         }
 
-        return LoadCalculationEngine.compute_load(session);
+        let loadResult = null;
+
+        if (LoadCalculationEngine?.compute_load) {
+            loadResult = LoadCalculationEngine.compute_load(session);
+        }
+
+        const strengthMetrics = this.calculateStrengthLoad(this.sessionData);
+        if (strengthMetrics && (!loadResult || !loadResult.total_load)) {
+            loadResult = {
+                total_load: strengthMetrics.total,
+                method_used: 'Strength_Volume',
+                confidence: 0.8,
+                breakdown: {
+                    volume: strengthMetrics.volume,
+                    multiplier: strengthMetrics.multiplier
+                }
+            };
+        }
+
+        if (!loadResult) {
+            throw new Error('Load calculation unavailable');
+        }
+
+        return loadResult;
     }
 
     /**
@@ -351,6 +455,77 @@ class SessionLogger {
             max_hr: profile.max_hr || LoadCalculationEngine.estimateMaxHR(profile.age, profile.gender),
             rest_hr: profile.rest_hr || 60
         };
+    }
+
+    /**
+     * Get multiplier for strength session load based on RPE
+     * @param {number} rpe - RPE value
+     * @returns {number} Multiplier
+     */
+    getRpeMultiplier(rpe) {
+        const key = Number(rpe);
+        return RPE_MULTIPLIERS[key] || 1;
+    }
+
+    /**
+     * Calculate session volume (sets × reps × weight)
+     * @param {Object} data - Session data
+     * @returns {number} Session volume
+     */
+    calculateSessionVolume(data = this.sessionData) {
+        const sets = Number(data?.sets) || 0;
+        const reps = Number(data?.reps) || 0;
+        const weight = Number(data?.weight) || 0;
+        if (!sets || !reps || !weight) {
+            return 0;
+        }
+        return sets * reps * weight;
+    }
+
+    /**
+     * Calculate strength-based session load using volume and RPE multiplier
+     * @param {Object} data - Session data
+     * @returns {Object|null} Strength load metrics
+     */
+    calculateStrengthLoad(data = this.sessionData) {
+        const volume = this.calculateSessionVolume(data);
+        if (!volume) {
+            return null;
+        }
+        const multiplier = this.getRpeMultiplier(data?.rpe);
+        return {
+            total: Math.round(volume * multiplier),
+            volume,
+            multiplier
+        };
+    }
+
+    /**
+     * Calculate weekly volume from sessions
+     * @param {Array} sessions - Array of session records
+     * @returns {number} Weekly volume
+     */
+    calculateWeeklyVolume(sessions = []) {
+        if (!Array.isArray(sessions) || sessions.length === 0) {return 0;}
+        return sessions.reduce((sum, session) => {
+            const volume = Number(session?.volume) || 0;
+            return sum + volume;
+        }, 0);
+    }
+
+    /**
+     * Calculate adherence/consistency score
+     * @param {Array} plannedSessions - Planned sessions
+     * @param {Array} completedSessions - Completed sessions
+     * @returns {number} Consistency percentage
+     */
+    calculateConsistency(plannedSessions = [], completedSessions = []) {
+        const planned = Array.isArray(plannedSessions) ? plannedSessions.length : 0;
+        const completed = Array.isArray(completedSessions) ? completedSessions.length : 0;
+        if (planned === 0) {
+            return completed > 0 ? 100 : 0;
+        }
+        return Math.round((completed / planned) * 100);
     }
 
     /**
@@ -383,6 +558,9 @@ class SessionLogger {
             // Calculate final load
             const loadResult = this.calculateCurrentLoad();
 
+            const strengthMetrics = this.calculateStrengthLoad(this.sessionData);
+            const sessionVolume = strengthMetrics ? strengthMetrics.volume : this.calculateSessionVolume(this.sessionData);
+
             // Create session record
             const sessionRecord = {
                 user_id: this.authManager?.getCurrentUserId() || this.authManager?.getCurrentUsername() || 'anonymous',
@@ -403,7 +581,10 @@ class SessionLogger {
                 load_method: loadResult.method_used,
                 load_confidence: loadResult.confidence,
                 notes: this.sessionData.notes,
-                logged_at: new Date().toISOString()
+                logged_at: new Date().toISOString(),
+                volume: sessionVolume || null,
+                strength_load: strengthMetrics ? strengthMetrics.total : null,
+                rpe_multiplier: strengthMetrics ? strengthMetrics.multiplier : null
             };
 
             // Save session
@@ -569,18 +750,8 @@ class SessionLogger {
      * Reset form data
      */
     resetForm() {
-        this.sessionData = {
-            date: new Date().toISOString().split('T')[0],
-            workout_name: '',
-            modality: '',
-            duration_minutes: '',
-            distance: '',
-            distance_unit: 'km',
-            rpe: '',
-            hr_data: { avg_hr: '', max_hr: '' },
-            intensity: '',
-            notes: ''
-        };
+        this.sessionData = this.getDefaultSessionData();
+        this.intensityManuallySet = false;
         this.isLogging = false;
     }
 

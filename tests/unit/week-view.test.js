@@ -100,9 +100,9 @@ describe('WeekView', () => {
 
             initializeLoadThresholds() {
                 return {
-                    onTrack: { min: 0.9, max: 1.1, color: '#10b981', label: 'On Track' },
-                    slightlyOver: { min: 1.1, max: 1.2, color: '#f59e0b', label: 'Slightly Over' },
-                    slightlyUnder: { min: 0.8, max: 0.9, color: '#f59e0b', label: 'Slightly Under' },
+                    onTrack: { min: 0.95, max: 1.05, color: '#10b981', label: 'On Track' },
+                    slightlyOver: { min: 1.05, max: 1.2, color: '#f59e0b', label: 'Slightly Over' },
+                    slightlyUnder: { min: 0.8, max: 0.95, color: '#f59e0b', label: 'Slightly Under' },
                     significantlyOver: { min: 1.2, max: Infinity, color: '#ef4444', label: 'Too Much' },
                     significantlyUnder: { min: 0, max: 0.8, color: '#ef4444', label: 'Too Little' }
                 };
@@ -131,16 +131,17 @@ describe('WeekView', () => {
                 const loadRatio = plannedLoad > 0 ? completedLoad / plannedLoad : 0;
                 const loadStatus = this.determineLoadStatus(loadRatio);
                 const variance = Math.abs(completedLoad - plannedLoad);
-                const variancePercentage = plannedLoad > 0 ? (variance / plannedLoad) * 100 : 0;
+                const variancePercentageRaw = plannedLoad > 0 ? (variance / plannedLoad) * 100 : 0;
+                const variancePercentage = Math.round(variancePercentageRaw * 100) / 100;
 
                 return {
                     plannedLoad: Math.round(plannedLoad),
                     completedLoad: Math.round(completedLoad),
                     loadRatio,
                     variance: Math.round(variance),
-                    variancePercentage: Math.round(variancePercentage),
+                    variancePercentage,
                     status: loadStatus,
-                    message: this.generateLoadMessage(loadStatus, variancePercentage),
+                    message: this.generateLoadMessage(loadStatus, variancePercentageRaw),
                     recommendation: 'Continue monitoring'
                 };
             }
@@ -149,8 +150,96 @@ describe('WeekView', () => {
                 if (!sessions || sessions.length === 0) {return 0;}
                 return sessions.reduce((total, session) => {
                     const sessionLoad = this.loadCalculator?.calculateSessionLoad?.(session);
-                    return total + (sessionLoad?.total || session.load || 0);
+                    const volume = Number(session.volume) || 0;
+                    const fallback = session.load ?? session.session_load ?? volume;
+                    return total + (sessionLoad?.total ?? fallback ?? 0);
                 }, 0);
+            }
+
+            calculateWeeklyVolume(sessions = []) {
+                if (!Array.isArray(sessions) || sessions.length === 0) {return 0;}
+                return sessions.reduce((sum, session) => {
+                    const volume = Number(session?.volume) || 0;
+                    return sum + volume;
+                }, 0);
+            }
+
+            calculateConsistencyScore(plannedSessions = [], completedSessions = []) {
+                const planned = Array.isArray(plannedSessions) ? plannedSessions.length : 0;
+                const completed = Array.isArray(completedSessions) ? completedSessions.length : 0;
+                if (planned === 0) {
+                    return completed > 0 ? 100 : 0;
+                }
+                return Math.round((completed / planned) * 100);
+            }
+
+            getDailyStatus(plannedLoad, completedLoad, percentage) {
+                if (plannedLoad === 0 && completedLoad === 0) {
+                    return 'no_data';
+                }
+                if (plannedLoad === 0 && completedLoad > 0) {
+                    return 'unplanned';
+                }
+                if (percentage < 80) {
+                    return 'too_little';
+                }
+                if (percentage > 120) {
+                    return 'too_much';
+                }
+                return 'on_track';
+            }
+
+            normalizeDateKey(value) {
+                if (!value) {return null;}
+                if (value instanceof Date) {
+                    if (Number.isNaN(value.getTime())) {return null;}
+                    return [
+                        value.getFullYear(),
+                        String(value.getMonth() + 1).padStart(2, '0'),
+                        String(value.getDate()).padStart(2, '0')
+                    ].join('-');
+                }
+                if (typeof value === 'string') {
+                    const trimmed = value.trim();
+                    if (trimmed.length === 0) {return null;}
+                    if (trimmed.includes('T')) {
+                        return trimmed.split('T')[0];
+                    }
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+                        return trimmed;
+                    }
+                    const parsed = new Date(trimmed);
+                    if (!Number.isNaN(parsed.getTime())) {
+                        return parsed.toISOString().split('T')[0];
+                    }
+                    return null;
+                }
+                const date = new Date(value);
+                if (Number.isNaN(date.getTime())) {return null;}
+                return date.toISOString().split('T')[0];
+            }
+
+            analyzeDailyLoads(dayPlanned, dayCompleted) {
+                const calculatedPlannedLoad = this.calculateTotalLoad(dayPlanned);
+                const fallbackPlannedLoad = dayPlanned.reduce((sum, session) => sum + (Number(session.load) || 0), 0);
+                const plannedLoad = Math.round(calculatedPlannedLoad || fallbackPlannedLoad);
+
+                const calculatedCompletedLoad = this.calculateTotalLoad(dayCompleted);
+                const fallbackCompletedLoad = dayCompleted.reduce((sum, session) => sum + (Number(session.load) || 0), 0);
+                const completedLoad = Math.round(calculatedCompletedLoad || fallbackCompletedLoad);
+                const percentage = plannedLoad > 0
+                    ? Math.round((completedLoad / plannedLoad) * 100)
+                    : (completedLoad > 0 ? 100 : 0);
+                const status = this.getDailyStatus(plannedLoad, completedLoad, percentage);
+
+                return {
+                    plannedLoad,
+                    completedLoad,
+                    percentage,
+                    status,
+                    plannedVolume: this.calculateWeeklyVolume(dayPlanned),
+                    completedVolume: this.calculateWeeklyVolume(dayCompleted)
+                };
             }
 
             calculateDailyBreakdown(weekStart, plannedSessions, completedSessions) {
@@ -160,16 +249,18 @@ describe('WeekView', () => {
                 for (let i = 0; i < 7; i++) {
                     const currentDate = new Date(weekStart);
                     currentDate.setDate(currentDate.getDate() + i);
-                    const dateString = currentDate.toISOString().split('T')[0];
+                    const dateString = this.normalizeDateKey(currentDate);
 
                     const dayPlanned = plannedSessions.filter(s => {
-                        const sDate = new Date(s.date || s.planned_date || s.start_at);
-                        return sDate.toISOString().split('T')[0] === dateString;
+                        const normalized = this.normalizeDateKey(s.date || s.planned_date || s.start_at);
+                        return normalized === dateString;
                     });
                     const dayCompleted = completedSessions.filter(s => {
-                        const sDate = new Date(s.date || s.start_at || s.created_at);
-                        return sDate.toISOString().split('T')[0] === dateString;
+                        const normalized = this.normalizeDateKey(s.date || s.start_at || s.created_at);
+                        return normalized === dateString;
                     });
+
+                    const loadMetrics = this.analyzeDailyLoads(dayPlanned, dayCompleted);
 
                     days.push({
                         date: dateString,
@@ -177,14 +268,42 @@ describe('WeekView', () => {
                         dateNumber: currentDate.getDate(),
                         plannedSessions: dayPlanned,
                         completedSessions: dayCompleted,
-                        plannedLoad: Math.round(this.calculateTotalLoad(dayPlanned)),
-                        completedLoad: Math.round(this.calculateTotalLoad(dayCompleted)),
+                        plannedLoad: loadMetrics.plannedLoad,
+                        completedLoad: loadMetrics.completedLoad,
+                        plannedVolume: loadMetrics.plannedVolume,
+                        completedVolume: loadMetrics.completedVolume,
+                        percentage: loadMetrics.percentage,
+                        status: loadMetrics.status,
                         isToday: this.isToday(currentDate),
                         isPast: currentDate < new Date() && !this.isToday(currentDate)
                     });
                 }
 
                 return days;
+            }
+
+            determineDayStatus(day) {
+                const statusStyles = {
+                    on_track: { class: 'on-track', color: '#10b981' },
+                    too_little: { class: 'too-little', color: '#ef4444' },
+                    too_much: { class: 'too-much', color: '#ef4444' },
+                    unplanned: { class: 'unplanned', color: '#8b5cf6' },
+                    no_data: { class: 'no-data', color: '#6b7280' }
+                };
+
+                const baseStatus = statusStyles[day.status] || statusStyles.on_track;
+                let classNames = baseStatus.class;
+
+                if (day.isToday) {
+                    classNames = `${classNames} today`;
+                } else if (day.isPast) {
+                    classNames = `${classNames} past`;
+                }
+
+                return {
+                    class: classNames.trim(),
+                    color: baseStatus.color
+                };
             }
 
             generateInsights(loadAnalysis, guardrailStatus) {
