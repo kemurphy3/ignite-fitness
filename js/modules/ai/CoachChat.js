@@ -414,7 +414,7 @@ class CoachChat {
                 }
             }
             
-            if (lowerMessage.includes('no') || lowerMessage === 'n' || lowerMessage === 'nah' || lowerMessage === "don't")) {
+            if (lowerMessage.includes('no') || lowerMessage === 'n' || lowerMessage === 'nah' || lowerMessage === "don't") {
                 if (lastCoachMessage.includes('swap') || lastCoachMessage.includes('alternatives')) {
                     return {
                         text: "No problem! We'll stick with your current plan. Is there anything else I can help with?",

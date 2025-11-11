@@ -103,7 +103,7 @@ describe('Strava Ingest Handler', () => {
                         single: vi.fn(() => ({
                             data: existingActivity,
                             error: null
-                        })
+                        }))
                     }))
                 }))
             });

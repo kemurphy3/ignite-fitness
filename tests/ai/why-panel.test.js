@@ -232,6 +232,8 @@ describe('WhyPanel Component', () => {
 
                 const button = container.querySelector('#why-panel-toggle');
                 expect(button.getAttribute('tabindex')).toBeTruthy();
+                
+                document.body.removeChild(container);
             });
         });
     });
