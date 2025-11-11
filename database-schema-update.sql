@@ -120,6 +120,48 @@ COMMENT ON COLUMN sessions.payload IS 'JSON payload with additional session data
 COMMENT ON COLUMN users.goals IS 'Array of user fitness goals (max 5 items)';
 COMMENT ON COLUMN users.baseline_lifts IS 'JSON object with baseline strength measurements (max 1KB)';
 
+-- Heart rate enrichment for beta
+ALTER TABLE sessions
+    ADD COLUMN IF NOT EXISTS heart_rate_zones JSONB,
+    ADD COLUMN IF NOT EXISTS avg_heart_rate INTEGER,
+    ADD COLUMN IF NOT EXISTS max_heart_rate INTEGER;
+
+ALTER TABLE sessions
+    ADD CONSTRAINT IF NOT EXISTS avg_heart_rate_positive CHECK (avg_heart_rate IS NULL OR avg_heart_rate > 0),
+    ADD CONSTRAINT IF NOT EXISTS max_heart_rate_positive CHECK (max_heart_rate IS NULL OR max_heart_rate > 0);
+
+-- Dedicated store for granular heart rate samples
+CREATE TABLE IF NOT EXISTS heart_rate_data (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+    recorded_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    heart_rate INTEGER NOT NULL CHECK (heart_rate > 0),
+    calculated_zone VARCHAR(5),
+    source VARCHAR(50),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_heart_rate_data_session ON heart_rate_data(session_id);
+CREATE INDEX IF NOT EXISTS idx_heart_rate_data_recorded ON heart_rate_data(recorded_at);
+
+-- Body composition logging for progress tracking
+CREATE TABLE IF NOT EXISTS body_composition_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    log_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    weight_kg DECIMAL(5,2) NOT NULL CHECK (weight_kg > 0),
+    body_fat_percentage DECIMAL(4,2) CHECK (body_fat_percentage >= 0 AND body_fat_percentage <= 100),
+    lean_mass_kg DECIMAL(5,2) CHECK (lean_mass_kg > 0),
+    bone_mass_kg DECIMAL(4,2) CHECK (bone_mass_kg > 0),
+    measurements JSONB,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE (user_id, log_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_body_comp_user_date ON body_composition_logs(user_id, log_date DESC);
+
 -- Ensure program start date column exists and is populated
 ALTER TABLE user_profiles
     ADD COLUMN IF NOT EXISTS program_start_date DATE;

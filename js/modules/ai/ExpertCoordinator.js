@@ -141,6 +141,7 @@ class ExpertCoordinator {
         const basePlan = this.buildBasePlan(workingContext, readiness);
         const mergedPlan = this.mergePriorityPlans(basePlan, workingContext);
         this.applyReadinessAdjustments(mergedPlan, readiness);
+        this.applyHeartRateInfluence(mergedPlan, workingContext);
 
         mergedPlan.metadata = mergedPlan.metadata || {};
         mergedPlan.metadata.generatedAt = new Date().toISOString();
@@ -1443,6 +1444,45 @@ class ExpertCoordinator {
         safeContext._conservativeDefaults = true;
 
         return safeContext;
+    }
+
+    applyHeartRateInfluence(plan, context) {
+        const hrData = context.heartRate || {};
+        const baselineHRV = context.baselineHRV;
+
+        if (hrData.hrv && baselineHRV) {
+            if (hrData.hrv > baselineHRV * 1.1) {
+                plan.intensityScale = Number((plan.intensityScale * 1.05).toFixed(2));
+                plan.notes.push('HRV indicates strong recovery – intensity increased.');
+            } else if (hrData.hrv < baselineHRV * 0.9) {
+                plan.intensityScale = Number((plan.intensityScale * 0.85).toFixed(2));
+                plan.notes.push('HRV below baseline – reducing intensity for recovery.');
+            }
+        }
+
+        if (hrData.zoneDistribution) {
+            const highIntensityMinutes = (hrData.zoneDistribution.Z4 || 0) + (hrData.zoneDistribution.Z5 || 0);
+            const plannedHighIntensity = (plan.metadata?.plannedZoneMinutes?.high || 0) * 1.2;
+            if (plannedHighIntensity && highIntensityMinutes > plannedHighIntensity) {
+                plan.notes.push('Recent training skewed toward high intensity – scheduling deload elements.');
+                plan.flags = plan.flags || [];
+                plan.flags.push('potential_overreaching');
+                plan.intensityScale = Number((plan.intensityScale * 0.9).toFixed(2));
+            }
+        }
+
+        if (hrData.average && hrData.resting) {
+            const elevatedResting = hrData.resting > (context.baselineRestingHR || hrData.resting) + 5;
+            if (elevatedResting) {
+                plan.notes.push('Resting heart rate elevated – inserting additional recovery block.');
+                plan.blocks.push({
+                    type: 'recovery',
+                    duration: 15,
+                    intensity: 'Z1',
+                    focus: 'active_recovery'
+                });
+            }
+        }
     }
 }
 
