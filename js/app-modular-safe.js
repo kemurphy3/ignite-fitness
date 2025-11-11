@@ -139,7 +139,7 @@ function updateHabitUI(habitData) {
 }
 
 // Safe content rendering functions
-function renderDashboard() {
+function _renderDashboard() {
   const container = document.getElementById('dashboardContent');
   if (!container) {
     return;
@@ -165,7 +165,7 @@ function renderDashboard() {
   setContentSafely(container, content);
 }
 
-function renderWorkoutPlan(workoutData) {
+function _renderWorkoutPlan(workoutData) {
   const container = document.getElementById('workoutPlan');
   if (!container) {
     return;
@@ -193,7 +193,7 @@ function renderWorkoutPlan(workoutData) {
 }
 
 // Goals & Habits Functions (Safe Version)
-function showGoalsModal() {
+function _showGoalsModal() {
   const modal = document.getElementById('goalsModal');
   if (modal) {
     modal.classList.remove('hidden');
@@ -303,7 +303,7 @@ function renderGoalCard(goal, isCompleted = false) {
 }
 
 // Load Management Functions (Safe Version)
-function showLoadManagementModal() {
+function _showLoadManagementModal() {
   const modal = document.getElementById('loadManagementModal');
   if (modal) {
     modal.classList.remove('hidden');
@@ -526,21 +526,21 @@ function closeMotivationalToast() {
 }
 
 // Modal functions
-function closeGoalsModal() {
+function _closeGoalsModal() {
   const modal = document.getElementById('goalsModal');
   if (modal) {
     modal.classList.add('hidden');
   }
 }
 
-function closeLoadManagementModal() {
+function _closeLoadManagementModal() {
   const modal = document.getElementById('loadManagementModal');
   if (modal) {
     modal.classList.add('hidden');
   }
 }
 
-function refreshLoadData() {
+function _refreshLoadData() {
   renderLoadManagement();
   showSuccess('Load data refreshed!');
 }
@@ -551,7 +551,7 @@ function showSuccess(message) {
   // In a real app, this would show a success notification
 }
 
-function showError(element, message) {
+function _showError(element, message) {
   console.error('Error:', message);
   // In a real app, this would show an error notification
 }

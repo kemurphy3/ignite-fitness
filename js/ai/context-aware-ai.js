@@ -277,7 +277,7 @@ class ContextAwareAI {
   }
 
   // Generate contextual prompt
-  generateContextualPrompt(userInput, context) {
+  generateContextualPrompt(userInput, _context) {
     const contextualContext = this.getContextualContext();
 
     let prompt =
@@ -540,7 +540,7 @@ class ContextAwareAI {
   }
 
   // Helper methods
-  generateCacheKey(userInput, context) {
+  generateCacheKey(userInput, _context) {
     return userInput
       .toLowerCase()
       .replace(/[^a-z0-9]/g, '')
@@ -597,7 +597,7 @@ class ContextAwareAI {
     return Math.min(complexity, 10);
   }
 
-  trackCost(model, inputTokens, outputTokens) {
+  trackCost(model, _inputTokens, _outputTokens) {
     this.costTracker.totalCost += 0.001; // Simulated cost
     this.costTracker.calls++;
 
@@ -823,23 +823,6 @@ class ContextAwareAI {
     return progressionCount / (workouts.length - 1);
   }
 
-  // Get recent workouts
-  getRecentWorkouts(days) {
-    const user = this.getCurrentUser();
-    if (!user?.data?.sessions) {
-      return [];
-    }
-
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - days);
-
-    return user.data.sessions
-      .filter(session => {
-        const sessionDate = new Date(session.start_at);
-        return sessionDate >= cutoffDate && session.type === 'workout';
-      })
-      .sort((a, b) => new Date(b.start_at) - new Date(a.start_at));
-  }
 
   // Get recent sessions (all types)
   getRecentSessions(days) {
@@ -1054,63 +1037,6 @@ class ContextAwareAI {
     return users[currentUser] || null;
   }
 
-  // Select optimal model based on query complexity and context
-  selectOptimalModel(query, context) {
-    const complexity = this.analyzeQueryComplexity(query, context);
-
-    const models = {
-      'claude-haiku': {
-        name: 'Claude Haiku',
-        costPer1kTokens: 0.0008,
-        maxTokens: 4000,
-        capabilities: ['simple', 'quick', 'basic'],
-        description: 'Fast and cost-effective for simple queries',
-      },
-      'gpt-3.5-turbo': {
-        name: 'GPT-3.5 Turbo',
-        costPer1kTokens: 0.002,
-        maxTokens: 4000,
-        capabilities: ['standard', 'workout', 'general'],
-        description: 'Balanced performance for standard queries',
-      },
-      'claude-sonnet': {
-        name: 'Claude Sonnet',
-        costPer1kTokens: 0.015,
-        maxTokens: 8000,
-        capabilities: ['complex', 'injury', 'health', 'detailed'],
-        description: 'High-quality responses for complex queries',
-      },
-      'claude-opus': {
-        name: 'Claude Opus',
-        costPer1kTokens: 0.075,
-        maxTokens: 8000,
-        capabilities: ['expert', 'analysis', 'research', 'comprehensive'],
-        description: 'Most capable model for expert-level analysis',
-      },
-    };
-
-    // Model selection logic based on complexity and context
-    if (complexity.level === 'simple' && !context.requiresExpertise) {
-      return { ...models['claude-haiku'], complexity: 'simple' };
-    } else if (complexity.level === 'standard' || context.queryType === 'workout') {
-      return { ...models['gpt-3.5-turbo'], complexity: 'standard' };
-    } else if (
-      complexity.level === 'complex' ||
-      context.requiresExpertise ||
-      context.queryType === 'injury'
-    ) {
-      return { ...models['claude-sonnet'], complexity: 'complex' };
-    } else if (
-      complexity.level === 'expert' ||
-      context.requiresAnalysis ||
-      context.queryType === 'research'
-    ) {
-      return { ...models['claude-opus'], complexity: 'expert' };
-    }
-
-    // Default to GPT-3.5 for balanced performance
-    return { ...models['gpt-3.5-turbo'], complexity: 'standard' };
-  }
 
   // Analyze query complexity
   analyzeQueryComplexity(query, context) {
@@ -1270,25 +1196,6 @@ class ContextAwareAI {
     return expertiseKeywords.some(keyword => lowerQuery.includes(keyword));
   }
 
-  // Get AI response using selected model
-  async getAIResponse(prompt, userInput, selectedModel) {
-    try {
-      // This would integrate with the actual AI API
-      // For now, return a mock response based on the selected model
-
-      const response = await this.callAIAPI(prompt, selectedModel);
-
-      // Track model usage
-      this.trackModelUsage(selectedModel, prompt.length, response.length);
-
-      return response;
-    } catch (error) {
-      console.error('AI API call failed:', error);
-
-      // Fallback to a simple response
-      return this.generateFallbackResponse(userInput, selectedModel);
-    }
-  }
 
   // Call AI API (mock implementation)
   async callAIAPI(prompt, selectedModel) {

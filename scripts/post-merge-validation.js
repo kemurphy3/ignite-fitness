@@ -318,7 +318,7 @@ class PostMergeValidator {
     }
 
     const opts = { ...options };
-    if (opts.signal == null) {
+    if (opts.signal === null) {
       const timeoutSignal = this.createTimeoutSignal(10000);
       if (timeoutSignal) {
         opts.signal = timeoutSignal;

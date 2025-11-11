@@ -683,7 +683,7 @@ class PatternDetector {
   }
 
   // Generate recommendations based on patterns
-  generateRecommendations(userProfile) {
+  generateRecommendations(_userProfile) {
     this.recommendations = [];
 
     try {

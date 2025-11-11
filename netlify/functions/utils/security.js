@@ -8,7 +8,7 @@ function sanitizeForLog(value) {
       .replace(/\b\d{3}-\d{2}-\d{4}\b/g, '[SSN]')
       .replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, '[EMAIL]')
       .replace(/\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, '[CARD]')
-      .replace(/Bearer [A-Za-z0-9\-._~\+\/]+=*/g, '[TOKEN]')
+      .replace(/Bearer [A-Za-z0-9\-._~+/]+=*/g, '[TOKEN]')
       .replace(/\b\d{10,}\b/g, '[PHONE]')
       .replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, '[EMAIL]')
       .substring(0, 200);
@@ -156,7 +156,7 @@ function escapeSQL(input) {
       .replace(/\0/g, '\\0')
       .replace(/\n/g, '\\n')
       .replace(/\r/g, '\\r')
-      .replace(/\x1a/g, '\\Z');
+      .replace(/\u001a/g, '\\Z');
   }
 
   return input;

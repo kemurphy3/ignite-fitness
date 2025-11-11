@@ -5,7 +5,7 @@
  * and comprehensive SQL injection protection.
  */
 
-const { neon } = require('@neondatabase/serverless');
+const { neon: _neon } = require('@neondatabase/serverless');
 
 // Initialize database connection
 const { getNeonClient } = require('./connection-pool');
@@ -123,7 +123,7 @@ class SQLInjectionProtection {
 
     if (typeof input === 'string') {
       // Remove potential SQL injection characters
-      return input.replace(/['"\\;\-]/g, '');
+      return input.replace(/['";-]/g, '');
     }
 
     if (typeof input === 'number') {
