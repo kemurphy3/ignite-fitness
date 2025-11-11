@@ -13,6 +13,10 @@ class ProgressRenderer {
             cacheTime: null,
             ttl: 5 * 60 * 1000 // 5 minutes
         };
+        this.trendAnalyzer = window.TrendAnalyzer ? new window.TrendAnalyzer(this.logger) : null;
+        this.progressProjector = window.ProgressProjector ? new window.ProgressProjector({ logger: this.logger }) : null;
+        this.plateauDetector = window.PlateauDetector ? new window.PlateauDetector({ logger: this.logger }) : null;
+        this.performancePredictor = window.PerformancePredictor ? new window.PerformancePredictor({ logger: this.logger }) : null;
 
         // Initialize on page load
         this.init();
@@ -63,10 +67,15 @@ class ProgressRenderer {
             // Get progress data
             const data = await this.getProgressData();
 
+            element.innerHTML = '';
+
             // Render charts
             await this.renderWeeklyVolumeChart(element, data);
             await this.renderPRProgressionChart(element, data);
             await this.renderConsistencyChart(element, data);
+            await this.renderTrendForecastChart(element, data);
+            this.renderPlateauAlert(element, data);
+            this.renderTimelineSummary(element, data);
 
         } catch (error) {
             this.logger.error('Failed to render progress charts:', error);
@@ -105,6 +114,17 @@ class ProgressRenderer {
             totalWorkouts: sessions.length,
             dateRange: this.getDateRange(sessions)
         };
+
+        const seriesForForecast = weeklyVolumes
+            .filter(item => Number.isFinite(item.volume) && item.startDate)
+            .map(item => ({
+                timestamp: new Date(item.startDate).getTime(),
+                value: item.volume
+            }));
+
+        data.trendInsights = this.computeTrendInsights(seriesForForecast);
+        data.plateauStatus = this.computePlateauStatus(seriesForForecast);
+        data.projections = this.computeProjections(seriesForForecast);
 
         // Cache data
         this.cache.progressData = data;
@@ -167,8 +187,11 @@ class ProgressRenderer {
                     week: weekKey,
                     volume: 0,
                     workouts: 0,
-                    exercises: new Set()
+                    exercises: new Set(),
+                    startDate: this.getWeekStartDate(new Date(session.date)).toISOString()
                 };
+            } else if (!weeklyData[weekKey].startDate) {
+                weeklyData[weekKey].startDate = this.getWeekStartDate(new Date(session.date)).toISOString();
             }
 
             // Calculate session volume (sets × reps × weight)
@@ -189,7 +212,8 @@ class ProgressRenderer {
             week: week.week,
             volume: Math.round(week.volume),
             workouts: week.workouts,
-            exerciseCount: week.exercises.size
+            exerciseCount: week.exercises.size,
+            startDate: week.startDate
         }));
 
         return volumes.sort((a, b) => a.week.localeCompare(b.week));
@@ -306,6 +330,55 @@ class ProgressRenderer {
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const week = Math.ceil(date.getDate() / 7);
         return `${year}-${month}-W${week}`;
+    }
+
+    /**
+     * Get the start date (Monday) for the week of a given date.
+     * @param {Date} date
+     * @returns {Date}
+     */
+    getWeekStartDate(date) {
+        const start = new Date(date);
+        start.setHours(0, 0, 0, 0);
+        const day = (start.getDay() + 6) % 7; // Convert Sunday=0 to Monday=0
+        start.setDate(start.getDate() - day);
+        return start;
+    }
+
+    computeTrendInsights(series) {
+        if (!this.trendAnalyzer || series.length < 2) {
+            return null;
+        }
+        const points = series.map((point, index) => ({ x: index, y: point.value }));
+        const regression = this.trendAnalyzer.linearRegression(points);
+        const ema = this.trendAnalyzer.exponentialMovingAverage(series.map(point => point.value));
+        return {
+            slope: regression.slope,
+            intercept: regression.intercept,
+            r2: Number(regression.r2.toFixed(4)),
+            standardError: regression.standardError,
+            latestEMA: ema.at(-1) ?? null
+        };
+    }
+
+    computePlateauStatus(series) {
+        if (!this.plateauDetector || series.length < 5) {
+            return {
+                plateau: false,
+                confidence: 0,
+                reasons: [],
+                recommendations: [],
+                changePoint: false
+            };
+        }
+        return this.plateauDetector.detect(series);
+    }
+
+    computeProjections(series) {
+        if (!this.progressProjector || series.length < 2) {
+            return null;
+        }
+        return this.progressProjector.project(series, { steps: 4, intervalDays: 7 });
     }
 
     /**
@@ -596,6 +669,192 @@ class ProgressRenderer {
         }
     }
 
+    async renderTrendForecastChart(container, data) {
+        if (!this.chartManager || !data.projections || !data.weeklyVolumes?.length) {
+            return;
+        }
+
+        const chartContainer = this.createChartContainer(container, 'trend-forecast-chart', 'Trend Forecast');
+
+        try {
+            const actualSeries = data.weeklyVolumes
+                .filter(item => item.startDate)
+                .map(item => ({
+                    x: item.startDate,
+                    y: item.volume
+                }));
+
+            const baseline = data.projections.baseline.map(point => ({
+                x: new Date(point.timestamp).toISOString(),
+                y: Number(point.value.toFixed(2))
+            }));
+            const upper = data.projections.upper.map(point => ({
+                x: new Date(point.timestamp).toISOString(),
+                y: Number(point.value.toFixed(2))
+            }));
+            const lower = data.projections.lower.map(point => ({
+                x: new Date(point.timestamp).toISOString(),
+                y: Number(point.value.toFixed(2))
+            }));
+
+            const config = {
+                type: 'line',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Actual Volume',
+                            data: actualSeries,
+                            borderColor: 'rgba(46, 204, 113, 1)',
+                            backgroundColor: 'rgba(46, 204, 113, 0.15)',
+                            borderWidth: 2,
+                            pointRadius: 4,
+                            tension: 0.25,
+                            parsing: false
+                        },
+                        {
+                            label: 'Forecast',
+                            data: baseline,
+                            borderColor: 'rgba(52, 152, 219, 1)',
+                            borderWidth: 2,
+                            borderDash: [6, 4],
+                            pointRadius: 3,
+                            tension: 0.25,
+                            parsing: false
+                        },
+                        {
+                            label: 'Upper Confidence',
+                            data: upper,
+                            borderColor: 'rgba(52, 152, 219, 0)',
+                            backgroundColor: 'rgba(52, 152, 219, 0.12)',
+                            pointRadius: 0,
+                            fill: '+1',
+                            tension: 0.25,
+                            parsing: false
+                        },
+                        {
+                            label: 'Lower Confidence',
+                            data: lower,
+                            borderColor: 'rgba(52, 152, 219, 0)',
+                            pointRadius: 0,
+                            parsing: false,
+                            tension: 0.25
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    parsing: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Projected Weekly Volume (95% Confidence Interval)'
+                        },
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: context => {
+                                    const value = context.parsed?.y ?? context.raw?.y;
+                                    return `${context.dataset.label}: ${Number(value).toFixed(0)} lbs`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'week'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Week'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Volume (lbs)'
+                            }
+                        }
+                    }
+                }
+            };
+
+            const canvas = chartContainer.querySelector('canvas');
+            await this.chartManager.createChart('trend-forecast-chart', config, canvas);
+            this.addChartAccessibility(chartContainer, 'trend-forecast-chart', data);
+        } catch (error) {
+            this.logger.error('Failed to render trend forecast chart:', error);
+            this.showError(chartContainer, error);
+        }
+    }
+
+    renderPlateauAlert(container, data) {
+        const existing = container.querySelector('.plateau-alert');
+        if (existing) {
+            existing.remove();
+        }
+
+        const status = data.plateauStatus;
+        if (!status || !status.plateau || status.confidence < 0.8) {
+            return;
+        }
+
+        const alert = document.createElement('div');
+        alert.className = 'plateau-alert';
+        alert.setAttribute('role', 'alert');
+        alert.innerHTML = `
+            <h4>Progress Plateau Detected</h4>
+            <p>Confidence: ${(status.confidence * 100).toFixed(0)}%</p>
+            <ul>
+                ${status.reasons.map(reason => `<li>${reason}</li>`).join('')}
+            </ul>
+            <p><strong>Recommendation:</strong> ${status.recommendations.join(' ')}</p>
+        `;
+        container.appendChild(alert);
+    }
+
+    renderTimelineSummary(container, data) {
+        const existing = container.querySelector('.trend-timeline-summary');
+        if (existing) {
+            existing.remove();
+        }
+
+        const insights = data.trendInsights;
+        const latest = data.weeklyVolumes?.at(-1);
+        if (!insights || !latest || !this.performancePredictor || !Number.isFinite(insights.slope) || insights.slope <= 0) {
+            return;
+        }
+
+        const targetVolume = latest.volume * 1.1;
+        const timeline = this.performancePredictor.estimateGoalTimeline(
+            latest.volume,
+            targetVolume,
+            insights.slope
+        );
+
+        if (!timeline || !Number.isFinite(timeline.days) || timeline.days <= 0 || timeline.days === Infinity) {
+            return;
+        }
+
+        const summary = document.createElement('div');
+        summary.className = 'trend-timeline-summary';
+        const plateauMessage = data.plateauStatus?.plateau
+            ? '<p class="plateau-note">Progress has plateaued; adjustments are recommended before relying on projections.</p>'
+            : '';
+        summary.innerHTML = `
+            <h4>Timeline Projection</h4>
+            <p>At current rate, a 10% volume increase is projected in <strong>${Math.round(timeline.days)}</strong> days.</p>
+            <p>Trend strength (R²): ${Number(insights.r2 || 0).toFixed(2)}</p>
+            ${plateauMessage}
+        `;
+        container.appendChild(summary);
+    }
+
     /**
      * Create chart container element
      * @param {HTMLElement} parent - Parent container
@@ -676,6 +935,12 @@ class ProgressRenderer {
             const total = Object.values(consistency).reduce((sum, count) => sum + count, 0);
             const avg = Math.round(total / weeks.length);
             return `Workout consistency chart showing ${weeks.length} weeks of data. Average workouts per week: ${avg}.`;
+        }
+
+        if (chartId === 'trend-forecast-chart') {
+            const trend = data.trendInsights;
+            if (!trend) {return 'Trend forecast unavailable due to limited data.';}
+            return `Forecast chart with slope ${trend.slope.toFixed(2)} and confidence ${Number(trend.r2 || 0).toFixed(2)}.`;
         }
 
         return `${chartId} chart`;
