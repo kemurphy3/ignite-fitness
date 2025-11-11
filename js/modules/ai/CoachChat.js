@@ -4,10 +4,15 @@
  */
 class CoachChat {
   constructor() {
+    /** @type {Console} */
     this.logger = window.SafeLogger || console;
+    /** @type {any} */
     this.expertCoordinator = window.ExpertCoordinator;
+    /** @type {any} */
     this.overrideBar = window.OverrideBar;
+    /** @type {any} */
     this.authManager = window.AuthManager;
+    /** @type {any} */
     this.storageManager = window.StorageManager;
 
     this.chatHistory = [];
