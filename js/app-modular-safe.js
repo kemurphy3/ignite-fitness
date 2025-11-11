@@ -35,7 +35,6 @@ function createHTMLTemplate(strings, ...values) {
 
 // Initialize the application
 function initializeApp() {
-  console.log('Initializing Ignite Fitness App...');
 
   // Initialize all modules
   initializeAuth();
@@ -47,7 +46,6 @@ function initializeApp() {
   // Set up event listeners
   setupEventListeners();
 
-  console.log('App initialization complete!');
 }
 
 // Event listener setup
@@ -73,32 +71,26 @@ function setupEventListeners() {
 
 // Event handlers
 function handleUserLogin(username) {
-  console.log('User logged in:', username);
   updateUIForLoggedInUser(username);
 }
 
 function handleUserLogout() {
-  console.log('User logged out');
   updateUIForLoggedOutUser();
 }
 
 function handleWorkoutStart(workoutData) {
-  console.log('Workout started:', workoutData);
   updateWorkoutUI(workoutData);
 }
 
 function handleWorkoutComplete(workoutData) {
-  console.log('Workout completed:', workoutData);
   updateWorkoutCompletionUI(workoutData);
 }
 
-function handleGoalCreated(goalData) {
-  console.log('Goal created:', goalData);
+function handleGoalCreated(_goalData) {
   showSuccess('Goal created successfully!');
 }
 
 function handleHabitUpdated(habitData) {
-  console.log('Habit updated:', habitData);
   updateHabitUI(habitData);
 }
 
@@ -459,19 +451,16 @@ function getRiskStatusText(riskLevel) {
 // Initialize modules
 function initializeAuth() {
   if (window.AuthManager) {
-    console.log('Auth module initialized');
   }
 }
 
 function initializeWorkoutTracker() {
   if (window.WorkoutTracker) {
-    console.log('Workout tracker initialized');
   }
 }
 
 function initializeDashboard() {
   if (window.DashboardRenderer) {
-    console.log('Dashboard module initialized');
   }
 }
 
@@ -494,11 +483,9 @@ function initializeGoalsAndHabits() {
 
 function initializeLoadManagement() {
   if (window.StravaProcessor) {
-    console.log('Strava processor initialized');
   }
 
   if (window.LoadCalculator) {
-    console.log('Load calculator initialized');
   }
 }
 
@@ -546,8 +533,7 @@ function _refreshLoadData() {
 }
 
 // Success/Error message functions
-function showSuccess(message) {
-  console.log('Success:', message);
+function showSuccess(_message) {
   // In a real app, this would show a success notification
 }
 

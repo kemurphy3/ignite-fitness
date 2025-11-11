@@ -333,7 +333,6 @@ class ContextAwareAI {
     // Check cache first
     const cachedResponse = this.getCachedResponse(cacheKey);
     if (cachedResponse) {
-      console.log('Using cached response');
       return cachedResponse;
     }
 

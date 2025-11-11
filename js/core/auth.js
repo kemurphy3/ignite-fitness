@@ -2,18 +2,27 @@
 // Handles user login, registration, password reset, and session management
 
 // Access global variables
-let currentUser, isLoggedIn, users, showUserDashboard, loadUserData, showSuccess, showError;
+let _currentUser, _isLoggedIn, users, showUserDashboard, loadUserData, showSuccess, showError;
 
 // Initialize with global references
-function initAuth(globals) {
-  currentUser = globals.currentUser;
-  isLoggedIn = globals.isLoggedIn;
-  users = globals.users;
-  showUserDashboard = globals.showUserDashboard;
-  // hideLoginForm is defined as a function below, not from globals
-  loadUserData = globals.loadUserData;
-  showSuccess = globals.showSuccess;
-  showError = globals.showError;
+function _initAuth(globals) {
+  const {
+    currentUser,
+    isLoggedIn,
+    users: globalUsers,
+    showUserDashboard: globalShowUserDashboard,
+    loadUserData: globalLoadUserData,
+    showSuccess: globalShowSuccess,
+    showError: globalShowError
+  } = globals;
+
+  _currentUser = currentUser;
+  _isLoggedIn = isLoggedIn;
+  users = globalUsers;
+  showUserDashboard = globalShowUserDashboard;
+  loadUserData = globalLoadUserData;
+  showSuccess = globalShowSuccess;
+  showError = globalShowError;
 }
 
 // Simple hash function for password hashing (in production, use bcrypt)

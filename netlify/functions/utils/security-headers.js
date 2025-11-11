@@ -206,7 +206,7 @@ exports.cspReport = async event => {
 /**
  * Security headers test endpoint
  */
-exports.securityTest = async event => {
+exports.securityTest = async _event => {
   const response = {
     statusCode: 200,
     headers: {

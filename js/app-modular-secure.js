@@ -39,8 +39,6 @@ function createHTMLTemplate(strings, ...values) {
 
 // Initialize the application
 function initializeApp() {
-  console.log('Initializing Ignite Fitness App...');
-
   // Initialize all modules
   initializeAuth();
   initializeWorkoutTracker();
@@ -50,8 +48,6 @@ function initializeApp() {
 
   // Set up event listeners
   setupEventListeners();
-
-  console.log('App initialization complete!');
 }
 
 // Event listener setup
@@ -77,32 +73,26 @@ function setupEventListeners() {
 
 // Event handlers
 function handleUserLogin(username) {
-  console.log('User logged in:', username);
   updateUIForLoggedInUser(username);
 }
 
 function handleUserLogout() {
-  console.log('User logged out');
   updateUIForLoggedOutUser();
 }
 
 function handleWorkoutStart(workoutData) {
-  console.log('Workout started:', workoutData);
   updateWorkoutUI(workoutData);
 }
 
 function handleWorkoutComplete(workoutData) {
-  console.log('Workout completed:', workoutData);
   updateWorkoutCompletionUI(workoutData);
 }
 
-function handleGoalCreated(goalData) {
-  console.log('Goal created:', goalData);
+function handleGoalCreated(_goalData) {
   showSuccess('Goal created successfully!');
 }
 
 function handleHabitUpdated(habitData) {
-  console.log('Habit updated:', habitData);
   updateHabitUI(habitData);
 }
 
@@ -143,7 +133,7 @@ function updateHabitUI(habitData) {
 }
 
 // Safe content rendering functions
-function renderDashboard() {
+function _renderDashboard() {
   const container = document.getElementById('dashboardContent');
   if (!container) {
     return;
@@ -169,7 +159,7 @@ function renderDashboard() {
   setContentSafely(container, content);
 }
 
-function renderWorkoutPlan(workoutData) {
+function _renderWorkoutPlan(workoutData) {
   const container = document.getElementById('workoutPlan');
   if (!container) {
     return;
@@ -197,7 +187,7 @@ function renderWorkoutPlan(workoutData) {
 }
 
 // Goals & Habits Functions (Secure Version)
-function showGoalsModal() {
+function _showGoalsModal() {
   const modal = document.getElementById('goalsModal');
   if (modal) {
     modal.classList.remove('hidden');
@@ -307,7 +297,7 @@ function renderGoalCard(goal, isCompleted = false) {
 }
 
 // Load Management Functions (Secure Version)
-function showLoadManagementModal() {
+function _showLoadManagementModal() {
   const modal = document.getElementById('loadManagementModal');
   if (modal) {
     modal.classList.remove('hidden');
@@ -463,19 +453,19 @@ function getRiskStatusText(riskLevel) {
 // Initialize modules
 function initializeAuth() {
   if (window.AuthManager) {
-    console.log('Auth module initialized');
+    // Auth module available
   }
 }
 
 function initializeWorkoutTracker() {
   if (window.WorkoutTracker) {
-    console.log('Workout tracker initialized');
+    // Workout tracker available
   }
 }
 
 function initializeDashboard() {
   if (window.DashboardRenderer) {
-    console.log('Dashboard module initialized');
+    // Dashboard module available
   }
 }
 
@@ -498,11 +488,11 @@ function initializeGoalsAndHabits() {
 
 function initializeLoadManagement() {
   if (window.StravaProcessor) {
-    console.log('Strava processor initialized');
+    // Strava processor available
   }
 
   if (window.LoadCalculator) {
-    console.log('Load calculator initialized');
+    // Load calculator available
   }
 }
 
@@ -530,32 +520,31 @@ function closeMotivationalToast() {
 }
 
 // Modal functions
-function closeGoalsModal() {
+function _closeGoalsModal() {
   const modal = document.getElementById('goalsModal');
   if (modal) {
     modal.classList.add('hidden');
   }
 }
 
-function closeLoadManagementModal() {
+function _closeLoadManagementModal() {
   const modal = document.getElementById('loadManagementModal');
   if (modal) {
     modal.classList.add('hidden');
   }
 }
 
-function refreshLoadData() {
+function _refreshLoadData() {
   renderLoadManagement();
   showSuccess('Load data refreshed!');
 }
 
 // Success/Error message functions
-function showSuccess(message) {
-  console.log('Success:', message);
+function showSuccess(_message) {
   // In a real app, this would show a success notification
 }
 
-function showError(element, message) {
+function _showError(element, message) {
   console.error('Error:', message);
   // In a real app, this would show an error notification
 }
