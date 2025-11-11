@@ -207,6 +207,19 @@ exports.handler = async (event) => {
       scope: token.scope
     });
 
+    try {
+      await sql`
+        UPDATE users
+        SET strava_connected = true,
+            strava_scope = COALESCE(strava_scope, ${token.scope}),
+            strava_last_refresh_at = NOW(),
+            updated_at = NOW()
+        WHERE id = ${userId}
+      `;
+    } catch (updateError) {
+      logger.warn('Unable to persist Strava refresh metadata on users table', { error: updateError.message });
+    }
+
     return {
       statusCode: 200,
       headers: {

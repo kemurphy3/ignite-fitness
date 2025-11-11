@@ -341,23 +341,23 @@ function calculateDaysUntil(gameDate) {
  */
 function calculatePhaseProgress(blocks, programStartDate) {
     const totalWeeks = blocks.length * 4;
-    const msPerDay = 1000 * 60 * 60 * 24;
-    const msPerWeek = msPerDay * 7;
-    let currentWeek = 1;
+    const msPerWeek = 1000 * 60 * 60 * 24 * 7;
+    let currentWeek = 0;
 
-    const startDateCandidate = programStartDate ? new Date(programStartDate) : null;
-    const normalizedStart = startDateCandidate && !Number.isNaN(startDateCandidate.getTime())
-        ? startDateCandidate
+    const normalizedStart = programStartDate
+        ? new Date(programStartDate)
         : null;
+    const isStartValid = normalizedStart && !Number.isNaN(normalizedStart.getTime());
 
-    if (normalizedStart) {
+    if (isStartValid) {
         const now = new Date();
         const diffMs = now.getTime() - normalizedStart.getTime();
-        if (diffMs >= 0) {
-            const diffWeeks = Math.floor(diffMs / msPerWeek);
-            currentWeek = diffWeeks + 1;
+
+        if (diffMs < 0) {
+            currentWeek = 0;
         } else {
-            currentWeek = 1;
+            const calculatedWeek = Math.ceil(diffMs / msPerWeek);
+            currentWeek = calculatedWeek === 0 ? 1 : calculatedWeek;
         }
     } else if (blocks.length > 0 && blocks[0]?.startDate) {
         const firstBlockStart = new Date(blocks[0].startDate);
@@ -365,27 +365,30 @@ function calculatePhaseProgress(blocks, programStartDate) {
             const now = new Date();
             const diffMs = now.getTime() - firstBlockStart.getTime();
             if (diffMs >= 0) {
-                const diffWeeks = Math.floor(diffMs / msPerWeek);
-                currentWeek = diffWeeks + 1;
+                const calculatedWeek = Math.ceil(diffMs / msPerWeek);
+                currentWeek = calculatedWeek === 0 ? 1 : calculatedWeek;
             }
         }
     }
 
-    if (!Number.isFinite(currentWeek) || currentWeek < 1) {
-        currentWeek = 1;
+    if (!Number.isFinite(currentWeek) || currentWeek < 0) {
+        currentWeek = 0;
     }
 
     if (totalWeeks > 0) {
         currentWeek = Math.min(currentWeek, totalWeeks);
     }
 
-    const percentage = totalWeeks > 0 ? Math.min(100, (currentWeek / totalWeeks) * 100) : 0;
+    const safeCurrentWeek = Math.max(currentWeek, 0);
+    const percentage = totalWeeks > 0
+        ? Math.min(100, (safeCurrentWeek / totalWeeks) * 100)
+        : 0;
 
     return {
         totalWeeks,
-        currentWeek,
+        currentWeek: safeCurrentWeek,
         percentage,
-        completed: totalWeeks > 0 ? currentWeek >= totalWeeks : false
+        completed: totalWeeks > 0 ? safeCurrentWeek >= totalWeeks : false
     };
 }
 

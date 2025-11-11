@@ -91,6 +91,7 @@ class DemoDataSeeder {
                     time_windows: user.timeWindows,
                     injury_flags: user.injuryFlags,
                     preferences: user.preferences,
+                    program_start_date: (user.programStartDate || new Date().toISOString()).slice(0, 10),
                     onboarding_completed: true
                 })
             });

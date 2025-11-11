@@ -93,6 +93,10 @@ exports.handler = async (event) => {
       throw new Error('Token validation failed');
     }
 
+    if (!tokens.scope || !String(tokens.scope).includes('activity:read')) {
+      throw new Error('Insufficient Strava scope: activity:read required');
+    }
+
     // Encrypt tokens
     const { encrypted: encryptedAccess, keyVersion } = await encryption.encrypt(tokens.access_token);
     const { encrypted: encryptedRefresh } = await encryption.encrypt(tokens.refresh_token, keyVersion);
@@ -120,6 +124,19 @@ exports.handler = async (event) => {
           last_validated_at = NOW(),
           updated_at = NOW()
       `;
+
+      try {
+        await tx`
+          UPDATE users
+          SET strava_connected = true,
+              strava_scope = ${tokens.scope},
+              strava_athlete_id = ${tokens.athlete?.id || null},
+              updated_at = NOW()
+          WHERE id = ${userId}
+        `;
+      } catch (updateError) {
+        logger.warn('Failed to persist Strava connection status on users table', { error: updateError.message });
+      }
 
       await auditLog(tx, {
         user_id: userId,

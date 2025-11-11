@@ -120,6 +120,20 @@ COMMENT ON COLUMN sessions.payload IS 'JSON payload with additional session data
 COMMENT ON COLUMN users.goals IS 'Array of user fitness goals (max 5 items)';
 COMMENT ON COLUMN users.baseline_lifts IS 'JSON object with baseline strength measurements (max 1KB)';
 
+-- Ensure program start date column exists and is populated
+ALTER TABLE user_profiles
+    ADD COLUMN IF NOT EXISTS program_start_date DATE;
+
+UPDATE user_profiles
+SET program_start_date = COALESCE(program_start_date, CURRENT_DATE)
+WHERE program_start_date IS NULL;
+
+ALTER TABLE user_profiles
+    ALTER COLUMN program_start_date SET NOT NULL;
+
+ALTER TABLE user_profiles
+    ALTER COLUMN program_start_date SET DEFAULT CURRENT_DATE;
+
 -- Grant necessary permissions (adjust as needed for your setup)
 -- GRANT SELECT, INSERT, UPDATE, DELETE ON api_keys TO your_app_user;
 -- GRANT SELECT, INSERT, UPDATE, DELETE ON rate_limits TO your_app_user;

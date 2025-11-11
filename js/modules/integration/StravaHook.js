@@ -1,141 +1,332 @@
 /**
- * StravaHook - Scaffold for Strava integration (mock endpoint for now)
- * Maps external Strava activities to internal format
+ * StravaHook - Production-grade Strava activity synchronizer.
+ * Handles token lifecycle, pagination, rate limiting, heart-rate stream retrieval,
+ * deduplication, session matching, and persistence through StravaProcessor.
  */
-class StravaHook {
-    constructor() {
-        this.logger = window.SafeLogger || console;
-        this.storageManager = window.StorageManager;
-        this.isAuthenticated = false;
-        this.lastSync = null;
-    }
 
-    /**
-     * Mock endpoint for fetching Strava activities
-     * @param {string} userId - User ID
-     * @returns {Promise<Array>} Strava activities
-     */
-    async fetchActivities(userId) {
-        // MOCK: Return mock data for testing
-        this.logger.debug('StravaHook: Fetching activities (mock)', { userId });
-
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        // Mock recent activity
-        const mockActivity = {
-            id: `strava_${Date.now()}`,
-            name: 'Morning Run',
-            type: 'Run',
-            distance: 5000, // meters
-            duration: 1800, // seconds (30 min)
-            averageIntensity: 6,
-            timestamp: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-            source: 'strava'
-        };
-
-        return [mockActivity];
-    }
-
-    /**
-     * Sync Strava activities to internal storage
-     * @param {string} userId - User ID
-     * @returns {Promise<Object>} Sync result
-     */
-    async syncActivities(userId) {
+const ActivityMatcherClass = (typeof window !== 'undefined' && window.ActivityMatcher)
+    ? window.ActivityMatcher
+    : (() => {
         try {
-            const activities = await this.fetchActivities(userId);
+            return require('./ActivityMatcher.js');
+        } catch (error) {
+            return null;
+        }
+    })();
 
-            // Map to internal format
-            const mappedActivities = activities.map(activity =>
-                this.mapToInternal(activity)
-            );
+const StravaTokenManagerClass = (typeof window !== 'undefined' && window.StravaTokenManager)
+    ? window.StravaTokenManager
+    : (() => {
+        try {
+            return require('./StravaTokenManager.js');
+        } catch (error) {
+            return null;
+        }
+    })();
 
-            // Store in external_activities table
-            for (const activity of mappedActivities) {
-                await this.storageManager.saveData(userId, 'external_activities', activity);
+class UnauthorizedError extends Error {
+    constructor(message = 'Strava access token unauthorized') {
+        super(message);
+        this.name = 'UnauthorizedError';
+    }
+}
+
+class StravaHook {
+    constructor(options = {}) {
+        const defaultFetch = (typeof fetch === 'function') ? fetch.bind(globalThis) : null;
+        if (!defaultFetch && !options.fetchImpl) {
+            throw new Error('StravaHook requires a fetch implementation');
+        }
+
+        const defaultLogger = (typeof window !== 'undefined' && window.SafeLogger) ? window.SafeLogger : console;
+        this.logger = options.logger || defaultLogger;
+        this.fetchImpl = options.fetchImpl || defaultFetch;
+        this.storageManager = options.storageManager || (typeof window !== 'undefined' ? window.StorageManager : null);
+        this.tokenManager = options.tokenManager || (StravaTokenManagerClass ? new StravaTokenManagerClass({ logger: this.logger }) : null);
+        this.activityMatcher = options.activityMatcher || (ActivityMatcherClass ? new ActivityMatcherClass({ logger: this.logger }) : null);
+        this.stravaProcessor = options.stravaProcessor || (typeof window !== 'undefined' ? window.StravaProcessor : null);
+        this.eventBus = options.eventBus || (typeof window !== 'undefined' ? window.EventBus : null);
+        this.baseUrl = options.baseUrl || 'https://www.strava.com/api/v3';
+        this.requestTimestamps = [];
+        this.maxRequestsPerWindow = 600;
+        this.rateLimitWindowMs = 15 * 60 * 1000; // 15 minutes
+        this.retryAttempts = options.retryAttempts || 5;
+        this.retryBaseDelay = options.retryBaseDelay || 1000;
+        this.syncMetadataKey = 'ignitefitness_strava_sync_metadata';
+    }
+
+    /**
+     * Synchronize Strava activities for a user.
+     * @param {string} userId - Application user identifier.
+     * @param {Object} options - Sync options ({ perPage, after, sessions }).
+     * @returns {Promise<Object>} Sync summary.
+     */
+    async syncActivities(userId, options = {}) {
+        if (!this.tokenManager) {
+            throw new Error('StravaTokenManager is not configured');
+        }
+        this.emitStatus('strava:sync:start', { userId });
+
+        try {
+            const tokenPayload = await this.tokenManager.ensureAccessToken(userId);
+            const lastSync = options.after || this.getLastSync(userId);
+            const activities = await this.fetchActivities(tokenPayload.accessToken, userId, {
+                perPage: options.perPage || 200,
+                after: lastSync
+            });
+
+            this.logger.info?.('StravaHook: fetched activities', { count: activities.length, userId });
+
+            const uniqueActivities = this.filterDuplicates(userId, activities);
+            const activitiesWithStreams = await this.attachStreams(tokenPayload.accessToken, userId, uniqueActivities);
+
+            const sessions = options.sessions || this.getRecentSessions();
+            const matches = this.activityMatcher ? this.activityMatcher.matchActivities(activitiesWithStreams, sessions) : [];
+
+            const importResult = await this.importActivities(userId, activitiesWithStreams);
+
+            if (activitiesWithStreams.length > 0) {
+                const newest = activitiesWithStreams
+                    .map(activity => new Date(activity.start_date).getTime())
+                    .filter(ts => Number.isFinite(ts))
+                    .sort((a, b) => b - a)[0];
+                if (newest) {
+                    this.setLastSync(userId, new Date(newest).toISOString());
+                }
             }
 
-            this.lastSync = new Date();
-
-            return {
-                synced: mappedActivities.length,
-                activities: mappedActivities
+            const summary = {
+                fetched: activities.length,
+                processed: activitiesWithStreams.length,
+                imported: importResult?.processed || 0,
+                matches
             };
+
+            this.emitStatus('strava:sync:complete', { userId, summary });
+            return summary;
         } catch (error) {
-            this.logger.error('Failed to sync Strava activities', error);
+            if (error instanceof UnauthorizedError && this.tokenManager && !options.__retried) {
+                this.logger.warn('StravaHook: retrying sync after refreshing token', { userId });
+                await this.tokenManager.refreshToken(userId);
+                return this.syncActivities(userId, { ...options, __retried: true });
+            }
+            this.logger.error('StravaHook: sync failed', error);
+            this.emitStatus('strava:sync:error', { userId, error: error.message });
             throw error;
         }
     }
 
-    /**
-     * Map Strava activity to internal format
-     * @param {Object} stravaActivity - Strava activity
-     * @returns {Object} Internal activity format
-     */
-    mapToInternal(stravaActivity) {
-        return {
-            id: stravaActivity.id,
-            userId: this.getUserId(),
-            source: 'strava',
-            type: this.mapActivityType(stravaActivity.type),
-            duration: stravaActivity.duration, // seconds
-            distance: stravaActivity.distance, // meters
-            averageIntensity: stravaActivity.averageIntensity,
-            timestamp: stravaActivity.timestamp,
-            name: stravaActivity.name,
-            rawData: stravaActivity // Store original for audit
+    filterDuplicates(userId, activities) {
+        if (!this.stravaProcessor || !Array.isArray(activities)) {
+            return activities;
+        }
+
+        const existing = this.stravaProcessor.getExternalActivities?.(userId) || [];
+        const seen = new Set();
+        const filtered = [];
+
+        for (const activity of activities) {
+            const candidateId = activity.id?.toString?.();
+            const duplicate = existing.some(item => ActivityMatcherClass?.isDuplicate?.(item, activity));
+            if (duplicate) {
+                this.logger.debug?.('StravaHook: skipping duplicate activity', { id: candidateId });
+                continue;
+            }
+            if (candidateId && seen.has(candidateId)) {
+                continue;
+            }
+            if (candidateId) {seen.add(candidateId);}
+            filtered.push(activity);
+        }
+        return filtered;
+    }
+
+    async importActivities(userId, activities) {
+        if (!this.stravaProcessor || typeof this.stravaProcessor.importActivities !== 'function') {
+            return null;
+        }
+
+        const payload = await this.stravaProcessor.importActivities(activities);
+        this.logger.info?.('StravaHook: import summary', payload);
+        return payload;
+    }
+
+    async fetchActivities(accessToken, userId, { perPage = 200, after } = {}) {
+        const results = [];
+        let page = 1;
+        let continuePaging = true;
+        const afterSeconds = after ? Math.floor(new Date(after).getTime() / 1000) : undefined;
+
+        while (continuePaging) {
+            this.throttleIfNeeded();
+            const query = new URLSearchParams({ per_page: String(perPage), page: String(page) });
+            if (afterSeconds) {
+                query.append('after', String(afterSeconds));
+            }
+            const url = `${this.baseUrl}/athlete/activities?${query.toString()}`;
+            const response = await this.performRequest(url, {
+                headers: { 'Authorization': `Bearer ${accessToken}` },
+                userId
+            });
+            const data = await response.json();
+            if (!Array.isArray(data) || data.length === 0) {
+                continuePaging = false;
+            } else {
+                results.push(...data);
+                page += 1;
+                if (data.length < perPage) {
+                    continuePaging = false;
+                }
+            }
+        }
+
+        return results;
+    }
+
+    async attachStreams(accessToken, userId, activities) {
+        const enriched = [];
+        for (const activity of activities) {
+            try {
+                const streams = await this.fetchActivityStreams(accessToken, userId, activity.id);
+                activity.streams = streams;
+                activity.heartRateSeries = ActivityMatcherClass?.buildHeartRateSeries?.(streams) || [];
+            } catch (error) {
+                if (error instanceof UnauthorizedError && this.tokenManager && !activity.__retried) {
+                    const refreshed = await this.tokenManager.ensureAccessToken(userId);
+                    activity.__retried = true;
+                    const streams = await this.fetchActivityStreams(refreshed.accessToken, userId, activity.id);
+                    activity.streams = streams;
+                    activity.heartRateSeries = ActivityMatcherClass?.buildHeartRateSeries?.(streams) || [];
+                } else {
+                    this.logger.warn?.('StravaHook: failed to fetch streams', { activityId: activity.id, error: error.message });
+                    activity.streams = null;
+                    activity.heartRateSeries = [];
+                }
+            }
+            enriched.push(activity);
+        }
+        return enriched;
+    }
+
+    async fetchActivityStreams(accessToken, userId, activityId) {
+        if (!activityId) {return {};} 
+        this.throttleIfNeeded();
+        const url = `${this.baseUrl}/activities/${activityId}/streams?keys=time,heartrate&key_by_type=true`;
+        const response = await this.performRequest(url, {
+            headers: { 'Authorization': `Bearer ${accessToken}` },
+            userId
+        });
+        if (response.status === 204) {
+            return {};
+        }
+        if (!response.ok) {
+            throw new Error(`Stream request failed (${response.status})`);
+        }
+        return response.json();
+    }
+
+    async performRequest(url, options = {}, attempt = 1) {
+        this.recordRequest();
+        const { userId, ...fetchOptions } = options;
+        try {
+            const response = await this.fetchImpl(url, fetchOptions);
+            if (response.status === 429) {
+                await this.handleRateLimit(response);
+                return this.performRequest(url, options, attempt);
+            }
+            if (response.status === 401) {
+                throw new UnauthorizedError();
+            }
+            return response;
+        } catch (error) {
+            if (error instanceof UnauthorizedError) {
+                throw error;
+            }
+            if (attempt >= this.retryAttempts) {
+                throw error;
+            }
+            const delay = this.retryBaseDelay * Math.pow(2, attempt - 1);
+            this.logger.warn?.('StravaHook: request failed, retrying', { url, attempt, delay });
+            await this.sleep(delay);
+            return this.performRequest(url, options, attempt + 1);
+        }
+    }
+
+    throttleIfNeeded() {
+        const now = Date.now();
+        this.requestTimestamps = this.requestTimestamps.filter(ts => now - ts < this.rateLimitWindowMs);
+        if (this.requestTimestamps.length >= this.maxRequestsPerWindow) {
+            this.logger.warn?.('StravaHook: hit local throttle limit, pausing requests');
+            return this.sleep(this.rateLimitWindowMs);
+        }
+        return null;
+    }
+
+    recordRequest() {
+        this.requestTimestamps.push(Date.now());
+    }
+
+    async handleRateLimit(response) {
+        const retryAfterHeader = response.headers.get('retry-after');
+        const rateResetHeader = response.headers.get('x-ratelimit-reset');
+        let delayMs = 60 * 1000; // default 60 seconds
+        if (retryAfterHeader && !Number.isNaN(Number(retryAfterHeader))) {
+            delayMs = Number(retryAfterHeader) * 1000;
+        } else if (rateResetHeader && !Number.isNaN(Number(rateResetHeader))) {
+            const reset = Number(rateResetHeader) * 1000;
+            delayMs = Math.max(0, reset - Date.now());
+        } else {
+            delayMs = 15 * 60 * 1000;
+        }
+        this.logger.warn?.('StravaHook: rate limited, backing off', { delayMs });
+        await this.sleep(delayMs);
+    }
+
+    sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    getLastSync(userId) {
+        if (!this.storageManager) {return null;}
+        const metadata = this.storageManager.getStorage?.(this.syncMetadataKey, {}) || {};
+        return metadata[userId]?.lastSync || null;
+    }
+
+    setLastSync(userId, isoString) {
+        if (!this.storageManager) {return;}
+        const metadata = this.storageManager.getStorage?.(this.syncMetadataKey, {}) || {};
+        metadata[userId] = {
+            ...(metadata[userId] || {}),
+            lastSync: isoString,
+            updatedAt: new Date().toISOString()
         };
+        this.storageManager.setStorage?.(this.syncMetadataKey, metadata);
     }
 
-    /**
-     * Map Strava activity type to internal type
-     * @param {string} stravaType - Strava activity type
-     * @returns {string} Internal activity type
-     */
-    mapActivityType(stravaType) {
-        const typeMap = {
-            'Run': 'running',
-            'Ride': 'cycling',
-            'Swim': 'swimming',
-            'Workout': 'strength',
-            'Walk': 'walking'
-        };
-
-        return typeMap[stravaType] || 'unknown';
+    getRecentSessions() {
+        try {
+            const tracker = (typeof window !== 'undefined') ? window.WorkoutTracker : null;
+            if (tracker && typeof tracker.getRecentSessions === 'function') {
+                return tracker.getRecentSessions(30) || [];
+            }
+        } catch (error) {
+            this.logger.warn?.('StravaHook: failed to read recent sessions', error);
+        }
+        return [];
     }
 
-    /**
-     * Mock authentication endpoint
-     * @param {string} userId - User ID
-     * @returns {Promise<boolean>} Auth success
-     */
-    async authenticate(userId) {
-        // MOCK: Simulate authentication
-        this.logger.debug('StravaHook: Authenticating (mock)', { userId });
-
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        this.isAuthenticated = true;
-
-        return true;
-    }
-
-    /**
-     * Get last sync timestamp
-     * @returns {Date|null} Last sync
-     */
-    getLastSync() {
-        return this.lastSync;
-    }
-
-    /**
-     * Get user ID
-     * @returns {string} User ID
-     */
-    getUserId() {
-        return window.AuthManager?.getCurrentUsername() || 'anonymous';
+    emitStatus(event, payload) {
+        if (this.eventBus && typeof this.eventBus.emit === 'function') {
+            this.eventBus.emit(event, payload);
+        }
     }
 }
 
-window.StravaHook = StravaHook;
+if (typeof window !== 'undefined') {
+    window.StravaHook = StravaHook;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = StravaHook;
+    module.exports.default = StravaHook;
+}

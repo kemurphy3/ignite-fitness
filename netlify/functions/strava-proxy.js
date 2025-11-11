@@ -3,6 +3,10 @@ const STRAVA_TOKENS = {
     clientId: process.env.STRAVA_CLIENT_ID,
     clientSecret: process.env.STRAVA_CLIENT_SECRET
 };
+if (!STRAVA_TOKENS.clientId || !STRAVA_TOKENS.clientSecret) {
+    throw new Error('Strava client configuration not provided. Set STRAVA_CLIENT_ID and STRAVA_CLIENT_SECRET.');
+}
+
 const jwt = require('jsonwebtoken');
 const { createLogger } = require('./utils/safe-logging');
 const RateLimiter = require('./utils/rate-limiter');
@@ -40,7 +44,10 @@ function verifyJWT(headers) {
     const token = authHeader.substring(7);
 
     try {
-        const jwtSecret = process.env.JWT_SECRET || 'your-super-secure-jwt-secret-at-least-32-characters';
+        const jwtSecret = process.env.JWT_SECRET;
+        if (!jwtSecret) {
+            throw new Error('JWT secret not configured');
+        }
         const decoded = jwt.verify(token, jwtSecret, {
             algorithms: ['HS256'],
             maxAge: '24h',

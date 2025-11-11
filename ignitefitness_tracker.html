@@ -3173,7 +3173,7 @@
         function authenticateStrava() {
             const config = getStravaConfig();
             if (!config.clientId) {
-                informMissingStravaConfig();
+                showConfigError();
                 return;
             }
             const authUrl = `https://www.strava.com/oauth/authorize?client_id=${encodeURIComponent(config.clientId)}&redirect_uri=${encodeURIComponent(config.redirectUri)}&response_type=code&scope=${encodeURIComponent(config.scope)}`;
@@ -3182,7 +3182,7 @@
 
         async function refreshStravaToken() {
             if (typeof STRAVA_TOKENS === 'undefined') {
-                informMissingStravaConfig();
+                showConfigError();
                 throw new Error('Strava token configuration is not loaded.');
             }
 
@@ -3195,7 +3195,7 @@
             const clientSecret = STRAVA_TOKENS.clientSecret;
             
             if (!clientId || !clientSecret) {
-                informMissingStravaConfig();
+                showConfigError();
                 throw new Error('Strava client credentials are not configured on this environment.');
             }
             
@@ -3563,7 +3563,7 @@
             
             const config = getStravaConfig();
             if (!config.clientId) {
-                informMissingStravaConfig();
+                showConfigError();
                 return;
             }
             
@@ -3587,6 +3587,15 @@
         }
 
         // Strava API configuration helpers
+        function sanitizeIntegrationValue(value) {
+            if (value === null || value === undefined) {return '';}
+            const normalized = String(value).trim();
+            if (!normalized || normalized.toLowerCase() === 'undefined') {
+                return '';
+            }
+            return normalized;
+        }
+
         function getStravaConfig() {
             let integrations = {};
             try {
@@ -3598,25 +3607,29 @@
             }
             const stravaSettings = integrations.strava || {};
             const tokenConfig = typeof STRAVA_TOKENS !== 'undefined' ? STRAVA_TOKENS : {};
-            const clientId = stravaSettings.clientId || tokenConfig.clientId || '';
-            const redirectUri = stravaSettings.redirectUri || (typeof window !== 'undefined' ? `${window.location.origin}/strava-callback.html` : '');
+            const clientId = sanitizeIntegrationValue(stravaSettings.clientId || tokenConfig.clientId);
+            const redirectUri = sanitizeIntegrationValue(stravaSettings.redirectUri) || (typeof window !== 'undefined' ? `${window.location.origin}/strava-callback.html` : '');
             const scope = stravaSettings.scope || 'read,activity:read_all,profile:read_all';
             return { clientId, redirectUri, scope };
         }
 
-        function informMissingStravaConfig() {
-            const message = '⚠️ Strava configuration required. Set STRAVA_CLIENT_ID in environment settings.';
+        function showConfigError(message) {
+            const fallbackMessage = message || '⚠️ Strava integration requires configuration. Contact your administrator.';
             const statusDiv = document.getElementById('stravaStatus');
             const tokenStatusDiv = document.getElementById('tokenStatus');
             if (statusDiv) {
-                statusDiv.innerHTML = message;
+                statusDiv.innerHTML = fallbackMessage;
                 statusDiv.style.color = '#fbd38d';
             }
             if (tokenStatusDiv) {
-                tokenStatusDiv.innerHTML = message;
+                tokenStatusDiv.innerHTML = fallbackMessage;
                 tokenStatusDiv.style.color = '#fbd38d';
             }
-            console.warn('[IgniteFitness] ' + message);
+            console.warn('[IgniteFitness] ' + fallbackMessage);
+        }
+
+        function informMissingStravaConfig() {
+            showConfigError();
         }
     </script>
 </body>

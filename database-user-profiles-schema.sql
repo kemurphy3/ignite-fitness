@@ -9,6 +9,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE TABLE IF NOT EXISTS user_profiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    program_start_date DATE NOT NULL DEFAULT CURRENT_DATE,
     
     -- Demographics (validated)
     age INTEGER CHECK (age >= 13 AND age <= 120),

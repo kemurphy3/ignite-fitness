@@ -1646,15 +1646,36 @@ function checkStravaConnection() {
     syncBtn.style.display = 'inline-block';
 }
 
+function resolveStravaConfig() {
+    const integrations = window.configLoader?.get?.('integrations') || {};
+    const strava = integrations.strava || {};
+    const fallbackRedirect = `${window.location.origin}/auth/strava/callback`;
+    return {
+        clientId: strava.clientId || '',
+        redirectUri: strava.redirectUri || fallbackRedirect,
+        scope: strava.scope || 'read,activity:read'
+    };
+}
+
+function ensureStravaConfig(config) {
+    if (!config.clientId) {
+        throw new Error('Strava integration requires configuration. Contact your administrator.');
+    }
+}
+
 function connectToStrava() {
-    const clientId = '168662'; // This should come from environment variables
-    const redirectUri = encodeURIComponent(window.location.origin + '/callback.html');
-    const scope = 'read,activity:read_all,profile:read_all';
-    const state = 'ignite_fitness_' + Date.now();
-    
-    const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=${state}`;
-    
-    window.location.href = stravaAuthUrl;
+    try {
+        const config = resolveStravaConfig();
+        ensureStravaConfig(config);
+        const encodedRedirect = encodeURIComponent(config.redirectUri);
+        const encodedScope = encodeURIComponent(config.scope);
+        const state = `ignite_fitness_${ Date.now() }`;
+        const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id=${encodeURIComponent(config.clientId)}&redirect_uri=${encodedRedirect}&response_type=code&scope=${encodedScope}&state=${state}`;
+        window.location.href = stravaAuthUrl;
+    } catch (error) {
+        console.error('Failed to start Strava OAuth flow:', error);
+        showError(null, error.message || 'Strava integration requires configuration. Contact your administrator.');
+    }
 }
 
 function disconnectFromStrava() {

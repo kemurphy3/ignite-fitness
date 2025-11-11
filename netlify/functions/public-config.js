@@ -34,6 +34,12 @@ exports.handler = async (event, context) => {
 
     try {
         // Only return safe, public configuration
+        const stravaClientId = process.env.STRAVA_CLIENT_ID;
+
+        if (!stravaClientId || String(stravaClientId).trim() === '' || String(stravaClientId).toLowerCase() === 'undefined') {
+            throw new Error('Strava client ID not configured');
+        }
+
         const publicConfig = {
             // App configuration
             app: {
@@ -85,7 +91,7 @@ exports.handler = async (event, context) => {
             // Public integration settings
             integrations: {
                 strava: {
-                    clientId: process.env.STRAVA_CLIENT_ID || '',
+                    clientId: stravaClientId,
                     redirectUri: process.env.STRAVA_PUBLIC_REDIRECT_URI || `${process.env.NETLIFY_URL || 'http://localhost:8888'}/strava-callback.html`,
                     scope: 'read,activity:read_all,profile:read_all'
                 }
@@ -113,6 +119,16 @@ exports.handler = async (event, context) => {
 
     } catch (error) {
         console.error('Error in public-config:', error);
+
+        if (error.message === 'Strava client ID not configured') {
+            return {
+                statusCode: 503,
+                headers,
+                body: JSON.stringify({
+                    error: 'Strava integration requires configuration. Contact your administrator.'
+                })
+            };
+        }
 
         return {
             statusCode: 500,
