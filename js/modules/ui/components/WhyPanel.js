@@ -9,6 +9,8 @@ class WhyPanel {
         this.eventBus = window.EventBus;
         this.isExpanded = false;
         this.sanitizer = window.HtmlSanitizer;
+        this.domPurifier = window.DOMPurify || null;
+        this.liveRegionId = 'why-panel-live-region';
     }
 
     /**
@@ -21,19 +23,22 @@ class WhyPanel {
             return '';
         }
 
-        const warningsHtml = plan.warnings && plan.warnings.length > 0
-            ? this.renderWarnings(plan.warnings)
+        const preparedPlan = this.preparePlan(plan);
+        this.ensureLiveRegion();
+
+        const warningsHtml = preparedPlan.warnings && preparedPlan.warnings.length > 0
+            ? this.renderWarnings(preparedPlan.warnings)
             : '';
 
-        const confidenceHtml = plan.confidence !== undefined
-            ? this.renderConfidence(plan.confidence)
+        const confidenceHtml = preparedPlan.confidence !== undefined
+            ? this.renderConfidence(preparedPlan.confidence)
             : '';
 
         const disclaimerHtml = this.renderMedicalDisclaimer();
 
         // Create summary and detailed rationale
-        const summaryHtml = this.renderSummary(plan.why);
-        const detailedHtml = this.renderDetailedRationale(plan.why);
+        const summaryHtml = this.renderSummary(preparedPlan.why);
+        const detailedHtml = this.renderDetailedRationale(preparedPlan.why);
 
         return `
             <div class="why-panel" id="why-panel" role="region" aria-label="Workout rationale">
@@ -43,6 +48,7 @@ class WhyPanel {
                     aria-expanded="${this.isExpanded}"
                     aria-controls="why-panel-content"
                     onclick="window.WhyPanel.toggle()"
+                    onkeydown="window.WhyPanel.handleToggleKey(event)"
                 >
                     <span class="why-icon">💡</span>
                     <span class="why-label">Why this plan?</span>
@@ -70,6 +76,7 @@ class WhyPanel {
                             class="why-details-toggle"
                             id="why-details-toggle"
                             onclick="window.WhyPanel.toggleDetails()"
+                            onkeydown="window.WhyPanel.handleDetailsKey(event)"
                             aria-expanded="false"
                             aria-controls="why-details-content"
                         >
@@ -90,6 +97,102 @@ class WhyPanel {
                 </div>
             </div>
         `;
+    }
+
+    /**
+     * Normalize incoming plan data and sanitize user-generated fields
+     * @param {Object} plan - Original workout plan
+     * @returns {Object} Sanitized plan copy
+     */
+    preparePlan(plan) {
+        const cloned = { ...plan };
+        cloned.why = this.sanitizeList(cloned.why);
+        cloned.warnings = this.sanitizeList(cloned.warnings);
+
+        if (typeof cloned.confidence === 'string') {
+            cloned.confidence = this.sanitizeText(cloned.confidence);
+        } else if (cloned.confidence && typeof cloned.confidence === 'object') {
+            cloned.confidence = {
+                ...cloned.confidence,
+                note: this.sanitizeText(cloned.confidence.note)
+            };
+        }
+
+        return cloned;
+    }
+
+    /**
+     * Sanitize an array of rationale or warning strings
+     * @param {Array} list - Array of strings
+     * @returns {Array} Sanitized array
+     */
+    sanitizeList(list) {
+        if (!Array.isArray(list)) {return [];}
+        return list.map((item) => this.sanitizeText(item));
+    }
+
+    /**
+     * Remove malicious content from text inputs
+     * @param {string} input - Untrusted input
+     * @returns {string} Sanitized string
+     */
+    sanitizeText(input) {
+        if (input === null || input === undefined) {return '';}
+
+        let sanitized = String(input);
+
+        if (this.domPurifier && typeof this.domPurifier.sanitize === 'function') {
+            sanitized = this.domPurifier.sanitize(sanitized);
+        }
+
+        sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+        sanitized = sanitized.replace(/javascript:/gi, '');
+        sanitized = sanitized.replace(/on\w+\s*=\s*(['"]).*?\1/gi, '');
+
+        return sanitized;
+    }
+
+    /**
+     * Ensure screen-reader live region exists
+     * @returns {HTMLElement|null} Live region element
+     */
+    ensureLiveRegion() {
+        if (typeof document === 'undefined') {return null;}
+
+        let region = document.getElementById(this.liveRegionId);
+        if (!region) {
+            region = document.createElement('div');
+            region.id = this.liveRegionId;
+            region.setAttribute('role', 'alert');
+            region.setAttribute('aria-live', 'polite');
+            region.setAttribute('aria-atomic', 'true');
+            region.style.position = 'absolute';
+            region.style.width = '1px';
+            region.style.height = '1px';
+            region.style.margin = '-1px';
+            region.style.padding = '0';
+            region.style.border = '0';
+            region.style.overflow = 'hidden';
+            region.style.clip = 'rect(0 0 0 0)';
+            document.body.appendChild(region);
+        }
+        return region;
+    }
+
+    /**
+     * Announce updates to assistive technologies
+     * @param {string} message - Message to announce
+     */
+    announce(message) {
+        if (typeof document === 'undefined') {return;}
+        const region = this.ensureLiveRegion();
+        if (!region) {return;}
+
+        const safeMessage = this.sanitizeText(message);
+        region.textContent = '';
+        window.requestAnimationFrame(() => {
+            region.textContent = safeMessage;
+        });
     }
 
     /**
@@ -256,6 +359,50 @@ class WhyPanel {
     }
 
     /**
+     * Toggle main Why panel visibility
+     */
+    toggle() {
+        this.isExpanded = !this.isExpanded;
+
+        if (typeof document === 'undefined') {
+            this.logger.debug('Why panel toggled (headless)', { expanded: this.isExpanded });
+            return;
+        }
+
+        const button = document.getElementById('why-panel-toggle');
+        const content = document.getElementById('why-panel-content');
+        const arrow = button?.querySelector('.why-arrow');
+
+        if (button) {
+            button.setAttribute('aria-expanded', this.isExpanded);
+        }
+
+        if (content) {
+            content.setAttribute('aria-hidden', !this.isExpanded);
+            content.classList.toggle('expanded', this.isExpanded);
+        }
+
+        if (arrow) {
+            arrow.classList.toggle('expanded', this.isExpanded);
+        }
+
+        this.announce(this.isExpanded ? 'Why panel expanded.' : 'Why panel collapsed.');
+        this.logger.debug('Why panel toggled', { expanded: this.isExpanded });
+    }
+
+    /**
+     * Handle keyboard interaction on main toggle
+     * @param {KeyboardEvent} event - Keyboard event
+     */
+    handleToggleKey(event) {
+        if (!event) {return;}
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            this.toggle();
+        }
+    }
+
+    /**
      * Toggle details section
      */
     toggleDetails() {
@@ -281,7 +428,20 @@ class WhyPanel {
             label.textContent = newExpanded ? 'Hide technical details' : 'Show technical details';
         }
 
+        this.announce(newExpanded ? 'Technical details expanded.' : 'Technical details collapsed.');
         this.logger.debug('Why panel details toggled', { expanded: newExpanded });
+    }
+
+    /**
+     * Keyboard handler for details toggle button
+     * @param {KeyboardEvent} event - Keyboard event
+     */
+    handleDetailsKey(event) {
+        if (!event) {return;}
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            this.toggleDetails();
+        }
     }
 
     /**
@@ -296,12 +456,77 @@ class WhyPanel {
                 class="override-exercise-btn"
                 data-exercise="${this.escapeHtml(exerciseName)}"
                 data-index="${index}"
+                tabindex="0"
                 aria-label="Override ${exerciseName}"
                 onclick="window.WhyPanel.showOverrideModal(this)"
+                onkeydown="window.WhyPanel.handleOverrideKey(event, this)"
             >
                 🔄 Override
             </button>
         `;
+    }
+
+    /**
+     * Handle keyboard activation for override button
+     * @param {KeyboardEvent} event - Keyboard event
+     * @param {HTMLElement} button - Target button
+     */
+    handleOverrideKey(event, button) {
+        if (!event) {return;}
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            this.showOverrideModal(button);
+        }
+    }
+
+    /**
+     * Handle keyboard activation for alternate selection
+     * @param {KeyboardEvent} event - Keyboard event
+     * @param {HTMLElement} button - Button element
+     * @param {string} originalName - Original exercise
+     * @param {number} index - Exercise index
+     */
+    handleAlternateKey(event, button, originalName, index) {
+        if (!event) {return;}
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            this.selectAlternateFromButton(button, originalName, index);
+        }
+    }
+
+    /**
+     * Handle keyboard activation for quick action buttons
+     * @param {KeyboardEvent} event - Keyboard event
+     * @param {string} action - Action type
+     * @param {string} exerciseName - Exercise name
+     * @param {number} index - Exercise index
+     */
+    handleQuickActionKey(event, action, exerciseName, index) {
+        if (!event) {return;}
+        if (event.key !== 'Enter' && event.key !== ' ') {return;}
+        event.preventDefault();
+
+        if (action === 'regression') {
+            this.applyRegression(exerciseName, index);
+        } else if (action === 'progression') {
+            this.applyProgression(exerciseName, index);
+        } else if (action === 'pattern') {
+            this.applyDifferentPattern(exerciseName, index);
+        }
+    }
+
+    /**
+     * Select alternate from button dataset
+     * @param {HTMLElement} button - Alternate button
+     * @param {string} originalName - Original exercise
+     * @param {number} index - Exercise index
+     */
+    selectAlternateFromButton(button, originalName, index) {
+        if (!button) {return;}
+        const alternate = button.getAttribute('data-alternate');
+        const encodedRationale = button.getAttribute('data-rationale');
+        const rationale = encodedRationale ? decodeURIComponent(encodedRationale) : 'User selected alternate exercise';
+        this.selectAlternate(alternate, originalName, index, rationale);
     }
 
     /**
@@ -324,6 +549,8 @@ class WhyPanel {
         const firstInput = modal.querySelector('button, input');
         if (firstInput) {
             firstInput.focus();
+        } else if (typeof modal.focus === 'function') {
+            modal.focus();
         }
 
         this.logger.debug('Override modal shown', { exercise: exerciseName });
@@ -342,6 +569,7 @@ class WhyPanel {
         modal.setAttribute('role', 'dialog');
         modal.setAttribute('aria-labelledby', 'override-modal-title');
         modal.setAttribute('aria-modal', 'true');
+        modal.setAttribute('tabindex', '-1');
 
         modal.innerHTML = `
             <div class="override-modal">
@@ -363,7 +591,9 @@ class WhyPanel {
                             <button 
                                 class="alternate-option" 
                                 data-alternate="${this.escapeHtml(alt.name)}"
-                                onclick="window.WhyPanel.selectAlternate('${this.escapeHtml(alt.name)}', '${exerciseName}', ${index})"
+                                data-rationale="${encodeURIComponent(this.sanitizeText(alt.rationale || 'User selected alternate exercise'))}"
+                                onclick="window.WhyPanel.selectAlternateFromButton(this, '${this.escapeHtml(exerciseName)}', ${index})"
+                                onkeydown="window.WhyPanel.handleAlternateKey(event, this, '${this.escapeHtml(exerciseName)}', ${index})"
                             >
                                 <div class="alternate-name">${this.escapeHtml(alt.name)}</div>
                                 <div class="alternate-rationale">${this.escapeHtml(alt.rationale)}</div>
@@ -377,7 +607,9 @@ class WhyPanel {
                     <div class="quick-actions">
                         <button 
                             class="quick-action regression"
+                            tabindex="0"
                             onclick="window.WhyPanel.applyRegression('${exerciseName}', ${index})"
+                            onkeydown="window.WhyPanel.handleQuickActionKey(event, 'regression', '${exerciseName}', ${index})"
                         >
                             <span class="action-icon">📉</span>
                             <span class="action-label">Regression</span>
@@ -385,7 +617,9 @@ class WhyPanel {
                         </button>
                         <button 
                             class="quick-action progression"
+                            tabindex="0"
                             onclick="window.WhyPanel.applyProgression('${exerciseName}', ${index})"
+                            onkeydown="window.WhyPanel.handleQuickActionKey(event, 'progression', '${exerciseName}', ${index})"
                         >
                             <span class="action-icon">📈</span>
                             <span class="action-label">Progression</span>
@@ -393,7 +627,9 @@ class WhyPanel {
                         </button>
                         <button 
                             class="quick-action pattern"
+                            tabindex="0"
                             onclick="window.WhyPanel.applyDifferentPattern('${exerciseName}', ${index})"
+                            onkeydown="window.WhyPanel.handleQuickActionKey(event, 'pattern', '${exerciseName}', ${index})"
                         >
                             <span class="action-icon">🔄</span>
                             <span class="action-label">Different pattern</span>
@@ -427,7 +663,7 @@ class WhyPanel {
      * @param {string} originalName - Original exercise name
      * @param {number} index - Exercise index in plan
      */
-    selectAlternate(alternateName, originalName, index) {
+    selectAlternate(alternateName, originalName, index, rationale = 'User selected alternate exercise') {
         const plan = window.WorkoutTracker?.currentPlan;
 
         if (!plan || !plan.blocks) {
@@ -455,16 +691,18 @@ class WhyPanel {
 
             // Log override event
             this.logOverride({
-                original: originalName,
-                alternate: alternateName,
                 type: 'alternate',
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                originalExercise: originalName,
+                newExercise: alternateName,
+                reason: rationale
             });
 
             // Close modal
             document.querySelectorAll('.override-modal-overlay').forEach(el => el.remove());
 
             this.logger.debug('Exercise overridden', { original: originalName, alternate: alternateName });
+            this.announce(`${originalName} replaced with ${alternateName}.`);
         }
     }
 
@@ -505,13 +743,16 @@ class WhyPanel {
 
         // Log event
         this.logOverride({
-            exercise: exerciseName,
             type: 'regression',
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            originalExercise: exerciseName,
+            newExercise: exerciseName,
+            reason: 'User applied regression to reduce difficulty'
         });
 
         // Close modal
         document.querySelectorAll('.override-modal-overlay').forEach(el => el.remove());
+        this.announce(`Regression applied to ${exerciseName}.`);
     }
 
     /**
@@ -550,13 +791,16 @@ class WhyPanel {
 
         // Log event
         this.logOverride({
-            exercise: exerciseName,
             type: 'progression',
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            originalExercise: exerciseName,
+            newExercise: exerciseName,
+            reason: 'User applied progression to increase difficulty'
         });
 
         // Close modal
         document.querySelectorAll('.override-modal-overlay').forEach(el => el.remove());
+        this.announce(`Progression applied to ${exerciseName}.`);
     }
 
     /**
@@ -578,7 +822,13 @@ class WhyPanel {
 
         if (alternates.length > 0) {
             // Use first alternate as different pattern
-            this.selectAlternate(alternates[0].name, exerciseName, index);
+            const firstAlternate = alternates[0];
+            this.selectAlternate(
+                firstAlternate.name,
+                exerciseName,
+                index,
+                firstAlternate.rationale || 'User selected alternate movement pattern'
+            );
         }
     }
 
@@ -587,17 +837,29 @@ class WhyPanel {
      * @param {Object} overrideData - Override data
      */
     logOverride(overrideData) {
-        this.eventBus.emit('EXERCISE_OVERRIDE', overrideData);
+        if (!overrideData) {return;}
 
-        this.logger.info('Exercise override applied', overrideData);
+        const payload = {
+            timestamp: overrideData.timestamp || new Date().toISOString(),
+            type: overrideData.type || 'override',
+            originalExercise: this.sanitizeText(overrideData.originalExercise || overrideData.exercise || 'Unknown'),
+            newExercise: this.sanitizeText(overrideData.newExercise || overrideData.alternate || overrideData.exercise || 'Unknown'),
+            reason: this.sanitizeText(overrideData.reason || 'User override')
+        };
+
+        this.eventBus.emit('EXERCISE_OVERRIDE', payload);
+
+        this.logger.info('Exercise override applied', payload);
 
         // Store for persistence
         if (window.StorageManager) {
             const userId = window.AuthManager?.getCurrentUsername() || 'anonymous';
             window.StorageManager.saveSessionLog(userId, new Date().toISOString().split('T')[0], {
-                overrides: [overrideData]
+                overrides: [payload]
             });
         }
+
+        this.announce(`Override logged for ${payload.originalExercise}.`);
     }
 
     /**
@@ -610,13 +872,15 @@ class WhyPanel {
         if (typeof text !== 'string') {return String(text);}
 
         // Use HtmlSanitizer if available, otherwise fall back to basic escaping
+        const cleaned = this.sanitizeText(text);
+
         if (this.sanitizer) {
-            return this.sanitizer.escapeHtml(text);
+            return this.sanitizer.escapeHtml(cleaned);
         }
 
         // Basic escape fallback
         const div = document.createElement('div');
-        div.textContent = text;
+        div.textContent = cleaned;
         return div.innerHTML;
     }
 }
