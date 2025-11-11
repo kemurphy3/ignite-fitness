@@ -9,11 +9,13 @@
 ## Current State Analysis
 
 ### ✅ What's Working
+
 - Simple deployment via Netlify CLI
 - Git version control in use
 - Environment variables configured in Netlify
 
 ### ❌ What's Missing
+
 - No automated testing
 - No code quality checks
 - No CI/CD pipeline
@@ -36,26 +38,26 @@
     "build": "npm run lint && npm run test:unit",
     "deploy": "netlify deploy --prod",
     "deploy:preview": "netlify deploy",
-    
+
     "test": "npm run test:unit && npm run test:integration",
     "test:unit": "jest --testPathPattern=__tests__/unit",
     "test:integration": "jest --testPathPattern=__tests__/integration --runInBand",
     "test:e2e": "playwright test",
     "test:coverage": "jest --coverage --coverageDirectory=coverage",
-    
+
     "lint": "eslint . --ext .js,.jsx",
     "lint:fix": "eslint . --ext .js,.jsx --fix",
     "format": "prettier --write '**/*.{js,json,md,css,html}'",
     "format:check": "prettier --check '**/*.{js,json,md,css,html}'",
-    
+
     "security:audit": "npm audit --audit-level=moderate",
     "security:check": "eslint --plugin security .",
     "security:secrets": "trufflehog filesystem . --json",
-    
+
     "db:migrate": "node scripts/migrate.js",
     "db:seed": "node scripts/seed.js",
     "db:reset": "node scripts/reset.js",
-    
+
     "precommit": "npm run lint && npm run format:check && npm run test:unit",
     "prepush": "npm run test"
   },
@@ -88,15 +90,12 @@ module.exports = {
     browser: true,
     es2021: true,
     node: true,
-    jest: true
+    jest: true,
   },
-  extends: [
-    'airbnb-base',
-    'plugin:security/recommended'
-  ],
+  extends: ['airbnb-base', 'plugin:security/recommended'],
   parserOptions: {
     ecmaVersion: 'latest',
-    sourceType: 'module'
+    sourceType: 'module',
   },
   rules: {
     'no-console': ['error', { allow: ['warn', 'error'] }],
@@ -104,14 +103,9 @@ module.exports = {
     'security/detect-object-injection': 'off',
     'prefer-const': 'error',
     'no-var': 'error',
-    'max-len': ['error', { code: 120 }]
+    'max-len': ['error', { code: 120 }],
   },
-  ignorePatterns: [
-    'node_modules/',
-    'coverage/',
-    '.netlify/',
-    'dist/'
-  ]
+  ignorePatterns: ['node_modules/', 'coverage/', '.netlify/', 'dist/'],
 };
 ```
 
@@ -171,7 +165,7 @@ on:
 
 env:
   NODE_VERSION: '18'
-  
+
 jobs:
   # Job 1: Linting and Formatting
   quality:
@@ -179,22 +173,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Run ESLint
         run: npm run lint
-      
+
       - name: Check Prettier formatting
         run: npm run format:check
-      
+
       - name: Security audit
         run: npm audit --audit-level=moderate
         continue-on-error: true
@@ -205,19 +199,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Run unit tests
         run: npm run test:unit
-      
+
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         with:
@@ -235,32 +229,30 @@ jobs:
           POSTGRES_PASSWORD: testpass
           POSTGRES_DB: testdb
         options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s
           --health-retries 5
         ports:
           - 5432:5432
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Setup test database
         run: |
           npm run db:migrate
           npm run db:seed
         env:
           DATABASE_URL: postgresql://postgres:testpass@localhost:5432/testdb
-      
+
       - name: Run integration tests
         run: npm run test:integration
         env:
@@ -274,7 +266,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
@@ -282,12 +274,12 @@ jobs:
           scan-ref: '.'
           format: 'sarif'
           output: 'trivy-results.sarif'
-      
+
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: 'trivy-results.sarif'
-      
+
       - name: Check for secrets
         uses: trufflesecurity/trufflehog@main
         with:
@@ -302,23 +294,23 @@ jobs:
     if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Deploy to Netlify Preview
         uses: nwtgck/actions-netlify@v2
         with:
           publish-dir: '.'
           production-deploy: false
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          deploy-message: "PR #${{ github.event.pull_request.number }}"
+          deploy-message: 'PR #${{ github.event.pull_request.number }}'
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
@@ -332,7 +324,7 @@ name: Deploy to Production
 on:
   push:
     branches: [main]
-    
+
 jobs:
   deploy:
     name: Deploy to Production
@@ -340,19 +332,19 @@ jobs:
     environment: production
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Run tests
         run: npm test
-      
+
       - name: Deploy to Netlify
         uses: nwtgck/actions-netlify@v2
         with:
@@ -362,7 +354,7 @@ jobs:
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-      
+
       - name: Notify deployment
         uses: 8398a7/action-slack@v3
         with:
@@ -374,10 +366,13 @@ jobs:
 
 ## Testing Strategy
 
-### Unit Test Example (__tests__/unit/auth.test.js)
+### Unit Test Example (**tests**/unit/auth.test.js)
 
 ```javascript
-const { verifyJWT, generateTestToken } = require('../../netlify/functions/utils/auth');
+const {
+  verifyJWT,
+  generateTestToken,
+} = require('../../netlify/functions/utils/auth');
 
 describe('Auth Utils', () => {
   describe('verifyJWT', () => {
@@ -385,17 +380,17 @@ describe('Auth Utils', () => {
       const userId = 'test-user-123';
       const token = generateTestToken(userId);
       const headers = { authorization: `Bearer ${token}` };
-      
+
       const result = await verifyJWT(headers);
       expect(result).toBe(userId);
     });
-    
+
     it('should return null for invalid token', async () => {
       const headers = { authorization: 'Bearer invalid-token' };
       const result = await verifyJWT(headers);
       expect(result).toBeNull();
     });
-    
+
     it('should return null for missing token', async () => {
       const result = await verifyJWT({});
       expect(result).toBeNull();
@@ -404,7 +399,7 @@ describe('Auth Utils', () => {
 });
 ```
 
-### Integration Test Example (__tests__/integration/sessions.test.js)
+### Integration Test Example (**tests**/integration/sessions.test.js)
 
 ```javascript
 const { handler } = require('../../netlify/functions/sessions-create');
@@ -414,12 +409,12 @@ describe('Sessions API', () => {
     // Setup test database
     await setupTestDB();
   });
-  
+
   afterAll(async () => {
     // Cleanup
     await cleanupTestDB();
   });
-  
+
   describe('POST /sessions-create', () => {
     it('should create a new session', async () => {
       const event = {
@@ -428,22 +423,22 @@ describe('Sessions API', () => {
         body: JSON.stringify({
           type: 'workout',
           duration_minutes: 60,
-          notes: 'Test workout'
-        })
+          notes: 'Test workout',
+        }),
       };
-      
+
       const response = await handler(event);
-      
+
       expect(response.statusCode).toBe(201);
       const body = JSON.parse(response.body);
       expect(body.data).toHaveProperty('id');
       expect(body.data.type).toBe('workout');
     });
-    
+
     it('should handle duplicate sessions', async () => {
       // Test deduplication logic
     });
-    
+
     it('should validate required fields', async () => {
       // Test validation
     });
@@ -491,29 +486,27 @@ const required = [
   'DATABASE_URL',
   'JWT_SECRET',
   'STRAVA_CLIENT_ID',
-  'STRAVA_CLIENT_SECRET'
+  'STRAVA_CLIENT_SECRET',
 ];
 
-const optional = [
-  'OPENAI_API_KEY',
-  'ANTHROPIC_API_KEY',
-  'SENTRY_DSN'
-];
+const optional = ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'SENTRY_DSN'];
 
 function validateEnv() {
   const missing = required.filter(key => !process.env[key]);
-  
+
   if (missing.length > 0) {
-    console.error(`Missing required environment variables: ${missing.join(', ')}`);
+    console.error(
+      `Missing required environment variables: ${missing.join(', ')}`
+    );
     process.exit(1);
   }
-  
+
   optional.forEach(key => {
     if (!process.env[key]) {
       console.warn(`Optional environment variable not set: ${key}`);
     }
   });
-  
+
   console.log('✅ Environment validation passed');
 }
 
@@ -532,19 +525,19 @@ Sentry.init({
   dsn: process.env.SENTRY_DSN,
   environment: process.env.NODE_ENV,
   tracesSampleRate: 0.1,
-  profilesSampleRate: 0.1
+  profilesSampleRate: 0.1,
 });
 
 function captureError(error, context = {}) {
   console.error('Error:', error);
-  
+
   if (process.env.SENTRY_DSN) {
     Sentry.captureException(error, {
       extra: context,
       tags: {
         function: context.functionName,
-        environment: process.env.NODE_ENV
-      }
+        environment: process.env.NODE_ENV,
+      },
     });
   }
 }
@@ -561,24 +554,24 @@ const { performance } = require('perf_hooks');
 function withPerformanceTracking(handler) {
   return async (event, context) => {
     const start = performance.now();
-    
+
     try {
       const result = await handler(event, context);
-      
+
       const duration = performance.now() - start;
       console.log('Performance:', {
         function: context.functionName,
         duration: `${duration.toFixed(2)}ms`,
-        statusCode: result.statusCode
+        statusCode: result.statusCode,
       });
-      
+
       return result;
     } catch (error) {
       const duration = performance.now() - start;
       console.error('Performance (error):', {
         function: context.functionName,
         duration: `${duration.toFixed(2)}ms`,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -612,7 +605,7 @@ const path = require('path');
 
 async function migrate() {
   const sql = neon(process.env.DATABASE_URL);
-  
+
   // Track migrations
   await sql`
     CREATE TABLE IF NOT EXISTS migrations (
@@ -621,34 +614,31 @@ async function migrate() {
       executed_at TIMESTAMP DEFAULT NOW()
     )
   `;
-  
+
   // Get migration files
   const migrationsDir = path.join(__dirname, '../migrations');
   const files = await fs.readdir(migrationsDir);
   const migrations = files.filter(f => f.endsWith('.sql')).sort();
-  
+
   // Execute pending migrations
   for (const file of migrations) {
     const existing = await sql`
       SELECT id FROM migrations WHERE filename = ${file}
     `;
-    
+
     if (existing.length === 0) {
       console.log(`Running migration: ${file}`);
-      const content = await fs.readFile(
-        path.join(migrationsDir, file), 
-        'utf8'
-      );
-      
+      const content = await fs.readFile(path.join(migrationsDir, file), 'utf8');
+
       await sql.begin(async sql => {
         await sql.unsafe(content);
         await sql`INSERT INTO migrations (filename) VALUES (${file})`;
       });
-      
+
       console.log(`✅ Migration completed: ${file}`);
     }
   }
-  
+
   console.log('All migrations completed');
 }
 
@@ -670,7 +660,7 @@ migrate().catch(console.error);
       echo "Health check failed"
       exit 1
     fi
-    
+
 - name: Rollback on Failure
   if: failure() && steps.health.outcome == 'failure'
   uses: actions/github-script@v6
@@ -694,39 +684,42 @@ migrate().catch(console.error);
 ```javascript
 const autocannon = require('autocannon');
 
-const instance = autocannon({
-  url: 'https://your-app.netlify.app/.netlify/functions/sessions-list',
-  connections: 100,
-  pipelining: 1,
-  duration: 30,
-  headers: {
-    'X-API-Key': process.env.TEST_API_KEY
+const instance = autocannon(
+  {
+    url: 'https://your-app.netlify.app/.netlify/functions/sessions-list',
+    connections: 100,
+    pipelining: 1,
+    duration: 30,
+    headers: {
+      'X-API-Key': process.env.TEST_API_KEY,
+    },
+  },
+  (err, result) => {
+    if (err) {
+      console.error('Load test failed:', err);
+      process.exit(1);
+    }
+
+    console.log('Load Test Results:');
+    console.log('Avg Latency:', result.latency.mean, 'ms');
+    console.log('Requests/sec:', result.requests.mean);
+    console.log('Errors:', result.errors);
+    console.log('Timeouts:', result.timeouts);
+
+    // Fail if performance degrades
+    if (result.latency.mean > 500) {
+      console.error('❌ Latency threshold exceeded');
+      process.exit(1);
+    }
+
+    if (result.errors > 0) {
+      console.error('❌ Errors occurred during load test');
+      process.exit(1);
+    }
+
+    console.log('✅ Load test passed');
   }
-}, (err, result) => {
-  if (err) {
-    console.error('Load test failed:', err);
-    process.exit(1);
-  }
-  
-  console.log('Load Test Results:');
-  console.log('Avg Latency:', result.latency.mean, 'ms');
-  console.log('Requests/sec:', result.requests.mean);
-  console.log('Errors:', result.errors);
-  console.log('Timeouts:', result.timeouts);
-  
-  // Fail if performance degrades
-  if (result.latency.mean > 500) {
-    console.error('❌ Latency threshold exceeded');
-    process.exit(1);
-  }
-  
-  if (result.errors > 0) {
-    console.error('❌ Errors occurred during load test');
-    process.exit(1);
-  }
-  
-  console.log('✅ Load test passed');
-});
+);
 
 instance.on('response', (client, statusCode, resBytes, responseTime) => {
   if (statusCode >= 400) {
@@ -738,24 +731,28 @@ instance.on('response', (client, statusCode, resBytes, responseTime) => {
 ## Recommended Timeline
 
 ### Week 1 - Foundation
+
 - ✅ Set up ESLint and Prettier
 - ✅ Configure Husky pre-commit hooks
 - ✅ Create basic unit tests
 - ✅ Set up GitHub Actions CI
 
 ### Week 2 - Testing
+
 - 📝 Write comprehensive unit tests
 - 📝 Add integration tests
 - 📝 Set up code coverage reporting
 - 📝 Add load testing
 
 ### Week 3 - Monitoring
+
 - 📊 Integrate Sentry for error tracking
 - 📊 Add performance monitoring
 - 📊 Set up alerts
 - 📊 Create dashboards
 
 ### Month 2 - Advanced
+
 - 🚀 Implement blue-green deployments
 - 🚀 Add feature flags
 - 🚀 Set up A/B testing
@@ -763,16 +760,20 @@ instance.on('response', (client, statusCode, resBytes, responseTime) => {
 
 ## DevOps Maturity Assessment
 
-| Area | Current | Target | Actions Required |
-|------|---------|--------|-----------------|
-| Version Control | ✅ Level 3 | Level 3 | Maintain |
-| CI/CD | ❌ Level 1 | Level 3 | Implement pipelines |
-| Testing | ❌ Level 1 | Level 3 | Add automated tests |
-| Monitoring | ❌ Level 1 | Level 3 | Add observability |
-| Security | ⚠️ Level 2 | Level 3 | Add scanning |
-| Documentation | ⚠️ Level 2 | Level 3 | Improve docs |
-| Infrastructure as Code | ❌ Level 1 | Level 3 | Add Terraform |
+| Area                   | Current    | Target  | Actions Required    |
+| ---------------------- | ---------- | ------- | ------------------- |
+| Version Control        | ✅ Level 3 | Level 3 | Maintain            |
+| CI/CD                  | ❌ Level 1 | Level 3 | Implement pipelines |
+| Testing                | ❌ Level 1 | Level 3 | Add automated tests |
+| Monitoring             | ❌ Level 1 | Level 3 | Add observability   |
+| Security               | ⚠️ Level 2 | Level 3 | Add scanning        |
+| Documentation          | ⚠️ Level 2 | Level 3 | Improve docs        |
+| Infrastructure as Code | ❌ Level 1 | Level 3 | Add Terraform       |
 
 ## Conclusion
 
-Implementing these DevOps practices will significantly improve code quality, reduce bugs, and enable confident deployments. The estimated effort is 1-2 weeks for basic CI/CD setup, with ongoing improvements over the following months. Priority should be given to automated testing and security scanning before production deployment.
+Implementing these DevOps practices will significantly improve code quality,
+reduce bugs, and enable confident deployments. The estimated effort is 1-2 weeks
+for basic CI/CD setup, with ongoing improvements over the following months.
+Priority should be given to automated testing and security scanning before
+production deployment.

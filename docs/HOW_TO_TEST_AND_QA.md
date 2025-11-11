@@ -3,6 +3,7 @@
 ## Quick Commands
 
 ### Run Automated Tests
+
 ```bash
 # Windows
 npm test
@@ -15,6 +16,7 @@ run-expert-coordinator-tests.bat
 ```
 
 ### Run Manual QA in Browser
+
 1. Open `index.html` in your browser
 2. Open browser console (F12)
 3. Run: `runExpertCoordinatorTests()`
@@ -24,6 +26,7 @@ run-expert-coordinator-tests.bat
 ### ✅ Automated Tests (10 tests total)
 
 All tests in `tests/ai/expertCoordinator.spec.js`:
+
 1. Game tomorrow removes heavy lower body
 2. Low readiness scales intensity
 3. Time-crunched uses supersets
@@ -38,28 +41,32 @@ All tests in `tests/ai/expertCoordinator.spec.js`:
 ### ✅ Manual QA Scenarios
 
 #### Scenario 1: Game Tomorrow
-**Test:** Heavy lower body removed, rationale mentions game
-**How:** Set `schedule.daysUntilGame = 1`
+
+**Test:** Heavy lower body removed, rationale mentions game **How:** Set
+`schedule.daysUntilGame = 1`
 
 #### Scenario 2: Low Readiness
-**Test:** Volume and intensity reduced
-**How:** Set `readiness = 3`
+
+**Test:** Volume and intensity reduced **How:** Set `readiness = 3`
 
 #### Scenario 3: Time-Crunched
-**Test:** Plan shrinks, supersets appear
-**How:** Set `constraints.timeLimit = 20`
+
+**Test:** Plan shrinks, supersets appear **How:** Set
+`constraints.timeLimit = 20`
 
 #### Scenario 4: Knee Pain
-**Test:** No BSS, safe alternatives provided
-**How:** Set `constraints.flags = ['knee_pain']`
+
+**Test:** No BSS, safe alternatives provided **How:** Set
+`constraints.flags = ['knee_pain']`
 
 #### Scenario 5: Simple Mode
-**Test:** 1-2 blocks maximum
-**How:** Set `preferences.trainingMode = 'simple'`
+
+**Test:** 1-2 blocks maximum **How:** Set `preferences.trainingMode = 'simple'`
 
 ## Expected Output
 
 ### Valid Plan Structure
+
 ```javascript
 {
     blocks: [
@@ -104,27 +111,32 @@ All tests in `tests/ai/expertCoordinator.spec.js`:
 ## SafeLogger Output
 
 Each planToday() call emits:
+
 ```javascript
 SafeLogger.info('Coordinator decision', {
-    readiness: 8,
-    mode: 'simple',
-    gameDay: false
-})
+  readiness: 8,
+  mode: 'simple',
+  gameDay: false,
+});
 ```
 
 ## Troubleshooting
 
 ### Tests Fail
-- Ensure all modules loaded: `ExpertCoordinator`, `ExerciseAdapter`, `SafeLogger`
+
+- Ensure all modules loaded: `ExpertCoordinator`, `ExerciseAdapter`,
+  `SafeLogger`
 - Check browser console for errors
 - Verify context object has all required fields
 
 ### No Plans Generated
+
 - Check expert coaches are loaded (`StrengthCoach`, `SportsCoach`, etc.)
 - Verify `gatherProposals()` returns valid data
 - Check conflict resolution logic
 
 ### Incorrect Constraints
+
 - Verify `resolveConflicts()` handles all constraint types
 - Check that alternates are being called from `ExerciseAdapter.getAlternates()`
 - Ensure priority order is respected
@@ -132,6 +144,7 @@ SafeLogger.info('Coordinator decision', {
 ## CI/CD Integration
 
 Tests run automatically in CI:
+
 ```yaml
 # Example GitHub Actions
 - name: Run tests
@@ -141,8 +154,8 @@ Tests run automatically in CI:
 ## Coverage Report
 
 View coverage report:
+
 ```bash
 npm run test:coverage
 # Open: coverage/index.html
 ```
-

@@ -13,7 +13,7 @@ class ConnectionPoolManager {
       activeConnections: 0,
       idleConnections: 0,
       waitingClients: 0,
-      lastReset: new Date()
+      lastReset: new Date(),
     };
   }
 
@@ -35,15 +35,17 @@ class ConnectionPoolManager {
           retry: {
             retries: 3,
             retryDelay: 1000,
-            retryCondition: (error) => {
+            retryCondition: error => {
               // Retry on network errors, timeouts, and temporary failures
-              return error.code === 'ECONNRESET' ||
-                     error.code === 'ETIMEDOUT' ||
-                     error.message.includes('timeout') ||
-                     error.message.includes('connection');
-            }
-          }
-        }
+              return (
+                error.code === 'ECONNRESET' ||
+                error.code === 'ETIMEDOUT' ||
+                error.message.includes('timeout') ||
+                error.message.includes('connection')
+              );
+            },
+          },
+        },
       });
 
       console.log('✅ Neon client initialized with connection pooling');
@@ -69,38 +71,55 @@ class ConnectionPoolManager {
         query_timeout: 30000, // Query timeout
         // SSL configuration
         ssl: {
-          rejectUnauthorized: false
+          rejectUnauthorized: false,
         },
         // Connection lifecycle
-        allowExitOnIdle: true
+        allowExitOnIdle: true,
       });
 
       // Pool event handlers
-      this.pgPool.on('connect', (client) => {
+      this.pgPool.on('connect', client => {
         this.connectionStats.totalConnections++;
         this.connectionStats.activeConnections++;
-        console.log(`📊 New connection established. Active: ${this.connectionStats.activeConnections}`);
+        console.log(
+          `📊 New connection established. Active: ${this.connectionStats.activeConnections}`
+        );
       });
 
-      this.pgPool.on('acquire', (client) => {
+      this.pgPool.on('acquire', client => {
         this.connectionStats.activeConnections++;
-        this.connectionStats.idleConnections = Math.max(0, this.connectionStats.idleConnections - 1);
+        this.connectionStats.idleConnections = Math.max(
+          0,
+          this.connectionStats.idleConnections - 1
+        );
       });
 
-      this.pgPool.on('release', (client) => {
-        this.connectionStats.activeConnections = Math.max(0, this.connectionStats.activeConnections - 1);
+      this.pgPool.on('release', client => {
+        this.connectionStats.activeConnections = Math.max(
+          0,
+          this.connectionStats.activeConnections - 1
+        );
         this.connectionStats.idleConnections++;
       });
 
-      this.pgPool.on('remove', (client) => {
-        this.connectionStats.totalConnections = Math.max(0, this.connectionStats.totalConnections - 1);
-        this.connectionStats.activeConnections = Math.max(0, this.connectionStats.activeConnections - 1);
+      this.pgPool.on('remove', client => {
+        this.connectionStats.totalConnections = Math.max(
+          0,
+          this.connectionStats.totalConnections - 1
+        );
+        this.connectionStats.activeConnections = Math.max(
+          0,
+          this.connectionStats.activeConnections - 1
+        );
         console.log(`📊 Connection removed. Total: ${this.connectionStats.totalConnections}`);
       });
 
       this.pgPool.on('error', (err, client) => {
         console.error('❌ Unexpected pool error:', err);
-        this.connectionStats.activeConnections = Math.max(0, this.connectionStats.activeConnections - 1);
+        this.connectionStats.activeConnections = Math.max(
+          0,
+          this.connectionStats.activeConnections - 1
+        );
       });
 
       console.log('✅ PostgreSQL connection pool initialized');
@@ -116,7 +135,11 @@ class ConnectionPoolManager {
     }
 
     // Use PG pool for complex operations, transactions, or when connection reuse is critical
-    if (operationType === 'transaction' || operationType === 'complex' || operationType === 'pool') {
+    if (
+      operationType === 'transaction' ||
+      operationType === 'complex' ||
+      operationType === 'pool'
+    ) {
       return this.getPgPool();
     }
 
@@ -170,7 +193,7 @@ class ConnectionPoolManager {
     const results = {
       neon: { healthy: false, error: null },
       pgPool: { healthy: false, error: null },
-      stats: this.connectionStats
+      stats: this.connectionStats,
     };
 
     // Test Neon connection
@@ -202,7 +225,7 @@ class ConnectionPoolManager {
       ...this.connectionStats,
       neonClient: this.neonClient ? 'initialized' : 'not_initialized',
       pgPool: this.pgPool ? 'initialized' : 'not_initialized',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -228,7 +251,7 @@ class ConnectionPoolManager {
       activeConnections: 0,
       idleConnections: 0,
       waitingClients: 0,
-      lastReset: new Date()
+      lastReset: new Date(),
     };
   }
 }
@@ -239,9 +262,10 @@ const connectionPoolManager = new ConnectionPoolManager();
 // Export convenience functions
 const getNeonClient = () => connectionPoolManager.getNeonClient();
 const getPgPool = () => connectionPoolManager.getPgPool();
-const getClient = (operationType) => connectionPoolManager.getClient(operationType);
-const executeQuery = (query, params, operationType) => connectionPoolManager.executeQuery(query, params, operationType);
-const executeTransaction = (callback) => connectionPoolManager.executeTransaction(callback);
+const getClient = operationType => connectionPoolManager.getClient(operationType);
+const executeQuery = (query, params, operationType) =>
+  connectionPoolManager.executeQuery(query, params, operationType);
+const executeTransaction = callback => connectionPoolManager.executeTransaction(callback);
 const healthCheck = () => connectionPoolManager.healthCheck();
 const getStats = () => connectionPoolManager.getStats();
 const shutdown = () => connectionPoolManager.shutdown();
@@ -255,5 +279,5 @@ module.exports = {
   executeTransaction,
   healthCheck,
   getStats,
-  shutdown
+  shutdown,
 };

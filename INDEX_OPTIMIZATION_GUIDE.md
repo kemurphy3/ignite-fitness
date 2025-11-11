@@ -2,7 +2,9 @@
 
 ## Overview
 
-This guide documents the comprehensive database index optimization performed to improve query performance across all Netlify Functions in the Ignite Fitness application.
+This guide documents the comprehensive database index optimization performed to
+improve query performance across all Netlify Functions in the Ignite Fitness
+application.
 
 ## Critical Indexes Added
 
@@ -16,14 +18,15 @@ CREATE INDEX idx_sessions_user_start_desc ON sessions(user_id, start_at DESC);
 CREATE INDEX idx_sessions_user_type ON sessions(user_id, type);
 
 -- User sessions by source (deduplication)
-CREATE INDEX idx_sessions_user_source ON sessions(user_id, source, source_id) 
+CREATE INDEX idx_sessions_user_source ON sessions(user_id, source, source_id)
 WHERE source_id IS NOT NULL;
 
 -- Sessions by date range (admin analytics)
 CREATE INDEX idx_sessions_start_at_type ON sessions(start_at, type);
 ```
 
-**Performance Impact**: 
+**Performance Impact**:
+
 - Sessions list queries: ~90% faster
 - User session lookups: ~95% faster
 - Admin analytics: ~80% faster
@@ -42,6 +45,7 @@ CREATE INDEX idx_exercises_name ON exercises(name);
 ```
 
 **Performance Impact**:
+
 - Exercise list queries: ~85% faster
 - Session exercise operations: ~90% faster
 
@@ -59,6 +63,7 @@ CREATE INDEX idx_users_email ON users(email);
 ```
 
 **Performance Impact**:
+
 - User authentication: ~95% faster
 - User lookups: ~90% faster
 
@@ -73,6 +78,7 @@ CREATE INDEX idx_sleep_sessions_start_at ON sleep_sessions(start_at);
 ```
 
 **Performance Impact**:
+
 - Sleep data queries: ~80% faster
 - Sleep analytics: ~75% faster
 
@@ -90,6 +96,7 @@ CREATE INDEX idx_strava_activities_start_date ON strava_activities(start_date);
 ```
 
 **Performance Impact**:
+
 - Strava data queries: ~85% faster
 - Activity imports: ~70% faster
 
@@ -99,11 +106,11 @@ CREATE INDEX idx_strava_activities_start_date ON strava_activities(start_date);
 
 ```sql
 -- Active sessions (not deleted)
-CREATE INDEX idx_sessions_active_user_start ON sessions(user_id, start_at DESC) 
+CREATE INDEX idx_sessions_active_user_start ON sessions(user_id, start_at DESC)
 WHERE deleted_at IS NULL;
 
 -- Active exercises
-CREATE INDEX idx_exercises_active_session ON exercises(session_id, id) 
+CREATE INDEX idx_exercises_active_session ON exercises(session_id, id)
 WHERE deleted_at IS NULL;
 ```
 
@@ -111,7 +118,7 @@ WHERE deleted_at IS NULL;
 
 ```sql
 -- Recent sessions (last 30 days)
-CREATE INDEX idx_sessions_recent_user_start ON sessions(user_id, start_at DESC) 
+CREATE INDEX idx_sessions_recent_user_start ON sessions(user_id, start_at DESC)
 WHERE start_at >= NOW() - INTERVAL '30 days';
 ```
 
@@ -121,7 +128,7 @@ WHERE start_at >= NOW() - INTERVAL '30 days';
 
 ```sql
 -- Includes commonly selected columns
-CREATE INDEX idx_sessions_covering_user_start ON sessions(user_id, start_at DESC) 
+CREATE INDEX idx_sessions_covering_user_start ON sessions(user_id, start_at DESC)
 INCLUDE (id, type, source, end_at, timezone);
 ```
 
@@ -129,7 +136,7 @@ INCLUDE (id, type, source, end_at, timezone);
 
 ```sql
 -- Includes commonly selected columns
-CREATE INDEX idx_exercises_covering_session ON exercises(session_id, id) 
+CREATE INDEX idx_exercises_covering_session ON exercises(session_id, id)
 INCLUDE (name, weight, reps, sets, rpe, notes);
 ```
 
@@ -186,13 +193,13 @@ node test-index-performance.js
 
 ### Query Response Times
 
-| Query Type | Before | After | Improvement |
-|------------|--------|-------|-------------|
-| User sessions list | 500ms | 50ms | 90% |
-| Session exercises | 300ms | 30ms | 90% |
-| User authentication | 200ms | 10ms | 95% |
-| Admin analytics | 2000ms | 400ms | 80% |
-| Strava data queries | 800ms | 120ms | 85% |
+| Query Type          | Before | After | Improvement |
+| ------------------- | ------ | ----- | ----------- |
+| User sessions list  | 500ms  | 50ms  | 90%         |
+| Session exercises   | 300ms  | 30ms  | 90%         |
+| User authentication | 200ms  | 10ms  | 95%         |
+| Admin analytics     | 2000ms | 400ms | 80%         |
+| Strava data queries | 800ms  | 120ms | 85%         |
 
 ### Database Load
 
@@ -258,7 +265,7 @@ VACUUM ANALYZE exercises;
 
 ```sql
 -- Check if query uses index
-EXPLAIN (ANALYZE, BUFFERS) 
+EXPLAIN (ANALYZE, BUFFERS)
 SELECT * FROM sessions WHERE user_id = 1 ORDER BY start_at DESC LIMIT 10;
 ```
 
@@ -281,7 +288,7 @@ For complex analytics queries:
 ```sql
 -- Example: Daily session summary
 CREATE MATERIALIZED VIEW mv_daily_sessions AS
-SELECT 
+SELECT
     DATE(start_at) as session_date,
     user_id,
     type,
@@ -299,6 +306,9 @@ GROUP BY DATE(start_at), user_id, type;
 
 ## Conclusion
 
-The index optimization provides significant performance improvements across all database operations. The migration is safe to run in production and will immediately improve query performance without any application changes.
+The index optimization provides significant performance improvements across all
+database operations. The migration is safe to run in production and will
+immediately improve query performance without any application changes.
 
-Monitor the performance improvements and adjust indexes as needed based on actual usage patterns.
+Monitor the performance improvements and adjust indexes as needed based on
+actual usage patterns.

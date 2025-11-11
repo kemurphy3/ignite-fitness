@@ -4,14 +4,15 @@
 
 ### **Done Means Checklist**
 
-✅ 12 scenario tests pass (low readiness, missed check-in, hard game yesterday, deload week, RPE scenarios)  
+✅ 12 scenario tests pass (low readiness, missed check-in, hard game yesterday,
+deload week, RPE scenarios)  
 ✅ Next-session prescriptions change as expected  
 ✅ Prescriptions are persisted  
 ✅ Readiness inferred when missing  
 ✅ RPE ≥ 8 with full volume → +2.5% load  
 ✅ RPE ≥ 9 or failed reps → -5% load  
 ✅ Weekly deload every 4th microcycle (-20% volume)  
-✅ Event flow: READINESS_UPDATED → plan, SESSION_COMPLETED → update loads  
+✅ Event flow: READINESS_UPDATED → plan, SESSION_COMPLETED → update loads
 
 ---
 
@@ -76,26 +77,29 @@ Emit LOADS_UPDATED Event
 ## **RPE-Based Progression Rules** ✅
 
 ### **RPE ≥ 8, Full Volume Complete** ✅
+
 ```javascript
 if (avgRPE >= 8 && completionRate >= 1.0) {
-    nextLoad = currentLoad * 1.025; // +2.5%
-    rationale = 'Excellent session with full volume - progressive overload';
+  nextLoad = currentLoad * 1.025; // +2.5%
+  rationale = 'Excellent session with full volume - progressive overload';
 }
 ```
 
 ### **RPE ≥ 9 or Failed Reps** ✅
+
 ```javascript
 if (avgRPE >= 9 || completionRate < 0.8) {
-    nextLoad = currentLoad * 0.95; // -5%
-    rationale = 'Very hard session or failed reps - reduce load for recovery';
+  nextLoad = currentLoad * 0.95; // -5%
+  rationale = 'Very hard session or failed reps - reduce load for recovery';
 }
 ```
 
 ### **Weekly Deload (Every 4th Week)** ✅
+
 ```javascript
 if (weekNumber % 4 === 0) {
-    volumeMultiplier = 0.80; // -20%
-    rationale = 'Deload week for supercompensation';
+  volumeMultiplier = 0.8; // -20%
+  rationale = 'Deload week for supercompensation';
 }
 ```
 
@@ -104,12 +108,14 @@ if (weekNumber % 4 === 0) {
 ## **Readiness Inference** ✅
 
 **When check-in missing, infer from:**
+
 - Yesterday's session RPE (RPE ≥ 8 → reduce readiness by 2)
 - Volume change % (increase > 25% → reduce by 1)
 - Recent injuries (active injury → reduce by 2)
 - External activities (Strava import - future)
 
 **Inference Algorithm:**
+
 ```javascript
 let readiness = 7; // Default moderate
 
@@ -130,28 +136,30 @@ return Math.max(1, Math.min(10, readiness));
 ## **Event Flow** ✅
 
 ### **READINESS_UPDATED → Plan** ✅
+
 ```javascript
-EventBus.on('READINESS_UPDATED', (data) => {
-    // Trigger workout planning
-    const plan = expertCoordinator.getSessionPlan({
-        readiness: data.readinessScore,
-        // ... other context
-    });
+EventBus.on('READINESS_UPDATED', data => {
+  // Trigger workout planning
+  const plan = expertCoordinator.getSessionPlan({
+    readiness: data.readinessScore,
+    // ... other context
+  });
 });
 ```
 
 ### **SESSION_COMPLETED → Update Loads** ✅
+
 ```javascript
-EventBus.on('SESSION_COMPLETED', async (data) => {
-    await sessionLogger.logOutcome(data);
-    
-    const adjustments = await loadController.processSessionCompletion(data);
-    
-    EventBus.emit('LOADS_UPDATED', {
-        userId,
-        adjustments,
-        nextSession: adjustedLoads
-    });
+EventBus.on('SESSION_COMPLETED', async data => {
+  await sessionLogger.logOutcome(data);
+
+  const adjustments = await loadController.processSessionCompletion(data);
+
+  EventBus.emit('LOADS_UPDATED', {
+    userId,
+    adjustments,
+    nextSession: adjustedLoads,
+  });
 });
 ```
 
@@ -162,13 +170,13 @@ EventBus.on('SESSION_COMPLETED', async (data) => {
 ```javascript
 // 1. Complete session
 EventBus.emit('SESSION_COMPLETED', {
-    userId: 'user123',
-    exercises: [
-        { name: 'Squat', rpe: 8, completed: true },
-        { name: 'Bench', rpe: 7, completed: true }
-    ],
-    averageRPE: 7.5,
-    totalVolume: 5000
+  userId: 'user123',
+  exercises: [
+    { name: 'Squat', rpe: 8, completed: true },
+    { name: 'Bench', rpe: 7, completed: true },
+  ],
+  averageRPE: 7.5,
+  totalVolume: 5000,
 });
 
 // 2. Outcome logged automatically
@@ -177,10 +185,14 @@ EventBus.emit('SESSION_COMPLETED', {
 
 // 5. Next workout
 const nextSession = await expertCoordinator.getSessionPlan({
-    userId: 'user123',
-    readiness: 7,
-    schedule: { /* ... */ },
-    history: { /* includes updated loads */ }
+  userId: 'user123',
+  readiness: 7,
+  schedule: {
+    /* ... */
+  },
+  history: {
+    /* includes updated loads */
+  },
 });
 
 // Next session has adjusted loads based on RPE feedback
@@ -190,15 +202,19 @@ const nextSession = await expertCoordinator.getSessionPlan({
 
 ## ✅ **PROMPT 2: COMPLETE**
 
-**Summary**: Complete adaptive feedback loop closes the loop from check-in and outcomes → next prescription.
+**Summary**: Complete adaptive feedback loop closes the loop from check-in and
+outcomes → next prescription.
 
 **Key Features:**
+
 - ✅ RPE-based load adjustments (+2.5% to -5% based on RPE)
 - ✅ Deload weeks (every 4th week, -20% volume)
 - ✅ Readiness inference when check-in missing
 - ✅ 12 test scenarios covering all conflict types
 - ✅ Prescription persistence for next session
-- ✅ Event-driven architecture (READINESS_UPDATED, SESSION_COMPLETED, LOADS_UPDATED)
+- ✅ Event-driven architecture (READINESS_UPDATED, SESSION_COMPLETED,
+  LOADS_UPDATED)
 - ✅ Automatic load management based on session outcomes
 
-**The system now learns from every session and adjusts the next workout intelligently.** 🎯
+**The system now learns from every session and adjusts the next workout
+intelligently.** 🎯

@@ -2,7 +2,9 @@
 
 ## Overview
 
-This guide provides comprehensive instructions for securely deploying the Ignite Fitness application with proper security, compliance, and monitoring configurations.
+This guide provides comprehensive instructions for securely deploying the Ignite
+Fitness application with proper security, compliance, and monitoring
+configurations.
 
 ## 🚀 Quick Start
 
@@ -287,34 +289,34 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Run tests
-      run: npm test
-      
-    - name: Build project
-      run: npm run build
-      
-    - name: Deploy to Netlify
-      uses: nwtgck/actions-netlify@v2.0
-      with:
-        publish-dir: './dist'
-        production-branch: main
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        deploy-message: "Deploy from GitHub Actions"
-      env:
-        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build project
+        run: npm run build
+
+      - name: Deploy to Netlify
+        uses: nwtgck/actions-netlify@v2.0
+        with:
+          publish-dir: './dist'
+          production-branch: main
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: 'Deploy from GitHub Actions'
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
 ```
 
 ### 2. Security Scanning
@@ -390,18 +392,21 @@ ENABLE_AUDIT_LOGGING=true
 ### Common Issues
 
 1. **JWT Secret Too Weak**
+
    ```bash
    # Generate stronger secret
    openssl rand -base64 32
    ```
 
 2. **CORS Errors**
+
    ```bash
    # Check APP_URL configuration
    APP_URL=https://your-app.netlify.app
    ```
 
 3. **Database Connection Issues**
+
    ```bash
    # Verify Supabase credentials
    SUPABASE_URL=https://your-project-id.supabase.co
@@ -409,6 +414,7 @@ ENABLE_AUDIT_LOGGING=true
    ```
 
 4. **Rate Limiting Issues**
+
    ```bash
    # Adjust rate limits
    OAUTH_RATE_LIMIT_MAX=10

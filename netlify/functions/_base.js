@@ -6,9 +6,11 @@ const getDB = () => {
   return getNeonClient();
 };
 
-const authenticate = async (headers) => {
+const authenticate = async headers => {
   const apiKey = headers['x-api-key'];
-  if (!apiKey) {return null;}
+  if (!apiKey) {
+    return null;
+  }
 
   const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex');
   const sql = getDB();
@@ -20,7 +22,9 @@ const authenticate = async (headers) => {
     AND (expires_at IS NULL OR expires_at > NOW())
   `;
 
-  if (result.length === 0) {return null;}
+  if (result.length === 0) {
+    return null;
+  }
 
   // Update last_used_at
   await sql`UPDATE api_keys SET last_used_at = NOW() WHERE key_hash = ${keyHash}`;
@@ -28,7 +32,7 @@ const authenticate = async (headers) => {
   return result[0].user_id;
 };
 
-const checkRateLimit = async (userId) => {
+const checkRateLimit = async userId => {
   const sql = getDB();
   const windowKey = `${userId}:${Math.floor(Date.now() / 60000)}`;
 
@@ -50,16 +54,16 @@ const errorResponse = (status, code, message, details = {}) => ({
     'X-Request-ID': crypto.randomUUID(),
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type, X-API-Key',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   },
   body: JSON.stringify({
     error: {
       code,
       message,
       details,
-      timestamp: new Date().toISOString()
-    }
-  })
+      timestamp: new Date().toISOString(),
+    },
+  }),
 });
 
 const successResponse = (data, statusCode = 200) => ({
@@ -69,12 +73,12 @@ const successResponse = (data, statusCode = 200) => ({
     'X-Request-ID': crypto.randomUUID(),
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type, X-API-Key',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   },
   body: JSON.stringify({
     success: true,
-    data
-  })
+    data,
+  }),
 });
 
 const preflightResponse = () => ({
@@ -82,14 +86,16 @@ const preflightResponse = () => ({
   headers: {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type, X-API-Key',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   },
-  body: ''
+  body: '',
 });
 
 // Validation helpers
-const validateAge = (age) => {
-  if (age === undefined || age === null) {return null;}
+const validateAge = age => {
+  if (age === undefined || age === null) {
+    return null;
+  }
   const numAge = Number(age);
   if (isNaN(numAge) || numAge < 13 || numAge > 120) {
     throw new Error('Age must be between 13 and 120');
@@ -97,8 +103,10 @@ const validateAge = (age) => {
   return numAge;
 };
 
-const validateWeight = (weight) => {
-  if (weight === undefined || weight === null) {return null;}
+const validateWeight = weight => {
+  if (weight === undefined || weight === null) {
+    return null;
+  }
   const numWeight = Number(weight);
   if (isNaN(numWeight) || numWeight < 20 || numWeight > 300) {
     throw new Error('Weight must be between 20 and 300 kg');
@@ -106,8 +114,10 @@ const validateWeight = (weight) => {
   return numWeight;
 };
 
-const validateHeight = (height) => {
-  if (height === undefined || height === null) {return null;}
+const validateHeight = height => {
+  if (height === undefined || height === null) {
+    return null;
+  }
   const numHeight = Number(height);
   if (isNaN(numHeight) || numHeight < 100 || numHeight > 250) {
     throw new Error('Height must be between 100 and 250 cm');
@@ -115,8 +125,10 @@ const validateHeight = (height) => {
   return numHeight;
 };
 
-const validateSex = (sex) => {
-  if (sex === undefined || sex === null) {return null;}
+const validateSex = sex => {
+  if (sex === undefined || sex === null) {
+    return null;
+  }
   const validSexes = ['male', 'female', 'other'];
   if (!validSexes.includes(sex)) {
     throw new Error('Sex must be one of: male, female, other');
@@ -124,16 +136,20 @@ const validateSex = (sex) => {
   return sex;
 };
 
-const validateGoals = (goals) => {
-  if (!goals || !Array.isArray(goals)) {return null;}
+const validateGoals = goals => {
+  if (!goals || !Array.isArray(goals)) {
+    return null;
+  }
   if (goals.length > 5) {
     throw new Error('Maximum 5 goals allowed');
   }
   return goals;
 };
 
-const validateBaselineLifts = (lifts) => {
-  if (!lifts || typeof lifts !== 'object') {return null;}
+const validateBaselineLifts = lifts => {
+  if (!lifts || typeof lifts !== 'object') {
+    return null;
+  }
   const jsonStr = JSON.stringify(lifts);
   if (jsonStr.length > 1024) {
     throw new Error('Baseline lifts must be less than 1KB');
@@ -141,15 +157,24 @@ const validateBaselineLifts = (lifts) => {
   return lifts;
 };
 
-const validateSessionType = (type) => {
-  const validTypes = ['workout', 'soccer', 'climbing', 'recovery', 'cardio', 'strength', 'flexibility', 'sport_specific'];
+const validateSessionType = type => {
+  const validTypes = [
+    'workout',
+    'soccer',
+    'climbing',
+    'recovery',
+    'cardio',
+    'strength',
+    'flexibility',
+    'sport_specific',
+  ];
   if (!validTypes.includes(type)) {
     throw new Error(`Invalid session type. Must be one of: ${validTypes.join(', ')}`);
   }
   return type;
 };
 
-const validateSessionSource = (source) => {
+const validateSessionSource = source => {
   const validSources = ['manual', 'strava', 'apple_health', 'garmin', 'whoop', 'import'];
   if (!validSources.includes(source)) {
     throw new Error(`Invalid session source. Must be one of: ${validSources.join(', ')}`);
@@ -158,7 +183,9 @@ const validateSessionSource = (source) => {
 };
 
 const validateDate = (dateStr, fieldName) => {
-  if (!dateStr) {return null;}
+  if (!dateStr) {
+    return null;
+  }
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) {
     throw new Error(`${fieldName} must be a valid ISO 8601 date`);
@@ -168,10 +195,12 @@ const validateDate = (dateStr, fieldName) => {
 
 const validateFutureDate = (dateStr, fieldName, maxHours = 24) => {
   const date = validateDate(dateStr, fieldName);
-  if (!date) {return null;}
+  if (!date) {
+    return null;
+  }
 
   const now = new Date();
-  const maxFuture = new Date(now.getTime() + (maxHours * 60 * 60 * 1000));
+  const maxFuture = new Date(now.getTime() + maxHours * 60 * 60 * 1000);
 
   if (date > maxFuture) {
     throw new Error(`${fieldName} cannot be more than ${maxHours} hours in the future`);
@@ -181,7 +210,9 @@ const validateFutureDate = (dateStr, fieldName, maxHours = 24) => {
 };
 
 const validatePayloadSize = (payload, maxSize = 10240) => {
-  if (!payload) {return null;}
+  if (!payload) {
+    return null;
+  }
   const jsonStr = JSON.stringify(payload);
   if (jsonStr.length > maxSize) {
     throw new Error(`Payload must be less than ${maxSize} bytes (currently ${jsonStr.length})`);
@@ -212,5 +243,5 @@ module.exports = {
   validateDate,
   validateFutureDate,
   validatePayloadSize,
-  withTransaction
+  withTransaction,
 };

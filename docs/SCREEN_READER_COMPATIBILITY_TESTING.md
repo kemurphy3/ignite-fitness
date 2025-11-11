@@ -2,7 +2,10 @@
 
 ## 📋 **Testing Overview**
 
-This document provides comprehensive testing procedures for screen reader compatibility across major platforms. The Ignite Fitness application has been designed with advanced accessibility features that require thorough validation with actual screen reader software.
+This document provides comprehensive testing procedures for screen reader
+compatibility across major platforms. The Ignite Fitness application has been
+designed with advanced accessibility features that require thorough validation
+with actual screen reader software.
 
 ## 🎯 **Testing Objectives**
 
@@ -15,12 +18,14 @@ This document provides comprehensive testing procedures for screen reader compat
 ## 🖥️ **NVDA Testing (Windows)**
 
 ### **Setup Requirements**
+
 - Windows 10/11
 - NVDA 2023.1 or later
 - Chrome/Firefox browser
 - Keyboard for navigation
 
 ### **Installation Steps**
+
 1. Download NVDA from [nvaccess.org](https://www.nvaccess.org/)
 2. Install with default settings
 3. Enable "Use NVDA during Windows logon"
@@ -29,6 +34,7 @@ This document provides comprehensive testing procedures for screen reader compat
 ### **Testing Procedures**
 
 #### **1. Basic Navigation Testing**
+
 ```
 Test Steps:
 1. Launch NVDA (Ctrl+Alt+N)
@@ -48,6 +54,7 @@ Expected Results:
 ```
 
 #### **2. Workout Flow Testing**
+
 ```
 Test Steps:
 1. Start a workout session
@@ -65,6 +72,7 @@ Expected Results:
 ```
 
 #### **3. Voice Control Testing**
+
 ```
 Test Steps:
 1. Enable voice control (Ctrl+Shift+V)
@@ -81,6 +89,7 @@ Expected Results:
 ```
 
 #### **4. Cognitive Accessibility Testing**
+
 ```
 Test Steps:
 1. Enable plain language mode
@@ -97,6 +106,7 @@ Expected Results:
 ```
 
 ### **NVDA Testing Checklist**
+
 - [ ] **Basic Navigation**: All elements accessible via keyboard
 - [ ] **Heading Structure**: Logical heading hierarchy (H1-H6)
 - [ ] **Link Descriptions**: Descriptive link text and context
@@ -111,6 +121,7 @@ Expected Results:
 - [ ] **Status Updates**: Progress and status changes announced
 
 ### **Common NVDA Issues**
+
 - **Missing ARIA Labels**: Elements not properly labeled
 - **Heading Skipping**: Inconsistent heading navigation
 - **Form Field Issues**: Unlabeled or improperly associated fields
@@ -120,12 +131,14 @@ Expected Results:
 ## 🎤 **JAWS Testing (Windows)**
 
 ### **Setup Requirements**
+
 - Windows 10/11
 - JAWS 2023 or later
 - Chrome/Firefox browser
 - Professional screen reader license
 
 ### **Installation Steps**
+
 1. Install JAWS with default configuration
 2. Configure speech settings for testing
 3. Enable "Use JAWS during Windows logon"
@@ -134,6 +147,7 @@ Expected Results:
 ### **Testing Procedures**
 
 #### **1. Professional Features Testing**
+
 ```
 Test Steps:
 1. Launch JAWS
@@ -150,6 +164,7 @@ Expected Results:
 ```
 
 #### **2. Workflow Optimization Testing**
+
 ```
 Test Steps:
 1. Test screen reader optimized workflow
@@ -167,6 +182,7 @@ Expected Results:
 ```
 
 #### **3. Advanced Accessibility Testing**
+
 ```
 Test Steps:
 1. Test voice control integration
@@ -184,6 +200,7 @@ Expected Results:
 ```
 
 ### **JAWS Testing Checklist**
+
 - [ ] **Professional Features**: All JAWS features functional
 - [ ] **Advanced Navigation**: Complex navigation works
 - [ ] **Custom Scripts**: Application-specific scripts work
@@ -198,6 +215,7 @@ Expected Results:
 - [ ] **Status Updates**: All status changes announced
 
 ### **Common JAWS Issues**
+
 - **Script Conflicts**: Custom scripts interfering with functionality
 - **Navigation Problems**: Advanced navigation not working
 - **Audio Issues**: Audio cues not playing correctly
@@ -209,12 +227,14 @@ Expected Results:
 ### **macOS Testing**
 
 #### **Setup Requirements**
+
 - macOS 12.0 or later
 - Safari browser
 - VoiceOver enabled
 - Keyboard for navigation
 
 #### **Installation Steps**
+
 1. Enable VoiceOver (Cmd+F5)
 2. Configure VoiceOver settings
 3. Set up custom gestures
@@ -241,12 +261,14 @@ Expected Results:
 ### **iOS Testing**
 
 #### **Setup Requirements**
+
 - iOS 15.0 or later
 - Safari browser
 - VoiceOver enabled
 - Touch gestures
 
 #### **Installation Steps**
+
 1. Enable VoiceOver in Settings > Accessibility
 2. Configure VoiceOver settings
 3. Set up custom gestures
@@ -271,6 +293,7 @@ Expected Results:
 ```
 
 ### **VoiceOver Testing Checklist**
+
 - [ ] **Basic Navigation**: Touch and keyboard navigation
 - [ ] **Rotor Navigation**: Rotor provides good options
 - [ ] **Gesture Support**: Custom gestures work
@@ -285,6 +308,7 @@ Expected Results:
 - [ ] **Cognitive Features**: Plain language mode accessible
 
 ### **Common VoiceOver Issues**
+
 - **Gesture Conflicts**: Custom gestures interfering
 - **Navigation Problems**: Rotor not providing good options
 - **Performance Issues**: Slow response times
@@ -294,6 +318,7 @@ Expected Results:
 ## 🔄 **Cross-Platform Testing**
 
 ### **Consistency Testing**
+
 ```
 Test Steps:
 1. Test same features across all platforms
@@ -311,6 +336,7 @@ Expected Results:
 ```
 
 ### **Cross-Platform Checklist**
+
 - [ ] **Feature Parity**: All features work on all platforms
 - [ ] **Consistent Experience**: Similar user experience
 - [ ] **Platform Integration**: Platform-specific features work
@@ -325,6 +351,7 @@ Expected Results:
 ## 📊 **Testing Metrics**
 
 ### **Success Criteria**
+
 - **NVDA**: 100% functionality with screen reader optimized workflow
 - **JAWS**: 100% functionality with professional features
 - **VoiceOver macOS**: 100% functionality with gesture navigation
@@ -332,6 +359,7 @@ Expected Results:
 - **Cross-Platform**: Consistent experience across all platforms
 
 ### **Performance Metrics**
+
 - **Navigation Speed**: < 2 seconds for common operations
 - **Voice Recognition**: > 95% accuracy for voice commands
 - **Audio Quality**: Clear, understandable speech output
@@ -341,12 +369,14 @@ Expected Results:
 ## 🚨 **Issue Reporting**
 
 ### **Issue Categories**
+
 1. **Critical**: Prevents basic functionality
 2. **High**: Significantly impacts user experience
 3. **Medium**: Minor impact on user experience
 4. **Low**: Cosmetic or minor issues
 
 ### **Issue Template**
+
 ```
 **Platform**: NVDA/JAWS/VoiceOver macOS/VoiceOver iOS
 **Severity**: Critical/High/Medium/Low
@@ -361,12 +391,14 @@ Expected Results:
 ## 📋 **Testing Schedule**
 
 ### **Regular Testing**
+
 - **Daily**: Automated accessibility tests
 - **Weekly**: Manual screen reader testing
 - **Monthly**: Comprehensive cross-platform testing
 - **Quarterly**: User testing with screen reader users
 
 ### **Release Testing**
+
 - **Pre-Release**: Full screen reader testing
 - **Post-Release**: Monitoring and issue tracking
 - **Hotfix Testing**: Critical issue validation
@@ -375,16 +407,19 @@ Expected Results:
 ## 📚 **Resources**
 
 ### **Screen Reader Documentation**
+
 - [NVDA User Guide](https://www.nvaccess.org/about-nvda/)
 - [JAWS Documentation](https://www.freedomscientific.com/products/software/jaws/)
 - [VoiceOver User Guide](https://support.apple.com/guide/voiceover/)
 
 ### **Testing Tools**
+
 - [axe-core](https://github.com/dequelabs/axe-core)
 - [Pa11y](https://pa11y.org/)
 - [Lighthouse](https://developers.google.com/web/tools/lighthouse)
 
 ### **Accessibility Standards**
+
 - [WCAG 2.1 Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)
 - [Section 508 Standards](https://www.section508.gov/)
 - [EN 301 549](https://www.etsi.org/deliver/etsi_en/301500_301599/301549/02.01.02_60/en_301549v020102p.pdf)

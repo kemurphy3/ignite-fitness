@@ -10,10 +10,10 @@ const {
   validateHeight,
   validateSex,
   validateGoals,
-  validateBaselineLifts
+  validateBaselineLifts,
 } = require('./_base');
 
-exports.handler = async (event) => {
+exports.handler = async event => {
   // Handle preflight requests
   if (event.httpMethod === 'OPTIONS') {
     return preflightResponse();
@@ -56,9 +56,8 @@ exports.handler = async (event) => {
         goals: profile.goals || [],
         baseline_lifts: profile.baseline_lifts || {},
         created_at: profile.created_at,
-        updated_at: profile.updated_at
+        updated_at: profile.updated_at,
       });
-
     } else if (event.httpMethod === 'POST') {
       // POST create/update user profile
       const body = JSON.parse(event.body || '{}');
@@ -71,7 +70,7 @@ exports.handler = async (event) => {
         sex: validateSex(body.sex),
         goals: validateGoals(body.goals),
         baseline_lifts: validateBaselineLifts(body.baseline_lifts),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       };
 
       // Check if user exists
@@ -90,20 +89,22 @@ exports.handler = async (event) => {
           RETURNING created_at, updated_at
         `;
 
-        return successResponse({
-          user_id: userId,
-          profile: {
-            age: validatedData.age,
-            weight: validatedData.weight,
-            height: validatedData.height,
-            sex: validatedData.sex,
-            goals: validatedData.goals,
-            baseline_lifts: validatedData.baseline_lifts
+        return successResponse(
+          {
+            user_id: userId,
+            profile: {
+              age: validatedData.age,
+              weight: validatedData.weight,
+              height: validatedData.height,
+              sex: validatedData.sex,
+              goals: validatedData.goals,
+              baseline_lifts: validatedData.baseline_lifts,
+            },
+            created_at: result[0].created_at,
+            updated_at: result[0].updated_at,
           },
-          created_at: result[0].created_at,
-          updated_at: result[0].updated_at
-        }, 201);
-
+          201
+        );
       } else {
         // Update existing user profile
         const result = await sql`
@@ -127,34 +128,36 @@ exports.handler = async (event) => {
             height: validatedData.height,
             sex: validatedData.sex,
             goals: validatedData.goals,
-            baseline_lifts: validatedData.baseline_lifts
+            baseline_lifts: validatedData.baseline_lifts,
           },
           created_at: result[0].created_at,
-          updated_at: result[0].updated_at
+          updated_at: result[0].updated_at,
         });
       }
-
     } else {
       return errorResponse(405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
     }
-
   } catch (error) {
     console.error('User Profile API Error:', error);
 
     // Handle validation errors
-    if (error.message.includes('must be between') ||
-        error.message.includes('must be one of') ||
-        error.message.includes('Maximum') ||
-        error.message.includes('must be less than')) {
+    if (
+      error.message.includes('must be between') ||
+      error.message.includes('must be one of') ||
+      error.message.includes('Maximum') ||
+      error.message.includes('must be less than')
+    ) {
       return errorResponse(400, 'VALIDATION_ERROR', error.message, {
-        field: error.message.split(' ')[0].toLowerCase()
+        field: error.message.split(' ')[0].toLowerCase(),
       });
     }
 
     // Handle database connection errors
-    if (error.message.includes('DATABASE_URL not configured') ||
-        error.message.includes('connection') ||
-        error.message.includes('timeout')) {
+    if (
+      error.message.includes('DATABASE_URL not configured') ||
+      error.message.includes('connection') ||
+      error.message.includes('timeout')
+    ) {
       return errorResponse(503, 'SERVICE_UNAVAILABLE', 'Database service unavailable');
     }
 

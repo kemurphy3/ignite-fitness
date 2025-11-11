@@ -9,334 +9,341 @@ const fs = require('fs');
 const path = require('path');
 
 class AccessibilityReportGenerator {
-    constructor() {
-        this.logger = console;
-        this.reportData = {
-            timestamp: new Date().toISOString(),
-            axeResults: {},
-            pa11yResults: {},
-            lighthouseResults: {},
-            customTests: {},
-            compliance: {},
-            recommendations: []
-        };
+  constructor() {
+    this.logger = console;
+    this.reportData = {
+      timestamp: new Date().toISOString(),
+      axeResults: {},
+      pa11yResults: {},
+      lighthouseResults: {},
+      customTests: {},
+      compliance: {},
+      recommendations: [],
+    };
+  }
+
+  /**
+   * Generate accessibility report
+   */
+  async generateReport() {
+    this.logger.log('📊 Generating Accessibility Report...\n');
+
+    try {
+      // Load test results
+      await this.loadTestResults();
+
+      // Analyze compliance
+      this.analyzeCompliance();
+
+      // Generate recommendations
+      this.generateRecommendations();
+
+      // Generate markdown report
+      this.generateMarkdownReport();
+
+      // Generate compliance report
+      this.generateComplianceReport();
+
+      // Generate testing guide
+      this.generateTestingGuide();
+
+      this.logger.log('✅ Accessibility report generated successfully');
+    } catch (error) {
+      this.logger.error('❌ Error generating accessibility report:', error.message);
+      process.exit(1);
     }
+  }
 
-    /**
-     * Generate accessibility report
-     */
-    async generateReport() {
-        this.logger.log('📊 Generating Accessibility Report...\n');
+  /**
+   * Load test results from files
+   */
+  async loadTestResults() {
+    const resultFiles = ['axe-results.json', 'pa11y-results.json', 'lighthouse-results.json'];
 
-        try {
-            // Load test results
-            await this.loadTestResults();
-
-            // Analyze compliance
-            this.analyzeCompliance();
-
-            // Generate recommendations
-            this.generateRecommendations();
-
-            // Generate markdown report
-            this.generateMarkdownReport();
-
-            // Generate compliance report
-            this.generateComplianceReport();
-
-            // Generate testing guide
-            this.generateTestingGuide();
-
-            this.logger.log('✅ Accessibility report generated successfully');
-
-        } catch (error) {
-            this.logger.error('❌ Error generating accessibility report:', error.message);
-            process.exit(1);
+    for (const file of resultFiles) {
+      try {
+        const filePath = path.join(process.cwd(), file);
+        if (fs.existsSync(filePath)) {
+          const content = fs.readFileSync(filePath, 'utf8');
+          const key = file.replace('.json', '').replace('-', '');
+          this.reportData[key] = JSON.parse(content);
         }
+      } catch (error) {
+        this.logger.warn(`Could not load ${file}:`, error.message);
+      }
+    }
+  }
+
+  /**
+   * Analyze accessibility compliance
+   */
+  analyzeCompliance() {
+    const compliance = {
+      wcag21AA: { score: 0, issues: [] },
+      wcag21AAA: { score: 0, issues: [] },
+      section508: { score: 0, issues: [] },
+      overall: { score: 0, status: 'unknown' },
+    };
+
+    // Analyze axe-core results
+    if (this.reportData.axeresults) {
+      this.analyzeAxeCompliance(compliance);
     }
 
-    /**
-     * Load test results from files
-     */
-    async loadTestResults() {
-        const resultFiles = [
-            'axe-results.json',
-            'pa11y-results.json',
-            'lighthouse-results.json'
-        ];
-
-        for (const file of resultFiles) {
-            try {
-                const filePath = path.join(process.cwd(), file);
-                if (fs.existsSync(filePath)) {
-                    const content = fs.readFileSync(filePath, 'utf8');
-                    const key = file.replace('.json', '').replace('-', '');
-                    this.reportData[key] = JSON.parse(content);
-                }
-            } catch (error) {
-                this.logger.warn(`Could not load ${file}:`, error.message);
-            }
-        }
+    // Analyze Pa11y results
+    if (this.reportData.pa11yresults) {
+      this.analyzePa11yCompliance(compliance);
     }
 
-    /**
-     * Analyze accessibility compliance
-     */
-    analyzeCompliance() {
-        const compliance = {
-            wcag21AA: { score: 0, issues: [] },
-            wcag21AAA: { score: 0, issues: [] },
-            section508: { score: 0, issues: [] },
-            overall: { score: 0, status: 'unknown' }
-        };
-
-        // Analyze axe-core results
-        if (this.reportData.axeresults) {
-            this.analyzeAxeCompliance(compliance);
-        }
-
-        // Analyze Pa11y results
-        if (this.reportData.pa11yresults) {
-            this.analyzePa11yCompliance(compliance);
-        }
-
-        // Analyze Lighthouse results
-        if (this.reportData.lighthouseresults) {
-            this.analyzeLighthouseCompliance(compliance);
-        }
-
-        // Calculate overall compliance
-        const scores = Object.values(compliance).map(c => c.score).filter(s => s > 0);
-        if (scores.length > 0) {
-            compliance.overall.score = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-            compliance.overall.status = this.getComplianceStatus(compliance.overall.score);
-        }
-
-        this.reportData.compliance = compliance;
+    // Analyze Lighthouse results
+    if (this.reportData.lighthouseresults) {
+      this.analyzeLighthouseCompliance(compliance);
     }
 
-    /**
-     * Analyze axe-core compliance
-     */
-    analyzeAxeCompliance(compliance) {
-        const axeResults = this.reportData.axeresults;
-        const violations = axeResults.violations || [];
-        const passes = axeResults.passes || [];
-
-        // Calculate WCAG 2.1 AA compliance
-        const wcag21AAViolations = violations.filter(v =>
-            v.tags && v.tags.some(tag => tag.includes('wcag2a'))
-        );
-        const wcag21AAPasses = passes.filter(p =>
-            p.tags && p.tags.some(tag => tag.includes('wcag2a'))
-        );
-
-        compliance.wcag21AA.score = Math.round(
-            (wcag21AAPasses.length / (wcag21AAPasses.length + wcag21AAViolations.length)) * 100
-        );
-        compliance.wcag21AA.issues = wcag21AAViolations.map(v => ({
-            id: v.id,
-            description: v.description,
-            impact: v.impact,
-            help: v.help
-        }));
-
-        // Calculate WCAG 2.1 AAA compliance
-        const wcag21AAAViolations = violations.filter(v =>
-            v.tags && v.tags.some(tag => tag.includes('wcag2aaa'))
-        );
-        const wcag21AAAPasses = passes.filter(p =>
-            p.tags && p.tags.some(tag => tag.includes('wcag2aaa'))
-        );
-
-        compliance.wcag21AAA.score = Math.round(
-            (wcag21AAAPasses.length / (wcag21AAAPasses.length + wcag21AAAViolations.length)) * 100
-        );
-        compliance.wcag21AAA.issues = wcag21AAAViolations.map(v => ({
-            id: v.id,
-            description: v.description,
-            impact: v.impact,
-            help: v.help
-        }));
+    // Calculate overall compliance
+    const scores = Object.values(compliance)
+      .map(c => c.score)
+      .filter(s => s > 0);
+    if (scores.length > 0) {
+      compliance.overall.score = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+      compliance.overall.status = this.getComplianceStatus(compliance.overall.score);
     }
 
-    /**
-     * Analyze Pa11y compliance
-     */
-    analyzePa11yCompliance(compliance) {
-        const pa11yResults = this.reportData.pa11yresults;
-        const issues = Array.isArray(pa11yResults) ? pa11yResults : [];
+    this.reportData.compliance = compliance;
+  }
 
-        // Calculate Section 508 compliance
-        const section508Issues = issues.filter(issue =>
-            issue.code && issue.code.includes('Section508')
-        );
+  /**
+   * Analyze axe-core compliance
+   */
+  analyzeAxeCompliance(compliance) {
+    const axeResults = this.reportData.axeresults;
+    const violations = axeResults.violations || [];
+    const passes = axeResults.passes || [];
 
-        compliance.section508.score = Math.round(
-            ((issues.length - section508Issues.length) / issues.length) * 100
-        );
-        compliance.section508.issues = section508Issues.map(issue => ({
-            code: issue.code,
-            message: issue.message,
-            context: issue.context
-        }));
+    // Calculate WCAG 2.1 AA compliance
+    const wcag21AAViolations = violations.filter(
+      v => v.tags && v.tags.some(tag => tag.includes('wcag2a'))
+    );
+    const wcag21AAPasses = passes.filter(p => p.tags && p.tags.some(tag => tag.includes('wcag2a')));
+
+    compliance.wcag21AA.score = Math.round(
+      (wcag21AAPasses.length / (wcag21AAPasses.length + wcag21AAViolations.length)) * 100
+    );
+    compliance.wcag21AA.issues = wcag21AAViolations.map(v => ({
+      id: v.id,
+      description: v.description,
+      impact: v.impact,
+      help: v.help,
+    }));
+
+    // Calculate WCAG 2.1 AAA compliance
+    const wcag21AAAViolations = violations.filter(
+      v => v.tags && v.tags.some(tag => tag.includes('wcag2aaa'))
+    );
+    const wcag21AAAPasses = passes.filter(
+      p => p.tags && p.tags.some(tag => tag.includes('wcag2aaa'))
+    );
+
+    compliance.wcag21AAA.score = Math.round(
+      (wcag21AAAPasses.length / (wcag21AAAPasses.length + wcag21AAAViolations.length)) * 100
+    );
+    compliance.wcag21AAA.issues = wcag21AAAViolations.map(v => ({
+      id: v.id,
+      description: v.description,
+      impact: v.impact,
+      help: v.help,
+    }));
+  }
+
+  /**
+   * Analyze Pa11y compliance
+   */
+  analyzePa11yCompliance(compliance) {
+    const pa11yResults = this.reportData.pa11yresults;
+    const issues = Array.isArray(pa11yResults) ? pa11yResults : [];
+
+    // Calculate Section 508 compliance
+    const section508Issues = issues.filter(
+      issue => issue.code && issue.code.includes('Section508')
+    );
+
+    compliance.section508.score = Math.round(
+      ((issues.length - section508Issues.length) / issues.length) * 100
+    );
+    compliance.section508.issues = section508Issues.map(issue => ({
+      code: issue.code,
+      message: issue.message,
+      context: issue.context,
+    }));
+  }
+
+  /**
+   * Analyze Lighthouse compliance
+   */
+  analyzeLighthouseCompliance(compliance) {
+    const lighthouseResults = this.reportData.lighthouseresults;
+    const accessibilityScore = lighthouseResults.categories?.accessibility?.score || 0;
+
+    // Use Lighthouse score as overall indicator
+    if (compliance.overall.score === 0) {
+      compliance.overall.score = Math.round(accessibilityScore * 100);
+      compliance.overall.status = this.getComplianceStatus(compliance.overall.score);
+    }
+  }
+
+  /**
+   * Get compliance status
+   */
+  getComplianceStatus(score) {
+    if (score >= 95) {
+      return 'excellent';
+    }
+    if (score >= 85) {
+      return 'good';
+    }
+    if (score >= 70) {
+      return 'fair';
+    }
+    if (score >= 50) {
+      return 'poor';
+    }
+    return 'critical';
+  }
+
+  /**
+   * Generate recommendations
+   */
+  generateRecommendations() {
+    const recommendations = [];
+
+    // Analyze violations and generate recommendations
+    if (this.reportData.axeresults?.violations) {
+      this.generateAxeRecommendations(recommendations);
     }
 
-    /**
-     * Analyze Lighthouse compliance
-     */
-    analyzeLighthouseCompliance(compliance) {
-        const lighthouseResults = this.reportData.lighthouseresults;
-        const accessibilityScore = lighthouseResults.categories?.accessibility?.score || 0;
-
-        // Use Lighthouse score as overall indicator
-        if (compliance.overall.score === 0) {
-            compliance.overall.score = Math.round(accessibilityScore * 100);
-            compliance.overall.status = this.getComplianceStatus(compliance.overall.score);
-        }
+    if (this.reportData.pa11yresults) {
+      this.generatePa11yRecommendations(recommendations);
     }
 
-    /**
-     * Get compliance status
-     */
-    getComplianceStatus(score) {
-        if (score >= 95) {return 'excellent';}
-        if (score >= 85) {return 'good';}
-        if (score >= 70) {return 'fair';}
-        if (score >= 50) {return 'poor';}
-        return 'critical';
-    }
+    // General recommendations
+    recommendations.push({
+      category: 'general',
+      priority: 'high',
+      title: 'Regular Accessibility Testing',
+      description: 'Implement regular accessibility testing in CI/CD pipeline',
+      action: 'Set up automated accessibility testing with axe-core and Pa11y',
+    });
 
-    /**
-     * Generate recommendations
-     */
-    generateRecommendations() {
-        const recommendations = [];
+    recommendations.push({
+      category: 'general',
+      priority: 'medium',
+      title: 'Screen Reader Testing',
+      description: 'Test with actual screen readers',
+      action: 'Test with NVDA, JAWS, and VoiceOver',
+    });
 
-        // Analyze violations and generate recommendations
-        if (this.reportData.axeresults?.violations) {
-            this.generateAxeRecommendations(recommendations);
-        }
+    recommendations.push({
+      category: 'general',
+      priority: 'medium',
+      title: 'Keyboard Navigation Testing',
+      description: 'Ensure all functionality is keyboard accessible',
+      action: 'Test complete workflow using only keyboard',
+    });
 
-        if (this.reportData.pa11yresults) {
-            this.generatePa11yRecommendations(recommendations);
-        }
+    this.reportData.recommendations = recommendations;
+  }
 
-        // General recommendations
-        recommendations.push({
-            category: 'general',
-            priority: 'high',
-            title: 'Regular Accessibility Testing',
-            description: 'Implement regular accessibility testing in CI/CD pipeline',
-            action: 'Set up automated accessibility testing with axe-core and Pa11y'
-        });
+  /**
+   * Generate axe-core recommendations
+   */
+  generateAxeRecommendations(recommendations) {
+    const violations = this.reportData.axeresults.violations || [];
 
-        recommendations.push({
-            category: 'general',
-            priority: 'medium',
-            title: 'Screen Reader Testing',
-            description: 'Test with actual screen readers',
-            action: 'Test with NVDA, JAWS, and VoiceOver'
-        });
+    violations.forEach(violation => {
+      recommendations.push({
+        category: 'axe-core',
+        priority: this.getPriorityFromImpact(violation.impact),
+        title: violation.description,
+        description: violation.help,
+        action: `Fix ${violation.id} violation: ${violation.description}`,
+        impact: violation.impact,
+        nodes: violation.nodes?.length || 0,
+      });
+    });
+  }
 
-        recommendations.push({
-            category: 'general',
-            priority: 'medium',
-            title: 'Keyboard Navigation Testing',
-            description: 'Ensure all functionality is keyboard accessible',
-            action: 'Test complete workflow using only keyboard'
-        });
+  /**
+   * Generate Pa11y recommendations
+   */
+  generatePa11yRecommendations(recommendations) {
+    const issues = Array.isArray(this.reportData.pa11yresults) ? this.reportData.pa11yresults : [];
 
-        this.reportData.recommendations = recommendations;
-    }
+    issues.forEach(issue => {
+      recommendations.push({
+        category: 'pa11y',
+        priority: this.getPriorityFromCode(issue.code),
+        title: issue.message,
+        description: issue.context,
+        action: `Fix ${issue.code}: ${issue.message}`,
+        code: issue.code,
+      });
+    });
+  }
 
-    /**
-     * Generate axe-core recommendations
-     */
-    generateAxeRecommendations(recommendations) {
-        const violations = this.reportData.axeresults.violations || [];
-
-        violations.forEach(violation => {
-            recommendations.push({
-                category: 'axe-core',
-                priority: this.getPriorityFromImpact(violation.impact),
-                title: violation.description,
-                description: violation.help,
-                action: `Fix ${violation.id} violation: ${violation.description}`,
-                impact: violation.impact,
-                nodes: violation.nodes?.length || 0
-            });
-        });
-    }
-
-    /**
-     * Generate Pa11y recommendations
-     */
-    generatePa11yRecommendations(recommendations) {
-        const issues = Array.isArray(this.reportData.pa11yresults) ? this.reportData.pa11yresults : [];
-
-        issues.forEach(issue => {
-            recommendations.push({
-                category: 'pa11y',
-                priority: this.getPriorityFromCode(issue.code),
-                title: issue.message,
-                description: issue.context,
-                action: `Fix ${issue.code}: ${issue.message}`,
-                code: issue.code
-            });
-        });
-    }
-
-    /**
-     * Get priority from impact
-     */
-    getPriorityFromImpact(impact) {
-        switch (impact) {
-            case 'critical':
-            case 'serious':
-                return 'high';
-            case 'moderate':
-                return 'medium';
-            case 'minor':
-                return 'low';
-            default:
-                return 'medium';
-        }
-    }
-
-    /**
-     * Get priority from code
-     */
-    getPriorityFromCode(code) {
-        if (code.includes('WCAG2AA')) {return 'high';}
-        if (code.includes('WCAG2A')) {return 'medium';}
+  /**
+   * Get priority from impact
+   */
+  getPriorityFromImpact(impact) {
+    switch (impact) {
+      case 'critical':
+      case 'serious':
+        return 'high';
+      case 'moderate':
+        return 'medium';
+      case 'minor':
         return 'low';
+      default:
+        return 'medium';
+    }
+  }
+
+  /**
+   * Get priority from code
+   */
+  getPriorityFromCode(code) {
+    if (code.includes('WCAG2AA')) {
+      return 'high';
+    }
+    if (code.includes('WCAG2A')) {
+      return 'medium';
+    }
+    return 'low';
+  }
+
+  /**
+   * Generate markdown report
+   */
+  generateMarkdownReport() {
+    const report = this.generateMarkdownContent();
+    const reportPath = path.join(process.cwd(), 'docs', 'ACCESSIBILITY_REPORT.md');
+
+    // Ensure docs directory exists
+    const docsDir = path.dirname(reportPath);
+    if (!fs.existsSync(docsDir)) {
+      fs.mkdirSync(docsDir, { recursive: true });
     }
 
-    /**
-     * Generate markdown report
-     */
-    generateMarkdownReport() {
-        const report = this.generateMarkdownContent();
-        const reportPath = path.join(process.cwd(), 'docs', 'ACCESSIBILITY_REPORT.md');
+    fs.writeFileSync(reportPath, report);
+    this.logger.log(`📄 Accessibility report saved to: ${reportPath}`);
+  }
 
-        // Ensure docs directory exists
-        const docsDir = path.dirname(reportPath);
-        if (!fs.existsSync(docsDir)) {
-            fs.mkdirSync(docsDir, { recursive: true });
-        }
+  /**
+   * Generate markdown content
+   */
+  generateMarkdownContent() {
+    const { compliance } = this.reportData;
 
-        fs.writeFileSync(reportPath, report);
-        this.logger.log(`📄 Accessibility report saved to: ${reportPath}`);
-    }
-
-    /**
-     * Generate markdown content
-     */
-    generateMarkdownContent() {
-        const {compliance} = this.reportData;
-
-        return `# 🔍 Accessibility Report
+    return `# 🔍 Accessibility Report
 
 **Generated**: ${new Date(this.reportData.timestamp).toLocaleString()}  
 **Status**: ${compliance.overall.status.toUpperCase()}  
@@ -388,150 +395,170 @@ ${this.generateRecommendationsSection()}
 ---
 *This report was generated automatically by the accessibility testing pipeline.*
 `;
+  }
+
+  /**
+   * Generate axe-core results section
+   */
+  generateAxeResultsSection() {
+    const axeResults = this.reportData.axeresults;
+    if (!axeResults) {
+      return 'No axe-core results available.';
     }
 
-    /**
-     * Generate axe-core results section
-     */
-    generateAxeResultsSection() {
-        const axeResults = this.reportData.axeresults;
-        if (!axeResults) {return 'No axe-core results available.';}
+    const violations = axeResults.violations || [];
+    const passes = axeResults.passes || [];
+    const incomplete = axeResults.incomplete || [];
 
-        const violations = axeResults.violations || [];
-        const passes = axeResults.passes || [];
-        const incomplete = axeResults.incomplete || [];
-
-        return `
+    return `
 - **Violations**: ${violations.length}
 - **Passes**: ${passes.length}
 - **Incomplete**: ${incomplete.length}
 
-${violations.length > 0 ? `
+${
+  violations.length > 0
+    ? `
 #### Violations
 ${violations.map(v => `- **${v.id}**: ${v.description} (${v.impact})`).join('\n')}
-` : ''}
+`
+    : ''
+}
 `;
+  }
+
+  /**
+   * Generate Pa11y results section
+   */
+  generatePa11yResultsSection() {
+    const pa11yResults = this.reportData.pa11yresults;
+    if (!pa11yResults) {
+      return 'No Pa11y results available.';
     }
 
-    /**
-     * Generate Pa11y results section
-     */
-    generatePa11yResultsSection() {
-        const pa11yResults = this.reportData.pa11yresults;
-        if (!pa11yResults) {return 'No Pa11y results available.';}
+    const issues = Array.isArray(pa11yResults) ? pa11yResults : [];
 
-        const issues = Array.isArray(pa11yResults) ? pa11yResults : [];
-
-        return `
+    return `
 - **Issues**: ${issues.length}
 
-${issues.length > 0 ? `
+${
+  issues.length > 0
+    ? `
 #### Issues
 ${issues.map(issue => `- **${issue.code}**: ${issue.message}`).join('\n')}
-` : ''}
+`
+    : ''
+}
 `;
+  }
+
+  /**
+   * Generate Lighthouse results section
+   */
+  generateLighthouseResultsSection() {
+    const lighthouseResults = this.reportData.lighthouseresults;
+    if (!lighthouseResults) {
+      return 'No Lighthouse results available.';
     }
 
-    /**
-     * Generate Lighthouse results section
-     */
-    generateLighthouseResultsSection() {
-        const lighthouseResults = this.reportData.lighthouseresults;
-        if (!lighthouseResults) {return 'No Lighthouse results available.';}
+    const accessibilityScore = lighthouseResults.categories?.accessibility?.score || 0;
+    const score = Math.round(accessibilityScore * 100);
 
-        const accessibilityScore = lighthouseResults.categories?.accessibility?.score || 0;
-        const score = Math.round(accessibilityScore * 100);
-
-        return `
+    return `
 - **Accessibility Score**: ${score}/100
 - **Status**: ${this.getComplianceStatus(score).toUpperCase()}
 `;
+  }
+
+  /**
+   * Generate issues section
+   */
+  generateIssuesSection() {
+    const issues = [];
+
+    // Add axe-core violations
+    if (this.reportData.axeresults?.violations) {
+      this.reportData.axeresults.violations.forEach(violation => {
+        issues.push({
+          tool: 'axe-core',
+          severity: violation.impact,
+          description: violation.description,
+          help: violation.help,
+        });
+      });
     }
 
-    /**
-     * Generate issues section
-     */
-    generateIssuesSection() {
-        const issues = [];
+    // Add Pa11y issues
+    if (this.reportData.pa11yresults) {
+      const pa11yIssues = Array.isArray(this.reportData.pa11yresults)
+        ? this.reportData.pa11yresults
+        : [];
+      pa11yIssues.forEach(issue => {
+        issues.push({
+          tool: 'pa11y',
+          severity: this.getPriorityFromCode(issue.code),
+          description: issue.message,
+          help: issue.context,
+        });
+      });
+    }
 
-        // Add axe-core violations
-        if (this.reportData.axeresults?.violations) {
-            this.reportData.axeresults.violations.forEach(violation => {
-                issues.push({
-                    tool: 'axe-core',
-                    severity: violation.impact,
-                    description: violation.description,
-                    help: violation.help
-                });
-            });
-        }
+    if (issues.length === 0) {
+      return 'No accessibility issues found! 🎉';
+    }
 
-        // Add Pa11y issues
-        if (this.reportData.pa11yresults) {
-            const pa11yIssues = Array.isArray(this.reportData.pa11yresults) ? this.reportData.pa11yresults : [];
-            pa11yIssues.forEach(issue => {
-                issues.push({
-                    tool: 'pa11y',
-                    severity: this.getPriorityFromCode(issue.code),
-                    description: issue.message,
-                    help: issue.context
-                });
-            });
-        }
-
-        if (issues.length === 0) {
-            return 'No accessibility issues found! 🎉';
-        }
-
-        return issues.map((issue, index) => `
+    return issues
+      .map(
+        (issue, index) => `
 ${index + 1}. **${issue.tool}** - ${issue.severity.toUpperCase()}
    - ${issue.description}
    - ${issue.help}
-`).join('\n');
+`
+      )
+      .join('\n');
+  }
+
+  /**
+   * Generate recommendations section
+   */
+  generateRecommendationsSection() {
+    const recommendations = this.reportData.recommendations || [];
+
+    if (recommendations.length === 0) {
+      return 'No specific recommendations at this time.';
     }
 
-    /**
-     * Generate recommendations section
-     */
-    generateRecommendationsSection() {
-        const recommendations = this.reportData.recommendations || [];
+    const highPriority = recommendations.filter(r => r.priority === 'high');
+    const mediumPriority = recommendations.filter(r => r.priority === 'medium');
+    const lowPriority = recommendations.filter(r => r.priority === 'low');
 
-        if (recommendations.length === 0) {
-            return 'No specific recommendations at this time.';
-        }
+    let section = '';
 
-        const highPriority = recommendations.filter(r => r.priority === 'high');
-        const mediumPriority = recommendations.filter(r => r.priority === 'medium');
-        const lowPriority = recommendations.filter(r => r.priority === 'low');
-
-        let section = '';
-
-        if (highPriority.length > 0) {
-            section += '### High Priority\n';
-            section += `${highPriority.map(r => `- **${r.title}**: ${r.description}`).join('\n') }\n\n`;
-        }
-
-        if (mediumPriority.length > 0) {
-            section += '### Medium Priority\n';
-            section += `${mediumPriority.map(r => `- **${r.title}**: ${r.description}`).join('\n') }\n\n`;
-        }
-
-        if (lowPriority.length > 0) {
-            section += '### Low Priority\n';
-            section += `${lowPriority.map(r => `- **${r.title}**: ${r.description}`).join('\n') }\n\n`;
-        }
-
-        return section;
+    if (highPriority.length > 0) {
+      section += '### High Priority\n';
+      section += `${highPriority.map(r => `- **${r.title}**: ${r.description}`).join('\n')}\n\n`;
     }
 
-    /**
-     * Generate compliance report
-     */
-    generateComplianceReport() {
-        const {compliance} = this.reportData;
-        const reportPath = path.join(process.cwd(), 'docs', 'ACCESSIBILITY_COMPLIANCE.md');
+    if (mediumPriority.length > 0) {
+      section += '### Medium Priority\n';
+      section += `${mediumPriority.map(r => `- **${r.title}**: ${r.description}`).join('\n')}\n\n`;
+    }
 
-        const report = `# 📋 Accessibility Compliance Report
+    if (lowPriority.length > 0) {
+      section += '### Low Priority\n';
+      section += `${lowPriority.map(r => `- **${r.title}**: ${r.description}`).join('\n')}\n\n`;
+    }
+
+    return section;
+  }
+
+  /**
+   * Generate compliance report
+   */
+  generateComplianceReport() {
+    const { compliance } = this.reportData;
+    const reportPath = path.join(process.cwd(), 'docs', 'ACCESSIBILITY_COMPLIANCE.md');
+
+    const report = `# 📋 Accessibility Compliance Report
 
 **Generated**: ${new Date(this.reportData.timestamp).toLocaleString()}
 
@@ -559,11 +586,16 @@ ${index + 1}. **${issue.tool}** - ${issue.severity.toUpperCase()}
 
 ## 🚨 Critical Issues
 
-${compliance.wcag21AA.issues.filter(issue => issue.impact === 'critical' || issue.impact === 'serious').map(issue => `
+${compliance.wcag21AA.issues
+  .filter(issue => issue.impact === 'critical' || issue.impact === 'serious')
+  .map(
+    issue => `
 - **${issue.id}**: ${issue.description}
   - Impact: ${issue.impact}
   - Help: ${issue.help}
-`).join('\n')}
+`
+  )
+  .join('\n')}
 
 ## 📈 Compliance Trends
 
@@ -573,17 +605,17 @@ ${compliance.wcag21AA.issues.filter(issue => issue.impact === 'critical' || issu
 *This compliance report is generated automatically and should be reviewed regularly.*
 `;
 
-        fs.writeFileSync(reportPath, report);
-        this.logger.log(`📄 Compliance report saved to: ${reportPath}`);
-    }
+    fs.writeFileSync(reportPath, report);
+    this.logger.log(`📄 Compliance report saved to: ${reportPath}`);
+  }
 
-    /**
-     * Generate testing guide
-     */
-    generateTestingGuide() {
-        const guidePath = path.join(process.cwd(), 'docs', 'ACCESSIBILITY_TESTING_GUIDE.md');
+  /**
+   * Generate testing guide
+   */
+  generateTestingGuide() {
+    const guidePath = path.join(process.cwd(), 'docs', 'ACCESSIBILITY_TESTING_GUIDE.md');
 
-        const guide = `# 🧪 Accessibility Testing Guide
+    const guide = `# 🧪 Accessibility Testing Guide
 
 This guide provides comprehensive instructions for testing accessibility in the Ignite Fitness application.
 
@@ -790,23 +822,24 @@ Accessibility tests are automatically run in the CI/CD pipeline:
 *This testing guide should be updated regularly as new features are added.*
 `;
 
-        fs.writeFileSync(guidePath, guide);
-        this.logger.log(`📄 Testing guide saved to: ${guidePath}`);
-    }
+    fs.writeFileSync(guidePath, guide);
+    this.logger.log(`📄 Testing guide saved to: ${guidePath}`);
+  }
 }
 
 // CLI interface
 if (require.main === module) {
-    const generator = new AccessibilityReportGenerator();
+  const generator = new AccessibilityReportGenerator();
 
-    generator.generateReport()
-        .then(() => {
-            process.exit(0);
-        })
-        .catch(error => {
-            console.error('❌ Error generating accessibility report:', error.message);
-            process.exit(1);
-        });
+  generator
+    .generateReport()
+    .then(() => {
+      process.exit(0);
+    })
+    .catch(error => {
+      console.error('❌ Error generating accessibility report:', error.message);
+      process.exit(1);
+    });
 }
 
 module.exports = AccessibilityReportGenerator;

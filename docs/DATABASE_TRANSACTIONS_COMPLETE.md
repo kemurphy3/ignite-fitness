@@ -6,7 +6,8 @@
 
 1. **ActivityTransactionManager Class**
    - **File**: `netlify/functions/utils/activity-transaction-manager.js`
-   - **Purpose**: Provides atomic operations with rollback capability for Strava ingestion
+   - **Purpose**: Provides atomic operations with rollback capability for Strava
+     ingestion
    - **Features**:
      - Transaction-scoped deduplication operations
      - Atomic activity insert/update/merge operations
@@ -16,7 +17,8 @@
 
 2. **Updated Ingest Handler**
    - **File**: `netlify/functions/ingest-strava.js`
-   - **Changes**: Integrated `ActivityTransactionManager` for all database operations
+   - **Changes**: Integrated `ActivityTransactionManager` for all database
+     operations
    - **Benefits**:
      - Each activity processed in its own transaction
      - Atomic stream attachment
@@ -37,49 +39,54 @@
 ### Key Features Implemented
 
 #### 1. Atomic Activity Deduplication
+
 ```javascript
 // Each activity processed in isolation
 const result = await transactionManager.executeActivityDedupTransaction(
-    normalized, 
-    userId, 
-    affectedDates
+  normalized,
+  userId,
+  affectedDates
 );
 ```
 
 #### 2. Transaction Rollback
+
 ```javascript
 try {
-    // Database operations
+  // Database operations
 } catch (error) {
-    await this.rollbackTransaction(transactionId);
-    throw error;
+  await this.rollbackTransaction(transactionId);
+  throw error;
 }
 ```
 
 #### 3. Concurrent Safety
+
 - Handles race conditions during concurrent deduplication
 - Prevents data corruption from simultaneous operations
 - Maintains data consistency across multiple activities
 
 #### 4. Stream Attachment Safety
+
 ```javascript
 // Atomic stream attachment
 await transactionManager.attachStreamsInTransaction(
-    payload.streams, 
-    activitiesById, 
-    'streams_tx'
+  payload.streams,
+  activitiesById,
+  'streams_tx'
 );
 ```
 
 #### 5. Ingestion Logging Safety
+
 ```javascript
 // Atomic logging
 await transactionManager.logIngestionInTransaction(
-    userId, 
-    'strava', 
-    payload, 
-    results, 
-    'log_tx'
+  userId,
+  'strava',
+  payload,
+  results,
+  'log_tx'
 );
 ```
 
@@ -87,7 +94,7 @@ await transactionManager.logIngestionInTransaction(
 
 ```
 ✅ Transaction Execution Tests: 3/3 passing
-✅ Transaction Rollback Tests: 2/2 passing  
+✅ Transaction Rollback Tests: 2/2 passing
 ✅ Concurrent Transaction Tests: 2/2 passing
 ✅ Stream Attachment Tests: 2/2 passing
 ✅ Ingestion Logging Tests: 2/2 passing
@@ -98,7 +105,8 @@ await transactionManager.logIngestionInTransaction(
 
 ### Security Benefits
 
-1. **Data Integrity**: All operations are atomic - either all succeed or all fail
+1. **Data Integrity**: All operations are atomic - either all succeed or all
+   fail
 2. **Race Condition Prevention**: Concurrent operations don't corrupt data
 3. **Rollback Capability**: Failed operations don't leave partial data
 4. **Consistency**: Database remains in valid state after any operation
@@ -107,6 +115,7 @@ await transactionManager.logIngestionInTransaction(
 ### Implementation Details
 
 #### Transaction Flow
+
 1. **Start Transaction**: Generate unique transaction ID
 2. **Check Existing**: Look for exact dedup hash match
 3. **Check Duplicates**: Look for likely duplicates (±6min, ±10% duration)
@@ -116,8 +125,9 @@ await transactionManager.logIngestionInTransaction(
 7. **Commit/Rollback**: Complete transaction or undo changes
 
 #### Error Handling
+
 - Database connection failures → Rollback
-- Insert/update failures → Rollback  
+- Insert/update failures → Rollback
 - Stream attachment failures → Rollback
 - Logging failures → Rollback (non-critical)
 - Partial failures → Graceful degradation
@@ -125,10 +135,13 @@ await transactionManager.logIngestionInTransaction(
 ### Files Created/Modified
 
 **New Files:**
-- `netlify/functions/utils/activity-transaction-manager.js` (Transaction manager)
+
+- `netlify/functions/utils/activity-transaction-manager.js` (Transaction
+  manager)
 - `tests/security/activity-transactions.test.js` (Comprehensive test suite)
 
 **Modified Files:**
+
 - `netlify/functions/ingest-strava.js` (Integrated transaction manager)
 
 ### Next Steps
@@ -141,7 +154,7 @@ With database transactions complete, the remaining security tasks are:
 ### Progress Summary
 
 - ✅ **XSS Protection**: 10/10 tests passing
-- ✅ **SQL Injection Protection**: 23/23 tests passing  
+- ✅ **SQL Injection Protection**: 23/23 tests passing
 - ✅ **Admin Authentication**: 17/17 tests passing
 - ✅ **Database Transactions**: 13/13 tests passing
 - **Total Security Tests**: 63/63 passing (100%)
@@ -152,6 +165,9 @@ With database transactions complete, the remaining security tasks are:
 
 ## Database Transactions: Complete ✅
 
-The activity deduplication system now operates with full ACID compliance, ensuring data integrity even under concurrent load and system failures. All database operations are atomic with proper rollback capability.
+The activity deduplication system now operates with full ACID compliance,
+ensuring data integrity even under concurrent load and system failures. All
+database operations are atomic with proper rollback capability.
 
-**Ready for production deployment** with confidence in data consistency and reliability.
+**Ready for production deployment** with confidence in data consistency and
+reliability.

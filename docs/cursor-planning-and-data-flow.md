@@ -3,19 +3,21 @@
 ## Task 1: Implement 2-Week Planning View
 
 ### Replace Current 4-Week Display
-Find the `displayDetailedWorkoutPlan` function (around line 2580) and modify to show only 2 weeks detailed + 2 weeks preview:
+
+Find the `displayDetailedWorkoutPlan` function (around line 2580) and modify to
+show only 2 weeks detailed + 2 weeks preview:
 
 ```javascript
 function displayDetailedWorkoutPlan(plan) {
-    if (!plan) return;
-    
-    const planDisplay = document.getElementById('workoutPlanDisplay');
-    if (!planDisplay) return;
-    
-    // Get current week number (based on actual date)
-    const currentWeekNum = getCurrentWeekNumber();
-    
-    let html = `
+  if (!plan) return;
+
+  const planDisplay = document.getElementById('workoutPlanDisplay');
+  if (!planDisplay) return;
+
+  // Get current week number (based on actual date)
+  const currentWeekNum = getCurrentWeekNumber();
+
+  let html = `
         <div class="workout-plan-container">
             <h3 style="color: #68d391; margin-bottom: 20px;">
                 ${plan.title || 'Your Personalized Training Plan'}
@@ -37,25 +39,25 @@ function displayDetailedWorkoutPlan(plan) {
                 </button>
             </div>
     `;
-    
-    // Current Week - Full Detail
-    html += generateCurrentWeekView(plan.weeks[currentWeekNum - 1]);
-    
-    // Next Week - Projected with Disclaimer
-    html += generateNextWeekView(plan.weeks[currentWeekNum]);
-    
-    // Future Weeks - Structure Only
-    html += generateFutureWeeksView(plan.weeks.slice(currentWeekNum + 1));
-    
-    // Training Philosophy Modal
-    html += generatePhilosophyModal();
-    
-    html += '</div>';
-    planDisplay.innerHTML = html;
+
+  // Current Week - Full Detail
+  html += generateCurrentWeekView(plan.weeks[currentWeekNum - 1]);
+
+  // Next Week - Projected with Disclaimer
+  html += generateNextWeekView(plan.weeks[currentWeekNum]);
+
+  // Future Weeks - Structure Only
+  html += generateFutureWeeksView(plan.weeks.slice(currentWeekNum + 1));
+
+  // Training Philosophy Modal
+  html += generatePhilosophyModal();
+
+  html += '</div>';
+  planDisplay.innerHTML = html;
 }
 
 function generateCurrentWeekView(week) {
-    return `
+  return `
         <div id="current-week-view" class="week-view active">
             <div class="week-header" style="background: #22543d; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                 <h4 style="color: #68d391;">This Week - Full Program ✅</h4>
@@ -67,7 +69,7 @@ function generateCurrentWeekView(week) {
 }
 
 function generateNextWeekView(week) {
-    return `
+  return `
         <div id="next-week-view" class="week-view" style="display: none;">
             <div class="week-header" style="background: #2c5282; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                 <h4 style="color: #63b3ed;">Next Week - Projected 📊</h4>
@@ -88,7 +90,7 @@ function generateNextWeekView(week) {
 }
 
 function generateFutureWeeksView(weeks) {
-    return `
+  return `
         <div id="future-weeks-view" class="week-view" style="display: none;">
             <div class="week-header" style="background: #553c9a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                 <h4 style="color: #c084fc;">Weeks 3-4 - Training Structure 🔮</h4>
@@ -98,7 +100,9 @@ function generateFutureWeeksView(weeks) {
             </div>
             
             <div class="future-weeks-grid" style="display: grid; gap: 15px;">
-                ${weeks.map((week, idx) => `
+                ${weeks
+                  .map(
+                    (week, idx) => `
                     <div class="future-week" style="background: #2d3748; padding: 15px; border-radius: 8px;">
                         <h5 style="color: #e2e8f0; margin-bottom: 10px;">Week ${idx + 3}</h5>
                         <div class="week-pattern" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px;">
@@ -110,7 +114,9 @@ function generateFutureWeeksView(weeks) {
                             </p>
                         </div>
                     </div>
-                `).join('')}
+                `
+                  )
+                  .join('')}
             </div>
             
             <div class="progression-note" style="background: #1a1a1a; padding: 15px; border-radius: 8px; margin-top: 15px;">
@@ -127,13 +133,14 @@ function generateFutureWeeksView(weeks) {
 }
 
 function generateWeekPattern(week) {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return week.days.map((day, idx) => {
-        const sessionType = day.session || day.sessionType || 'Rest';
-        const color = getSessionColor(sessionType);
-        const icon = getSessionIcon(sessionType);
-        
-        return `
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  return week.days
+    .map((day, idx) => {
+      const sessionType = day.session || day.sessionType || 'Rest';
+      const color = getSessionColor(sessionType);
+      const icon = getSessionIcon(sessionType);
+
+      return `
             <div style="text-align: center;">
                 <div style="font-size: 10px; color: #6b7280;">${days[idx]}</div>
                 <div style="background: ${color}; padding: 8px; border-radius: 5px; margin-top: 5px;">
@@ -141,35 +148,36 @@ function generateWeekPattern(week) {
                 </div>
             </div>
         `;
-    }).join('');
+    })
+    .join('');
 }
 
 function getSessionColor(sessionType) {
-    if (sessionType.includes('Upper')) return '#2563eb';
-    if (sessionType.includes('Lower')) return '#dc2626';
-    if (sessionType.includes('Soccer')) return '#16a34a';
-    if (sessionType.includes('Recovery')) return '#06b6d4';
-    return '#6b7280'; // Rest day
+  if (sessionType.includes('Upper')) return '#2563eb';
+  if (sessionType.includes('Lower')) return '#dc2626';
+  if (sessionType.includes('Soccer')) return '#16a34a';
+  if (sessionType.includes('Recovery')) return '#06b6d4';
+  return '#6b7280'; // Rest day
 }
 
 function getSessionIcon(sessionType) {
-    if (sessionType.includes('Upper')) return '💪';
-    if (sessionType.includes('Lower')) return '🦵';
-    if (sessionType.includes('Soccer')) return '⚽';
-    if (sessionType.includes('Recovery')) return '🧘';
-    return '😴'; // Rest day
+  if (sessionType.includes('Upper')) return '💪';
+  if (sessionType.includes('Lower')) return '🦵';
+  if (sessionType.includes('Soccer')) return '⚽';
+  if (sessionType.includes('Recovery')) return '🧘';
+  return '😴'; // Rest day
 }
 
 function getWeekFocus(weekNum) {
-    const focuses = {
-        3: 'Progressive overload - weights increase based on weeks 1-2 performance',
-        4: 'Peak/Deload - either testing maxes or recovery based on fatigue'
-    };
-    return focuses[weekNum] || 'Continued progression';
+  const focuses = {
+    3: 'Progressive overload - weights increase based on weeks 1-2 performance',
+    4: 'Peak/Deload - either testing maxes or recovery based on fatigue',
+  };
+  return focuses[weekNum] || 'Continued progression';
 }
 
 function generatePhilosophyModal() {
-    return `
+  return `
         <div id="philosophy-modal" class="modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000;">
             <div class="modal-content" style="background: #2d3748; padding: 30px; border-radius: 15px; max-width: 600px; margin: 50px auto;">
                 <h3 style="color: #68d391; margin-bottom: 20px;">Training Philosophy 🎯</h3>
@@ -214,229 +222,245 @@ function generatePhilosophyModal() {
 ## Task 2: Eliminate Data Redundancy
 
 ### Create Centralized Data Store
+
 Add this data management system (around line 1600):
 
 ```javascript
 // Centralized User Data Store
 const UserDataStore = {
-    // Single source of truth for user data
-    currentUser: null,
-    
-    // Core user stats (entered once, used everywhere)
-    coreStats: {
-        weight: null,      // lbs
-        height: null,      // inches
-        age: null,
-        sex: null,
-        bodyFat: null      // optional
-    },
-    
-    // Session data (updates per workout)
-    sessionData: {
-        energy: 7,         // default, carries forward
-        lastSoccerPerformance: 7,
-        lastGymSession: null,
-        recentRPE: []
-    },
-    
-    // Initialize or update core stats
-    updateCoreStats(data) {
-        Object.assign(this.coreStats, data);
-        this.propagateToAllTabs();
-        this.saveToLocalStorage();
-    },
-    
-    // Propagate data to all relevant inputs
-    propagateToAllTabs() {
-        // Update all weight inputs
-        const weightInputs = [
-            'userWeight',           // Personal Data tab
-            'settingsWeight',       // Settings tab
-            'nutritionWeight'       // Nutrition calculator
-        ];
-        
-        weightInputs.forEach(id => {
-            const input = document.getElementById(id);
-            if (input && this.coreStats.weight) {
-                input.value = this.coreStats.weight;
-            }
-        });
-        
-        // Update all height inputs
-        const heightInputs = ['userHeight', 'settingsHeight'];
-        heightInputs.forEach(id => {
-            const input = document.getElementById(id);
-            if (input && this.coreStats.height) {
-                input.value = this.coreStats.height;
-            }
-        });
-        
-        // Update energy across tabs (carry forward last value)
-        const energyInputs = ['sessionEnergy', 'recoveryEnergy'];
-        energyInputs.forEach(id => {
-            const input = document.getElementById(id);
-            if (input) {
-                input.value = this.sessionData.energy;
-                // Update display value
-                const display = document.getElementById(id + 'Value');
-                if (display) display.textContent = this.sessionData.energy;
-            }
-        });
-    },
-    
-    // Get data with priority hierarchy
-    getData(field) {
-        // Priority: 1. Manual entry, 2. Connected services, 3. Calculated, 4. Default
-        const priorities = this.getDataPriorities(field);
-        
-        for (let source of priorities) {
-            const value = this.getDataFromSource(field, source);
-            if (value !== null && value !== undefined) {
-                return { value, source };
-            }
-        }
-        
-        return { value: this.getDefaultValue(field), source: 'default' };
-    },
-    
-    getDataPriorities(field) {
-        const priorityMap = {
-            'weight': ['manual', 'withings', 'garmin', 'strava', 'calculated', 'default'],
-            'heartRate': ['garmin', 'apple', 'whoop', 'manual', 'calculated'],
-            'calories': ['garmin', 'strava', 'apple', 'calculated', 'manual'],
-            'distance': ['strava', 'garmin', 'apple', 'manual'],
-            'energy': ['manual', 'whoop', 'calculated'],
-            'sleep': ['whoop', 'garmin', 'apple', 'manual']
-        };
-        
-        return priorityMap[field] || ['manual', 'calculated', 'default'];
-    },
-    
-    getDataFromSource(field, source) {
-        switch(source) {
-            case 'manual':
-                return this.coreStats[field] || this.sessionData[field];
-            
-            case 'strava':
-                return this.connectedServices.strava?.[field];
-            
-            case 'garmin':
-                return this.connectedServices.garmin?.[field];
-            
-            case 'calculated':
-                return this.calculateField(field);
-            
-            default:
-                return null;
-        }
-    },
-    
-    calculateField(field) {
-        switch(field) {
-            case 'calories':
-                // BMR + activity
-                if (this.coreStats.weight && this.coreStats.height && this.coreStats.age) {
-                    return calculateTDEE(this.coreStats);
-                }
-                return null;
-            
-            case 'energy':
-                // Average of recent sessions
-                if (this.sessionData.recentRPE.length > 0) {
-                    const avgRPE = this.sessionData.recentRPE.reduce((a,b) => a+b, 0) / this.sessionData.recentRPE.length;
-                    return Math.round(10 - avgRPE); // Convert RPE to energy
-                }
-                return null;
-            
-            default:
-                return null;
-        }
-    },
-    
-    connectedServices: {
-        strava: null,
-        garmin: null,
-        apple: null,
-        whoop: null,
-        withings: null
-    },
-    
-    // Save everything to localStorage
-    saveToLocalStorage() {
-        const data = {
-            coreStats: this.coreStats,
-            sessionData: this.sessionData,
-            connectedServices: this.connectedServices
-        };
-        localStorage.setItem('userDataStore', JSON.stringify(data));
-    },
-    
-    // Load on app init
-    loadFromLocalStorage() {
-        const stored = localStorage.getItem('userDataStore');
-        if (stored) {
-            const data = JSON.parse(stored);
-            Object.assign(this, data);
-            this.propagateToAllTabs();
-        }
+  // Single source of truth for user data
+  currentUser: null,
+
+  // Core user stats (entered once, used everywhere)
+  coreStats: {
+    weight: null, // lbs
+    height: null, // inches
+    age: null,
+    sex: null,
+    bodyFat: null, // optional
+  },
+
+  // Session data (updates per workout)
+  sessionData: {
+    energy: 7, // default, carries forward
+    lastSoccerPerformance: 7,
+    lastGymSession: null,
+    recentRPE: [],
+  },
+
+  // Initialize or update core stats
+  updateCoreStats(data) {
+    Object.assign(this.coreStats, data);
+    this.propagateToAllTabs();
+    this.saveToLocalStorage();
+  },
+
+  // Propagate data to all relevant inputs
+  propagateToAllTabs() {
+    // Update all weight inputs
+    const weightInputs = [
+      'userWeight', // Personal Data tab
+      'settingsWeight', // Settings tab
+      'nutritionWeight', // Nutrition calculator
+    ];
+
+    weightInputs.forEach(id => {
+      const input = document.getElementById(id);
+      if (input && this.coreStats.weight) {
+        input.value = this.coreStats.weight;
+      }
+    });
+
+    // Update all height inputs
+    const heightInputs = ['userHeight', 'settingsHeight'];
+    heightInputs.forEach(id => {
+      const input = document.getElementById(id);
+      if (input && this.coreStats.height) {
+        input.value = this.coreStats.height;
+      }
+    });
+
+    // Update energy across tabs (carry forward last value)
+    const energyInputs = ['sessionEnergy', 'recoveryEnergy'];
+    energyInputs.forEach(id => {
+      const input = document.getElementById(id);
+      if (input) {
+        input.value = this.sessionData.energy;
+        // Update display value
+        const display = document.getElementById(id + 'Value');
+        if (display) display.textContent = this.sessionData.energy;
+      }
+    });
+  },
+
+  // Get data with priority hierarchy
+  getData(field) {
+    // Priority: 1. Manual entry, 2. Connected services, 3. Calculated, 4. Default
+    const priorities = this.getDataPriorities(field);
+
+    for (let source of priorities) {
+      const value = this.getDataFromSource(field, source);
+      if (value !== null && value !== undefined) {
+        return { value, source };
+      }
     }
+
+    return { value: this.getDefaultValue(field), source: 'default' };
+  },
+
+  getDataPriorities(field) {
+    const priorityMap = {
+      weight: [
+        'manual',
+        'withings',
+        'garmin',
+        'strava',
+        'calculated',
+        'default',
+      ],
+      heartRate: ['garmin', 'apple', 'whoop', 'manual', 'calculated'],
+      calories: ['garmin', 'strava', 'apple', 'calculated', 'manual'],
+      distance: ['strava', 'garmin', 'apple', 'manual'],
+      energy: ['manual', 'whoop', 'calculated'],
+      sleep: ['whoop', 'garmin', 'apple', 'manual'],
+    };
+
+    return priorityMap[field] || ['manual', 'calculated', 'default'];
+  },
+
+  getDataFromSource(field, source) {
+    switch (source) {
+      case 'manual':
+        return this.coreStats[field] || this.sessionData[field];
+
+      case 'strava':
+        return this.connectedServices.strava?.[field];
+
+      case 'garmin':
+        return this.connectedServices.garmin?.[field];
+
+      case 'calculated':
+        return this.calculateField(field);
+
+      default:
+        return null;
+    }
+  },
+
+  calculateField(field) {
+    switch (field) {
+      case 'calories':
+        // BMR + activity
+        if (
+          this.coreStats.weight &&
+          this.coreStats.height &&
+          this.coreStats.age
+        ) {
+          return calculateTDEE(this.coreStats);
+        }
+        return null;
+
+      case 'energy':
+        // Average of recent sessions
+        if (this.sessionData.recentRPE.length > 0) {
+          const avgRPE =
+            this.sessionData.recentRPE.reduce((a, b) => a + b, 0) /
+            this.sessionData.recentRPE.length;
+          return Math.round(10 - avgRPE); // Convert RPE to energy
+        }
+        return null;
+
+      default:
+        return null;
+    }
+  },
+
+  connectedServices: {
+    strava: null,
+    garmin: null,
+    apple: null,
+    whoop: null,
+    withings: null,
+  },
+
+  // Save everything to localStorage
+  saveToLocalStorage() {
+    const data = {
+      coreStats: this.coreStats,
+      sessionData: this.sessionData,
+      connectedServices: this.connectedServices,
+    };
+    localStorage.setItem('userDataStore', JSON.stringify(data));
+  },
+
+  // Load on app init
+  loadFromLocalStorage() {
+    const stored = localStorage.getItem('userDataStore');
+    if (stored) {
+      const data = JSON.parse(stored);
+      Object.assign(this, data);
+      this.propagateToAllTabs();
+    }
+  },
 };
 
 // Smart Input System - Enter Once, Use Everywhere
 class SmartInput {
-    constructor(inputId, dataField, options = {}) {
-        this.input = document.getElementById(inputId);
-        this.dataField = dataField;
-        this.options = options;
-        
-        if (this.input) {
-            this.init();
-        }
+  constructor(inputId, dataField, options = {}) {
+    this.input = document.getElementById(inputId);
+    this.dataField = dataField;
+    this.options = options;
+
+    if (this.input) {
+      this.init();
     }
-    
-    init() {
-        // Load existing value
-        const data = UserDataStore.getData(this.dataField);
-        this.input.value = data.value || '';
-        
-        // Show data source
-        if (this.options.showSource && data.source !== 'manual') {
-            this.showDataSource(data.source);
-        }
-        
-        // Save on change
-        this.input.addEventListener('change', () => {
-            this.saveValue();
-        });
+  }
+
+  init() {
+    // Load existing value
+    const data = UserDataStore.getData(this.dataField);
+    this.input.value = data.value || '';
+
+    // Show data source
+    if (this.options.showSource && data.source !== 'manual') {
+      this.showDataSource(data.source);
     }
-    
-    saveValue() {
-        const value = this.input.type === 'number' ? 
-            parseFloat(this.input.value) : this.input.value;
-        
-        // Update central store
-        if (this.dataField.includes('.')) {
-            // Nested field like 'coreStats.weight'
-            const [category, field] = this.dataField.split('.');
-            UserDataStore[category][field] = value;
-        } else {
-            UserDataStore[this.dataField] = value;
-        }
-        
-        // Propagate to other inputs
-        UserDataStore.propagateToAllTabs();
-        UserDataStore.saveToLocalStorage();
-        
-        // Trigger recalculations
-        if (this.options.triggersRecalc) {
-            this.triggerRecalculations();
-        }
+
+    // Save on change
+    this.input.addEventListener('change', () => {
+      this.saveValue();
+    });
+  }
+
+  saveValue() {
+    const value =
+      this.input.type === 'number'
+        ? parseFloat(this.input.value)
+        : this.input.value;
+
+    // Update central store
+    if (this.dataField.includes('.')) {
+      // Nested field like 'coreStats.weight'
+      const [category, field] = this.dataField.split('.');
+      UserDataStore[category][field] = value;
+    } else {
+      UserDataStore[this.dataField] = value;
     }
-    
-    showDataSource(source) {
-        const badge = document.createElement('span');
-        badge.className = 'data-source-badge';
-        badge.style.cssText = `
+
+    // Propagate to other inputs
+    UserDataStore.propagateToAllTabs();
+    UserDataStore.saveToLocalStorage();
+
+    // Trigger recalculations
+    if (this.options.triggersRecalc) {
+      this.triggerRecalculations();
+    }
+  }
+
+  showDataSource(source) {
+    const badge = document.createElement('span');
+    badge.className = 'data-source-badge';
+    badge.style.cssText = `
             background: #4a5568;
             color: #e2e8f0;
             padding: 2px 8px;
@@ -444,66 +468,66 @@ class SmartInput {
             font-size: 11px;
             margin-left: 8px;
         `;
-        badge.textContent = `via ${source}`;
-        
-        this.input.parentElement.appendChild(badge);
+    badge.textContent = `via ${source}`;
+
+    this.input.parentElement.appendChild(badge);
+  }
+
+  triggerRecalculations() {
+    // Recalculate macros if weight/height/age changed
+    if (['weight', 'height', 'age'].includes(this.dataField)) {
+      recalculateMacros();
     }
-    
-    triggerRecalculations() {
-        // Recalculate macros if weight/height/age changed
-        if (['weight', 'height', 'age'].includes(this.dataField)) {
-            recalculateMacros();
-        }
-        
-        // Recalculate next workout weights if RPE changed
-        if (this.dataField === 'rpe') {
-            recalculateProgressions();
-        }
+
+    // Recalculate next workout weights if RPE changed
+    if (this.dataField === 'rpe') {
+      recalculateProgressions();
     }
+  }
 }
 
 // Initialize Smart Inputs on Page Load
 document.addEventListener('DOMContentLoaded', () => {
-    // Load stored data
-    UserDataStore.loadFromLocalStorage();
-    
-    // Initialize smart inputs
-    new SmartInput('userWeight', 'coreStats.weight', { 
-        showSource: true, 
-        triggersRecalc: true 
-    });
-    
-    new SmartInput('userHeight', 'coreStats.height', { 
-        triggersRecalc: true 
-    });
-    
-    new SmartInput('sessionEnergy', 'sessionData.energy', {
-        showSource: true
-    });
-    
-    // Auto-fill repeated fields
-    setupAutoFillSystem();
+  // Load stored data
+  UserDataStore.loadFromLocalStorage();
+
+  // Initialize smart inputs
+  new SmartInput('userWeight', 'coreStats.weight', {
+    showSource: true,
+    triggersRecalc: true,
+  });
+
+  new SmartInput('userHeight', 'coreStats.height', {
+    triggersRecalc: true,
+  });
+
+  new SmartInput('sessionEnergy', 'sessionData.energy', {
+    showSource: true,
+  });
+
+  // Auto-fill repeated fields
+  setupAutoFillSystem();
 });
 
 // Auto-fill System for Session Data
 function setupAutoFillSystem() {
-    // When user selects session type, auto-fill from last similar session
-    const sessionTypeSelect = document.getElementById('sessionType');
-    sessionTypeSelect?.addEventListener('change', (e) => {
-        const sessionType = e.target.value;
-        const lastSession = getLastSessionOfType(sessionType);
-        
-        if (lastSession) {
-            // Auto-fill but allow override
-            suggestAutoFill(lastSession);
-        }
-    });
+  // When user selects session type, auto-fill from last similar session
+  const sessionTypeSelect = document.getElementById('sessionType');
+  sessionTypeSelect?.addEventListener('change', e => {
+    const sessionType = e.target.value;
+    const lastSession = getLastSessionOfType(sessionType);
+
+    if (lastSession) {
+      // Auto-fill but allow override
+      suggestAutoFill(lastSession);
+    }
+  });
 }
 
 function suggestAutoFill(lastSession) {
-    const autoFillBanner = document.createElement('div');
-    autoFillBanner.className = 'autofill-suggestion';
-    autoFillBanner.style.cssText = `
+  const autoFillBanner = document.createElement('div');
+  autoFillBanner.className = 'autofill-suggestion';
+  autoFillBanner.style.cssText = `
         background: #2563eb;
         color: white;
         padding: 12px;
@@ -513,16 +537,16 @@ function suggestAutoFill(lastSession) {
         justify-content: space-between;
         align-items: center;
     `;
-    
-    autoFillBanner.innerHTML = `
+
+  autoFillBanner.innerHTML = `
         <span>📊 Found data from last ${lastSession.type} session (${formatDate(lastSession.date)})</span>
         <div>
             <button onclick="applyAutoFill(${JSON.stringify(lastSession)})" class="btn btn-small">Apply</button>
             <button onclick="dismissAutoFill()" class="btn btn-small btn-secondary">Ignore</button>
         </div>
     `;
-    
-    document.getElementById('log').prepend(autoFillBanner);
+
+  document.getElementById('log').prepend(autoFillBanner);
 }
 ```
 
@@ -533,55 +557,55 @@ Add this data source management system:
 ```javascript
 // Data Source Priority Configuration
 const DataSourcePriority = {
-    // Define trust levels for each source
-    trustLevels: {
-        manual: 1.0,        // User input is truth
-        garmin: 0.95,       // Very reliable
-        whoop: 0.95,        // Very reliable for recovery
-        apple: 0.9,         // Reliable
-        strava: 0.85,       // Good for activities
-        calculated: 0.7,    // Our estimates
-        default: 0.5        // Fallback values
-    },
-    
-    // Conflict resolution
-    resolveConflict(data1, data2) {
-        // If manual entry exists and is recent (< 24 hours), always use it
-        if (data1.source === 'manual' && this.isRecent(data1.timestamp)) {
-            return data1;
-        }
-        
-        // Otherwise, use trust levels
-        const trust1 = this.trustLevels[data1.source] || 0;
-        const trust2 = this.trustLevels[data2.source] || 0;
-        
-        if (trust1 === trust2) {
-            // Same trust level? Use most recent
-            return data1.timestamp > data2.timestamp ? data1 : data2;
-        }
-        
-        return trust1 > trust2 ? data1 : data2;
-    },
-    
-    isRecent(timestamp, hoursThreshold = 24) {
-        const now = Date.now();
-        const age = (now - timestamp) / (1000 * 60 * 60); // hours
-        return age < hoursThreshold;
-    },
-    
-    // Show data lineage to user
-    displayDataSource(element, dataSource) {
-        const sourceColors = {
-            manual: '#10b981',    // Green - user entered
-            garmin: '#3b82f6',    // Blue - device
-            strava: '#f97316',    // Orange - activity
-            calculated: '#8b5cf6', // Purple - computed
-            default: '#6b7280'     // Gray - fallback
-        };
-        
-        const badge = document.createElement('div');
-        badge.className = 'data-source-indicator';
-        badge.style.cssText = `
+  // Define trust levels for each source
+  trustLevels: {
+    manual: 1.0, // User input is truth
+    garmin: 0.95, // Very reliable
+    whoop: 0.95, // Very reliable for recovery
+    apple: 0.9, // Reliable
+    strava: 0.85, // Good for activities
+    calculated: 0.7, // Our estimates
+    default: 0.5, // Fallback values
+  },
+
+  // Conflict resolution
+  resolveConflict(data1, data2) {
+    // If manual entry exists and is recent (< 24 hours), always use it
+    if (data1.source === 'manual' && this.isRecent(data1.timestamp)) {
+      return data1;
+    }
+
+    // Otherwise, use trust levels
+    const trust1 = this.trustLevels[data1.source] || 0;
+    const trust2 = this.trustLevels[data2.source] || 0;
+
+    if (trust1 === trust2) {
+      // Same trust level? Use most recent
+      return data1.timestamp > data2.timestamp ? data1 : data2;
+    }
+
+    return trust1 > trust2 ? data1 : data2;
+  },
+
+  isRecent(timestamp, hoursThreshold = 24) {
+    const now = Date.now();
+    const age = (now - timestamp) / (1000 * 60 * 60); // hours
+    return age < hoursThreshold;
+  },
+
+  // Show data lineage to user
+  displayDataSource(element, dataSource) {
+    const sourceColors = {
+      manual: '#10b981', // Green - user entered
+      garmin: '#3b82f6', // Blue - device
+      strava: '#f97316', // Orange - activity
+      calculated: '#8b5cf6', // Purple - computed
+      default: '#6b7280', // Gray - fallback
+    };
+
+    const badge = document.createElement('div');
+    badge.className = 'data-source-indicator';
+    badge.style.cssText = `
             position: absolute;
             top: 0;
             right: 0;
@@ -592,77 +616,76 @@ const DataSourcePriority = {
             font-size: 10px;
             font-weight: 600;
         `;
-        badge.textContent = dataSource.toUpperCase();
-        
-        element.style.position = 'relative';
-        element.appendChild(badge);
-    }
+    badge.textContent = dataSource.toUpperCase();
+
+    element.style.position = 'relative';
+    element.appendChild(badge);
+  },
 };
 
 // Sync Manager for Connected Services
 class SyncManager {
-    constructor() {
-        this.syncInterval = 5 * 60 * 1000; // 5 minutes
-        this.lastSync = {};
-        this.syncQueue = [];
+  constructor() {
+    this.syncInterval = 5 * 60 * 1000; // 5 minutes
+    this.lastSync = {};
+    this.syncQueue = [];
+  }
+
+  async syncAll() {
+    const services = UserDataStore.connectedServices;
+
+    for (let [service, config] of Object.entries(services)) {
+      if (config && config.enabled) {
+        await this.syncService(service);
+      }
     }
-    
-    async syncAll() {
-        const services = UserDataStore.connectedServices;
-        
-        for (let [service, config] of Object.entries(services)) {
-            if (config && config.enabled) {
-                await this.syncService(service);
-            }
+
+    // After all syncs, reconcile data
+    this.reconcileData();
+  }
+
+  async syncService(service) {
+    console.log(`Syncing ${service}...`);
+
+    try {
+      const data = await this.fetchServiceData(service);
+      UserDataStore.connectedServices[service] = {
+        ...UserDataStore.connectedServices[service],
+        lastSync: Date.now(),
+        data: data,
+      };
+
+      // Update UI to show sync status
+      this.updateSyncStatus(service, 'success');
+    } catch (error) {
+      console.error(`Failed to sync ${service}:`, error);
+      this.updateSyncStatus(service, 'error');
+    }
+  }
+
+  reconcileData() {
+    // For each data field, determine best source
+    const fields = ['weight', 'heartRate', 'calories', 'distance', 'sleep'];
+
+    fields.forEach(field => {
+      const sources = this.getAllSourcesForField(field);
+
+      if (sources.length > 1) {
+        // Multiple sources - need to pick best one
+        const best = this.pickBestSource(sources);
+
+        // If best source differs from current, notify user
+        if (best.source !== UserDataStore.currentSources[field]) {
+          this.notifyDataSourceChange(field, best);
         }
-        
-        // After all syncs, reconcile data
-        this.reconcileData();
-    }
-    
-    async syncService(service) {
-        console.log(`Syncing ${service}...`);
-        
-        try {
-            const data = await this.fetchServiceData(service);
-            UserDataStore.connectedServices[service] = {
-                ...UserDataStore.connectedServices[service],
-                lastSync: Date.now(),
-                data: data
-            };
-            
-            // Update UI to show sync status
-            this.updateSyncStatus(service, 'success');
-            
-        } catch (error) {
-            console.error(`Failed to sync ${service}:`, error);
-            this.updateSyncStatus(service, 'error');
-        }
-    }
-    
-    reconcileData() {
-        // For each data field, determine best source
-        const fields = ['weight', 'heartRate', 'calories', 'distance', 'sleep'];
-        
-        fields.forEach(field => {
-            const sources = this.getAllSourcesForField(field);
-            
-            if (sources.length > 1) {
-                // Multiple sources - need to pick best one
-                const best = this.pickBestSource(sources);
-                
-                // If best source differs from current, notify user
-                if (best.source !== UserDataStore.currentSources[field]) {
-                    this.notifyDataSourceChange(field, best);
-                }
-            }
-        });
-    }
-    
-    notifyDataSourceChange(field, newSource) {
-        const notification = document.createElement('div');
-        notification.className = 'data-update-notification';
-        notification.style.cssText = `
+      }
+    });
+  }
+
+  notifyDataSourceChange(field, newSource) {
+    const notification = document.createElement('div');
+    notification.className = 'data-update-notification';
+    notification.style.cssText = `
             position: fixed;
             top: 20px;
             right: 20px;
@@ -674,8 +697,8 @@ class SyncManager {
             z-index: 1000;
             animation: slideIn 0.3s ease;
         `;
-        
-        notification.innerHTML = `
+
+    notification.innerHTML = `
             <div style="display: flex; align-items: center; gap: 10px;">
                 <span>📊</span>
                 <div>
@@ -687,12 +710,12 @@ class SyncManager {
                 </button>
             </div>
         `;
-        
-        document.body.appendChild(notification);
-        
-        // Auto-remove after 5 seconds
-        setTimeout(() => notification.remove(), 5000);
-    }
+
+    document.body.appendChild(notification);
+
+    // Auto-remove after 5 seconds
+    setTimeout(() => notification.remove(), 5000);
+  }
 }
 
 // Initialize sync on page load
@@ -702,22 +725,22 @@ setInterval(() => syncManager.syncAll(), syncManager.syncInterval);
 
 ## Task 4: Workout Deduplication & Data Enrichment
 
-Prevent duplicate workouts when syncing external services. Instead, enrich existing workouts with additional data:
+Prevent duplicate workouts when syncing external services. Instead, enrich
+existing workouts with additional data:
 
 ```javascript
 // Add Workout Reconciliation System
 class WorkoutReconciliation {
-  
   // When Strava/Garmin/Apple syncs, check for matches
   async reconcileExternalWorkout(externalWorkout) {
     const matchCriteria = {
       date: externalWorkout.date,
       timeWindow: 2 * 60 * 60 * 1000, // 2 hour window
-      type: this.normalizeWorkoutType(externalWorkout.type)
+      type: this.normalizeWorkoutType(externalWorkout.type),
     };
-    
+
     const existingWorkout = this.findPotentialMatch(matchCriteria);
-    
+
     if (existingWorkout) {
       // ENRICH existing workout, don't duplicate
       return this.enrichWorkoutData(existingWorkout, externalWorkout);
@@ -726,107 +749,108 @@ class WorkoutReconciliation {
       return this.offerWorkoutImport(externalWorkout);
     }
   }
-  
+
   findPotentialMatch(criteria) {
     const workouts = getUserWorkouts(criteria.date);
-    
+
     return workouts.find(workout => {
       const timeDiff = Math.abs(workout.timestamp - criteria.timestamp);
       const isWithinWindow = timeDiff < criteria.timeWindow;
       const isSameType = this.matchesType(workout.type, criteria.type);
-      
+
       return isWithinWindow && isSameType;
     });
   }
-  
+
   enrichWorkoutData(existingWorkout, externalData) {
     // Add external data WITHOUT overwriting manual entries
     const enriched = {
       ...existingWorkout,
       dataSources: {
         manual: existingWorkout.dataSources?.manual || {},
-        [externalData.source]: externalData
+        [externalData.source]: externalData,
       },
       enrichment: {
         source: externalData.source,
         syncedAt: Date.now(),
-        addedData: {}
-      }
+        addedData: {},
+      },
     };
-    
+
     // Priority: Manual data always wins
     // Only add data that wasn't manually entered
     if (!existingWorkout.heartRate && externalData.heartRate) {
       enriched.enrichment.addedData.heartRate = {
         avg: externalData.avgHeartRate,
         max: externalData.maxHeartRate,
-        source: externalData.source
+        source: externalData.source,
       };
       enriched.heartRate = externalData.heartRate;
     }
-    
+
     if (!existingWorkout.calories && externalData.calories) {
       enriched.enrichment.addedData.calories = {
         value: externalData.calories,
-        source: externalData.source
+        source: externalData.source,
       };
       enriched.calories = externalData.calories;
     }
-    
+
     // Validate RPE if we have heart rate data
     if (externalData.avgHeartRate && existingWorkout.rpe) {
       enriched.enrichment.rpeValidation = this.validateRPE(
-        existingWorkout.rpe, 
+        existingWorkout.rpe,
         externalData.avgHeartRate,
         UserDataStore.coreStats.age
       );
     }
-    
+
     // Show enrichment notification
     this.notifyEnrichment(enriched);
-    
+
     // Save enriched workout
     this.saveEnrichedWorkout(enriched);
-    
+
     return enriched;
   }
-  
+
   validateRPE(userRPE, avgHeartRate, userAge) {
     // Check if RPE aligns with heart rate data
     const maxHR = 220 - userAge;
     const hrPercentage = (avgHeartRate / maxHR) * 100;
-    
+
     // HR zones to RPE mapping
     const hrToRPE = {
-      50: 5,  // 50% max HR ≈ RPE 5
-      60: 6,  // 60% max HR ≈ RPE 6  
-      70: 7,  // 70% max HR ≈ RPE 7
-      80: 8,  // 80% max HR ≈ RPE 8
-      90: 9,  // 90% max HR ≈ RPE 9
-      95: 10  // 95% max HR ≈ RPE 10
+      50: 5, // 50% max HR ≈ RPE 5
+      60: 6, // 60% max HR ≈ RPE 6
+      70: 7, // 70% max HR ≈ RPE 7
+      80: 8, // 80% max HR ≈ RPE 8
+      90: 9, // 90% max HR ≈ RPE 9
+      95: 10, // 95% max HR ≈ RPE 10
     };
-    
+
     const calculatedRPE = Math.round(hrPercentage / 10);
     const difference = Math.abs(userRPE - calculatedRPE);
-    
+
     if (difference > 2) {
       return {
         userRPE,
         hrBasedRPE: calculatedRPE,
         match: false,
-        message: 'RPE significantly differs from HR - consider fatigue, stress, or dehydration'
+        message:
+          'RPE significantly differs from HR - consider fatigue, stress, or dehydration',
       };
     }
-    
+
     return {
       validated: true,
       userRPE,
       hrBasedRPE: calculatedRPE,
       match: true,
-      message: 'RPE aligns with heart rate data'
+      message: 'RPE aligns with heart rate data',
     };
   }
-  
+
   offerWorkoutImport(externalWorkout) {
     // Found workout in Strava/Garmin but not in our app
     const importModal = document.createElement('div');
@@ -871,10 +895,10 @@ class WorkoutReconciliation {
         </div>
       </div>
     `;
-    
+
     document.body.appendChild(importModal);
   }
-  
+
   notifyEnrichment(enrichedWorkout) {
     const notification = document.createElement('div');
     notification.className = 'enrichment-notification';
@@ -891,7 +915,7 @@ class WorkoutReconciliation {
       animation: slideInRight 0.3s ease;
       max-width: 350px;
     `;
-    
+
     const addedFields = Object.keys(enrichedWorkout.enrichment.addedData);
     notification.innerHTML = `
       <div style="display: flex; align-items: start; gap: 10px;">
@@ -901,7 +925,9 @@ class WorkoutReconciliation {
           <small style="opacity: 0.9;">
             Added ${addedFields.join(', ')} from ${enrichedWorkout.enrichment.source}
           </small>
-          ${enrichedWorkout.enrichment.rpeValidation ? `
+          ${
+            enrichedWorkout.enrichment.rpeValidation
+              ? `
             <div style="margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px;">
               <small>
                 ${enrichedWorkout.enrichment.rpeValidation.match ? '✅' : '⚠️'}
@@ -910,16 +936,18 @@ class WorkoutReconciliation {
                 from HR data (RPE ${enrichedWorkout.enrichment.rpeValidation.hrBasedRPE})
               </small>
             </div>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
         <button onclick="this.parentElement.parentElement.remove()" style="background: transparent; border: none; color: white; cursor: pointer; font-size: 20px;">
           ×
         </button>
       </div>
     `;
-    
+
     document.body.appendChild(notification);
-    
+
     // Auto-remove after 5 seconds
     setTimeout(() => notification.remove(), 5000);
   }
@@ -928,60 +956,79 @@ class WorkoutReconciliation {
 // Workout Type Matching Logic
 const workoutTypeMap = {
   // External service type -> Our workout types
-  'Weight Training': ['Upper Body', 'Lower Body', 'Full Body', 'Upper A', 'Upper B', 'Lower A', 'Lower B'],
-  'Strength Training': ['Upper Body', 'Lower Body', 'Full Body', 'Upper A', 'Upper B', 'Lower A', 'Lower B'],
-  'Strength': ['Upper Body', 'Lower Body', 'Full Body'],
-  'Run': ['Conditioning', 'Recovery Run', 'Sprint Work'],
-  'Running': ['Conditioning', 'Recovery Run', 'Sprint Work'],
-  'Soccer': ['Soccer (Outdoor)', 'Soccer (Indoor)'],
-  'Football': ['Soccer (Outdoor)', 'Soccer (Indoor)'],
-  'Yoga': ['Recovery', 'Mobility', 'Recovery Day'],
-  'Walk': ['Active Recovery', 'Recovery'],
-  'Walking': ['Active Recovery', 'Recovery'],
-  'Cycling': ['Conditioning', 'Active Recovery'],
-  'Bike': ['Conditioning', 'Active Recovery']
+  'Weight Training': [
+    'Upper Body',
+    'Lower Body',
+    'Full Body',
+    'Upper A',
+    'Upper B',
+    'Lower A',
+    'Lower B',
+  ],
+  'Strength Training': [
+    'Upper Body',
+    'Lower Body',
+    'Full Body',
+    'Upper A',
+    'Upper B',
+    'Lower A',
+    'Lower B',
+  ],
+  Strength: ['Upper Body', 'Lower Body', 'Full Body'],
+  Run: ['Conditioning', 'Recovery Run', 'Sprint Work'],
+  Running: ['Conditioning', 'Recovery Run', 'Sprint Work'],
+  Soccer: ['Soccer (Outdoor)', 'Soccer (Indoor)'],
+  Football: ['Soccer (Outdoor)', 'Soccer (Indoor)'],
+  Yoga: ['Recovery', 'Mobility', 'Recovery Day'],
+  Walk: ['Active Recovery', 'Recovery'],
+  Walking: ['Active Recovery', 'Recovery'],
+  Cycling: ['Conditioning', 'Active Recovery'],
+  Bike: ['Conditioning', 'Active Recovery'],
 };
 
 function matchesWorkoutType(appType, externalType) {
   // Normalize strings for comparison
   const normalizedApp = appType.toLowerCase().trim();
   const normalizedExternal = externalType.toLowerCase().trim();
-  
+
   // Check exact match first
   if (normalizedApp === normalizedExternal) {
     return true;
   }
-  
+
   // Check if external type maps to app type
   for (const [external, appTypes] of Object.entries(workoutTypeMap)) {
     if (normalizedExternal.includes(external.toLowerCase())) {
-      return appTypes.some(type => 
-        normalizedApp.includes(type.toLowerCase())
-      );
+      return appTypes.some(type => normalizedApp.includes(type.toLowerCase()));
     }
   }
-  
+
   // Check partial matches for flexibility
   const keywords = ['upper', 'lower', 'soccer', 'recovery', 'conditioning'];
   for (const keyword of keywords) {
-    if (normalizedApp.includes(keyword) && normalizedExternal.includes(keyword)) {
+    if (
+      normalizedApp.includes(keyword) &&
+      normalizedExternal.includes(keyword)
+    ) {
       return true;
     }
   }
-  
+
   return false;
 }
 
 // Visual Indication of Data Sources in Workout Display
 function displayEnrichedWorkout(workout) {
   const dataSources = Object.keys(workout.dataSources || { manual: true });
-  
+
   return `
     <div class="workout-card" style="background: #2d3748; padding: 20px; border-radius: 10px; margin-bottom: 15px;">
       <div class="workout-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
         <h3 style="color: #e2e8f0; margin: 0;">${workout.type}</h3>
         <div class="data-sources" style="display: flex; gap: 8px;">
-          ${dataSources.map(source => `
+          ${dataSources
+            .map(
+              source => `
             <span class="source-badge ${source}" style="
               background: ${getSourceColor(source)};
               color: white;
@@ -992,12 +1039,16 @@ function displayEnrichedWorkout(workout) {
             ">
               ${getSourceIcon(source)} ${source}
             </span>
-          `).join('')}
+          `
+            )
+            .join('')}
         </div>
       </div>
       
       <div class="workout-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px;">
-        ${workout.duration ? `
+        ${
+          workout.duration
+            ? `
           <div class="stat">
             <label style="color: #a0aec0; font-size: 12px;">Duration</label>
             <div style="color: #e2e8f0; font-size: 18px; font-weight: 600;">
@@ -1005,9 +1056,13 @@ function displayEnrichedWorkout(workout) {
               ${getDataSourceIndicator(workout, 'duration')}
             </div>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
         
-        ${workout.calories ? `
+        ${
+          workout.calories
+            ? `
           <div class="stat">
             <label style="color: #a0aec0; font-size: 12px;">Calories</label>
             <div style="color: #e2e8f0; font-size: 18px; font-weight: 600;">
@@ -1015,9 +1070,13 @@ function displayEnrichedWorkout(workout) {
               ${getDataSourceIndicator(workout, 'calories')}
             </div>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
         
-        ${workout.heartRate?.avg ? `
+        ${
+          workout.heartRate?.avg
+            ? `
           <div class="stat">
             <label style="color: #a0aec0; font-size: 12px;">Avg HR</label>
             <div style="color: #e2e8f0; font-size: 18px; font-weight: 600;">
@@ -1025,15 +1084,21 @@ function displayEnrichedWorkout(workout) {
               ${getDataSourceIndicator(workout, 'heartRate')}
             </div>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
         
-        ${workout.rpe ? `
+        ${
+          workout.rpe
+            ? `
           <div class="stat">
             <label style="color: #a0aec0; font-size: 12px;">RPE</label>
             <div style="color: #e2e8f0; font-size: 18px; font-weight: 600;">
               ${workout.rpe}/10
               ${getDataSourceIndicator(workout, 'rpe')}
-              ${workout.enrichment?.rpeValidation ? `
+              ${
+                workout.enrichment?.rpeValidation
+                  ? `
                 <span style="
                   color: ${workout.enrichment.rpeValidation.match ? '#68d391' : '#fbbf24'};
                   font-size: 12px;
@@ -1041,10 +1106,14 @@ function displayEnrichedWorkout(workout) {
                 ">
                   ${workout.enrichment.rpeValidation.match ? '✓' : '⚠'} HR verified
                 </span>
-              ` : ''}
+              `
+                  : ''
+              }
             </div>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
     </div>
   `;
@@ -1052,12 +1121,12 @@ function displayEnrichedWorkout(workout) {
 
 function getSourceColor(source) {
   const colors = {
-    manual: '#10b981',    // Green
-    strava: '#fc4c02',    // Strava orange
-    garmin: '#007cc3',    // Garmin blue
-    apple: '#000000',     // Apple black
-    whoop: '#01b3e3',     // Whoop cyan
-    calculated: '#8b5cf6' // Purple
+    manual: '#10b981', // Green
+    strava: '#fc4c02', // Strava orange
+    garmin: '#007cc3', // Garmin blue
+    apple: '#000000', // Apple black
+    whoop: '#01b3e3', // Whoop cyan
+    calculated: '#8b5cf6', // Purple
   };
   return colors[source.toLowerCase()] || '#6b7280';
 }
@@ -1069,7 +1138,7 @@ function getSourceIcon(source) {
     garmin: '⌚',
     apple: '🍎',
     whoop: '💤',
-    calculated: '🧮'
+    calculated: '🧮',
   };
   return icons[source.toLowerCase()] || '📊';
 }
@@ -1092,7 +1161,7 @@ syncManager.onSyncComplete = async (service, data) => {
     for (const workout of data.workouts) {
       await workoutReconciliation.reconcileExternalWorkout({
         ...workout,
-        source: service
+        source: service,
       });
     }
   }
@@ -1103,18 +1172,26 @@ syncManager.onSyncComplete = async (service, data) => {
 
 This update will:
 
-1. **2-Week View**: Shows current week (detailed), next week (projected), weeks 3-4 (structure only), plus training philosophy
+1. **2-Week View**: Shows current week (detailed), next week (projected), weeks
+   3-4 (structure only), plus training philosophy
 2. **Data Flow**: Enter data once, automatically propagates to all tabs
-3. **Smart Defaults**: Carries forward last session's energy, previous weights, etc.
+3. **Smart Defaults**: Carries forward last session's energy, previous weights,
+   etc.
 4. **Data Hierarchy**: Manual > Garmin/Whoop > Strava > Calculated > Default
 5. **Conflict Resolution**: Shows data source badges, allows user to override
-6. **Auto-fill Suggestions**: "Use data from last Upper Body session?" - appears every time with smart recommendations
-7. **Workout Deduplication**: Never creates duplicate workouts when syncing external services
-8. **Data Enrichment**: Adds HR, calories, etc. to existing workouts without overwriting manual data
-9. **RPE Validation**: Compares user's RPE against heart rate data to validate perceived effort
-10. **Import Options**: For unmatched external workouts, offers to import as workout or recovery
+6. **Auto-fill Suggestions**: "Use data from last Upper Body session?" - appears
+   every time with smart recommendations
+7. **Workout Deduplication**: Never creates duplicate workouts when syncing
+   external services
+8. **Data Enrichment**: Adds HR, calories, etc. to existing workouts without
+   overwriting manual data
+9. **RPE Validation**: Compares user's RPE against heart rate data to validate
+   perceived effort
+10. **Import Options**: For unmatched external workouts, offers to import as
+    workout or recovery
 
 ## Testing Checklist
+
 - [ ] Weight entered in Personal Data appears in all relevant tabs
 - [ ] Energy level carries forward to next session
 - [ ] Week 3-4 shows only structure, not specific weights
@@ -1126,4 +1203,5 @@ This update will:
 - [ ] External data enriches but doesn't overwrite manual entries
 - [ ] RPE validation shows when HR data is available
 - [ ] Import modal appears for unmatched external workouts
-- [ ] Data source indicators show on each stat (📝 for manual, 🚴 for Strava, etc.)
+- [ ] Data source indicators show on each stat (📝 for manual, 🚴 for Strava,
+      etc.)

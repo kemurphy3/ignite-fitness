@@ -9,116 +9,188 @@ console.log('🔄 CROSS-REFERENCE ANALYSIS: COACHING SYSTEM vs REPOSITORY READIN
 
 // Coach System Evaluation Results (from previous analysis)
 const coachSystemReadiness = {
-    strengthConditioning: { status: 'Functional', implementation: 'Complete with sport specificity', score: 100 },
-    runningVO2Max: { status: 'Semi-functional', implementation: 'Basic conditioning, missing zone training', score: 60 },
-    soccerPerformance: { status: 'Functional', implementation: 'Complete with game-day logic', score: 100 },
-    climbingMobility: { status: 'Semi-functional', implementation: 'Via physio, missing climbing specifics', score: 70 },
-    nutrition: { status: 'Functional', implementation: 'Complete timing and fuel strategies', score: 100 },
-    mentalHabits: { status: 'Performative', implementation: 'Template-based, missing behavioral depth', score: 40 }
+  strengthConditioning: {
+    status: 'Functional',
+    implementation: 'Complete with sport specificity',
+    score: 100,
+  },
+  runningVO2Max: {
+    status: 'Semi-functional',
+    implementation: 'Basic conditioning, missing zone training',
+    score: 60,
+  },
+  soccerPerformance: {
+    status: 'Functional',
+    implementation: 'Complete with game-day logic',
+    score: 100,
+  },
+  climbingMobility: {
+    status: 'Semi-functional',
+    implementation: 'Via physio, missing climbing specifics',
+    score: 70,
+  },
+  nutrition: {
+    status: 'Functional',
+    implementation: 'Complete timing and fuel strategies',
+    score: 100,
+  },
+  mentalHabits: {
+    status: 'Performative',
+    implementation: 'Template-based, missing behavioral depth',
+    score: 40,
+  },
 };
 
 // Repository Readiness Results (from app functionality evaluation)
 const repoReadiness = {
-    authentication: { status: 'Functional', implementation: 'JWT tokens, session management', score: 100 },
-    simpleModeToggle: { status: 'Functional', implementation: 'Adaptive UI based on experience', score: 100 },
-    dashboardHero: { status: 'Functional', implementation: 'Dynamic content based on state', score: 100 },
-    workoutGeneration: { status: 'Functional', implementation: 'Multi-expert AI coordination', score: 100 },
-    progressTracking: { status: 'Semi-functional', implementation: 'Basic tracking, needs metrics', score: 60 },
-    coachChat: { status: 'Semi-functional', implementation: 'Template responses, limited context', score: 70 },
-    dailyCheckIn: { status: 'Functional', implementation: 'Readiness scoring with persistence', score: 100 },
-    exerciseDatabase: { status: 'Functional', implementation: 'Comprehensive library', score: 100 },
-    onboardingFlow: { status: 'Semi-functional', implementation: 'Multi-step wizard, incomplete goals', score: 75 },
-    dataExport: { status: 'Placeholder', implementation: 'UI exists, no backend', score: 20 },
-    socialFeatures: { status: 'Placeholder', implementation: 'UI mockups only', score: 10 },
-    nutritionTracking: { status: 'Semi-functional', implementation: 'Basic guidance, no detailed logging', score: 60 }
+  authentication: {
+    status: 'Functional',
+    implementation: 'JWT tokens, session management',
+    score: 100,
+  },
+  simpleModeToggle: {
+    status: 'Functional',
+    implementation: 'Adaptive UI based on experience',
+    score: 100,
+  },
+  dashboardHero: {
+    status: 'Functional',
+    implementation: 'Dynamic content based on state',
+    score: 100,
+  },
+  workoutGeneration: {
+    status: 'Functional',
+    implementation: 'Multi-expert AI coordination',
+    score: 100,
+  },
+  progressTracking: {
+    status: 'Semi-functional',
+    implementation: 'Basic tracking, needs metrics',
+    score: 60,
+  },
+  coachChat: {
+    status: 'Semi-functional',
+    implementation: 'Template responses, limited context',
+    score: 70,
+  },
+  dailyCheckIn: {
+    status: 'Functional',
+    implementation: 'Readiness scoring with persistence',
+    score: 100,
+  },
+  exerciseDatabase: { status: 'Functional', implementation: 'Comprehensive library', score: 100 },
+  onboardingFlow: {
+    status: 'Semi-functional',
+    implementation: 'Multi-step wizard, incomplete goals',
+    score: 75,
+  },
+  dataExport: { status: 'Placeholder', implementation: 'UI exists, no backend', score: 20 },
+  socialFeatures: { status: 'Placeholder', implementation: 'UI mockups only', score: 10 },
+  nutritionTracking: {
+    status: 'Semi-functional',
+    implementation: 'Basic guidance, no detailed logging',
+    score: 60,
+  },
 };
 
 console.log('📊 COACH SYSTEM vs REPOSITORY ALIGNMENT ANALYSIS\n');
 
 // Cross-reference coaching capabilities with app features
 const crossReference = [
-    {
-        coachDomain: 'Strength & Conditioning',
-        coachScore: coachSystemReadiness.strengthConditioning.score,
-        appFeature: 'Workout Generation + Exercise Database',
-        appScore: (repoReadiness.workoutGeneration.score + repoReadiness.exerciseDatabase.score) / 2,
-        alignment: 'EXCELLENT'
-    },
-    {
-        coachDomain: 'Running & VO₂ Max',
-        coachScore: coachSystemReadiness.runningVO2Max.score,
-        appFeature: 'Progress Tracking (cardio metrics)',
-        appScore: repoReadiness.progressTracking.score,
-        alignment: 'MATCHED'
-    },
-    {
-        coachDomain: 'Soccer Performance',
-        coachScore: coachSystemReadiness.soccerPerformance.score,
-        appFeature: 'Workout Generation (game-day logic)',
-        appScore: repoReadiness.workoutGeneration.score,
-        alignment: 'EXCELLENT'
-    },
-    {
-        coachDomain: 'Climbing & Mobility',
-        coachScore: coachSystemReadiness.climbingMobility.score,
-        appFeature: 'Exercise Database (movement patterns)',
-        appScore: repoReadiness.exerciseDatabase.score,
-        alignment: 'COACH LIMITING'
-    },
-    {
-        coachDomain: 'Nutrition',
-        coachScore: coachSystemReadiness.nutrition.score,
-        appFeature: 'Nutrition Tracking + Coach Chat',
-        appScore: (repoReadiness.nutritionTracking.score + repoReadiness.coachChat.score) / 2,
-        alignment: 'COACH EXCEEDS APP'
-    },
-    {
-        coachDomain: 'Mental & Habits',
-        coachScore: coachSystemReadiness.mentalHabits.score,
-        appFeature: 'Coach Chat + Progress Tracking',
-        appScore: (repoReadiness.coachChat.score + repoReadiness.progressTracking.score) / 2,
-        alignment: 'APP EXCEEDS COACH'
-    }
+  {
+    coachDomain: 'Strength & Conditioning',
+    coachScore: coachSystemReadiness.strengthConditioning.score,
+    appFeature: 'Workout Generation + Exercise Database',
+    appScore: (repoReadiness.workoutGeneration.score + repoReadiness.exerciseDatabase.score) / 2,
+    alignment: 'EXCELLENT',
+  },
+  {
+    coachDomain: 'Running & VO₂ Max',
+    coachScore: coachSystemReadiness.runningVO2Max.score,
+    appFeature: 'Progress Tracking (cardio metrics)',
+    appScore: repoReadiness.progressTracking.score,
+    alignment: 'MATCHED',
+  },
+  {
+    coachDomain: 'Soccer Performance',
+    coachScore: coachSystemReadiness.soccerPerformance.score,
+    appFeature: 'Workout Generation (game-day logic)',
+    appScore: repoReadiness.workoutGeneration.score,
+    alignment: 'EXCELLENT',
+  },
+  {
+    coachDomain: 'Climbing & Mobility',
+    coachScore: coachSystemReadiness.climbingMobility.score,
+    appFeature: 'Exercise Database (movement patterns)',
+    appScore: repoReadiness.exerciseDatabase.score,
+    alignment: 'COACH LIMITING',
+  },
+  {
+    coachDomain: 'Nutrition',
+    coachScore: coachSystemReadiness.nutrition.score,
+    appFeature: 'Nutrition Tracking + Coach Chat',
+    appScore: (repoReadiness.nutritionTracking.score + repoReadiness.coachChat.score) / 2,
+    alignment: 'COACH EXCEEDS APP',
+  },
+  {
+    coachDomain: 'Mental & Habits',
+    coachScore: coachSystemReadiness.mentalHabits.score,
+    appFeature: 'Coach Chat + Progress Tracking',
+    appScore: (repoReadiness.coachChat.score + repoReadiness.progressTracking.score) / 2,
+    alignment: 'APP EXCEEDS COACH',
+  },
 ];
 
 console.log('| Coach Domain | Coach Score | App Feature | App Score | Alignment |');
 console.log('|--------------|-------------|-------------|-----------|-----------|');
 crossReference.forEach(item => {
-    const delta = item.coachScore - item.appScore;
-    const alignmentIcon = 
-        Math.abs(delta) <= 10 ? '🟢' :
-        delta > 10 ? '🔵' : '🟡';
-    
-    console.log(`| ${item.coachDomain} | ${item.coachScore}% | ${item.appFeature} | ${item.appScore}% | ${alignmentIcon} ${item.alignment} |`);
+  const delta = item.coachScore - item.appScore;
+  const alignmentIcon = Math.abs(delta) <= 10 ? '🟢' : delta > 10 ? '🔵' : '🟡';
+
+  console.log(
+    `| ${item.coachDomain} | ${item.coachScore}% | ${item.appFeature} | ${item.appScore}% | ${alignmentIcon} ${item.alignment} |`
+  );
 });
 
 console.log('\n🎯 ALIGNMENT ANALYSIS:\n');
 
 // Calculate overall coaching vs app alignment
-const avgCoachScore = Object.values(coachSystemReadiness).reduce((sum, coach) => sum + coach.score, 0) / Object.values(coachSystemReadiness).length;
-const avgAppScore = Object.values(repoReadiness).reduce((sum, feature) => sum + feature.score, 0) / Object.values(repoReadiness).length;
+const avgCoachScore =
+  Object.values(coachSystemReadiness).reduce((sum, coach) => sum + coach.score, 0) /
+  Object.values(coachSystemReadiness).length;
+const avgAppScore =
+  Object.values(repoReadiness).reduce((sum, feature) => sum + feature.score, 0) /
+  Object.values(repoReadiness).length;
 
 console.log(`📈 Average Coach System Readiness: ${Math.round(avgCoachScore)}%`);
 console.log(`📱 Average App Feature Readiness: ${Math.round(avgAppScore)}%`);
-console.log(`⚖️  Overall Alignment: ${Math.abs(avgCoachScore - avgAppScore) <= 5 ? 'WELL BALANCED' : avgCoachScore > avgAppScore ? 'COACH SYSTEM AHEAD' : 'APP FEATURES AHEAD'}\n`);
+console.log(
+  `⚖️  Overall Alignment: ${Math.abs(avgCoachScore - avgAppScore) <= 5 ? 'WELL BALANCED' : avgCoachScore > avgAppScore ? 'COACH SYSTEM AHEAD' : 'APP FEATURES AHEAD'}\n`
+);
 
 // Identify strengths and gaps
 console.log('🟢 STRENGTH AREAS (Coach + App both strong):\n');
 const strengths = crossReference.filter(item => item.coachScore >= 80 && item.appScore >= 80);
 strengths.forEach(strength => {
-    console.log(`   ✅ ${strength.coachDomain}: Coach AI (${strength.coachScore}%) + App UX (${strength.appScore}%) = Complete experience`);
+  console.log(
+    `   ✅ ${strength.coachDomain}: Coach AI (${strength.coachScore}%) + App UX (${strength.appScore}%) = Complete experience`
+  );
 });
 
 console.log('\n🟡 DEVELOPMENT GAPS (Misaligned readiness):\n');
 const gaps = crossReference.filter(item => Math.abs(item.coachScore - item.appScore) > 20);
 gaps.forEach(gap => {
-    if (gap.coachScore > gap.appScore) {
-        console.log(`   ⬇️  ${gap.coachDomain}: Coach logic ready (${gap.coachScore}%) but app UX lacking (${gap.appScore}%)`);
-        console.log(`       🔧 Fix: Enhance ${gap.appFeature.toLowerCase()} implementation`);
-    } else {
-        console.log(`   ⬆️  ${gap.coachDomain}: App UX ready (${gap.appScore}%) but coach logic basic (${gap.coachScore}%)`);
-        console.log(`       🔧 Fix: Improve coach persona algorithms`);
-    }
+  if (gap.coachScore > gap.appScore) {
+    console.log(
+      `   ⬇️  ${gap.coachDomain}: Coach logic ready (${gap.coachScore}%) but app UX lacking (${gap.appScore}%)`
+    );
+    console.log(`       🔧 Fix: Enhance ${gap.appFeature.toLowerCase()} implementation`);
+  } else {
+    console.log(
+      `   ⬆️  ${gap.coachDomain}: App UX ready (${gap.appScore}%) but coach logic basic (${gap.coachScore}%)`
+    );
+    console.log(`       🔧 Fix: Improve coach persona algorithms`);
+  }
 });
 
 console.log('\n🚨 CRITICAL INCONSISTENCIES:\n');

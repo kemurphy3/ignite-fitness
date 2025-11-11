@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * TIER 4 CURSOR PROMPTS - FUTURE ENHANCEMENTS  
+ * TIER 4 CURSOR PROMPTS - FUTURE ENHANCEMENTS
  * Long-term feature development and advanced capabilities
  */
 
@@ -15,96 +15,96 @@ console.log('   🚫 Excluded: Core functionality (already excellent)');
 console.log('   ⚖️  Balance: Innovation potential vs development complexity\n');
 
 const tier4Prompts = [
-    {
-        id: 'T4-1',
-        category: 'AI Enhancement',
-        priority: 'MEDIUM',
-        complexity: 'HIGH',
-        timeline: '4-6 weeks',
-        title: 'Implement Advanced AI Coach Personalization',
-        description: 'Machine learning models for personalized training recommendations',
-        scope: 'ML model integration, training data pipeline, personalization engine'
-    },
-    {
-        id: 'T4-2',
-        category: 'Platform Integration',
-        priority: 'MEDIUM',
-        complexity: 'MEDIUM-HIGH',
-        timeline: '3-4 weeks', 
-        title: 'Add Wearable Device Integration',
-        description: 'Real-time heart rate, sleep, and activity data from fitness trackers',
-        scope: 'Fitbit, Garmin, Apple Health, Google Fit APIs'
-    },
-    {
-        id: 'T4-3',
-        category: 'Social Features',
-        priority: 'MEDIUM',
-        complexity: 'MEDIUM-HIGH',
-        timeline: '3-4 weeks',
-        title: 'Implement Social Training Features',
-        description: 'Team challenges, workout sharing, and community features',
-        scope: 'Social feed, challenges system, privacy controls'
-    },
-    {
-        id: 'T4-4',
-        category: 'Advanced Analytics',
-        priority: 'LOW-MEDIUM',
-        complexity: 'HIGH',
-        timeline: '4-5 weeks',
-        title: 'Build Advanced Performance Analytics',
-        description: 'Predictive analytics, injury risk assessment, performance forecasting',
-        scope: 'Data science pipeline, visualization dashboard, ML models'
-    },
-    {
-        id: 'T4-5',
-        category: 'Mobile App',
-        priority: 'MEDIUM',
-        complexity: 'HIGH',
-        timeline: '6-8 weeks',
-        title: 'Develop Native Mobile Applications',
-        description: 'iOS and Android native apps with offline-first capabilities',
-        scope: 'React Native or Flutter, native features, app store deployment'
-    },
-    {
-        id: 'T4-6',
-        category: 'Video Integration',
-        priority: 'LOW-MEDIUM',
-        complexity: 'MEDIUM',
-        timeline: '2-3 weeks',
-        title: 'Add Exercise Video Library and Form Analysis',
-        description: 'Video demonstrations and AI-powered form checking',
-        scope: 'Video player, CDN integration, computer vision for form analysis'
-    },
-    {
-        id: 'T4-7',
-        category: 'Enterprise Features',
-        priority: 'LOW',
-        complexity: 'MEDIUM-HIGH',
-        timeline: '4-5 weeks',
-        title: 'Build Enterprise Team Management',
-        description: 'Multi-tenant architecture for gyms, teams, and corporate wellness',
-        scope: 'Tenant isolation, admin dashboards, billing integration'
-    },
-    {
-        id: 'T4-8',
-        category: 'Gamification',
-        priority: 'LOW',
-        complexity: 'MEDIUM',
-        timeline: '2-3 weeks',
-        title: 'Implement Comprehensive Gamification',
-        description: 'Achievement system, XP, levels, and motivation mechanics',
-        scope: 'Points system, badges, leaderboards, progress visualization'
-    }
+  {
+    id: 'T4-1',
+    category: 'AI Enhancement',
+    priority: 'MEDIUM',
+    complexity: 'HIGH',
+    timeline: '4-6 weeks',
+    title: 'Implement Advanced AI Coach Personalization',
+    description: 'Machine learning models for personalized training recommendations',
+    scope: 'ML model integration, training data pipeline, personalization engine',
+  },
+  {
+    id: 'T4-2',
+    category: 'Platform Integration',
+    priority: 'MEDIUM',
+    complexity: 'MEDIUM-HIGH',
+    timeline: '3-4 weeks',
+    title: 'Add Wearable Device Integration',
+    description: 'Real-time heart rate, sleep, and activity data from fitness trackers',
+    scope: 'Fitbit, Garmin, Apple Health, Google Fit APIs',
+  },
+  {
+    id: 'T4-3',
+    category: 'Social Features',
+    priority: 'MEDIUM',
+    complexity: 'MEDIUM-HIGH',
+    timeline: '3-4 weeks',
+    title: 'Implement Social Training Features',
+    description: 'Team challenges, workout sharing, and community features',
+    scope: 'Social feed, challenges system, privacy controls',
+  },
+  {
+    id: 'T4-4',
+    category: 'Advanced Analytics',
+    priority: 'LOW-MEDIUM',
+    complexity: 'HIGH',
+    timeline: '4-5 weeks',
+    title: 'Build Advanced Performance Analytics',
+    description: 'Predictive analytics, injury risk assessment, performance forecasting',
+    scope: 'Data science pipeline, visualization dashboard, ML models',
+  },
+  {
+    id: 'T4-5',
+    category: 'Mobile App',
+    priority: 'MEDIUM',
+    complexity: 'HIGH',
+    timeline: '6-8 weeks',
+    title: 'Develop Native Mobile Applications',
+    description: 'iOS and Android native apps with offline-first capabilities',
+    scope: 'React Native or Flutter, native features, app store deployment',
+  },
+  {
+    id: 'T4-6',
+    category: 'Video Integration',
+    priority: 'LOW-MEDIUM',
+    complexity: 'MEDIUM',
+    timeline: '2-3 weeks',
+    title: 'Add Exercise Video Library and Form Analysis',
+    description: 'Video demonstrations and AI-powered form checking',
+    scope: 'Video player, CDN integration, computer vision for form analysis',
+  },
+  {
+    id: 'T4-7',
+    category: 'Enterprise Features',
+    priority: 'LOW',
+    complexity: 'MEDIUM-HIGH',
+    timeline: '4-5 weeks',
+    title: 'Build Enterprise Team Management',
+    description: 'Multi-tenant architecture for gyms, teams, and corporate wellness',
+    scope: 'Tenant isolation, admin dashboards, billing integration',
+  },
+  {
+    id: 'T4-8',
+    category: 'Gamification',
+    priority: 'LOW',
+    complexity: 'MEDIUM',
+    timeline: '2-3 weeks',
+    title: 'Implement Comprehensive Gamification',
+    description: 'Achievement system, XP, levels, and motivation mechanics',
+    scope: 'Points system, badges, leaderboards, progress visualization',
+  },
 ];
 
 console.log('📋 TIER 4 PROMPTS OVERVIEW:\n');
 
 tier4Prompts.forEach((prompt, index) => {
-    console.log(`${index + 1}. 🚀 ${prompt.title}`);
-    console.log(`   ID: ${prompt.id} | Category: ${prompt.category} | Priority: ${prompt.priority}`);
-    console.log(`   Complexity: ${prompt.complexity} | Timeline: ${prompt.timeline}`);
-    console.log(`   Description: ${prompt.description}`);
-    console.log(`   Scope: ${prompt.scope}\n`);
+  console.log(`${index + 1}. 🚀 ${prompt.title}`);
+  console.log(`   ID: ${prompt.id} | Category: ${prompt.category} | Priority: ${prompt.priority}`);
+  console.log(`   Complexity: ${prompt.complexity} | Timeline: ${prompt.timeline}`);
+  console.log(`   Description: ${prompt.description}`);
+  console.log(`   Scope: ${prompt.scope}\n`);
 });
 
 console.log('🎯 DETAILED TIER 4 CURSOR PROMPTS:\n');

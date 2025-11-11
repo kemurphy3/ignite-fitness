@@ -2,14 +2,12 @@ module.exports = {
   env: {
     browser: true,
     es2021: true,
-    node: true
+    node: true,
   },
-  extends: [
-    'eslint:recommended'
-  ],
+  extends: ['eslint:recommended'],
   parserOptions: {
     ecmaVersion: 'latest',
-    sourceType: 'module'
+    sourceType: 'module',
   },
   globals: {
     window: 'readonly',
@@ -21,7 +19,7 @@ module.exports = {
     URLSearchParams: 'readonly',
     FormData: 'readonly',
     Chart: 'readonly',
-    performance: 'readonly'
+    performance: 'readonly',
   },
   rules: {
     'no-console': 'warn',
@@ -49,7 +47,7 @@ module.exports = {
     'object-shorthand': 'error',
     'prefer-destructuring': ['warn', { array: false, object: true }],
     'no-inner-declarations': 'error',
-    'no-new-wrappers': 'error'
+    'no-new-wrappers': 'error',
   },
   overrides: [
     {
@@ -65,12 +63,12 @@ module.exports = {
         vi: 'readonly',
         spyOn: 'readonly',
         jasmine: 'readonly',
-        ExerciseAdapter: 'readonly'
+        ExerciseAdapter: 'readonly',
       },
       rules: {
         'no-console': 'off',
-        'no-unused-vars': 'off'
-      }
+        'no-unused-vars': 'off',
+      },
     },
     {
       files: ['scripts/**/*.js', 'tools/**/*.js', 'verify-*.js', 'test-*.js', 'check-*.js'],
@@ -78,17 +76,17 @@ module.exports = {
         'no-console': 'off',
         'no-process-exit': 'off',
         'no-unused-vars': 'off',
-        'prefer-const': 'off'
-      }
+        'prefer-const': 'off',
+      },
     },
     {
       files: ['netlify/functions/**/*.js'],
       env: {
-        node: true
+        node: true,
       },
       rules: {
-        'no-console': 'off'
-      }
-    }
-  ]
+        'no-console': 'off',
+      },
+    },
+  ],
 };

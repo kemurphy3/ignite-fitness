@@ -4,8 +4,9 @@
 import { defineConfig } from 'vitest/config';
 
 // Check if we have a real database URL (not mock)
-const hasRealDatabase = process.env.DATABASE_URL && 
-  !process.env.DATABASE_URL.includes('mock') && 
+const hasRealDatabase =
+  process.env.DATABASE_URL &&
+  !process.env.DATABASE_URL.includes('mock') &&
   process.env.MOCK_DATABASE !== 'true';
 
 export default defineConfig({
@@ -13,79 +14,78 @@ export default defineConfig({
     // Test environment
     environment: 'jsdom',
     globals: true,
-    
+
     // Test file patterns
     include: ['tests/**/*.{test,spec}.{js,ts}'],
     exclude: ['node_modules', 'dist', '.git'],
-    
+
     // Global test setup
     setupFiles: ['tests/setup.js'],
-    
+
     // Test timeout
     testTimeout: 10000,
-    
+
     // Coverage configuration
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      include: [
-        'js/modules/load/**/*.js',
-        'js/modules/ui/WeekView.js'
-      ],
+      include: ['js/modules/load/**/*.js', 'js/modules/ui/WeekView.js'],
       exclude: [
         'node_modules/',
         'tests/',
         'coverage/',
         '*.config.js',
-        'netlify/functions/_base.js' // Exclude base utility from coverage
+        'netlify/functions/_base.js', // Exclude base utility from coverage
       ],
       thresholds: {
         global: {
           branches: 80,
           functions: 80,
           lines: 80,
-          statements: 80
-        }
-      }
+          statements: 80,
+        },
+      },
     },
-    
+
     // Reporter configuration
     reporter: ['verbose', 'json'],
     outputFile: {
-      json: 'test-results.json'
+      json: 'test-results.json',
     },
-    
+
     // Watch mode configuration
     watch: false,
-    
+
     // Pool configuration - sequential for real DB, parallel for mock
     pool: 'threads',
     poolOptions: {
-      threads: hasRealDatabase ? {
-        // Sequential execution for real database - reliable and simple
-        singleThread: true,
-        minThreads: 1,
-        maxThreads: 1
-      } : {
-        // Parallel execution for mock database tests - fast local development
-        singleThread: false,
-        minThreads: 1,
-        maxThreads: 4
-      }
+      threads: hasRealDatabase
+        ? {
+            // Sequential execution for real database - reliable and simple
+            singleThread: true,
+            minThreads: 1,
+            maxThreads: 1,
+          }
+        : {
+            // Parallel execution for mock database tests - fast local development
+            singleThread: false,
+            minThreads: 1,
+            maxThreads: 4,
+          },
     },
-    
+
     // Environment variables for tests
     env: {
-      NODE_ENV: 'test'
-    }
+      NODE_ENV: 'test',
+    },
   },
-  
+
   // Resolve configuration
   resolve: {
     alias: {
       '@': './',
       '@tests': './tests',
-      '@utils': './netlify/functions/utils'
-    }
-  }
+      '@utils': './netlify/functions/utils',
+    },
+  },
 });

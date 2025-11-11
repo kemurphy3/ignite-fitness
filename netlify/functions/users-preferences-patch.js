@@ -8,13 +8,13 @@ const {
   coercePreferences,
   filterKnownFields,
   checkRequestSize,
-  sanitizeForLog
+  sanitizeForLog,
 } = require('./utils/user-preferences');
 
 const { getNeonClient } = require('./utils/connection-pool');
 const sql = getNeonClient();
 
-exports.handler = async (event) => {
+exports.handler = async event => {
   try {
     // Handle CORS preflight
     if (event.httpMethod === 'OPTIONS') {
@@ -23,9 +23,9 @@ exports.handler = async (event) => {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          'Access-Control-Allow-Methods': 'GET, PATCH, OPTIONS'
+          'Access-Control-Allow-Methods': 'GET, PATCH, OPTIONS',
         },
-        body: ''
+        body: '',
       };
     }
 
@@ -97,10 +97,18 @@ exports.handler = async (event) => {
         return errorResponse(400, 'INVALID_UNITS', 'Invalid units');
       }
       if (validationErrors.includes('Invalid sleep goal hours')) {
-        return errorResponse(400, 'INVALID_SLEEP_GOAL', 'Sleep goal must be between 0 and 14 hours');
+        return errorResponse(
+          400,
+          'INVALID_SLEEP_GOAL',
+          'Sleep goal must be between 0 and 14 hours'
+        );
       }
       if (validationErrors.includes('Invalid workout goal per week')) {
-        return errorResponse(400, 'INVALID_WORKOUT_GOAL', 'Workout goal must be between 0 and 14 per week');
+        return errorResponse(
+          400,
+          'INVALID_WORKOUT_GOAL',
+          'Workout goal must be between 0 and 14 per week'
+        );
       }
       if (validationErrors.includes('Invalid notifications enabled')) {
         return errorResponse(400, 'INVALID_NOTIFICATIONS', 'Notifications enabled must be boolean');
@@ -142,7 +150,6 @@ exports.handler = async (event) => {
 
     // Return 204 No Content
     return noContentResponse();
-
   } catch (error) {
     console.error('PATCH preferences error:', sanitizeForLog({ error: error.message }));
     return errorResponse(500, 'DB_ERROR', 'Internal server error');

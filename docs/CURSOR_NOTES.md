@@ -10,15 +10,17 @@
 ## Examples
 
 **Good:**
+
 ```javascript
 // Reduce volume by 30% for game day taper
 // This action cannot be undone
-const message = "Low readiness. Reducing volume 30%.";
+const message = 'Low readiness. Reducing volume 30%.';
 ```
 
 **Bad:**
+
 ```javascript
 // Reduce volume by 30% for game day taper (no issues, just preference)
 // You can't undo this action (contraction)
-const message = "Low readiness. Reducing volume 30%";
+const message = 'Low readiness. Reducing volume 30%';
 ```

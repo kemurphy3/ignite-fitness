@@ -7,714 +7,740 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 // Mock dependencies
 const mockLogger = {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn()
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
 };
 
 const mockEventBus = {
-    on: vi.fn(),
-    emit: vi.fn(),
-    TOPICS: {
-        SESSION_COMPLETED: 'SESSION_COMPLETED',
-        SESSION_PLANNED: 'SESSION_PLANNED',
-        GUARDRAIL_APPLIED: 'GUARDRAIL_APPLIED',
-        WEEK_VIEW_RENDERED: 'WEEK_VIEW_RENDERED'
-    }
+  on: vi.fn(),
+  emit: vi.fn(),
+  TOPICS: {
+    SESSION_COMPLETED: 'SESSION_COMPLETED',
+    SESSION_PLANNED: 'SESSION_PLANNED',
+    GUARDRAIL_APPLIED: 'GUARDRAIL_APPLIED',
+    WEEK_VIEW_RENDERED: 'WEEK_VIEW_RENDERED',
+  },
 };
 
 const mockLoadCalculator = {
-    calculateSessionLoad: vi.fn((session) => ({ total: session.load || 0 })),
-    calculateWeeklyLoad: vi.fn()
+  calculateSessionLoad: vi.fn(session => ({ total: session.load || 0 })),
+  calculateWeeklyLoad: vi.fn(),
 };
 
 const mockLoadGuardrails = {
-    getGuardrailStatus: vi.fn().mockResolvedValue({
-        isUnderGuardrail: false,
-        activeAdjustments: []
-    })
+  getGuardrailStatus: vi.fn().mockResolvedValue({
+    isUnderGuardrail: false,
+    activeAdjustments: [],
+  }),
 };
 
 const mockAuthManager = {
-    getCurrentUsername: vi.fn().mockReturnValue('testuser'),
-    getCurrentUser: vi.fn().mockReturnValue({
-        username: 'testuser',
-        personalData: { experience: 'intermediate' }
-    })
+  getCurrentUsername: vi.fn().mockReturnValue('testuser'),
+  getCurrentUser: vi.fn().mockReturnValue({
+    username: 'testuser',
+    personalData: { experience: 'intermediate' },
+  }),
 };
 
 const mockStorageManager = {
-    getUserSessions: vi.fn().mockResolvedValue([])
+  getUserSessions: vi.fn().mockResolvedValue([]),
 };
 
 describe('WeekView', () => {
-    let WeekView;
-    let weekView;
+  let WeekView;
+  let weekView;
 
-    beforeEach(() => {
-        // Setup mocks
-        window.SafeLogger = mockLogger;
-        window.EventBus = mockEventBus;
-        window.LoadCalculator = mockLoadCalculator;
-        window.LoadGuardrails = mockLoadGuardrails;
-        window.AuthManager = mockAuthManager;
-        window.StorageManager = mockStorageManager;
+  beforeEach(() => {
+    // Setup mocks
+    window.SafeLogger = mockLogger;
+    window.EventBus = mockEventBus;
+    window.LoadCalculator = mockLoadCalculator;
+    window.LoadGuardrails = mockLoadGuardrails;
+    window.AuthManager = mockAuthManager;
+    window.StorageManager = mockStorageManager;
 
-        // Mock DOM
-        global.document = {
-            getElementById: vi.fn().mockReturnValue({
-                innerHTML: '',
-                addEventListener: vi.fn(),
-                querySelector: vi.fn(),
-                querySelectorAll: vi.fn().mockReturnValue([])
-            }),
-            querySelector: vi.fn(),
-            querySelectorAll: vi.fn().mockReturnValue([])
+    // Mock DOM
+    global.document = {
+      getElementById: vi.fn().mockReturnValue({
+        innerHTML: '',
+        addEventListener: vi.fn(),
+        querySelector: vi.fn(),
+        querySelectorAll: vi.fn().mockReturnValue([]),
+      }),
+      querySelector: vi.fn(),
+      querySelectorAll: vi.fn().mockReturnValue([]),
+    };
+
+    // Mock localStorage
+    global.localStorage = {
+      getItem: vi.fn(() => null),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+      clear: vi.fn(),
+    };
+
+    // Reset mocks
+    vi.clearAllMocks();
+
+    // Load WeekView class
+    class WeekView {
+      constructor() {
+        this.logger = window.SafeLogger || console;
+        this.eventBus = window.EventBus;
+        this.loadCalculator = window.LoadCalculator;
+        this.loadGuardrails = window.LoadGuardrails;
+        this.authManager = window.AuthManager;
+        this.storageManager = window.StorageManager;
+        this.currentWeekOffset = 0;
+        this.loadThresholds = this.initializeLoadThresholds();
+        this.initializeEventListeners();
+      }
+
+      initializeLoadThresholds() {
+        return {
+          onTrack: { min: 0.95, max: 1.05, color: '#10b981', label: 'On Track' },
+          slightlyOver: { min: 1.05, max: 1.2, color: '#f59e0b', label: 'Slightly Over' },
+          slightlyUnder: { min: 0.8, max: 0.95, color: '#f59e0b', label: 'Slightly Under' },
+          significantlyOver: { min: 1.2, max: Infinity, color: '#ef4444', label: 'Too Much' },
+          significantlyUnder: { min: 0, max: 0.8, color: '#ef4444', label: 'Too Little' },
         };
+      }
 
-        // Mock localStorage
-        global.localStorage = {
-            getItem: vi.fn(() => null),
-            setItem: vi.fn(),
-            removeItem: vi.fn(),
-            clear: vi.fn()
+      initializeEventListeners() {
+        if (this.eventBus) {
+          this.eventBus.on(this.eventBus.TOPICS?.SESSION_COMPLETED, () => {});
+          this.eventBus.on('SESSION_PLANNED', () => {});
+          this.eventBus.on('GUARDRAIL_APPLIED', () => {});
+        }
+      }
+
+      determineLoadStatus(ratio) {
+        for (const [statusKey, threshold] of Object.entries(this.loadThresholds)) {
+          if (ratio >= threshold.min && ratio < threshold.max) {
+            return { key: statusKey, ...threshold };
+          }
+        }
+        return { key: 'onTrack', ...this.loadThresholds.onTrack };
+      }
+
+      analyzeWeeklyLoad(weekData) {
+        const plannedLoad = this.calculateTotalLoad(weekData.plannedSessions);
+        const completedLoad = this.calculateTotalLoad(weekData.completedSessions);
+        const loadRatio = plannedLoad > 0 ? completedLoad / plannedLoad : 0;
+        const loadStatus = this.determineLoadStatus(loadRatio);
+        const variance = Math.abs(completedLoad - plannedLoad);
+        const variancePercentageRaw = plannedLoad > 0 ? (variance / plannedLoad) * 100 : 0;
+        const variancePercentage = Math.round(variancePercentageRaw * 100) / 100;
+
+        return {
+          plannedLoad: Math.round(plannedLoad),
+          completedLoad: Math.round(completedLoad),
+          loadRatio,
+          variance: Math.round(variance),
+          variancePercentage,
+          status: loadStatus,
+          message: this.generateLoadMessage(loadStatus, variancePercentageRaw),
+          recommendation: 'Continue monitoring',
         };
+      }
 
-        // Reset mocks
-        vi.clearAllMocks();
+      calculateTotalLoad(sessions) {
+        if (!sessions || sessions.length === 0) {
+          return 0;
+        }
+        return sessions.reduce((total, session) => {
+          const sessionLoad = this.loadCalculator?.calculateSessionLoad?.(session);
+          const volume = Number(session.volume) || 0;
+          const fallback = session.load ?? session.session_load ?? volume;
+          return total + (sessionLoad?.total ?? fallback ?? 0);
+        }, 0);
+      }
 
-        // Load WeekView class
-        class WeekView {
-            constructor() {
-                this.logger = window.SafeLogger || console;
-                this.eventBus = window.EventBus;
-                this.loadCalculator = window.LoadCalculator;
-                this.loadGuardrails = window.LoadGuardrails;
-                this.authManager = window.AuthManager;
-                this.storageManager = window.StorageManager;
-                this.currentWeekOffset = 0;
-                this.loadThresholds = this.initializeLoadThresholds();
-                this.initializeEventListeners();
-            }
+      calculateWeeklyVolume(sessions = []) {
+        if (!Array.isArray(sessions) || sessions.length === 0) {
+          return 0;
+        }
+        return sessions.reduce((sum, session) => {
+          const volume = Number(session?.volume) || 0;
+          return sum + volume;
+        }, 0);
+      }
 
-            initializeLoadThresholds() {
-                return {
-                    onTrack: { min: 0.95, max: 1.05, color: '#10b981', label: 'On Track' },
-                    slightlyOver: { min: 1.05, max: 1.2, color: '#f59e0b', label: 'Slightly Over' },
-                    slightlyUnder: { min: 0.8, max: 0.95, color: '#f59e0b', label: 'Slightly Under' },
-                    significantlyOver: { min: 1.2, max: Infinity, color: '#ef4444', label: 'Too Much' },
-                    significantlyUnder: { min: 0, max: 0.8, color: '#ef4444', label: 'Too Little' }
-                };
-            }
+      calculateConsistencyScore(plannedSessions = [], completedSessions = []) {
+        const planned = Array.isArray(plannedSessions) ? plannedSessions.length : 0;
+        const completed = Array.isArray(completedSessions) ? completedSessions.length : 0;
+        if (planned === 0) {
+          return completed > 0 ? 100 : 0;
+        }
+        return Math.round((completed / planned) * 100);
+      }
 
-            initializeEventListeners() {
-                if (this.eventBus) {
-                    this.eventBus.on(this.eventBus.TOPICS?.SESSION_COMPLETED, () => {});
-                    this.eventBus.on('SESSION_PLANNED', () => {});
-                    this.eventBus.on('GUARDRAIL_APPLIED', () => {});
-                }
-            }
+      getDailyStatus(plannedLoad, completedLoad, percentage) {
+        if (plannedLoad === 0 && completedLoad === 0) {
+          return 'no_data';
+        }
+        if (plannedLoad === 0 && completedLoad > 0) {
+          return 'unplanned';
+        }
+        if (percentage < 80) {
+          return 'too_little';
+        }
+        if (percentage > 120) {
+          return 'too_much';
+        }
+        return 'on_track';
+      }
 
-            determineLoadStatus(ratio) {
-                for (const [statusKey, threshold] of Object.entries(this.loadThresholds)) {
-                    if (ratio >= threshold.min && ratio < threshold.max) {
-                        return { key: statusKey, ...threshold };
-                    }
-                }
-                return { key: 'onTrack', ...this.loadThresholds.onTrack };
-            }
+      normalizeDateKey(value) {
+        if (!value) {
+          return null;
+        }
+        if (value instanceof Date) {
+          if (Number.isNaN(value.getTime())) {
+            return null;
+          }
+          return [
+            value.getFullYear(),
+            String(value.getMonth() + 1).padStart(2, '0'),
+            String(value.getDate()).padStart(2, '0'),
+          ].join('-');
+        }
+        if (typeof value === 'string') {
+          const trimmed = value.trim();
+          if (trimmed.length === 0) {
+            return null;
+          }
+          if (trimmed.includes('T')) {
+            return trimmed.split('T')[0];
+          }
+          if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+            return trimmed;
+          }
+          const parsed = new Date(trimmed);
+          if (!Number.isNaN(parsed.getTime())) {
+            return parsed.toISOString().split('T')[0];
+          }
+          return null;
+        }
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+          return null;
+        }
+        return date.toISOString().split('T')[0];
+      }
 
-            analyzeWeeklyLoad(weekData) {
-                const plannedLoad = this.calculateTotalLoad(weekData.plannedSessions);
-                const completedLoad = this.calculateTotalLoad(weekData.completedSessions);
-                const loadRatio = plannedLoad > 0 ? completedLoad / plannedLoad : 0;
-                const loadStatus = this.determineLoadStatus(loadRatio);
-                const variance = Math.abs(completedLoad - plannedLoad);
-                const variancePercentageRaw = plannedLoad > 0 ? (variance / plannedLoad) * 100 : 0;
-                const variancePercentage = Math.round(variancePercentageRaw * 100) / 100;
+      analyzeDailyLoads(dayPlanned, dayCompleted) {
+        const calculatedPlannedLoad = this.calculateTotalLoad(dayPlanned);
+        const fallbackPlannedLoad = dayPlanned.reduce(
+          (sum, session) => sum + (Number(session.load) || 0),
+          0
+        );
+        const plannedLoad = Math.round(calculatedPlannedLoad || fallbackPlannedLoad);
 
-                return {
-                    plannedLoad: Math.round(plannedLoad),
-                    completedLoad: Math.round(completedLoad),
-                    loadRatio,
-                    variance: Math.round(variance),
-                    variancePercentage,
-                    status: loadStatus,
-                    message: this.generateLoadMessage(loadStatus, variancePercentageRaw),
-                    recommendation: 'Continue monitoring'
-                };
-            }
+        const calculatedCompletedLoad = this.calculateTotalLoad(dayCompleted);
+        const fallbackCompletedLoad = dayCompleted.reduce(
+          (sum, session) => sum + (Number(session.load) || 0),
+          0
+        );
+        const completedLoad = Math.round(calculatedCompletedLoad || fallbackCompletedLoad);
+        const percentage =
+          plannedLoad > 0
+            ? Math.round((completedLoad / plannedLoad) * 100)
+            : completedLoad > 0
+              ? 100
+              : 0;
+        const status = this.getDailyStatus(plannedLoad, completedLoad, percentage);
 
-            calculateTotalLoad(sessions) {
-                if (!sessions || sessions.length === 0) {return 0;}
-                return sessions.reduce((total, session) => {
-                    const sessionLoad = this.loadCalculator?.calculateSessionLoad?.(session);
-                    const volume = Number(session.volume) || 0;
-                    const fallback = session.load ?? session.session_load ?? volume;
-                    return total + (sessionLoad?.total ?? fallback ?? 0);
-                }, 0);
-            }
+        return {
+          plannedLoad,
+          completedLoad,
+          percentage,
+          status,
+          plannedVolume: this.calculateWeeklyVolume(dayPlanned),
+          completedVolume: this.calculateWeeklyVolume(dayCompleted),
+        };
+      }
 
-            calculateWeeklyVolume(sessions = []) {
-                if (!Array.isArray(sessions) || sessions.length === 0) {return 0;}
-                return sessions.reduce((sum, session) => {
-                    const volume = Number(session?.volume) || 0;
-                    return sum + volume;
-                }, 0);
-            }
+      calculateDailyBreakdown(weekStart, plannedSessions, completedSessions) {
+        const days = [];
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-            calculateConsistencyScore(plannedSessions = [], completedSessions = []) {
-                const planned = Array.isArray(plannedSessions) ? plannedSessions.length : 0;
-                const completed = Array.isArray(completedSessions) ? completedSessions.length : 0;
-                if (planned === 0) {
-                    return completed > 0 ? 100 : 0;
-                }
-                return Math.round((completed / planned) * 100);
-            }
+        for (let i = 0; i < 7; i++) {
+          const currentDate = new Date(weekStart);
+          currentDate.setDate(currentDate.getDate() + i);
+          const dateString = this.normalizeDateKey(currentDate);
 
-            getDailyStatus(plannedLoad, completedLoad, percentage) {
-                if (plannedLoad === 0 && completedLoad === 0) {
-                    return 'no_data';
-                }
-                if (plannedLoad === 0 && completedLoad > 0) {
-                    return 'unplanned';
-                }
-                if (percentage < 80) {
-                    return 'too_little';
-                }
-                if (percentage > 120) {
-                    return 'too_much';
-                }
-                return 'on_track';
-            }
+          const dayPlanned = plannedSessions.filter(s => {
+            const normalized = this.normalizeDateKey(s.date || s.planned_date || s.start_at);
+            return normalized === dateString;
+          });
+          const dayCompleted = completedSessions.filter(s => {
+            const normalized = this.normalizeDateKey(s.date || s.start_at || s.created_at);
+            return normalized === dateString;
+          });
 
-            normalizeDateKey(value) {
-                if (!value) {return null;}
-                if (value instanceof Date) {
-                    if (Number.isNaN(value.getTime())) {return null;}
-                    return [
-                        value.getFullYear(),
-                        String(value.getMonth() + 1).padStart(2, '0'),
-                        String(value.getDate()).padStart(2, '0')
-                    ].join('-');
-                }
-                if (typeof value === 'string') {
-                    const trimmed = value.trim();
-                    if (trimmed.length === 0) {return null;}
-                    if (trimmed.includes('T')) {
-                        return trimmed.split('T')[0];
-                    }
-                    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-                        return trimmed;
-                    }
-                    const parsed = new Date(trimmed);
-                    if (!Number.isNaN(parsed.getTime())) {
-                        return parsed.toISOString().split('T')[0];
-                    }
-                    return null;
-                }
-                const date = new Date(value);
-                if (Number.isNaN(date.getTime())) {return null;}
-                return date.toISOString().split('T')[0];
-            }
+          const loadMetrics = this.analyzeDailyLoads(dayPlanned, dayCompleted);
 
-            analyzeDailyLoads(dayPlanned, dayCompleted) {
-                const calculatedPlannedLoad = this.calculateTotalLoad(dayPlanned);
-                const fallbackPlannedLoad = dayPlanned.reduce((sum, session) => sum + (Number(session.load) || 0), 0);
-                const plannedLoad = Math.round(calculatedPlannedLoad || fallbackPlannedLoad);
-
-                const calculatedCompletedLoad = this.calculateTotalLoad(dayCompleted);
-                const fallbackCompletedLoad = dayCompleted.reduce((sum, session) => sum + (Number(session.load) || 0), 0);
-                const completedLoad = Math.round(calculatedCompletedLoad || fallbackCompletedLoad);
-                const percentage = plannedLoad > 0
-                    ? Math.round((completedLoad / plannedLoad) * 100)
-                    : (completedLoad > 0 ? 100 : 0);
-                const status = this.getDailyStatus(plannedLoad, completedLoad, percentage);
-
-                return {
-                    plannedLoad,
-                    completedLoad,
-                    percentage,
-                    status,
-                    plannedVolume: this.calculateWeeklyVolume(dayPlanned),
-                    completedVolume: this.calculateWeeklyVolume(dayCompleted)
-                };
-            }
-
-            calculateDailyBreakdown(weekStart, plannedSessions, completedSessions) {
-                const days = [];
-                const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-                for (let i = 0; i < 7; i++) {
-                    const currentDate = new Date(weekStart);
-                    currentDate.setDate(currentDate.getDate() + i);
-                    const dateString = this.normalizeDateKey(currentDate);
-
-                    const dayPlanned = plannedSessions.filter(s => {
-                        const normalized = this.normalizeDateKey(s.date || s.planned_date || s.start_at);
-                        return normalized === dateString;
-                    });
-                    const dayCompleted = completedSessions.filter(s => {
-                        const normalized = this.normalizeDateKey(s.date || s.start_at || s.created_at);
-                        return normalized === dateString;
-                    });
-
-                    const loadMetrics = this.analyzeDailyLoads(dayPlanned, dayCompleted);
-
-                    days.push({
-                        date: dateString,
-                        dayName: dayNames[currentDate.getDay()],
-                        dateNumber: currentDate.getDate(),
-                        plannedSessions: dayPlanned,
-                        completedSessions: dayCompleted,
-                        plannedLoad: loadMetrics.plannedLoad,
-                        completedLoad: loadMetrics.completedLoad,
-                        plannedVolume: loadMetrics.plannedVolume,
-                        completedVolume: loadMetrics.completedVolume,
-                        percentage: loadMetrics.percentage,
-                        status: loadMetrics.status,
-                        isToday: this.isToday(currentDate),
-                        isPast: currentDate < new Date() && !this.isToday(currentDate)
-                    });
-                }
-
-                return days;
-            }
-
-            determineDayStatus(day) {
-                const statusStyles = {
-                    on_track: { class: 'on-track', color: '#10b981' },
-                    too_little: { class: 'too-little', color: '#ef4444' },
-                    too_much: { class: 'too-much', color: '#ef4444' },
-                    unplanned: { class: 'unplanned', color: '#8b5cf6' },
-                    no_data: { class: 'no-data', color: '#6b7280' }
-                };
-
-                const baseStatus = statusStyles[day.status] || statusStyles.on_track;
-                let classNames = baseStatus.class;
-
-                if (day.isToday) {
-                    classNames = `${classNames} today`;
-                } else if (day.isPast) {
-                    classNames = `${classNames} past`;
-                }
-
-                return {
-                    class: classNames.trim(),
-                    color: baseStatus.color
-                };
-            }
-
-            generateInsights(loadAnalysis, guardrailStatus) {
-                const insights = [];
-
-                if (loadAnalysis.status.key === 'significantlyOver') {
-                    insights.push({
-                        type: 'warning',
-                        icon: 'alert-triangle',
-                        title: 'Overreaching Risk',
-                        message: 'Your training load is significantly higher than planned. Consider taking an extra rest day.',
-                        action: 'schedule_rest',
-                        actionText: 'Schedule Rest Day'
-                    });
-                }
-
-                if (loadAnalysis.status.key === 'significantlyUnder') {
-                    insights.push({
-                        type: 'info',
-                        icon: 'trending-down',
-                        title: 'Training Missed',
-                        message: 'You\'ve missed significant training this week. Plan catch-up sessions if possible.',
-                        action: 'plan_catchup',
-                        actionText: 'Plan Catch-up'
-                    });
-                }
-
-                if (guardrailStatus?.isUnderGuardrail) {
-                    insights.push({
-                        type: 'caution',
-                        icon: 'shield',
-                        title: 'Load Restrictions Active',
-                        message: 'Training intensity is being automatically reduced for your safety.',
-                        action: 'view_restrictions',
-                        actionText: 'View Details'
-                    });
-                }
-
-                if (loadAnalysis.loadRatio > 1.1) {
-                    insights.push({
-                        type: 'tip',
-                        icon: 'target',
-                        title: 'Consistency Focus',
-                        message: 'Aim for more consistent daily training rather than cramming sessions.',
-                        action: 'redistribute_load',
-                        actionText: 'Redistribute Load'
-                    });
-                }
-
-                if (loadAnalysis.status.key === 'onTrack') {
-                    insights.push({
-                        type: 'tip',
-                        icon: 'target',
-                        title: 'Great Progress!',
-                        message: 'You\'re staying consistent with your training plan. Keep it up!',
-                        action: null,
-                        actionText: null
-                    });
-                }
-
-                return insights;
-            }
-
-            generateLoadMessage(status, variancePercentage) {
-                const messages = {
-                    onTrack: 'You\'re right on track with your training plan!',
-                    slightlyOver: `You're doing ${Math.round(variancePercentage)}% more than planned. Consider scaling back slightly.`,
-                    slightlyUnder: `You're ${Math.round(variancePercentage)}% under your planned load. Try to catch up if possible.`,
-                    significantlyOver: `You're significantly over your planned load (${Math.round(variancePercentage)}% more). Rest and recovery recommended.`,
-                    significantlyUnder: `You're well below your planned load (${Math.round(variancePercentage)}% less). Consider what prevented you from training.`
-                };
-                return messages[status.key] || status.label;
-            }
-
-            getWeekLabel(offset) {
-                if (offset === 0) {return 'This Week';}
-                if (offset === -1) {return 'Last Week';}
-                if (offset === 1) {return 'Next Week';}
-                if (offset < 0) {return `${Math.abs(offset)} Weeks Ago`;}
-                return `${offset} Weeks Ahead`;
-            }
-
-            getWeekStart(offset) {
-                const today = new Date();
-                const dayOfWeek = today.getDay();
-                const weekStart = new Date(today);
-                weekStart.setDate(today.getDate() - dayOfWeek + (offset * 7));
-                weekStart.setHours(0, 0, 0, 0);
-                return weekStart;
-            }
-
-            isToday(date) {
-                const today = new Date();
-                return date.toDateString() === today.toDateString();
-            }
-
-            formatDateRange(start, end) {
-                const options = { month: 'short', day: 'numeric' };
-                const startStr = start.toLocaleDateString('en-US', options);
-                const endStr = end.toLocaleDateString('en-US', options);
-                return `${startStr} - ${endStr}`;
-            }
-
-            navigateWeek(direction) {
-                this.currentWeekOffset += direction;
-            }
-
-            navigateToToday() {
-                this.currentWeekOffset = 0;
-            }
-
-            generateErrorHTML(message) {
-                return `<div class="error">${message}</div>`;
-            }
-
-            async render(containerId, options = {}) {
-                const container = document.getElementById(containerId);
-                if (!container) {
-                    throw new Error(`Container ${containerId} not found`);
-                }
-                container.innerHTML = '<div>Week View</div>';
-            }
-
-            async getWeekData() {
-                return {
-                    weekStart: new Date(),
-                    weekEnd: new Date(),
-                    plannedSessions: [],
-                    completedSessions: [],
-                    dailyBreakdown: []
-                };
-            }
+          days.push({
+            date: dateString,
+            dayName: dayNames[currentDate.getDay()],
+            dateNumber: currentDate.getDate(),
+            plannedSessions: dayPlanned,
+            completedSessions: dayCompleted,
+            plannedLoad: loadMetrics.plannedLoad,
+            completedLoad: loadMetrics.completedLoad,
+            plannedVolume: loadMetrics.plannedVolume,
+            completedVolume: loadMetrics.completedVolume,
+            percentage: loadMetrics.percentage,
+            status: loadMetrics.status,
+            isToday: this.isToday(currentDate),
+            isPast: currentDate < new Date() && !this.isToday(currentDate),
+          });
         }
 
-        weekView = new WeekView();
+        return days;
+      }
+
+      determineDayStatus(day) {
+        const statusStyles = {
+          on_track: { class: 'on-track', color: '#10b981' },
+          too_little: { class: 'too-little', color: '#ef4444' },
+          too_much: { class: 'too-much', color: '#ef4444' },
+          unplanned: { class: 'unplanned', color: '#8b5cf6' },
+          no_data: { class: 'no-data', color: '#6b7280' },
+        };
+
+        const baseStatus = statusStyles[day.status] || statusStyles.on_track;
+        let classNames = baseStatus.class;
+
+        if (day.isToday) {
+          classNames = `${classNames} today`;
+        } else if (day.isPast) {
+          classNames = `${classNames} past`;
+        }
+
+        return {
+          class: classNames.trim(),
+          color: baseStatus.color,
+        };
+      }
+
+      generateInsights(loadAnalysis, guardrailStatus) {
+        const insights = [];
+
+        if (loadAnalysis.status.key === 'significantlyOver') {
+          insights.push({
+            type: 'warning',
+            icon: 'alert-triangle',
+            title: 'Overreaching Risk',
+            message:
+              'Your training load is significantly higher than planned. Consider taking an extra rest day.',
+            action: 'schedule_rest',
+            actionText: 'Schedule Rest Day',
+          });
+        }
+
+        if (loadAnalysis.status.key === 'significantlyUnder') {
+          insights.push({
+            type: 'info',
+            icon: 'trending-down',
+            title: 'Training Missed',
+            message:
+              "You've missed significant training this week. Plan catch-up sessions if possible.",
+            action: 'plan_catchup',
+            actionText: 'Plan Catch-up',
+          });
+        }
+
+        if (guardrailStatus?.isUnderGuardrail) {
+          insights.push({
+            type: 'caution',
+            icon: 'shield',
+            title: 'Load Restrictions Active',
+            message: 'Training intensity is being automatically reduced for your safety.',
+            action: 'view_restrictions',
+            actionText: 'View Details',
+          });
+        }
+
+        if (loadAnalysis.loadRatio > 1.1) {
+          insights.push({
+            type: 'tip',
+            icon: 'target',
+            title: 'Consistency Focus',
+            message: 'Aim for more consistent daily training rather than cramming sessions.',
+            action: 'redistribute_load',
+            actionText: 'Redistribute Load',
+          });
+        }
+
+        if (loadAnalysis.status.key === 'onTrack') {
+          insights.push({
+            type: 'tip',
+            icon: 'target',
+            title: 'Great Progress!',
+            message: "You're staying consistent with your training plan. Keep it up!",
+            action: null,
+            actionText: null,
+          });
+        }
+
+        return insights;
+      }
+
+      generateLoadMessage(status, variancePercentage) {
+        const messages = {
+          onTrack: "You're right on track with your training plan!",
+          slightlyOver: `You're doing ${Math.round(variancePercentage)}% more than planned. Consider scaling back slightly.`,
+          slightlyUnder: `You're ${Math.round(variancePercentage)}% under your planned load. Try to catch up if possible.`,
+          significantlyOver: `You're significantly over your planned load (${Math.round(variancePercentage)}% more). Rest and recovery recommended.`,
+          significantlyUnder: `You're well below your planned load (${Math.round(variancePercentage)}% less). Consider what prevented you from training.`,
+        };
+        return messages[status.key] || status.label;
+      }
+
+      getWeekLabel(offset) {
+        if (offset === 0) {
+          return 'This Week';
+        }
+        if (offset === -1) {
+          return 'Last Week';
+        }
+        if (offset === 1) {
+          return 'Next Week';
+        }
+        if (offset < 0) {
+          return `${Math.abs(offset)} Weeks Ago`;
+        }
+        return `${offset} Weeks Ahead`;
+      }
+
+      getWeekStart(offset) {
+        const today = new Date();
+        const dayOfWeek = today.getDay();
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - dayOfWeek + offset * 7);
+        weekStart.setHours(0, 0, 0, 0);
+        return weekStart;
+      }
+
+      isToday(date) {
+        const today = new Date();
+        return date.toDateString() === today.toDateString();
+      }
+
+      formatDateRange(start, end) {
+        const options = { month: 'short', day: 'numeric' };
+        const startStr = start.toLocaleDateString('en-US', options);
+        const endStr = end.toLocaleDateString('en-US', options);
+        return `${startStr} - ${endStr}`;
+      }
+
+      navigateWeek(direction) {
+        this.currentWeekOffset += direction;
+      }
+
+      navigateToToday() {
+        this.currentWeekOffset = 0;
+      }
+
+      generateErrorHTML(message) {
+        return `<div class="error">${message}</div>`;
+      }
+
+      async render(containerId, options = {}) {
+        const container = document.getElementById(containerId);
+        if (!container) {
+          throw new Error(`Container ${containerId} not found`);
+        }
+        container.innerHTML = '<div>Week View</div>';
+      }
+
+      async getWeekData() {
+        return {
+          weekStart: new Date(),
+          weekEnd: new Date(),
+          plannedSessions: [],
+          completedSessions: [],
+          dailyBreakdown: [],
+        };
+      }
+    }
+
+    weekView = new WeekView();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('Load Status Determination', () => {
+    it('should correctly identify on-track status', () => {
+      const ratio = 0.95; // 95% of planned load
+      const status = weekView.determineLoadStatus(ratio);
+
+      expect(status.key).toBe('onTrack');
+      expect(status.color).toBe('#10b981');
+      expect(status.label).toBe('On Track');
     });
 
-    afterEach(() => {
-        vi.clearAllMocks();
+    it('should identify slightly over status', () => {
+      const ratio = 1.15; // 115% of planned load
+      const status = weekView.determineLoadStatus(ratio);
+
+      expect(status.key).toBe('slightlyOver');
+      expect(status.color).toBe('#f59e0b');
+      expect(status.label).toBe('Slightly Over');
     });
 
-    describe('Load Status Determination', () => {
-        it('should correctly identify on-track status', () => {
-            const ratio = 0.95; // 95% of planned load
-            const status = weekView.determineLoadStatus(ratio);
+    it('should identify significantly under status', () => {
+      const ratio = 0.75; // 75% of planned load
+      const status = weekView.determineLoadStatus(ratio);
 
-            expect(status.key).toBe('onTrack');
-            expect(status.color).toBe('#10b981');
-            expect(status.label).toBe('On Track');
-        });
-
-        it('should identify slightly over status', () => {
-            const ratio = 1.15; // 115% of planned load
-            const status = weekView.determineLoadStatus(ratio);
-
-            expect(status.key).toBe('slightlyOver');
-            expect(status.color).toBe('#f59e0b');
-            expect(status.label).toBe('Slightly Over');
-        });
-
-        it('should identify significantly under status', () => {
-            const ratio = 0.75; // 75% of planned load
-            const status = weekView.determineLoadStatus(ratio);
-
-            expect(status.key).toBe('significantlyUnder');
-            expect(status.color).toBe('#ef4444');
-            expect(status.label).toBe('Too Little');
-        });
-
-        it('should identify significantly over status', () => {
-            const ratio = 1.25; // 125% of planned load
-            const status = weekView.determineLoadStatus(ratio);
-
-            expect(status.key).toBe('significantlyOver');
-            expect(status.color).toBe('#ef4444');
-        });
+      expect(status.key).toBe('significantlyUnder');
+      expect(status.color).toBe('#ef4444');
+      expect(status.label).toBe('Too Little');
     });
 
-    describe('Load Analysis', () => {
-        it('should calculate correct load analysis', () => {
-            const weekData = {
-                plannedSessions: [
-                    { load: 50 },
-                    { load: 60 }
-                ],
-                completedSessions: [
-                    { load: 45 },
-                    { load: 55 }
-                ]
-            };
+    it('should identify significantly over status', () => {
+      const ratio = 1.25; // 125% of planned load
+      const status = weekView.determineLoadStatus(ratio);
 
-            const analysis = weekView.analyzeWeeklyLoad(weekData);
+      expect(status.key).toBe('significantlyOver');
+      expect(status.color).toBe('#ef4444');
+    });
+  });
 
-            expect(analysis.plannedLoad).toBe(110);
-            expect(analysis.completedLoad).toBe(100);
-            expect(analysis.loadRatio).toBeCloseTo(0.909, 3);
-            expect(analysis.variance).toBe(10);
-            expect(analysis.variancePercentage).toBeCloseTo(9.09, 2);
-            expect(analysis.status.key).toBe('slightlyUnder');
-        });
+  describe('Load Analysis', () => {
+    it('should calculate correct load analysis', () => {
+      const weekData = {
+        plannedSessions: [{ load: 50 }, { load: 60 }],
+        completedSessions: [{ load: 45 }, { load: 55 }],
+      };
 
-        it('should handle zero planned load', () => {
-            const weekData = {
-                plannedSessions: [],
-                completedSessions: [{ load: 50 }]
-            };
+      const analysis = weekView.analyzeWeeklyLoad(weekData);
 
-            const analysis = weekView.analyzeWeeklyLoad(weekData);
-
-            expect(analysis.loadRatio).toBe(0);
-            expect(analysis.variancePercentage).toBe(0);
-            expect(analysis.completedLoad).toBe(50);
-        });
-
-        it('should handle exact match (100%)', () => {
-            const weekData = {
-                plannedSessions: [{ load: 100 }],
-                completedSessions: [{ load: 100 }]
-            };
-
-            const analysis = weekView.analyzeWeeklyLoad(weekData);
-
-            expect(analysis.loadRatio).toBe(1.0);
-            expect(analysis.status.key).toBe('onTrack');
-        });
+      expect(analysis.plannedLoad).toBe(110);
+      expect(analysis.completedLoad).toBe(100);
+      expect(analysis.loadRatio).toBeCloseTo(0.909, 3);
+      expect(analysis.variance).toBe(10);
+      expect(analysis.variancePercentage).toBeCloseTo(9.09, 2);
+      expect(analysis.status.key).toBe('slightlyUnder');
     });
 
-    describe('Daily Breakdown', () => {
-        it('should calculate daily breakdown correctly', () => {
-            const weekStart = new Date('2024-01-07'); // Sunday
-            const plannedSessions = [
-                { date: '2024-01-08', load: 50 }, // Monday
-                { date: '2024-01-10', load: 60 } // Wednesday
-            ];
-            const completedSessions = [
-                { date: '2024-01-08', load: 45 }, // Monday
-                { date: '2024-01-09', load: 30 } // Tuesday (unplanned)
-            ];
+    it('should handle zero planned load', () => {
+      const weekData = {
+        plannedSessions: [],
+        completedSessions: [{ load: 50 }],
+      };
 
-            const breakdown = weekView.calculateDailyBreakdown(weekStart, plannedSessions, completedSessions);
+      const analysis = weekView.analyzeWeeklyLoad(weekData);
 
-            expect(breakdown).toHaveLength(7);
-
-            // Monday check (index 1)
-            const monday = breakdown.find(d => d.dayName === 'Mon');
-            expect(monday).toBeDefined();
-            expect(monday.plannedLoad).toBe(50);
-            expect(monday.completedLoad).toBe(45);
-
-            // Tuesday check (index 2)
-            const tuesday = breakdown.find(d => d.dayName === 'Tue');
-            expect(tuesday).toBeDefined();
-            expect(tuesday.plannedLoad).toBe(0);
-            expect(tuesday.completedLoad).toBe(30);
-        });
-
-        it('should identify today correctly', () => {
-            const today = new Date();
-            const weekStart = new Date(today);
-            weekStart.setDate(today.getDate() - today.getDay()); // Start of current week
-
-            const breakdown = weekView.calculateDailyBreakdown(weekStart, [], []);
-
-            const todayEntry = breakdown.find(day => day.isToday);
-            expect(todayEntry).toBeDefined();
-            expect(todayEntry.isToday).toBe(true);
-        });
+      expect(analysis.loadRatio).toBe(0);
+      expect(analysis.variancePercentage).toBe(0);
+      expect(analysis.completedLoad).toBe(50);
     });
 
-    describe('Insights Generation', () => {
-        it('should generate overreaching warning', () => {
-            const loadAnalysis = {
-                status: { key: 'significantlyOver' },
-                variancePercentage: 25,
-                loadRatio: 1.25
-            };
-            const guardrailStatus = { isUnderGuardrail: false };
+    it('should handle exact match (100%)', () => {
+      const weekData = {
+        plannedSessions: [{ load: 100 }],
+        completedSessions: [{ load: 100 }],
+      };
 
-            const insights = weekView.generateInsights(loadAnalysis, guardrailStatus);
+      const analysis = weekView.analyzeWeeklyLoad(weekData);
 
-            const warningInsight = insights.find(i => i.type === 'warning');
-            expect(warningInsight).toBeDefined();
-            expect(warningInsight.title).toBe('Overreaching Risk');
-            expect(warningInsight.action).toBe('schedule_rest');
-        });
+      expect(analysis.loadRatio).toBe(1.0);
+      expect(analysis.status.key).toBe('onTrack');
+    });
+  });
 
-        it('should generate guardrail insight when restrictions active', () => {
-            const loadAnalysis = { status: { key: 'onTrack' }, loadRatio: 1.0 };
-            const guardrailStatus = { isUnderGuardrail: true };
+  describe('Daily Breakdown', () => {
+    it('should calculate daily breakdown correctly', () => {
+      const weekStart = new Date('2024-01-07'); // Sunday
+      const plannedSessions = [
+        { date: '2024-01-08', load: 50 }, // Monday
+        { date: '2024-01-10', load: 60 }, // Wednesday
+      ];
+      const completedSessions = [
+        { date: '2024-01-08', load: 45 }, // Monday
+        { date: '2024-01-09', load: 30 }, // Tuesday (unplanned)
+      ];
 
-            const insights = weekView.generateInsights(loadAnalysis, guardrailStatus);
+      const breakdown = weekView.calculateDailyBreakdown(
+        weekStart,
+        plannedSessions,
+        completedSessions
+      );
 
-            const guardrailInsight = insights.find(i => i.type === 'caution');
-            expect(guardrailInsight).toBeDefined();
-            expect(guardrailInsight.title).toBe('Load Restrictions Active');
-        });
+      expect(breakdown).toHaveLength(7);
 
-        it('should generate consistency tip for uneven load distribution', () => {
-            const loadAnalysis = {
-                status: { key: 'slightlyOver' },
-                loadRatio: 1.15
-            };
-            const guardrailStatus = { isUnderGuardrail: false };
+      // Monday check (index 1)
+      const monday = breakdown.find(d => d.dayName === 'Mon');
+      expect(monday).toBeDefined();
+      expect(monday.plannedLoad).toBe(50);
+      expect(monday.completedLoad).toBe(45);
 
-            const insights = weekView.generateInsights(loadAnalysis, guardrailStatus);
-
-            const tipInsight = insights.find(i => i.type === 'tip' && i.title === 'Consistency Focus');
-            expect(tipInsight).toBeDefined();
-        });
-
-        it('should generate encouragement for on-track status', () => {
-            const loadAnalysis = {
-                status: { key: 'onTrack' },
-                loadRatio: 1.0
-            };
-            const guardrailStatus = { isUnderGuardrail: false };
-
-            const insights = weekView.generateInsights(loadAnalysis, guardrailStatus);
-
-            const encouragement = insights.find(i => i.title === 'Great Progress!');
-            expect(encouragement).toBeDefined();
-        });
+      // Tuesday check (index 2)
+      const tuesday = breakdown.find(d => d.dayName === 'Tue');
+      expect(tuesday).toBeDefined();
+      expect(tuesday.plannedLoad).toBe(0);
+      expect(tuesday.completedLoad).toBe(30);
     });
 
-    describe('Navigation', () => {
-        it('should navigate to previous week', () => {
-            weekView.navigateWeek(-1);
+    it('should identify today correctly', () => {
+      const today = new Date();
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - today.getDay()); // Start of current week
 
-            expect(weekView.currentWeekOffset).toBe(-1);
-        });
+      const breakdown = weekView.calculateDailyBreakdown(weekStart, [], []);
 
-        it('should navigate to next week', () => {
-            weekView.navigateWeek(1);
+      const todayEntry = breakdown.find(day => day.isToday);
+      expect(todayEntry).toBeDefined();
+      expect(todayEntry.isToday).toBe(true);
+    });
+  });
 
-            expect(weekView.currentWeekOffset).toBe(1);
-        });
+  describe('Insights Generation', () => {
+    it('should generate overreaching warning', () => {
+      const loadAnalysis = {
+        status: { key: 'significantlyOver' },
+        variancePercentage: 25,
+        loadRatio: 1.25,
+      };
+      const guardrailStatus = { isUnderGuardrail: false };
 
-        it('should navigate to current week', () => {
-            weekView.currentWeekOffset = -2;
-            weekView.navigateToToday();
+      const insights = weekView.generateInsights(loadAnalysis, guardrailStatus);
 
-            expect(weekView.currentWeekOffset).toBe(0);
-        });
+      const warningInsight = insights.find(i => i.type === 'warning');
+      expect(warningInsight).toBeDefined();
+      expect(warningInsight.title).toBe('Overreaching Risk');
+      expect(warningInsight.action).toBe('schedule_rest');
     });
 
-    describe('Week Label Generation', () => {
-        it('should generate correct week labels', () => {
-            expect(weekView.getWeekLabel(0)).toBe('This Week');
-            expect(weekView.getWeekLabel(-1)).toBe('Last Week');
-            expect(weekView.getWeekLabel(1)).toBe('Next Week');
-            expect(weekView.getWeekLabel(-3)).toBe('3 Weeks Ago');
-            expect(weekView.getWeekLabel(2)).toBe('2 Weeks Ahead');
-        });
+    it('should generate guardrail insight when restrictions active', () => {
+      const loadAnalysis = { status: { key: 'onTrack' }, loadRatio: 1.0 };
+      const guardrailStatus = { isUnderGuardrail: true };
+
+      const insights = weekView.generateInsights(loadAnalysis, guardrailStatus);
+
+      const guardrailInsight = insights.find(i => i.type === 'caution');
+      expect(guardrailInsight).toBeDefined();
+      expect(guardrailInsight.title).toBe('Load Restrictions Active');
     });
 
-    describe('Date Utilities', () => {
-        it('should identify today correctly', () => {
-            const today = new Date();
-            const yesterday = new Date(today);
-            yesterday.setDate(yesterday.getDate() - 1);
+    it('should generate consistency tip for uneven load distribution', () => {
+      const loadAnalysis = {
+        status: { key: 'slightlyOver' },
+        loadRatio: 1.15,
+      };
+      const guardrailStatus = { isUnderGuardrail: false };
 
-            expect(weekView.isToday(today)).toBe(true);
-            expect(weekView.isToday(yesterday)).toBe(false);
-        });
+      const insights = weekView.generateInsights(loadAnalysis, guardrailStatus);
 
-        it('should format date range correctly', () => {
-            const start = new Date('2024-01-07');
-            const end = new Date('2024-01-13');
-
-            const formatted = weekView.formatDateRange(start, end);
-
-            expect(formatted).toMatch(/Jan/);
-            expect(formatted).toContain('-');
-        });
+      const tipInsight = insights.find(i => i.type === 'tip' && i.title === 'Consistency Focus');
+      expect(tipInsight).toBeDefined();
     });
 
-    describe('Error Handling', () => {
-        it('should handle missing container element', async () => {
-            document.getElementById.mockReturnValue(null);
+    it('should generate encouragement for on-track status', () => {
+      const loadAnalysis = {
+        status: { key: 'onTrack' },
+        loadRatio: 1.0,
+      };
+      const guardrailStatus = { isUnderGuardrail: false };
 
-            await expect(weekView.render('missing-container')).rejects.toThrow('Container missing-container not found');
-        });
+      const insights = weekView.generateInsights(loadAnalysis, guardrailStatus);
 
-        it('should generate error HTML', () => {
-            const errorHTML = weekView.generateErrorHTML('Test error');
-            expect(errorHTML).toContain('Test error');
-            expect(errorHTML).toContain('error');
-        });
+      const encouragement = insights.find(i => i.title === 'Great Progress!');
+      expect(encouragement).toBeDefined();
+    });
+  });
+
+  describe('Navigation', () => {
+    it('should navigate to previous week', () => {
+      weekView.navigateWeek(-1);
+
+      expect(weekView.currentWeekOffset).toBe(-1);
     });
 
-    describe('Load Calculation', () => {
-        it('should calculate total load correctly', () => {
-            const sessions = [
-                { load: 50 },
-                { load: 60 },
-                { load: 40 }
-            ];
+    it('should navigate to next week', () => {
+      weekView.navigateWeek(1);
 
-            const total = weekView.calculateTotalLoad(sessions);
-            expect(total).toBe(150);
-        });
-
-        it('should handle empty sessions array', () => {
-            const total = weekView.calculateTotalLoad([]);
-            expect(total).toBe(0);
-        });
-
-        it('should handle null/undefined sessions', () => {
-            const total = weekView.calculateTotalLoad(null);
-            expect(total).toBe(0);
-        });
+      expect(weekView.currentWeekOffset).toBe(1);
     });
+
+    it('should navigate to current week', () => {
+      weekView.currentWeekOffset = -2;
+      weekView.navigateToToday();
+
+      expect(weekView.currentWeekOffset).toBe(0);
+    });
+  });
+
+  describe('Week Label Generation', () => {
+    it('should generate correct week labels', () => {
+      expect(weekView.getWeekLabel(0)).toBe('This Week');
+      expect(weekView.getWeekLabel(-1)).toBe('Last Week');
+      expect(weekView.getWeekLabel(1)).toBe('Next Week');
+      expect(weekView.getWeekLabel(-3)).toBe('3 Weeks Ago');
+      expect(weekView.getWeekLabel(2)).toBe('2 Weeks Ahead');
+    });
+  });
+
+  describe('Date Utilities', () => {
+    it('should identify today correctly', () => {
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+
+      expect(weekView.isToday(today)).toBe(true);
+      expect(weekView.isToday(yesterday)).toBe(false);
+    });
+
+    it('should format date range correctly', () => {
+      const start = new Date('2024-01-07');
+      const end = new Date('2024-01-13');
+
+      const formatted = weekView.formatDateRange(start, end);
+
+      expect(formatted).toMatch(/Jan/);
+      expect(formatted).toContain('-');
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should handle missing container element', async () => {
+      document.getElementById.mockReturnValue(null);
+
+      await expect(weekView.render('missing-container')).rejects.toThrow(
+        'Container missing-container not found'
+      );
+    });
+
+    it('should generate error HTML', () => {
+      const errorHTML = weekView.generateErrorHTML('Test error');
+      expect(errorHTML).toContain('Test error');
+      expect(errorHTML).toContain('error');
+    });
+  });
+
+  describe('Load Calculation', () => {
+    it('should calculate total load correctly', () => {
+      const sessions = [{ load: 50 }, { load: 60 }, { load: 40 }];
+
+      const total = weekView.calculateTotalLoad(sessions);
+      expect(total).toBe(150);
+    });
+
+    it('should handle empty sessions array', () => {
+      const total = weekView.calculateTotalLoad([]);
+      expect(total).toBe(0);
+    });
+
+    it('should handle null/undefined sessions', () => {
+      const total = weekView.calculateTotalLoad(null);
+      expect(total).toBe(0);
+    });
+  });
 });
-

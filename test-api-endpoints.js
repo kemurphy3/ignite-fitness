@@ -18,8 +18,8 @@ async function apiCall(endpoint, method = 'GET', body = null, headers = {}) {
     headers: {
       'Content-Type': 'application/json',
       'X-API-Key': API_KEY,
-      ...headers
-    }
+      ...headers,
+    },
   };
 
   if (body) {
@@ -29,17 +29,17 @@ async function apiCall(endpoint, method = 'GET', body = null, headers = {}) {
   try {
     const response = await fetch(url, options);
     const data = await response.json();
-    
+
     return {
       status: response.status,
       data: data,
-      success: response.ok
+      success: response.ok,
     };
   } catch (error) {
     return {
       status: 0,
       data: { error: error.message },
-      success: false
+      success: false,
     };
   }
 }
@@ -47,7 +47,7 @@ async function apiCall(endpoint, method = 'GET', body = null, headers = {}) {
 // Test functions
 async function testUserProfile() {
   console.log('\n🧪 Testing User Profile API...');
-  
+
   // Test 1: Create user profile
   console.log('1. Creating user profile...');
   const createResult = await apiCall('user-profile', 'POST', {
@@ -59,10 +59,10 @@ async function testUserProfile() {
     baseline_lifts: {
       squat: 100,
       bench: 80,
-      deadlift: 120
-    }
+      deadlift: 120,
+    },
   });
-  
+
   console.log('Create Result:', createResult.status, createResult.success ? '✅' : '❌');
   if (!createResult.success) {
     console.log('Error:', createResult.data);
@@ -81,7 +81,7 @@ async function testUserProfile() {
   const updateResult = await apiCall('user-profile', 'POST', {
     age: 26,
     weight: 76.0,
-    goals: ['strength', 'muscle_gain']
+    goals: ['strength', 'muscle_gain'],
   });
   console.log('Update Result:', updateResult.status, updateResult.success ? '✅' : '❌');
 
@@ -90,14 +90,18 @@ async function testUserProfile() {
   const invalidResult = await apiCall('user-profile', 'POST', {
     age: 12, // Invalid age
     weight: 500, // Invalid weight
-    sex: 'invalid' // Invalid sex
+    sex: 'invalid', // Invalid sex
   });
-  console.log('Validation Result:', invalidResult.status, invalidResult.status === 400 ? '✅' : '❌');
+  console.log(
+    'Validation Result:',
+    invalidResult.status,
+    invalidResult.status === 400 ? '✅' : '❌'
+  );
 }
 
 async function testSessions() {
   console.log('\n🧪 Testing Sessions API...');
-  
+
   // Test 1: Create session
   console.log('1. Creating session...');
   const createResult = await apiCall('sessions-create', 'POST', {
@@ -109,10 +113,10 @@ async function testSessions() {
     payload: {
       notes: 'Great workout!',
       rpe: 7,
-      location: 'Home Gym'
-    }
+      location: 'Home Gym',
+    },
   });
-  
+
   console.log('Create Result:', createResult.status, createResult.success ? '✅' : '❌');
   if (createResult.success) {
     console.log('Session Data:', createResult.data);
@@ -124,9 +128,13 @@ async function testSessions() {
     type: 'workout',
     source: 'manual',
     source_id: 'test-session-123', // Same source_id
-    start_at: new Date().toISOString()
+    start_at: new Date().toISOString(),
   });
-  console.log('Duplicate Result:', duplicateResult.status, duplicateResult.status === 409 ? '✅' : '❌');
+  console.log(
+    'Duplicate Result:',
+    duplicateResult.status,
+    duplicateResult.status === 409 ? '✅' : '❌'
+  );
 
   // Test 3: List sessions
   console.log('3. Listing sessions...');
@@ -146,14 +154,18 @@ async function testSessions() {
   const invalidResult = await apiCall('sessions-create', 'POST', {
     type: 'invalid_type',
     source: 'invalid_source',
-    start_at: 'invalid_date'
+    start_at: 'invalid_date',
   });
-  console.log('Validation Result:', invalidResult.status, invalidResult.status === 400 ? '✅' : '❌');
+  console.log(
+    'Validation Result:',
+    invalidResult.status,
+    invalidResult.status === 400 ? '✅' : '❌'
+  );
 }
 
 async function testExercises() {
   console.log('\n🧪 Testing Exercises API...');
-  
+
   // Test 1: Create exercises
   console.log('1. Creating exercises...');
   const createResult = await apiCall('exercises-bulk-create', 'POST', {
@@ -165,7 +177,7 @@ async function testExercises() {
         reps: 10,
         weight: 100,
         rpe: 7,
-        notes: 'Good form'
+        notes: 'Good form',
       },
       {
         name: 'Bench Press',
@@ -173,18 +185,18 @@ async function testExercises() {
         reps: 8,
         weight: 80,
         rpe: 8,
-        notes: 'Felt heavy'
+        notes: 'Felt heavy',
       },
       {
         name: 'Deadlift',
         sets: 1,
         reps: 5,
         weight: 120,
-        rpe: 9
-      }
-    ]
+        rpe: 9,
+      },
+    ],
   });
-  
+
   console.log('Create Result:', createResult.status, createResult.success ? '✅' : '❌');
   if (createResult.success) {
     console.log('Exercises Created:', createResult.data.count);
@@ -199,11 +211,15 @@ async function testExercises() {
         name: '', // Invalid name
         sets: 0, // Invalid sets
         reps: 101, // Invalid reps
-        weight: 600 // Invalid weight
-      }
-    ]
+        weight: 600, // Invalid weight
+      },
+    ],
   });
-  console.log('Validation Result:', invalidResult.status, invalidResult.status === 400 ? '✅' : '❌');
+  console.log(
+    'Validation Result:',
+    invalidResult.status,
+    invalidResult.status === 400 ? '✅' : '❌'
+  );
 
   // Test 3: Non-existent session
   console.log('3. Testing non-existent session...');
@@ -213,32 +229,37 @@ async function testExercises() {
       {
         name: 'Test Exercise',
         sets: 1,
-        reps: 1
-      }
-    ]
+        reps: 1,
+      },
+    ],
   });
-  console.log('Not Found Result:', notFoundResult.status, notFoundResult.status === 404 ? '✅' : '❌');
+  console.log(
+    'Not Found Result:',
+    notFoundResult.status,
+    notFoundResult.status === 404 ? '✅' : '❌'
+  );
 }
 
 async function testRateLimiting() {
   console.log('\n🧪 Testing Rate Limiting...');
-  
+
   // Make multiple requests quickly to test rate limiting
   const promises = [];
-  for (let i = 0; i < 105; i++) { // Exceed 100 req/min limit
+  for (let i = 0; i < 105; i++) {
+    // Exceed 100 req/min limit
     promises.push(apiCall('user-profile', 'GET'));
   }
-  
+
   const results = await Promise.all(promises);
   const rateLimited = results.filter(r => r.status === 429);
-  
+
   console.log(`Rate Limited Requests: ${rateLimited.length}/${results.length}`);
   console.log('Rate Limiting:', rateLimited.length > 0 ? '✅' : '❌');
 }
 
 async function testAuthentication() {
   console.log('\n🧪 Testing Authentication...');
-  
+
   // Test 1: Missing API key
   console.log('1. Testing missing API key...');
   const noKeyResult = await apiCall('user-profile', 'GET', null, { 'X-API-Key': '' });
@@ -246,8 +267,14 @@ async function testAuthentication() {
 
   // Test 2: Invalid API key
   console.log('2. Testing invalid API key...');
-  const invalidKeyResult = await apiCall('user-profile', 'GET', null, { 'X-API-Key': 'invalid-key' });
-  console.log('Invalid Key Result:', invalidKeyResult.status, invalidKeyResult.status === 401 ? '✅' : '❌');
+  const invalidKeyResult = await apiCall('user-profile', 'GET', null, {
+    'X-API-Key': 'invalid-key',
+  });
+  console.log(
+    'Invalid Key Result:',
+    invalidKeyResult.status,
+    invalidKeyResult.status === 401 ? '✅' : '❌'
+  );
 }
 
 // Main test runner
@@ -255,14 +282,14 @@ async function runAllTests() {
   console.log('🚀 Starting API Endpoint Tests...');
   console.log('Base URL:', BASE_URL);
   console.log('API Key:', API_KEY);
-  
+
   try {
     await testAuthentication();
     await testUserProfile();
     await testSessions();
     await testExercises();
     await testRateLimiting();
-    
+
     console.log('\n✅ All tests completed!');
   } catch (error) {
     console.error('\n❌ Test suite failed:', error);
@@ -280,5 +307,5 @@ module.exports = {
   testSessions,
   testExercises,
   testRateLimiting,
-  testAuthentication
+  testAuthentication,
 };

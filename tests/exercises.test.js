@@ -10,7 +10,7 @@ import {
   createTestUser,
   createTestSession,
   createTestExercise,
-  cleanupTestData
+  cleanupTestData,
 } from './helpers/db.js';
 
 describe('Exercises API Tests', () => {
@@ -32,7 +32,7 @@ describe('Exercises API Tests', () => {
     testUser = await createTestUser({
       external_id: `test_user_${Date.now()}`,
       username: `testuser_${Date.now()}`,
-      status: 'active'
+      status: 'active',
     });
   });
 
@@ -55,21 +55,25 @@ describe('Exercises API Tests', () => {
         return;
       }
 
-      const { handler: sessionHandler } = await import('../../netlify/functions/sessions-create.js');
-      const { handler: exerciseHandler } = await import('../../netlify/functions/sessions-exercises-create.js');
+      const { handler: sessionHandler } = await import(
+        '../../netlify/functions/sessions-create.js'
+      );
+      const { handler: exerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-create.js'
+      );
 
       // First create a session
       const sessionResponse = await sessionHandler({
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: new Date().toISOString()
-        })
+          start_at: new Date().toISOString(),
+        }),
       });
 
       const sessionData = JSON.parse(sessionResponse.body);
@@ -80,18 +84,18 @@ describe('Exercises API Tests', () => {
         exercises: [
           { name: 'Bench Press', sets: 3, reps: 10, weight_kg: 80 },
           { name: 'Squat', sets: 4, reps: 8, weight_kg: 100 },
-          { name: 'Deadlift', sets: 3, reps: 5, weight_kg: 120 }
-        ]
+          { name: 'Deadlift', sets: 3, reps: 5, weight_kg: 120 },
+        ],
       };
 
       const exerciseEvent = {
         httpMethod: 'POST',
         path: `/sessions/${sessionId}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(exercisesData)
+        body: JSON.stringify(exercisesData),
       };
 
       const exerciseResponse = await exerciseHandler(exerciseEvent);
@@ -120,7 +124,7 @@ describe('Exercises API Tests', () => {
         { name: 'Test', type: '' }, // Empty type
         { name: 'Test', type: 'invalid_type' }, // Invalid type
         { name: 'Test' }, // Missing type
-        { type: 'strength' } // Missing name
+        { type: 'strength' }, // Missing name
       ];
 
       for (const exercise of invalidExercises) {
@@ -144,21 +148,25 @@ describe('Exercises API Tests', () => {
         return;
       }
 
-      const { handler: sessionHandler } = await import('../../netlify/functions/sessions-create.js');
-      const { handler: exerciseHandler } = await import('../../netlify/functions/sessions-exercises-create.js');
+      const { handler: sessionHandler } = await import(
+        '../../netlify/functions/sessions-create.js'
+      );
+      const { handler: exerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-create.js'
+      );
 
       // Create a session
       const sessionResponse = await sessionHandler({
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: new Date().toISOString()
-        })
+          start_at: new Date().toISOString(),
+        }),
       });
 
       const sessionData = JSON.parse(sessionResponse.body);
@@ -170,18 +178,18 @@ describe('Exercises API Tests', () => {
           { name: 'Valid Exercise 1', sets: 3, reps: 10 }, // Valid
           { name: '', sets: 3, reps: 10 }, // Invalid: empty name
           { name: 'Valid Exercise 2', sets: 4, reps: 8 }, // Valid
-          { name: 'Invalid Exercise', sets: 0, reps: 10 } // Invalid: sets too low
-        ]
+          { name: 'Invalid Exercise', sets: 0, reps: 10 }, // Invalid: sets too low
+        ],
       };
 
       const event = {
         httpMethod: 'POST',
         path: `/sessions/${sessionId}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(mixedExercises)
+        body: JSON.stringify(mixedExercises),
       };
 
       const response = await exerciseHandler(event);
@@ -206,22 +214,24 @@ describe('Exercises API Tests', () => {
       const session = await createTestSession({ user_id: user.id });
 
       // Create 51 exercises (exceeds limit)
-      const exercises = Array(51).fill().map((_, i) => ({
-        name: `Exercise ${i}`,
-        sets: 3,
-        reps: 10
-      }));
+      const exercises = Array(51)
+        .fill()
+        .map((_, i) => ({
+          name: `Exercise ${i}`,
+          sets: 3,
+          reps: 10,
+        }));
 
       const response = await fetch('/.netlify/functions/exercises-bulk-create', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${user.jwt_token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${user.jwt_token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           session_id: session.id,
-          exercises
-        })
+          exercises,
+        }),
       });
 
       expect(response.status).toBe(400);
@@ -273,21 +283,25 @@ describe('Exercises API Tests', () => {
         return;
       }
 
-      const { handler: sessionHandler } = await import('../../netlify/functions/sessions-create.js');
-      const { handler: exerciseHandler } = await import('../../netlify/functions/sessions-exercises-create.js');
+      const { handler: sessionHandler } = await import(
+        '../../netlify/functions/sessions-create.js'
+      );
+      const { handler: exerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-create.js'
+      );
 
       // Create session
       const sessionResponse = await sessionHandler({
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: new Date().toISOString()
-        })
+          start_at: new Date().toISOString(),
+        }),
       });
 
       const sessionData = JSON.parse(sessionResponse.body);
@@ -299,7 +313,7 @@ describe('Exercises API Tests', () => {
         { exercises: [{ name: 'Test', sets: 3, reps: -1 }] }, // Negative reps
         { exercises: [{ name: 'Test', sets: 3, reps: 10, weight_kg: -5 }] }, // Negative weight
         { exercises: [{ name: 'Test', sets: 3, reps: 10, rpe: 11 }] }, // RPE too high (max 10)
-        { exercises: [{ name: 'Test', sets: 3, reps: 10, weight_kg: 501 }] } // Weight too high (max 500)
+        { exercises: [{ name: 'Test', sets: 3, reps: 10, weight_kg: 501 }] }, // Weight too high (max 500)
       ];
 
       for (const invalidData of invalidMetrics) {
@@ -307,10 +321,10 @@ describe('Exercises API Tests', () => {
           httpMethod: 'POST',
           path: `/sessions/${sessionId}/exercises`,
           headers: {
-            'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+            'Content-Type': 'application/json',
           },
-          body: JSON.stringify(invalidData)
+          body: JSON.stringify(invalidData),
         };
 
         const response = await exerciseHandler(event);
@@ -327,21 +341,25 @@ describe('Exercises API Tests', () => {
         return;
       }
 
-      const { handler: sessionHandler } = await import('../../netlify/functions/sessions-create.js');
-      const { handler: exerciseHandler } = await import('../../netlify/functions/sessions-exercises-create.js');
+      const { handler: sessionHandler } = await import(
+        '../../netlify/functions/sessions-create.js'
+      );
+      const { handler: exerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-create.js'
+      );
 
       // Create session
       const sessionResponse = await sessionHandler({
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: new Date().toISOString()
-        })
+          start_at: new Date().toISOString(),
+        }),
       });
 
       const sessionData = JSON.parse(sessionResponse.body);
@@ -355,17 +373,19 @@ describe('Exercises API Tests', () => {
           httpMethod: 'POST',
           path: `/sessions/${sessionId}/exercises`,
           headers: {
-            'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            exercises: [{
-              name: `Test ${category}`,
-              sets: 3,
-              reps: 10,
-              exercise_type: category
-            }]
-          })
+            exercises: [
+              {
+                name: `Test ${category}`,
+                sets: 3,
+                reps: 10,
+                exercise_type: category,
+              },
+            ],
+          }),
         };
 
         const response = await exerciseHandler(event);
@@ -379,17 +399,19 @@ describe('Exercises API Tests', () => {
         httpMethod: 'POST',
         path: `/sessions/${sessionId}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          exercises: [{
-            name: 'Invalid Category Exercise',
-            sets: 3,
-            reps: 10,
-            exercise_type: 'invalid_category_type'
-          }]
-        })
+          exercises: [
+            {
+              name: 'Invalid Category Exercise',
+              sets: 3,
+              reps: 10,
+              exercise_type: 'invalid_category_type',
+            },
+          ],
+        }),
       };
 
       const invalidResponse = await exerciseHandler(invalidEvent);
@@ -409,21 +431,25 @@ describe('Exercises API Tests', () => {
         return;
       }
 
-      const { handler: sessionHandler } = await import('../../netlify/functions/sessions-create.js');
-      const { handler: exerciseHandler } = await import('../../netlify/functions/sessions-exercises-create.js');
+      const { handler: sessionHandler } = await import(
+        '../../netlify/functions/sessions-create.js'
+      );
+      const { handler: exerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-create.js'
+      );
 
       // Create session
       const sessionResponse = await sessionHandler({
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: new Date().toISOString()
-        })
+          start_at: new Date().toISOString(),
+        }),
       });
 
       const sessionData = JSON.parse(sessionResponse.body);
@@ -431,22 +457,24 @@ describe('Exercises API Tests', () => {
 
       // Create single exercise
       const exerciseData = {
-        exercises: [{
-          name: 'Pull Up',
-          sets: 3,
-          reps: 10,
-          weight_kg: 0 // Bodyweight
-        }]
+        exercises: [
+          {
+            name: 'Pull Up',
+            sets: 3,
+            reps: 10,
+            weight_kg: 0, // Bodyweight
+          },
+        ],
       };
 
       const exerciseEvent = {
         httpMethod: 'POST',
         path: `/sessions/${sessionId}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(exerciseData)
+        body: JSON.stringify(exerciseData),
       };
 
       const exerciseResponse = await exerciseHandler(exerciseEvent);
@@ -476,22 +504,28 @@ describe('Exercises API Tests', () => {
         return;
       }
 
-      const { handler: sessionHandler } = await import('../../netlify/functions/sessions-create.js');
-      const { handler: createExerciseHandler } = await import('../../netlify/functions/sessions-exercises-create.js');
-      const { handler: listExerciseHandler } = await import('../../netlify/functions/sessions-exercises-list.js');
+      const { handler: sessionHandler } = await import(
+        '../../netlify/functions/sessions-create.js'
+      );
+      const { handler: createExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-create.js'
+      );
+      const { handler: listExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-list.js'
+      );
 
       // Create session and exercise
       const sessionResponse = await sessionHandler({
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: new Date().toISOString()
-        })
+          start_at: new Date().toISOString(),
+        }),
       });
 
       const sessionData = JSON.parse(sessionResponse.body);
@@ -502,12 +536,12 @@ describe('Exercises API Tests', () => {
         httpMethod: 'POST',
         path: `/sessions/${sessionId}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          exercises: [{ name: 'Bench Press', sets: 3, reps: 10, weight_kg: 80 }]
-        })
+          exercises: [{ name: 'Bench Press', sets: 3, reps: 10, weight_kg: 80 }],
+        }),
       });
 
       const created = JSON.parse(createResponse.body);
@@ -522,8 +556,8 @@ describe('Exercises API Tests', () => {
         httpMethod: 'GET',
         path: `/sessions/${sessionId}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
-        }
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+        },
       };
 
       const listResponse = await listExerciseHandler(listEvent);
@@ -543,22 +577,28 @@ describe('Exercises API Tests', () => {
         return;
       }
 
-      const { handler: sessionHandler } = await import('../../netlify/functions/sessions-create.js');
-      const { handler: createExerciseHandler } = await import('../../netlify/functions/sessions-exercises-create.js');
-      const { handler: updateExerciseHandler } = await import('../../netlify/functions/sessions-exercises-update.js');
+      const { handler: sessionHandler } = await import(
+        '../../netlify/functions/sessions-create.js'
+      );
+      const { handler: createExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-create.js'
+      );
+      const { handler: updateExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-update.js'
+      );
 
       // Create session and exercise
       const sessionResponse = await sessionHandler({
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: new Date().toISOString()
-        })
+          start_at: new Date().toISOString(),
+        }),
       });
 
       const sessionData = JSON.parse(sessionResponse.body);
@@ -569,12 +609,12 @@ describe('Exercises API Tests', () => {
         httpMethod: 'POST',
         path: `/sessions/${sessionId}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          exercises: [{ name: 'Squat', sets: 3, reps: 10 }]
-        })
+          exercises: [{ name: 'Squat', sets: 3, reps: 10 }],
+        }),
       });
 
       const created = JSON.parse(createResponse.body);
@@ -589,15 +629,15 @@ describe('Exercises API Tests', () => {
         httpMethod: 'PUT',
         path: `/sessions/${sessionId}/exercises/${exerciseId}`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           name: 'Squat',
           sets: 5,
           reps: 5,
-          weight_kg: 120
-        })
+          weight_kg: 120,
+        }),
       };
 
       const updateResponse = await updateExerciseHandler(updateEvent);
@@ -620,22 +660,28 @@ describe('Exercises API Tests', () => {
         return;
       }
 
-      const { handler: sessionHandler } = await import('../../netlify/functions/sessions-create.js');
-      const { handler: createExerciseHandler } = await import('../../netlify/functions/sessions-exercises-create.js');
-      const { handler: deleteExerciseHandler } = await import('../../netlify/functions/sessions-exercises-delete.js');
+      const { handler: sessionHandler } = await import(
+        '../../netlify/functions/sessions-create.js'
+      );
+      const { handler: createExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-create.js'
+      );
+      const { handler: deleteExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-delete.js'
+      );
 
       // Create session and exercise
       const sessionResponse = await sessionHandler({
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: new Date().toISOString()
-        })
+          start_at: new Date().toISOString(),
+        }),
       });
 
       const sessionData = JSON.parse(sessionResponse.body);
@@ -646,12 +692,12 @@ describe('Exercises API Tests', () => {
         httpMethod: 'POST',
         path: `/sessions/${sessionId}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          exercises: [{ name: 'Deadlift', sets: 3, reps: 5 }]
-        })
+          exercises: [{ name: 'Deadlift', sets: 3, reps: 5 }],
+        }),
       });
 
       const created = JSON.parse(createResponse.body);
@@ -666,8 +712,8 @@ describe('Exercises API Tests', () => {
         httpMethod: 'DELETE',
         path: `/sessions/${sessionId}/exercises/${exerciseId}`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
-        }
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+        },
       };
 
       const deleteResponse = await deleteExerciseHandler(deleteEvent);
@@ -694,22 +740,28 @@ describe('Exercises API Tests', () => {
         return;
       }
 
-      const { handler: sessionHandler } = await import('../../netlify/functions/sessions-create.js');
-      const { handler: createExerciseHandler } = await import('../../netlify/functions/sessions-exercises-create.js');
-      const { handler: listExerciseHandler } = await import('../../netlify/functions/sessions-exercises-list.js');
+      const { handler: sessionHandler } = await import(
+        '../../netlify/functions/sessions-create.js'
+      );
+      const { handler: createExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-create.js'
+      );
+      const { handler: listExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-list.js'
+      );
 
       // Create session
       const sessionResponse = await sessionHandler({
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: new Date().toISOString()
-        })
+          start_at: new Date().toISOString(),
+        }),
       });
 
       const sessionData = JSON.parse(sessionResponse.body);
@@ -720,16 +772,16 @@ describe('Exercises API Tests', () => {
         httpMethod: 'POST',
         path: `/sessions/${sessionId}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           exercises: [
             { name: 'Bench Press', sets: 3, reps: 10 },
             { name: 'Squat', sets: 4, reps: 8 },
-            { name: 'Deadlift', sets: 3, reps: 5 }
-          ]
-        })
+            { name: 'Deadlift', sets: 3, reps: 5 },
+          ],
+        }),
       });
 
       // List all exercises
@@ -737,9 +789,9 @@ describe('Exercises API Tests', () => {
         httpMethod: 'GET',
         path: `/sessions/${sessionId}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
         },
-        queryStringParameters: {}
+        queryStringParameters: {},
       };
 
       const listResponse = await listExerciseHandler(listEvent);
@@ -761,22 +813,28 @@ describe('Exercises API Tests', () => {
         return;
       }
 
-      const { handler: sessionHandler } = await import('../../netlify/functions/sessions-create.js');
-      const { handler: createExerciseHandler } = await import('../../netlify/functions/sessions-exercises-create.js');
-      const { handler: listExerciseHandler } = await import('../../netlify/functions/sessions-exercises-list.js');
+      const { handler: sessionHandler } = await import(
+        '../../netlify/functions/sessions-create.js'
+      );
+      const { handler: createExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-create.js'
+      );
+      const { handler: listExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-list.js'
+      );
 
       // Create session
       const sessionResponse = await sessionHandler({
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: new Date().toISOString()
-        })
+          start_at: new Date().toISOString(),
+        }),
       });
 
       const sessionData = JSON.parse(sessionResponse.body);
@@ -787,16 +845,16 @@ describe('Exercises API Tests', () => {
         httpMethod: 'POST',
         path: `/sessions/${sessionId}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           exercises: [
             { name: 'Bench Press', sets: 3, reps: 10, exercise_type: 'strength' },
             { name: 'Running', sets: 1, reps: 30, exercise_type: 'cardio' },
-            { name: 'Stretching', sets: 3, reps: 10, exercise_type: 'flexibility' }
-          ]
-        })
+            { name: 'Stretching', sets: 3, reps: 10, exercise_type: 'flexibility' },
+          ],
+        }),
       });
 
       // List exercises (filtering by type may be implemented in the handler)
@@ -804,9 +862,9 @@ describe('Exercises API Tests', () => {
         httpMethod: 'GET',
         path: `/sessions/${sessionId}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
         },
-        queryStringParameters: {}
+        queryStringParameters: {},
       };
 
       const listResponse = await listExerciseHandler(listEvent);
@@ -829,9 +887,15 @@ describe('Exercises API Tests', () => {
         return;
       }
 
-      const { handler: sessionHandler } = await import('../../netlify/functions/sessions-create.js');
-      const { handler: createExerciseHandler } = await import('../../netlify/functions/sessions-exercises-create.js');
-      const { handler: listExerciseHandler } = await import('../../netlify/functions/sessions-exercises-list.js');
+      const { handler: sessionHandler } = await import(
+        '../../netlify/functions/sessions-create.js'
+      );
+      const { handler: createExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-create.js'
+      );
+      const { handler: listExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-list.js'
+      );
 
       const now = new Date();
       const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -841,27 +905,27 @@ describe('Exercises API Tests', () => {
       const session1Response = await sessionHandler({
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: yesterday.toISOString()
-        })
+          start_at: yesterday.toISOString(),
+        }),
       });
 
       const session2Response = await sessionHandler({
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: now.toISOString()
-        })
+          start_at: now.toISOString(),
+        }),
       });
 
       const session1Data = JSON.parse(session1Response.body);
@@ -874,24 +938,24 @@ describe('Exercises API Tests', () => {
         httpMethod: 'POST',
         path: `/sessions/${sessionId1}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          exercises: [{ name: 'Old Exercise', sets: 3, reps: 10 }]
-        })
+          exercises: [{ name: 'Old Exercise', sets: 3, reps: 10 }],
+        }),
       });
 
       await createExerciseHandler({
         httpMethod: 'POST',
         path: `/sessions/${sessionId2}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          exercises: [{ name: 'Recent Exercise', sets: 3, reps: 10 }]
-        })
+          exercises: [{ name: 'Recent Exercise', sets: 3, reps: 10 }],
+        }),
       });
 
       // List exercises from recent session
@@ -899,9 +963,9 @@ describe('Exercises API Tests', () => {
         httpMethod: 'GET',
         path: `/sessions/${sessionId2}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
         },
-        queryStringParameters: {}
+        queryStringParameters: {},
       };
 
       const listResponse = await listExerciseHandler(listEvent);
@@ -918,22 +982,28 @@ describe('Exercises API Tests', () => {
         return;
       }
 
-      const { handler: sessionHandler } = await import('../../netlify/functions/sessions-create.js');
-      const { handler: createExerciseHandler } = await import('../../netlify/functions/sessions-exercises-create.js');
-      const { handler: listExerciseHandler } = await import('../../netlify/functions/sessions-exercises-list.js');
+      const { handler: sessionHandler } = await import(
+        '../../netlify/functions/sessions-create.js'
+      );
+      const { handler: createExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-create.js'
+      );
+      const { handler: listExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-list.js'
+      );
 
       // Create session
       const sessionResponse = await sessionHandler({
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: new Date().toISOString()
-        })
+          start_at: new Date().toISOString(),
+        }),
       });
 
       const sessionData = JSON.parse(sessionResponse.body);
@@ -944,16 +1014,16 @@ describe('Exercises API Tests', () => {
         httpMethod: 'POST',
         path: `/sessions/${sessionId}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           exercises: [
             { name: 'Zebra Exercise', sets: 3, reps: 10, order_index: 3 },
             { name: 'Alpha Exercise', sets: 3, reps: 10, order_index: 1 },
-            { name: 'Beta Exercise', sets: 3, reps: 10, order_index: 2 }
-          ]
-        })
+            { name: 'Beta Exercise', sets: 3, reps: 10, order_index: 2 },
+          ],
+        }),
       });
 
       // List exercises (default ordering)
@@ -961,9 +1031,9 @@ describe('Exercises API Tests', () => {
         httpMethod: 'GET',
         path: `/sessions/${sessionId}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
         },
-        queryStringParameters: {}
+        queryStringParameters: {},
       };
 
       const listResponse = await listExerciseHandler(listEvent);
@@ -986,22 +1056,28 @@ describe('Exercises API Tests', () => {
         return;
       }
 
-      const { handler: sessionHandler } = await import('../../netlify/functions/sessions-create.js');
-      const { handler: createExerciseHandler } = await import('../../netlify/functions/sessions-exercises-create.js');
-      const { handler: listExerciseHandler } = await import('../../netlify/functions/sessions-exercises-list.js');
+      const { handler: sessionHandler } = await import(
+        '../../netlify/functions/sessions-create.js'
+      );
+      const { handler: createExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-create.js'
+      );
+      const { handler: listExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-list.js'
+      );
 
       // Create session
       const sessionResponse = await sessionHandler({
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: new Date().toISOString()
-        })
+          start_at: new Date().toISOString(),
+        }),
       });
 
       const sessionData = JSON.parse(sessionResponse.body);
@@ -1012,16 +1088,16 @@ describe('Exercises API Tests', () => {
         httpMethod: 'POST',
         path: `/sessions/${sessionId}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           exercises: [
             { name: 'Bench Press', sets: 3, reps: 10, weight_kg: 80 },
             { name: 'Squat', sets: 4, reps: 8, weight_kg: 100 },
-            { name: 'Deadlift', sets: 3, reps: 5, weight_kg: 120 }
-          ]
-        })
+            { name: 'Deadlift', sets: 3, reps: 5, weight_kg: 120 },
+          ],
+        }),
       });
 
       // List exercises to verify statistics can be calculated
@@ -1029,9 +1105,9 @@ describe('Exercises API Tests', () => {
         httpMethod: 'GET',
         path: `/sessions/${sessionId}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
         },
-        queryStringParameters: {}
+        queryStringParameters: {},
       };
 
       const listResponse = await listExerciseHandler(listEvent);
@@ -1043,8 +1119,13 @@ describe('Exercises API Tests', () => {
 
       // Calculate basic statistics
       const totalSets = exercises.reduce((sum, ex) => sum + (ex.sets || 0), 0);
-      const totalWeight = exercises.reduce((sum, ex) => sum + ((ex.weight_kg || 0) * (ex.sets || 0) * (ex.reps || 0)), 0);
-      const avgWeight = exercises.filter(ex => ex.weight_kg).reduce((sum, ex) => sum + (ex.weight_kg || 0), 0) / exercises.filter(ex => ex.weight_kg).length;
+      const totalWeight = exercises.reduce(
+        (sum, ex) => sum + (ex.weight_kg || 0) * (ex.sets || 0) * (ex.reps || 0),
+        0
+      );
+      const avgWeight =
+        exercises.filter(ex => ex.weight_kg).reduce((sum, ex) => sum + (ex.weight_kg || 0), 0) /
+        exercises.filter(ex => ex.weight_kg).length;
 
       expect(totalSets).toBeGreaterThan(0);
       expect(exercises.length).toBe(3); // Should have all 3 exercises
@@ -1056,36 +1137,42 @@ describe('Exercises API Tests', () => {
         return;
       }
 
-      const { handler: sessionHandler } = await import('../../netlify/functions/sessions-create.js');
-      const { handler: createExerciseHandler } = await import('../../netlify/functions/sessions-exercises-create.js');
-      const { handler: listExerciseHandler } = await import('../../netlify/functions/sessions-exercises-list.js');
+      const { handler: sessionHandler } = await import(
+        '../../netlify/functions/sessions-create.js'
+      );
+      const { handler: createExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-create.js'
+      );
+      const { handler: listExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-list.js'
+      );
 
       // Create multiple sessions with exercises for reporting
       const now = new Date();
       const session1Response = await sessionHandler({
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days ago
-        })
+          start_at: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
+        }),
       });
 
       const session2Response = await sessionHandler({
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: now.toISOString()
-        })
+          start_at: now.toISOString(),
+        }),
       });
 
       const session1Data = JSON.parse(session1Response.body);
@@ -1098,24 +1185,24 @@ describe('Exercises API Tests', () => {
         httpMethod: 'POST',
         path: `/sessions/${sessionId1}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          exercises: [{ name: 'Bench Press', sets: 3, reps: 10, weight_kg: 80 }]
-        })
+          exercises: [{ name: 'Bench Press', sets: 3, reps: 10, weight_kg: 80 }],
+        }),
       });
 
       await createExerciseHandler({
         httpMethod: 'POST',
         path: `/sessions/${sessionId2}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          exercises: [{ name: 'Squat', sets: 4, reps: 8, weight_kg: 100 }]
-        })
+          exercises: [{ name: 'Squat', sets: 4, reps: 8, weight_kg: 100 }],
+        }),
       });
 
       // Generate report by listing exercises across sessions
@@ -1123,9 +1210,9 @@ describe('Exercises API Tests', () => {
         httpMethod: 'GET',
         path: `/sessions/${sessionId2}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
         },
-        queryStringParameters: {}
+        queryStringParameters: {},
       };
 
       const reportResponse = await listExerciseHandler(reportEvent);
@@ -1149,36 +1236,42 @@ describe('Exercises API Tests', () => {
         return;
       }
 
-      const { handler: sessionHandler } = await import('../../netlify/functions/sessions-create.js');
-      const { handler: createExerciseHandler } = await import('../../netlify/functions/sessions-exercises-create.js');
-      const { handler: listExerciseHandler } = await import('../../netlify/functions/sessions-exercises-list.js');
+      const { handler: sessionHandler } = await import(
+        '../../netlify/functions/sessions-create.js'
+      );
+      const { handler: createExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-create.js'
+      );
+      const { handler: listExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-list.js'
+      );
 
       // Create session 1 with initial exercise
       const session1Response = await sessionHandler({
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString() // 2 weeks ago
-        })
+          start_at: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(), // 2 weeks ago
+        }),
       });
 
       // Create session 2 with progressed exercise
       const session2Response = await sessionHandler({
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: new Date().toISOString()
-        })
+          start_at: new Date().toISOString(),
+        }),
       });
 
       const session1Data = JSON.parse(session1Response.body);
@@ -1191,12 +1284,12 @@ describe('Exercises API Tests', () => {
         httpMethod: 'POST',
         path: `/sessions/${sessionId1}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          exercises: [{ name: 'Bench Press', sets: 3, reps: 10, weight_kg: 80 }]
-        })
+          exercises: [{ name: 'Bench Press', sets: 3, reps: 10, weight_kg: 80 }],
+        }),
       });
 
       // Add same exercise with increased weight (progress)
@@ -1204,12 +1297,12 @@ describe('Exercises API Tests', () => {
         httpMethod: 'POST',
         path: `/sessions/${sessionId2}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          exercises: [{ name: 'Bench Press', sets: 3, reps: 10, weight_kg: 90 }]
-        })
+          exercises: [{ name: 'Bench Press', sets: 3, reps: 10, weight_kg: 90 }],
+        }),
       });
 
       // List exercises to verify progress can be tracked
@@ -1217,9 +1310,9 @@ describe('Exercises API Tests', () => {
         httpMethod: 'GET',
         path: `/sessions/${sessionId2}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
         },
-        queryStringParameters: {}
+        queryStringParameters: {},
       };
 
       const listResponse = await listExerciseHandler(listEvent);
@@ -1244,43 +1337,51 @@ describe('Exercises API Tests', () => {
         return;
       }
 
-      const { handler: sessionHandler } = await import('../../netlify/functions/sessions-create.js');
-      const { handler: createExerciseHandler } = await import('../../netlify/functions/sessions-exercises-create.js');
-      const { handler: listExerciseHandler } = await import('../../netlify/functions/sessions-exercises-list.js');
+      const { handler: sessionHandler } = await import(
+        '../../netlify/functions/sessions-create.js'
+      );
+      const { handler: createExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-create.js'
+      );
+      const { handler: listExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-list.js'
+      );
 
       // Create session
       const sessionResponse = await sessionHandler({
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: new Date().toISOString()
-        })
+          start_at: new Date().toISOString(),
+        }),
       });
 
       const sessionData = JSON.parse(sessionResponse.body);
       const sessionId = sessionData.data?.id || sessionData.id;
 
       // Create multiple exercises (limited to 20 for test performance)
-      const exercises = Array(20).fill(null).map((_, i) => ({
-        name: `Exercise ${i + 1}`,
-        sets: 3,
-        reps: 10,
-        order_index: i
-      }));
+      const exercises = Array(20)
+        .fill(null)
+        .map((_, i) => ({
+          name: `Exercise ${i + 1}`,
+          sets: 3,
+          reps: 10,
+          order_index: i,
+        }));
 
       await createExerciseHandler({
         httpMethod: 'POST',
         path: `/sessions/${sessionId}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ exercises })
+        body: JSON.stringify({ exercises }),
       });
 
       // List exercises and measure performance
@@ -1289,9 +1390,9 @@ describe('Exercises API Tests', () => {
         httpMethod: 'GET',
         path: `/sessions/${sessionId}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
         },
-        queryStringParameters: {}
+        queryStringParameters: {},
       };
 
       const listResponse = await listExerciseHandler(listEvent);
@@ -1311,45 +1412,53 @@ describe('Exercises API Tests', () => {
         return;
       }
 
-      const { handler: sessionHandler } = await import('../../netlify/functions/sessions-create.js');
-      const { handler: exerciseHandler } = await import('../../netlify/functions/sessions-exercises-create.js');
+      const { handler: sessionHandler } = await import(
+        '../../netlify/functions/sessions-create.js'
+      );
+      const { handler: exerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-create.js'
+      );
 
       // Create session
       const sessionResponse = await sessionHandler({
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: new Date().toISOString()
-        })
+          start_at: new Date().toISOString(),
+        }),
       });
 
       const sessionData = JSON.parse(sessionResponse.body);
       const sessionId = sessionData.data?.id || sessionData.id;
 
       // Create multiple exercises concurrently
-      const concurrentRequests = Array(5).fill(null).map((_, i) =>
-        exerciseHandler({
-          httpMethod: 'POST',
-          path: `/sessions/${sessionId}/exercises`,
-          headers: {
-            'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            exercises: [{
-              name: `Concurrent Exercise ${i}`,
-              sets: 3,
-              reps: 10,
-              order_index: i
-            }]
+      const concurrentRequests = Array(5)
+        .fill(null)
+        .map((_, i) =>
+          exerciseHandler({
+            httpMethod: 'POST',
+            path: `/sessions/${sessionId}/exercises`,
+            headers: {
+              Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              exercises: [
+                {
+                  name: `Concurrent Exercise ${i}`,
+                  sets: 3,
+                  reps: 10,
+                  order_index: i,
+                },
+              ],
+            }),
           })
-        })
-      );
+        );
 
       const responses = await Promise.all(concurrentRequests);
 

@@ -7,11 +7,12 @@
 ✅ Mode toggle in Profile with immediate UI switch  
 ✅ Simple Mode: "Start Workout" with warmup + circuit + finisher  
 ✅ Advanced Mode: Full plan, RPE entry, substitutions, timers  
-✅ OverrideBar on every screen (Change exercise, Less time, Swap equipment, Reduce intensity)  
+✅ OverrideBar on every screen (Change exercise, Less time, Swap equipment,
+Reduce intensity)  
 ✅ CoachChat provides short suggestions  
 ✅ ExpertCoordinator called for re-plan with new constraints  
 ✅ Any override updates current plan without reloading  
-✅ Snapshot tests for Simple and Advanced routes  
+✅ Snapshot tests for Simple and Advanced routes
 
 ---
 
@@ -20,6 +21,7 @@
 ### **Mode System** ✅
 
 **Simple Mode:**
+
 - One-tap workout start
 - Minimal controls (no RPE sliders)
 - Pre-built circuits (warmup + 3-5 exercise circuit + finisher)
@@ -27,6 +29,7 @@
 - Focus on in-gym execution
 
 **Advanced Mode:**
+
 - Full workout plans
 - RPE entry after each exercise
 - Detailed timers (session + rest)
@@ -36,6 +39,7 @@
 - Complete customization
 
 **Mode Toggle:**
+
 - Switch in Profile settings
 - Immediate UI update (no reload)
 - Preference persisted
@@ -48,29 +52,34 @@
 ### **OverrideBar Actions** ✅
 
 **Change Exercise:**
+
 - Shows similar exercises
 - One-tap swap
 - Updates plan instantly
 - Tracks swap history
 
 **Less Time:**
+
 - Skip finisher (-20%)
 - Reduce sets (-25%)
 - Superset pairs (-30%)
 - Quick time savings
 
 **Swap Equipment:**
+
 - Machines vs free weights
 - Dumbbells vs barbell
 - Cables vs bands
 - Home gym alternatives
 
 **Reduce Intensity:**
+
 - Instant -15% load reduction
 - Safer progression
 - Adjusts RPE targets
 
 **Ask Coach (Chat):**
+
 - Conversational interface
 - Quick suggestions
 - Calls ExpertCoordinator
@@ -81,12 +90,14 @@
 ## **Coach Chat Integration** ✅
 
 **Chat Features:**
+
 - Simple pattern matching
 - Contextual responses
 - Quick suggestions (preset options)
 - Calls ExpertCoordinator for re-planning
 
 **Common Queries:**
+
 - "Too tired" → Reduce intensity 20%
 - "Too hard" → Lower RPE target
 - "Less time" → 20-min circuit
@@ -94,6 +105,7 @@
 - "Something hurts" → Trigger injury check
 
 **Re-planning Flow:**
+
 ```javascript
 User: "Too tired today"
   ↓
@@ -113,6 +125,7 @@ No page reload - seamless transition
 ## **Simple Mode Workout** ✅
 
 **Structure:**
+
 ```
 Warmup (5 min)
   - Leg swings
@@ -130,6 +143,7 @@ Finisher (5 min)
 ```
 
 **No Required:**
+
 - RPE tracking
 - Detailed timers
 - Exercise modifications
@@ -137,6 +151,7 @@ Finisher (5 min)
 - Volume adjustments
 
 **Just:**
+
 - Tap "Start"
 - Follow the circuit
 - Done in 30 minutes
@@ -146,6 +161,7 @@ Finisher (5 min)
 ## **Advanced Mode Workout** ✅
 
 **Features:**
+
 - Full workout plan from ExpertCoordinator
 - RPE input after each exercise
 - Session timer + rest countdown
@@ -156,6 +172,7 @@ Finisher (5 min)
 - Detailed analytics
 
 **Customization:**
+
 - Swap any exercise
 - Adjust sets/reps on fly
 - Modify rest periods
@@ -167,12 +184,14 @@ Finisher (5 min)
 ## **Instant Overrides** ✅
 
 **No Page Reload:**
+
 - Overrides update DOM directly
 - Use React-like state updates
 - EventBus coordination
 - UI updates without navigation
 
 **Example Flow:**
+
 ```javascript
 User taps "Reduce Intensity"
   ↓
@@ -192,6 +211,7 @@ No refresh, no reload, seamless
 ## **Snapshot Tests** ✅
 
 **Test Coverage:**
+
 1. ✅ Simple mode shows quick start button
 2. ✅ Simple mode hides advanced controls
 3. ✅ Advanced mode shows RPE input, timers
@@ -202,6 +222,7 @@ No refresh, no reload, seamless
 8. ✅ Mode switch persists preferences
 
 **Run Tests:**
+
 ```javascript
 const test = new ModeSnapshotTest();
 await test.runAllTests();
@@ -212,21 +233,24 @@ await test.runAllTests();
 ## **Usage** ✅
 
 ### **Switch Modes** ✅
+
 ```javascript
 // In Profile settings
-await ModeManager.switchMode('simple');  // Instant UI change
+await ModeManager.switchMode('simple'); // Instant UI change
 await ModeManager.switchMode('advanced'); // Full controls
 ```
 
 ### **Quick Start** ✅
+
 ```javascript
 // Simple mode - one tap
-QuickStart.startQuickWorkout(); 
+QuickStart.startQuickWorkout();
 // → Shows: Warmup + Circuit + Finisher
 // → 30 minutes, no customization needed
 ```
 
 ### **Apply Override** ✅
+
 ```javascript
 // From any screen during workout
 OverrideBar.handleOverride('reduce-intensity');
@@ -234,6 +258,7 @@ OverrideBar.handleOverride('reduce-intensity');
 ```
 
 ### **Chat with Coach** ✅
+
 ```javascript
 CoachChat.openChat();
 // User: "Too tired"
@@ -255,9 +280,11 @@ CoachChat.openChat();
 
 ## ✅ **PROMPT 3: COMPLETE**
 
-**Summary**: Simple vs Advanced modes with instant overrides make the app pleasant to use.
+**Summary**: Simple vs Advanced modes with instant overrides make the app
+pleasant to use.
 
 **Key Features:**
+
 - ✅ Mode toggle in Profile (immediate UI switch)
 - ✅ Simple Mode: One-tap start, warmup + circuit + finisher
 - ✅ Advanced Mode: Full control, RPE, timers, substitutions
@@ -266,4 +293,5 @@ CoachChat.openChat();
 - ✅ Instant updates without app reload
 - ✅ Snapshot tests for both mode routes
 
-**The app now provides both simplicity and powerful customization - user chooses their experience.** 🎯
+**The app now provides both simplicity and powerful customization - user chooses
+their experience.** 🎯

@@ -4,12 +4,14 @@
 
 ### **Done Means Checklist**
 
-✅ Multi-select checkboxes for goals (athletic performance, physique/aesthetics, weight management, general fitness)  
+✅ Multi-select checkboxes for goals (athletic performance, physique/aesthetics,
+weight management, general fitness)  
 ✅ Soccer specifics (position, in-season vs off-season)  
-✅ Constraints captured (available days, session length, equipment, dislike list)  
+✅ Constraints captured (available days, session length, equipment, dislike
+list)  
 ✅ Single user_profile and preferences object written  
 ✅ Skippable steps with sensible defaults  
-✅ Defaults provided for all fields  
+✅ Defaults provided for all fields
 
 ---
 
@@ -45,6 +47,7 @@
 ## **Single Object Storage** ✅
 
 **Complete Profile Structure:**
+
 ```javascript
 {
     user_profile: {
@@ -79,22 +82,26 @@
 ### **All Steps Skippable Except Last** ✅
 
 **Goal Step:**
+
 - Default: `['general_fitness']`
 - User can select none, one, or many
 - Skip sets single default goal
 
 **Soccer Step:**
+
 - Default Position: `'midfielder'`
 - Default Season: `'in-season'`
 - Can skip and use defaults
 
 **Constraints Step:**
+
 - Default Days: `['monday', 'wednesday', 'friday']`
 - Default Session Length: `45` minutes
 - Default Equipment: `'commercial_gym'`
 - Can skip and use sensible defaults
 
 **Preferences Step:**
+
 - Not skippable (final review)
 - Shows all selections
 - Allows editing
@@ -107,22 +114,25 @@
 **When User Skips:**
 
 **Goals:**
+
 ```javascript
-goals: ['general_fitness'] // Basic fitness focus
+goals: ['general_fitness']; // Basic fitness focus
 ```
 
 **Position:**
+
 ```javascript
-position: 'midfielder' // Most common soccer position
-season_phase: 'in-season' // Most likely current phase
+position: 'midfielder'; // Most common soccer position
+season_phase: 'in-season'; // Most likely current phase
 ```
 
 **Constraints:**
+
 ```javascript
-available_days: ['monday', 'wednesday', 'friday'] // 3 days/week (reasonable)
-session_length: 45 // Standard gym session
-equipment_type: 'commercial_gym' // Most common setup
-exercise_dislikes: [] // None by default
+available_days: ['monday', 'wednesday', 'friday']; // 3 days/week (reasonable)
+session_length: 45; // Standard gym session
+equipment_type: 'commercial_gym'; // Most common setup
+exercise_dislikes: []; // None by default
 ```
 
 ---
@@ -130,11 +140,13 @@ exercise_dislikes: [] // None by default
 ## **Usage** ✅
 
 ### **Start Onboarding** ✅
+
 ```javascript
 OnboardingManager.startOnboarding(userId);
 ```
 
 ### **Navigate Steps** ✅
+
 ```javascript
 OnboardingManager.nextStep(); // Go forward
 OnboardingManager.previousStep(); // Go back
@@ -142,6 +154,7 @@ OnboardingManager.skipStep(); // Skip current step
 ```
 
 ### **Complete Onboarding** ✅
+
 ```javascript
 OnboardingManager.completeOnboarding();
 // → Saves complete profile object
@@ -149,24 +162,27 @@ OnboardingManager.completeOnboarding();
 ```
 
 ### **Read Profile** ✅
+
 ```javascript
 const profile = await StorageManager.getUserProfile(userId);
 
 // Access:
-profile.user_profile.goals
-profile.user_profile.position
-profile.preferences.available_days
-profile.preferences.session_length
-profile.preferences.exercise_dislikes
+profile.user_profile.goals;
+profile.user_profile.position;
+profile.preferences.available_days;
+profile.preferences.session_length;
+profile.preferences.exercise_dislikes;
 ```
 
 ---
 
 ## ✅ **PROMPT 4: COMPLETE**
 
-**Summary**: Multi-select onboarding with preferences eliminates decision fatigue.
+**Summary**: Multi-select onboarding with preferences eliminates decision
+fatigue.
 
 **Key Features:**
+
 - ✅ Multi-select checkboxes for goals (no decision fatigue)
 - ✅ Soccer-specific details (position, season phase)
 - ✅ Constraints (days, session length, equipment, dislikes)
@@ -175,4 +191,5 @@ profile.preferences.exercise_dislikes
 - ✅ No forced decisions
 - ✅ Complete profile structure ready for all features
 
-**Users can now onboard quickly without decision paralysis - defaults ensure they always have a working plan.** 🎯
+**Users can now onboard quickly without decision paralysis - defaults ensure
+they always have a working plan.** 🎯

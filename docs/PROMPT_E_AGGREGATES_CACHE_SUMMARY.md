@@ -1,17 +1,22 @@
 # Prompt E — Daily Aggregates Job + Cache Refresh Implementation Summary
 
 ## ✅ **Objective Completed**
-Recompute day + rolling metrics after ingest and update any cached plan for "today/tomorrow".
+
+Recompute day + rolling metrics after ingest and update any cached plan for
+"today/tomorrow".
 
 ## 📊 **Implementation Results**
 
 ### **🔧 Recompute Aggregates Job**
+
 - ✅ **Handler**: `netlify/functions/jobs/recompute-aggregates.js`
-- ✅ **Functionality**: Recalculates daily aggregates and rolling metrics for affected dates
+- ✅ **Functionality**: Recalculates daily aggregates and rolling metrics for
+  affected dates
 - ✅ **Exports**: Callable function for integration with ingest flow
 - ✅ **Metrics**: TRIMP, TSS, ATL, CTL, monotony, strain
 
 ### **💾 PlanCache Module**
+
 - ✅ **Module**: `js/modules/cache/PlanCache.js`
 - ✅ **Capabilities**:
   - `refreshIfStale()` - Check and refresh stale cache
@@ -23,6 +28,7 @@ Recompute day + rolling metrics after ingest and update any cached plan for "tod
 ### **🔄 Integration Flow**
 
 #### **1. After Ingest Triggers Recompute**
+
 ```javascript
 // In ingest-strava.js after successful import
 const affectedDates = [...]; // Dates of imported activities
@@ -30,6 +36,7 @@ await recomputeAggregates(userId, affectedDates, supabase);
 ```
 
 #### **2. Cache Refresh**
+
 ```javascript
 // PlanCache.refreshIfStale(userId, ['today', 'tomorrow'])
 // Checks if cache is older than 5 minutes
@@ -37,6 +44,7 @@ await recomputeAggregates(userId, affectedDates, supabase);
 ```
 
 #### **3. Plan Generation**
+
 ```javascript
 // Coordinator.planToday(context)
 // Uses updated load metrics from recomputed aggregates
@@ -44,7 +52,9 @@ await recomputeAggregates(userId, affectedDates, supabase);
 ```
 
 #### **4. Event Emission**
+
 To update the dashboard:
+
 ```javascript
 eventBus.emit('plan_cache:refreshed', { userId, dates });
 ```
@@ -52,6 +62,7 @@ eventBus.emit('plan_cache:refreshed', { userId, dates });
 ## 🧮 **Aggregate Calculations**
 
 ### **Daily Aggregates**
+
 - **TRIMP**: Zone-based training impulse
 - **TSS**: Training stress score
 - **Load Score**: Aggregated load metric
@@ -60,6 +71,7 @@ eventBus.emit('plan_cache:refreshed', { userId, dates });
 - **Activity Counts**: Run, Ride, Strength counts
 
 ### **Rolling Metrics**
+
 - **ATL (Acute Training Load)**: 7-day rolling average
 - **CTL (Chronic Training Load)**: 28-day rolling average
 - **Monotony**: Variance/mean ratio
@@ -68,7 +80,9 @@ eventBus.emit('plan_cache:refreshed', { userId, dates });
 ## 💬 **Why Panel Note**
 
 ### **Data Sync Notification**
+
 When plans are regenerated after data sync:
+
 ```javascript
 plan.why.push('Plan updated after new data sync.');
 ```
@@ -78,6 +92,7 @@ Provides clear feedback about plan changes.
 ## 🎯 **Definition of Done - ACHIEVED**
 
 ### ✅ **After Ingest, Opening Dashboard Shows Updated Plan**
+
 - Recompute job runs after successful ingest
 - Cache refreshes if stale (>5 min old)
 - Plans include updated load metrics
@@ -85,12 +100,14 @@ Provides clear feedback about plan changes.
 - Event: `plan_cache:refreshed`
 
 ### ✅ **No Manual Reload Required**
+
 - Event-driven updates
 - In-memory cache for fast access
 - Persistent storage for offline
 - Dynamic refresh from EventBus
 
 ### ✅ **Unit Test: Recompute Job Recalculates ATL/CTL**
+
 - Covered in `tests/integrations/prompt-a-utilities.test.js`
 - Rollings calculations validated
 - Cache invalidation fires via EventBus
@@ -98,21 +115,25 @@ Provides clear feedback about plan changes.
 ## 🔍 **Cache Management**
 
 ### **Staleness Detection**
+
 - Stale if older than 5 minutes
 - Also stale if not present
 - Refresh supports multiple dates
 
 ### **In-Memory Cache**
+
 - Map-backed: `userId_date` → plan
 - Persists for current session
 - Fast access
 
 ### **Persistent Storage**
+
 - `plan_{userId}_{date}` keys
 - Persists across refreshes
 - Works offline after initial load
 
 ### **Event-Driven Updates**
+
 - `plan_cache:refreshed`
 - `plan_cache:invalidated`
 - Subscribers update UI
@@ -120,20 +141,24 @@ Provides clear feedback about plan changes.
 ## 🚀 **Key Features**
 
 ### **Automatic Recompute**
+
 - Runs after data ingest
 - Updates aggregate tables
 - Calculates rolling metrics
 
 ### **Smart Cache Refresh**
+
 - Checks staleness
 - Warms today and tomorrow
 - Preserves fresh cache
 
 ### **Clear User Feedback**
+
 - "Plan updated after new data sync."
 - Shows when data changes affect plans
 
 ### **Event Integration**
+
 - Events emitted on cache changes
 - Dashboard listens and updates
 - No manual reload
@@ -141,10 +166,12 @@ Provides clear feedback about plan changes.
 ## 📁 **Files Created**
 
 ### **New Files**
+
 - `netlify/functions/jobs/recompute-aggregates.js` - Aggregates job
 - `js/modules/cache/PlanCache.js` - Cache handler
 
 ### **Integration Points**
+
 - **Prompt B**: Ingest triggers recompute
 - **Prompt C**: Coordinator uses updated load metrics
 - **Prompt A**: Uses daily aggregates schema
@@ -177,6 +204,7 @@ Provides clear feedback about plan changes.
 ## 🎉 **Summary**
 
 Prompt E is implemented:
+
 - Recompute job for daily and rolling metrics
 - PlanCache with staleness and refresh
 - Integration with the ingest flow

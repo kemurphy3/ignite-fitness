@@ -17,82 +17,82 @@ console.log('   ⚖️  Balance: Meaningful improvement vs implementation risk\n
 console.log('🔍 ANALYSIS FINDINGS:\n');
 
 const tier2Issues = [
-    {
-        id: 'T2-1',
-        category: 'Test Coverage',
-        priority: 'HIGH',
-        frequency: 'High',
-        impact: 'Quality Assurance',
-        title: 'Implement Missing Unit Tests',
-        description: 'Extensive TODO comments in test files indicate missing test coverage',
-        betaRisk: 'Moderate - Reduces confidence in system reliability during beta',
-        scope: '80+ placeholder tests across multiple test files'
-    },
-    {
-        id: 'T2-2', 
-        category: 'Performance',
-        priority: 'MEDIUM-HIGH',
-        frequency: 'Medium',
-        impact: 'User Experience',
-        title: 'Add Loading States for Async Operations',
-        description: 'Missing loading indicators can make app feel unresponsive',
-        betaRisk: 'Moderate - Users may think app is frozen or broken',
-        scope: 'AI coaching system, chart rendering, data synchronization'
-    },
-    {
-        id: 'T2-3',
-        category: 'Data Integrity',
-        priority: 'MEDIUM-HIGH', 
-        frequency: 'Low',
-        impact: 'Data Loss Prevention',
-        title: 'Add Progressive Data Sync Validation',
-        description: 'TODO in StorageManager indicates incomplete server sync',
-        betaRisk: 'Moderate - Data loss if users switch devices or clear storage',
-        scope: 'StorageManager.js line 478 sync implementation'
-    },
-    {
-        id: 'T2-4',
-        category: 'User Experience',
-        priority: 'MEDIUM',
-        frequency: 'Medium',
-        impact: 'Feature Completion',
-        title: 'Complete Periodization Calendar Modal',
-        description: 'TODO indicates incomplete calendar functionality',
-        betaRisk: 'Low-Medium - Users cannot access advanced planning features',
-        scope: 'PeriodizationView.js line 314 calendar modal'
-    },
-    {
-        id: 'T2-5',
-        category: 'Analytics',
-        priority: 'MEDIUM',
-        frequency: 'Low',
-        impact: 'Product Intelligence',
-        title: 'Enhance Error Tracking and User Analytics', 
-        description: 'Limited error tracking reduces ability to identify beta issues',
-        betaRisk: 'Low-Medium - Harder to debug user-reported problems',
-        scope: 'Console errors scattered across codebase need structured logging'
-    },
-    {
-        id: 'T2-6',
-        category: 'Accessibility',
-        priority: 'MEDIUM',
-        frequency: 'Medium',
-        impact: 'Inclusive Design',
-        title: 'Improve Screen Reader Support',
-        description: 'Accessibility issues could block users with disabilities',
-        betaRisk: 'Low-Medium - Legal compliance and inclusivity concerns',
-        scope: 'Missing ARIA labels, keyboard navigation issues'
-    }
+  {
+    id: 'T2-1',
+    category: 'Test Coverage',
+    priority: 'HIGH',
+    frequency: 'High',
+    impact: 'Quality Assurance',
+    title: 'Implement Missing Unit Tests',
+    description: 'Extensive TODO comments in test files indicate missing test coverage',
+    betaRisk: 'Moderate - Reduces confidence in system reliability during beta',
+    scope: '80+ placeholder tests across multiple test files',
+  },
+  {
+    id: 'T2-2',
+    category: 'Performance',
+    priority: 'MEDIUM-HIGH',
+    frequency: 'Medium',
+    impact: 'User Experience',
+    title: 'Add Loading States for Async Operations',
+    description: 'Missing loading indicators can make app feel unresponsive',
+    betaRisk: 'Moderate - Users may think app is frozen or broken',
+    scope: 'AI coaching system, chart rendering, data synchronization',
+  },
+  {
+    id: 'T2-3',
+    category: 'Data Integrity',
+    priority: 'MEDIUM-HIGH',
+    frequency: 'Low',
+    impact: 'Data Loss Prevention',
+    title: 'Add Progressive Data Sync Validation',
+    description: 'TODO in StorageManager indicates incomplete server sync',
+    betaRisk: 'Moderate - Data loss if users switch devices or clear storage',
+    scope: 'StorageManager.js line 478 sync implementation',
+  },
+  {
+    id: 'T2-4',
+    category: 'User Experience',
+    priority: 'MEDIUM',
+    frequency: 'Medium',
+    impact: 'Feature Completion',
+    title: 'Complete Periodization Calendar Modal',
+    description: 'TODO indicates incomplete calendar functionality',
+    betaRisk: 'Low-Medium - Users cannot access advanced planning features',
+    scope: 'PeriodizationView.js line 314 calendar modal',
+  },
+  {
+    id: 'T2-5',
+    category: 'Analytics',
+    priority: 'MEDIUM',
+    frequency: 'Low',
+    impact: 'Product Intelligence',
+    title: 'Enhance Error Tracking and User Analytics',
+    description: 'Limited error tracking reduces ability to identify beta issues',
+    betaRisk: 'Low-Medium - Harder to debug user-reported problems',
+    scope: 'Console errors scattered across codebase need structured logging',
+  },
+  {
+    id: 'T2-6',
+    category: 'Accessibility',
+    priority: 'MEDIUM',
+    frequency: 'Medium',
+    impact: 'Inclusive Design',
+    title: 'Improve Screen Reader Support',
+    description: 'Accessibility issues could block users with disabilities',
+    betaRisk: 'Low-Medium - Legal compliance and inclusivity concerns',
+    scope: 'Missing ARIA labels, keyboard navigation issues',
+  },
 ];
 
 console.log('📋 TIER 2 ISSUES IDENTIFIED:\n');
 
 tier2Issues.forEach((issue, index) => {
-    console.log(`${index + 1}. 🎯 ${issue.title}`);
-    console.log(`   ID: ${issue.id} | Category: ${issue.category} | Priority: ${issue.priority}`);
-    console.log(`   Beta Risk: ${issue.betaRisk}`);
-    console.log(`   Description: ${issue.description}`);
-    console.log(`   Scope: ${issue.scope}\n`);
+  console.log(`${index + 1}. 🎯 ${issue.title}`);
+  console.log(`   ID: ${issue.id} | Category: ${issue.category} | Priority: ${issue.priority}`);
+  console.log(`   Beta Risk: ${issue.betaRisk}`);
+  console.log(`   Description: ${issue.description}`);
+  console.log(`   Scope: ${issue.scope}\n`);
 });
 
 console.log('🎯 TIER 2 CURSOR PROMPTS (Ranked by Beta Testing Impact):\n');
@@ -105,10 +105,18 @@ console.log('Priority: HIGH | Beta Impact: Quality Assurance | Implementation: 2
 console.log('📋 CURSOR PROMPT T2-1:');
 console.log('```');
 console.log('Implement missing unit tests in tests/ directory. Priority order:');
-console.log('1. tests/sessions.test.js - Complete session creation, validation, and error handling tests');
-console.log('2. tests/user-preferences.test.js - Add preference validation, updates, and integration tests');  
-console.log('3. tests/strava-import.test.js - Implement data validation, error handling, and retry logic tests');
-console.log('4. tests/exercises.test.js - Add exercise CRUD, validation, and search functionality tests');
+console.log(
+  '1. tests/sessions.test.js - Complete session creation, validation, and error handling tests'
+);
+console.log(
+  '2. tests/user-preferences.test.js - Add preference validation, updates, and integration tests'
+);
+console.log(
+  '3. tests/strava-import.test.js - Implement data validation, error handling, and retry logic tests'
+);
+console.log(
+  '4. tests/exercises.test.js - Add exercise CRUD, validation, and search functionality tests'
+);
 console.log('Focus on error scenarios and edge cases that could surface during beta testing.');
 console.log('```\n');
 
@@ -120,7 +128,7 @@ console.log('   ✅ Implementation scope manageable (2-4 hours)');
 
 console.log('\n📊 CODE IMPACT ASSESSMENT:');
 console.log('   ✅ Zero functional changes to production code');
-console.log('   ✅ Additive changes only (completing TODO placeholders)'); 
+console.log('   ✅ Additive changes only (completing TODO placeholders)');
 console.log('   ✅ No risk of breaking existing functionality');
 console.log('   ✅ Improves confidence in system reliability');
 console.log('   ⚠️  May reveal existing bugs (positive discovery)\n');
@@ -133,9 +141,15 @@ console.log('Priority: MEDIUM-HIGH | Beta Impact: User Experience | Implementati
 console.log('📋 CURSOR PROMPT T2-2:');
 console.log('```');
 console.log('Add loading indicators for async operations that take >500ms:');
-console.log('1. js/modules/ai/ExpertCoordinator.js - Add loading state during expert consultation (lines 650-700)');
-console.log('2. js/modules/ui/charts/ChartManager.js - Show spinner during chart rendering (lines 160-170)');
-console.log('3. js/modules/data/StorageManager.js - Display sync status during data operations (lines 470-480)');
+console.log(
+  '1. js/modules/ai/ExpertCoordinator.js - Add loading state during expert consultation (lines 650-700)'
+);
+console.log(
+  '2. js/modules/ui/charts/ChartManager.js - Show spinner during chart rendering (lines 160-170)'
+);
+console.log(
+  '3. js/modules/data/StorageManager.js - Display sync status during data operations (lines 470-480)'
+);
 console.log('4. js/modules/ui/StravaImportUI.js - Add progress indicator for import process');
 console.log('Use consistent loading component pattern with proper ARIA labels for accessibility.');
 console.log('```\n');
@@ -163,7 +177,7 @@ console.log('```');
 console.log('Complete server sync implementation in js/modules/data/StorageManager.js line 478.');
 console.log('Add progressive sync with validation:');
 console.log('1. Implement incremental data sync (changed data only)');
-console.log('2. Add conflict resolution for concurrent edits');  
+console.log('2. Add conflict resolution for concurrent edits');
 console.log('3. Validate data integrity before and after sync');
 console.log('4. Add retry logic with exponential backoff for failed syncs');
 console.log('5. Provide user feedback for sync status (success/failure/in-progress)');
@@ -315,7 +329,7 @@ console.log('   ✅ Test suite provides confidence in releases\n');
 
 console.log('⏱️  IMPLEMENTATION TIMELINE:');
 console.log('   📅 Sprint 1 (Week 1): T2-1 (Tests) + T2-2 (Loading States)');
-console.log('   📅 Sprint 2 (Week 2): T2-3 (Data Sync) + T2-6 (Accessibility)');  
+console.log('   📅 Sprint 2 (Week 2): T2-3 (Data Sync) + T2-6 (Accessibility)');
 console.log('   📅 Sprint 3 (Week 3): T2-4 (Calendar) + T2-5 (Analytics)');
 console.log('   🎯 Total: 3 weeks for complete Tier 2 implementation\n');
 

@@ -9,7 +9,7 @@ import {
   getTestDatabase,
   createTestUser,
   createTestSession,
-  cleanupTestData
+  cleanupTestData,
 } from './helpers/db.js';
 
 describe('Sessions API Tests', () => {
@@ -31,7 +31,7 @@ describe('Sessions API Tests', () => {
     testUser = await createTestUser({
       external_id: `test_user_${Date.now()}`,
       username: `testuser_${Date.now()}`,
-      status: 'active'
+      status: 'active',
     });
   });
 
@@ -62,16 +62,16 @@ describe('Sessions API Tests', () => {
         source: 'app',
         start_at: new Date().toISOString(),
         end_at: new Date(Date.now() + 3600000).toISOString(), // 1 hour later
-        payload: { notes: 'Test workout session' }
+        payload: { notes: 'Test workout session' },
       };
 
       const event = {
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(sessionData)
+        body: JSON.stringify(sessionData),
       };
 
       const response = await handler(event);
@@ -106,13 +106,13 @@ describe('Sessions API Tests', () => {
       const event = {
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           source: 'app',
-          start_at: new Date().toISOString()
-        })
+          start_at: new Date().toISOString(),
+        }),
       };
 
       let response = await handler(event);
@@ -124,7 +124,7 @@ describe('Sessions API Tests', () => {
       // Test missing source
       event.body = JSON.stringify({
         type: 'workout',
-        start_at: new Date().toISOString()
+        start_at: new Date().toISOString(),
       });
 
       response = await handler(event);
@@ -135,7 +135,7 @@ describe('Sessions API Tests', () => {
       // Test missing start_at
       event.body = JSON.stringify({
         type: 'workout',
-        source: 'app'
+        source: 'app',
       });
 
       response = await handler(event);
@@ -147,7 +147,7 @@ describe('Sessions API Tests', () => {
       event.body = JSON.stringify({
         type: 'invalid_type',
         source: 'app',
-        start_at: new Date().toISOString()
+        start_at: new Date().toISOString(),
       });
 
       response = await handler(event);
@@ -158,7 +158,7 @@ describe('Sessions API Tests', () => {
       event.body = JSON.stringify({
         type: 'workout',
         source: 'app',
-        start_at: 'not-a-date'
+        start_at: 'not-a-date',
       });
 
       response = await handler(event);
@@ -178,14 +178,14 @@ describe('Sessions API Tests', () => {
       const event = {
         httpMethod: 'POST',
         headers: {
-          'Authorization': 'Bearer invalid-token',
-          'Content-Type': 'application/json'
+          Authorization: 'Bearer invalid-token',
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: new Date().toISOString()
-        })
+          start_at: new Date().toISOString(),
+        }),
       };
 
       const response = await handler(event);
@@ -201,17 +201,17 @@ describe('Sessions API Tests', () => {
         type: 'workout',
         source: 'app',
         source_id: 'test-duplicate-id',
-        start_at: new Date().toISOString()
+        start_at: new Date().toISOString(),
       };
 
       // Create first session
       const createEvent1 = {
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(validSessionData)
+        body: JSON.stringify(validSessionData),
       };
 
       const response1 = await handler(createEvent1);
@@ -246,16 +246,16 @@ describe('Sessions API Tests', () => {
       const sessionData = {
         type: 'workout',
         source: 'app',
-        start_at: new Date().toISOString()
+        start_at: new Date().toISOString(),
       };
 
       const createEvent = {
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(sessionData)
+        body: JSON.stringify(sessionData),
       };
 
       const createResponse = await createHandler(createEvent);
@@ -265,9 +265,9 @@ describe('Sessions API Tests', () => {
       const listEvent = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
         },
-        queryStringParameters: {}
+        queryStringParameters: {},
       };
 
       const listResponse = await listHandler(listEvent);
@@ -303,32 +303,32 @@ describe('Sessions API Tests', () => {
       const session1 = {
         type: 'workout',
         source: 'app',
-        start_at: yesterday.toISOString()
+        start_at: yesterday.toISOString(),
       };
 
       const session2 = {
         type: 'workout',
         source: 'app',
-        start_at: now.toISOString()
+        start_at: now.toISOString(),
       };
 
       // Create sessions
       await createHandler({
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(session1)
+        body: JSON.stringify(session1),
       });
 
       await createHandler({
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(session2)
+        body: JSON.stringify(session2),
       });
 
       // Filter by date range
@@ -338,12 +338,12 @@ describe('Sessions API Tests', () => {
       const listEvent = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
         },
         queryStringParameters: {
           start_date: startDate,
-          end_date: endDate
-        }
+          end_date: endDate,
+        },
       };
 
       const response = await listHandler(listEvent);
@@ -356,11 +356,11 @@ describe('Sessions API Tests', () => {
       const invalidEvent = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
         },
         queryStringParameters: {
-          start_date: 'invalid-date'
-        }
+          start_date: 'invalid-date',
+        },
       };
 
       const invalidResponse = await listHandler(invalidEvent);
@@ -381,14 +381,14 @@ describe('Sessions API Tests', () => {
         await createHandler({
           httpMethod: 'POST',
           headers: {
-            'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             type: 'workout',
             source: 'app',
-            start_at: new Date(Date.now() - i * 60 * 60 * 1000).toISOString()
-          })
+            start_at: new Date(Date.now() - i * 60 * 60 * 1000).toISOString(),
+          }),
         });
       }
 
@@ -396,11 +396,11 @@ describe('Sessions API Tests', () => {
       const page1Event = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
         },
         queryStringParameters: {
-          limit: '2'
-        }
+          limit: '2',
+        },
       };
 
       const page1Response = await listHandler(page1Event);
@@ -420,13 +420,13 @@ describe('Sessions API Tests', () => {
           const page2Event = {
             httpMethod: 'GET',
             headers: {
-              'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
+              Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
             },
             queryStringParameters: {
               limit: '2',
               cursor: pagination.next_cursor || undefined,
-              offset: pagination.offset !== undefined ? String(pagination.offset + 2) : undefined
-            }
+              offset: pagination.offset !== undefined ? String(pagination.offset + 2) : undefined,
+            },
           };
 
           const page2Response = await listHandler(page2Event);
@@ -449,21 +449,25 @@ describe('Sessions API Tests', () => {
         return;
       }
 
-      const { handler: sessionHandler } = await import('../../netlify/functions/sessions-create.js');
-      const { handler: exerciseHandler } = await import('../../netlify/functions/sessions-exercises-create.js');
+      const { handler: sessionHandler } = await import(
+        '../../netlify/functions/sessions-create.js'
+      );
+      const { handler: exerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-create.js'
+      );
 
       // First create a session
       const sessionResponse = await sessionHandler({
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: new Date().toISOString()
-        })
+          start_at: new Date().toISOString(),
+        }),
       });
 
       const sessionData = JSON.parse(sessionResponse.body);
@@ -471,23 +475,25 @@ describe('Sessions API Tests', () => {
 
       // Create exercise for the session
       const exerciseData = {
-        exercises: [{
-          name: 'Bench Press',
-          sets: 3,
-          reps: 10,
-          weight_kg: 80,
-          rpe: 7
-        }]
+        exercises: [
+          {
+            name: 'Bench Press',
+            sets: 3,
+            reps: 10,
+            weight_kg: 80,
+            rpe: 7,
+          },
+        ],
       };
 
       const exerciseEvent = {
         httpMethod: 'POST',
         path: `/sessions/${sessionId}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(exerciseData)
+        body: JSON.stringify(exerciseData),
       };
 
       const exerciseResponse = await exerciseHandler(exerciseEvent);
@@ -512,22 +518,28 @@ describe('Sessions API Tests', () => {
         return;
       }
 
-      const { handler: sessionHandler } = await import('../../netlify/functions/sessions-create.js');
-      const { handler: createExerciseHandler } = await import('../../netlify/functions/sessions-exercises-create.js');
-      const { handler: updateExerciseHandler } = await import('../../netlify/functions/sessions-exercises-update.js');
+      const { handler: sessionHandler } = await import(
+        '../../netlify/functions/sessions-create.js'
+      );
+      const { handler: createExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-create.js'
+      );
+      const { handler: updateExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-update.js'
+      );
 
       // Create session
       const sessionResponse = await sessionHandler({
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: new Date().toISOString()
-        })
+          start_at: new Date().toISOString(),
+        }),
       });
 
       const sessionData = JSON.parse(sessionResponse.body);
@@ -538,17 +550,19 @@ describe('Sessions API Tests', () => {
         httpMethod: 'POST',
         path: `/sessions/${sessionId}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          exercises: [{
-            name: 'Bench Press',
-            sets: 3,
-            reps: 10,
-            weight_kg: 80
-          }]
-        })
+          exercises: [
+            {
+              name: 'Bench Press',
+              sets: 3,
+              reps: 10,
+              weight_kg: 80,
+            },
+          ],
+        }),
       });
 
       const created = JSON.parse(createResponse.body);
@@ -564,15 +578,15 @@ describe('Sessions API Tests', () => {
         httpMethod: 'PUT',
         path: `/sessions/${sessionId}/exercises/${exerciseId}`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           name: 'Bench Press',
           sets: 4,
           reps: 8,
-          weight_kg: 85
-        })
+          weight_kg: 85,
+        }),
       };
 
       const updateResponse = await updateExerciseHandler(updateEvent);
@@ -597,22 +611,28 @@ describe('Sessions API Tests', () => {
         return;
       }
 
-      const { handler: sessionHandler } = await import('../../netlify/functions/sessions-create.js');
-      const { handler: createExerciseHandler } = await import('../../netlify/functions/sessions-exercises-create.js');
-      const { handler: deleteExerciseHandler } = await import('../../netlify/functions/sessions-exercises-delete.js');
+      const { handler: sessionHandler } = await import(
+        '../../netlify/functions/sessions-create.js'
+      );
+      const { handler: createExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-create.js'
+      );
+      const { handler: deleteExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-delete.js'
+      );
 
       // Create session
       const sessionResponse = await sessionHandler({
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: new Date().toISOString()
-        })
+          start_at: new Date().toISOString(),
+        }),
       });
 
       const sessionData = JSON.parse(sessionResponse.body);
@@ -623,16 +643,18 @@ describe('Sessions API Tests', () => {
         httpMethod: 'POST',
         path: `/sessions/${sessionId}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          exercises: [{
-            name: 'Squat',
-            sets: 3,
-            reps: 12
-          }]
-        })
+          exercises: [
+            {
+              name: 'Squat',
+              sets: 3,
+              reps: 12,
+            },
+          ],
+        }),
       });
 
       const created = JSON.parse(createResponse.body);
@@ -647,8 +669,8 @@ describe('Sessions API Tests', () => {
         httpMethod: 'DELETE',
         path: `/sessions/${sessionId}/exercises/${exerciseId}`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
-        }
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+        },
       };
 
       const deleteResponse = await deleteExerciseHandler(deleteEvent);
@@ -673,22 +695,28 @@ describe('Sessions API Tests', () => {
         return;
       }
 
-      const { handler: sessionHandler } = await import('../../netlify/functions/sessions-create.js');
-      const { handler: createExerciseHandler } = await import('../../netlify/functions/sessions-exercises-create.js');
-      const { handler: listExerciseHandler } = await import('../../netlify/functions/sessions-exercises-list.js');
+      const { handler: sessionHandler } = await import(
+        '../../netlify/functions/sessions-create.js'
+      );
+      const { handler: createExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-create.js'
+      );
+      const { handler: listExerciseHandler } = await import(
+        '../../netlify/functions/sessions-exercises-list.js'
+      );
 
       // Create session
       const sessionResponse = await sessionHandler({
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: new Date().toISOString()
-        })
+          start_at: new Date().toISOString(),
+        }),
       });
 
       const sessionData = JSON.parse(sessionResponse.body);
@@ -698,17 +726,17 @@ describe('Sessions API Tests', () => {
       const exercises = [
         { name: 'Exercise 1', sets: 3, reps: 10 },
         { name: 'Exercise 2', sets: 4, reps: 8 },
-        { name: 'Exercise 3', sets: 5, reps: 6 }
+        { name: 'Exercise 3', sets: 5, reps: 6 },
       ];
 
       await createExerciseHandler({
         httpMethod: 'POST',
         path: `/sessions/${sessionId}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ exercises })
+        body: JSON.stringify({ exercises }),
       });
 
       // List exercises with pagination
@@ -716,11 +744,11 @@ describe('Sessions API Tests', () => {
         httpMethod: 'GET',
         path: `/sessions/${sessionId}/exercises`,
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
         },
         queryStringParameters: {
-          limit: '2'
-        }
+          limit: '2',
+        },
       };
 
       const listResponse = await listExerciseHandler(listEvent);
@@ -757,14 +785,14 @@ describe('Sessions API Tests', () => {
         const event = {
           httpMethod: 'POST',
           headers: {
-            'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             type: validType,
             source: 'app',
-            start_at: new Date().toISOString()
-          })
+            start_at: new Date().toISOString(),
+          }),
         };
 
         const response = await handler(event);
@@ -778,14 +806,14 @@ describe('Sessions API Tests', () => {
         const event = {
           httpMethod: 'POST',
           headers: {
-            'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             type: invalidType,
             source: 'app',
-            start_at: new Date().toISOString()
-          })
+            start_at: new Date().toISOString(),
+          }),
         };
 
         const response = await handler(event);
@@ -809,15 +837,15 @@ describe('Sessions API Tests', () => {
       const validEvent = {
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
           start_at: now.toISOString(),
-          end_at: oneHour.toISOString() // 1 hour duration
-        })
+          end_at: oneHour.toISOString(), // 1 hour duration
+        }),
       };
 
       const validResponse = await handler(validEvent);
@@ -827,15 +855,15 @@ describe('Sessions API Tests', () => {
       const invalidEvent = {
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
           start_at: oneHour.toISOString(),
-          end_at: now.toISOString() // End before start
-        })
+          end_at: now.toISOString(), // End before start
+        }),
       };
 
       const invalidResponse = await handler(invalidEvent);
@@ -856,14 +884,14 @@ describe('Sessions API Tests', () => {
       const validEvent = {
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: new Date().toISOString()
-        })
+          start_at: new Date().toISOString(),
+        }),
       };
 
       const validResponse = await handler(validEvent);
@@ -876,14 +904,14 @@ describe('Sessions API Tests', () => {
         const invalidEvent = {
           httpMethod: 'POST',
           headers: {
-            'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             type: 'workout',
             source: 'app',
-            start_at: invalidDate
-          })
+            start_at: invalidDate,
+          }),
         };
 
         const invalidResponse = await handler(invalidEvent);
@@ -895,14 +923,14 @@ describe('Sessions API Tests', () => {
       const futureEvent = {
         httpMethod: 'POST',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'workout',
           source: 'app',
-          start_at: futureDate
-        })
+          start_at: futureDate,
+        }),
       };
 
       const futureResponse = await handler(futureEvent);
@@ -930,14 +958,14 @@ describe('Sessions API Tests', () => {
           createHandler({
             httpMethod: 'POST',
             headers: {
-              'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-              'Content-Type': 'application/json'
+              Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+              'Content-Type': 'application/json',
             },
             body: JSON.stringify({
               type: 'workout',
               source: 'app',
-              start_at: new Date(Date.now() - i * 60 * 60 * 1000).toISOString()
-            })
+              start_at: new Date(Date.now() - i * 60 * 60 * 1000).toISOString(),
+            }),
           })
         );
       }
@@ -948,11 +976,11 @@ describe('Sessions API Tests', () => {
       const listEvent = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
         },
         queryStringParameters: {
-          limit: '50'
-        }
+          limit: '50',
+        },
       };
 
       const listStartTime = Date.now();
@@ -989,15 +1017,15 @@ describe('Sessions API Tests', () => {
           handler({
             httpMethod: 'POST',
             headers: {
-              'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-              'Content-Type': 'application/json'
+              Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+              'Content-Type': 'application/json',
             },
             body: JSON.stringify({
               type: 'workout',
               source: 'app',
               source_id: `concurrent-test-${i}-${baseTime}`, // Unique source_id to avoid duplicates
-              start_at: new Date(baseTime + i * 1000).toISOString()
-            })
+              start_at: new Date(baseTime + i * 1000).toISOString(),
+            }),
           })
         );
       }
@@ -1048,13 +1076,13 @@ describe('Sessions API Tests', () => {
       const deleteResponse = await fetch('/.netlify/functions/sessions-exercises-delete', {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${user2.jwt_token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${user2.jwt_token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           session_id: session.id,
-          exercise_id: exercise[0].id
-        })
+          exercise_id: exercise[0].id,
+        }),
       });
 
       expect(deleteResponse.status).toBe(403); // Should be forbidden
@@ -1080,13 +1108,13 @@ describe('Sessions API Tests', () => {
       const deleteResponse1 = await fetch('/.netlify/functions/sessions-exercises-delete', {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${user.jwt_token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${user.jwt_token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           session_id: session.id,
-          exercise_id: exercise[0].id
-        })
+          exercise_id: exercise[0].id,
+        }),
       });
 
       expect(deleteResponse1.status).toBe(204);
@@ -1095,13 +1123,13 @@ describe('Sessions API Tests', () => {
       const deleteResponse2 = await fetch('/.netlify/functions/sessions-exercises-delete', {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${user.jwt_token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${user.jwt_token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           session_id: session.id,
-          exercise_id: exercise[0].id
-        })
+          exercise_id: exercise[0].id,
+        }),
       });
 
       expect(deleteResponse2.status).toBe(204); // Should still succeed

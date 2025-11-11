@@ -4,14 +4,14 @@
  */
 
 class ReviewComplete extends window.BaseComponent {
-    constructor() {
-        super();
-    }
+  constructor() {
+    super();
+  }
 
-    render(onboardingData = {}) {
-        this.onboardingData = onboardingData;
+  render(onboardingData = {}) {
+    this.onboardingData = onboardingData;
 
-        return `
+    return `
             <div class="onboarding-step review-complete-step">
                 <div class="step-header">
                     <h2>Review & Launch</h2>
@@ -54,36 +54,35 @@ class ReviewComplete extends window.BaseComponent {
                 </div>
             </div>
         `;
+  }
+
+  calculateTotalVolume() {
+    const volumes = this.onboardingData.weeklyVolumes || {};
+    return Object.values(volumes).reduce((sum, v) => sum + (v || 0), 0);
+  }
+
+  validateRequired() {
+    const required = {
+      primarySport: !!this.onboardingData.primarySport,
+      weeklyVolumes: !!this.onboardingData.weeklyVolumes,
+      equipment: (this.onboardingData.equipment || []).length > 0,
+      timeWindows: !!this.onboardingData.timeWindows,
+    };
+    return Object.values(required).every(v => v);
+  }
+
+  completeOnboarding() {
+    if (!this.validateRequired()) {
+      alert('Please complete all required fields');
+      return;
     }
 
-    calculateTotalVolume() {
-        const volumes = this.onboardingData.weeklyVolumes || {};
-        return Object.values(volumes).reduce((sum, v) => sum + (v || 0), 0);
+    const om = window.OnboardingManager;
+    if (om) {
+      om.saveStepData('review_complete', { completed: true });
+      om.completeOnboarding();
     }
-
-    validateRequired() {
-        const required = {
-            primarySport: !!this.onboardingData.primarySport,
-            weeklyVolumes: !!this.onboardingData.weeklyVolumes,
-            equipment: (this.onboardingData.equipment || []).length > 0,
-            timeWindows: !!this.onboardingData.timeWindows
-        };
-        return Object.values(required).every(v => v);
-    }
-
-    completeOnboarding() {
-        if (!this.validateRequired()) {
-            alert('Please complete all required fields');
-            return;
-        }
-
-        const om = window.OnboardingManager;
-        if (om) {
-            om.saveStepData('review_complete', { completed: true });
-            om.completeOnboarding();
-        }
-    }
+  }
 }
 
 window.ReviewComplete = new ReviewComplete();
-

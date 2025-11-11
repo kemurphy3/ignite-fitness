@@ -3,16 +3,16 @@
  * Tracks user acceptance of disclaimers with timestamps
  */
 class LegalCopy {
-    constructor() {
-        this.logger = window.SafeLogger || console;
-        this.storageManager = window.StorageManager;
-        this.acceptances = new Map();
+  constructor() {
+    this.logger = window.SafeLogger || console;
+    this.storageManager = window.StorageManager;
+    this.acceptances = new Map();
 
-        this.disclaimers = {
-            injuryAssessment: {
-                id: 'injury_assessment',
-                title: 'Injury Assessment Disclaimer',
-                text: `
+    this.disclaimers = {
+      injuryAssessment: {
+        id: 'injury_assessment',
+        title: 'Injury Assessment Disclaimer',
+        text: `
 ⚠️ IMPORTANT DISCLAIMER
 
 This application provides exercise suggestions and modifications only. 
@@ -40,12 +40,12 @@ By continuing, you acknowledge:
 
 Timestamp: ${new Date().toISOString()}
                 `.trim(),
-                required: true
-            },
-            generalFitness: {
-                id: 'general_fitness',
-                title: 'General Fitness Disclaimer',
-                text: `
+        required: true,
+      },
+      generalFitness: {
+        id: 'general_fitness',
+        title: 'General Fitness Disclaimer',
+        text: `
 Exercise Disclaimer:
 
 Physical exercise involves risk of injury. By using this application, 
@@ -69,98 +69,98 @@ Always:
 
 Timestamp: ${new Date().toISOString()}
                 `.trim(),
-                required: true
-            }
-        };
+        required: true,
+      },
+    };
 
-        this.loadAcceptances();
+    this.loadAcceptances();
+  }
+
+  /**
+   * Load stored acceptances
+   */
+  loadAcceptances() {
+    try {
+      const stored = localStorage.getItem('ignitefitness_legal_acceptances');
+      if (stored) {
+        this.acceptances = new Map(JSON.parse(stored));
+      }
+    } catch (error) {
+      this.logger.error('Failed to load legal acceptances', error);
     }
+  }
 
-    /**
-     * Load stored acceptances
-     */
-    loadAcceptances() {
-        try {
-            const stored = localStorage.getItem('ignitefitness_legal_acceptances');
-            if (stored) {
-                this.acceptances = new Map(JSON.parse(stored));
-            }
-        } catch (error) {
-            this.logger.error('Failed to load legal acceptances', error);
+  /**
+   * Save acceptances to storage
+   */
+  saveAcceptances() {
+    try {
+      const serialized = JSON.stringify(Array.from(this.acceptances.entries()));
+      localStorage.setItem('ignitefitness_legal_acceptances', serialized);
+    } catch (error) {
+      this.logger.error('Failed to save legal acceptances', error);
+    }
+  }
+
+  /**
+   * Check if disclaimer was accepted
+   * @param {string} disclaimerId - Disclaimer ID
+   * @returns {boolean} Is accepted
+   */
+  isAccepted(disclaimerId) {
+    return this.acceptances.has(disclaimerId);
+  }
+
+  /**
+   * Get timestamp of acceptance
+   * @param {string} disclaimerId - Disclaimer ID
+   * @returns {Date|null} Acceptance timestamp
+   */
+  getAcceptanceTimestamp(disclaimerId) {
+    const acceptance = this.acceptances.get(disclaimerId);
+    return acceptance ? new Date(acceptance.timestamp) : null;
+  }
+
+  /**
+   * Show disclaimer and get acceptance
+   * @param {string} disclaimerId - Disclaimer ID
+   * @returns {Promise<boolean>} Accepted
+   */
+  async showDisclaimer(disclaimerId) {
+    return new Promise(resolve => {
+      const disclaimer = this.disclaimers[disclaimerId];
+      if (!disclaimer) {
+        this.logger.error('Unknown disclaimer:', disclaimerId);
+        resolve(false);
+        return;
+      }
+
+      if (this.isAccepted(disclaimerId)) {
+        resolve(true);
+        return;
+      }
+
+      const modal = this.createDisclaimerModal(disclaimer, accepted => {
+        if (accepted) {
+          this.acceptDisclaimer(disclaimerId);
         }
-    }
+        resolve(accepted);
+      });
 
-    /**
-     * Save acceptances to storage
-     */
-    saveAcceptances() {
-        try {
-            const serialized = JSON.stringify(Array.from(this.acceptances.entries()));
-            localStorage.setItem('ignitefitness_legal_acceptances', serialized);
-        } catch (error) {
-            this.logger.error('Failed to save legal acceptances', error);
-        }
-    }
+      document.body.appendChild(modal);
+    });
+  }
 
-    /**
-     * Check if disclaimer was accepted
-     * @param {string} disclaimerId - Disclaimer ID
-     * @returns {boolean} Is accepted
-     */
-    isAccepted(disclaimerId) {
-        return this.acceptances.has(disclaimerId);
-    }
-
-    /**
-     * Get timestamp of acceptance
-     * @param {string} disclaimerId - Disclaimer ID
-     * @returns {Date|null} Acceptance timestamp
-     */
-    getAcceptanceTimestamp(disclaimerId) {
-        const acceptance = this.acceptances.get(disclaimerId);
-        return acceptance ? new Date(acceptance.timestamp) : null;
-    }
-
-    /**
-     * Show disclaimer and get acceptance
-     * @param {string} disclaimerId - Disclaimer ID
-     * @returns {Promise<boolean>} Accepted
-     */
-    async showDisclaimer(disclaimerId) {
-        return new Promise((resolve) => {
-            const disclaimer = this.disclaimers[disclaimerId];
-            if (!disclaimer) {
-                this.logger.error('Unknown disclaimer:', disclaimerId);
-                resolve(false);
-                return;
-            }
-
-            if (this.isAccepted(disclaimerId)) {
-                resolve(true);
-                return;
-            }
-
-            const modal = this.createDisclaimerModal(disclaimer, (accepted) => {
-                if (accepted) {
-                    this.acceptDisclaimer(disclaimerId);
-                }
-                resolve(accepted);
-            });
-
-            document.body.appendChild(modal);
-        });
-    }
-
-    /**
-     * Create disclaimer modal
-     * @param {Object} disclaimer - Disclaimer data
-     * @param {Function} callback - Acceptance callback
-     * @returns {HTMLElement} Modal element
-     */
-    createDisclaimerModal(disclaimer, callback) {
-        const modal = document.createElement('div');
-        modal.className = 'legal-disclaimer-modal';
-        modal.innerHTML = `
+  /**
+   * Create disclaimer modal
+   * @param {Object} disclaimer - Disclaimer data
+   * @param {Function} callback - Acceptance callback
+   * @returns {HTMLElement} Modal element
+   */
+  createDisclaimerModal(disclaimer, callback) {
+    const modal = document.createElement('div');
+    modal.className = 'legal-disclaimer-modal';
+    modal.innerHTML = `
             <div class="modal-overlay" onclick="event.stopPropagation()"></div>
             <div class="modal-content legal-modal">
                 <div class="modal-header">
@@ -178,62 +178,62 @@ Timestamp: ${new Date().toISOString()}
             </div>
         `;
 
-        window.handleLegalAcceptance = () => {
-            modal.remove();
-            callback(true);
-        };
+    window.handleLegalAcceptance = () => {
+      modal.remove();
+      callback(true);
+    };
 
-        // Prevent closing without acceptance if required
-        if (disclaimer.required) {
-            modal.querySelector('.modal-close')?.remove();
-        }
-
-        return modal;
+    // Prevent closing without acceptance if required
+    if (disclaimer.required) {
+      modal.querySelector('.modal-close')?.remove();
     }
 
-    /**
-     * Accept disclaimer
-     * @param {string} disclaimerId - Disclaimer ID
-     */
-    acceptDisclaimer(disclaimerId) {
-        this.acceptances.set(disclaimerId, {
-            timestamp: new Date().toISOString(),
-            version: this.disclaimers[disclaimerId]?.version || '1.0'
-        });
+    return modal;
+  }
 
-        this.saveAcceptances();
+  /**
+   * Accept disclaimer
+   * @param {string} disclaimerId - Disclaimer ID
+   */
+  acceptDisclaimer(disclaimerId) {
+    this.acceptances.set(disclaimerId, {
+      timestamp: new Date().toISOString(),
+      version: this.disclaimers[disclaimerId]?.version || '1.0',
+    });
 
-        this.logger.audit('DISCLAIMER_ACCEPTED', {
-            disclaimerId,
-            timestamp: new Date().toISOString()
-        });
+    this.saveAcceptances();
 
-        // Emit event
-        if (window.EventBus) {
-            window.EventBus.emit('legal:disclaimer_accepted', { disclaimerId });
-        }
+    this.logger.audit('DISCLAIMER_ACCEPTED', {
+      disclaimerId,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Emit event
+    if (window.EventBus) {
+      window.EventBus.emit('legal:disclaimer_accepted', { disclaimerId });
     }
+  }
 
-    /**
-     * Get all accepted disclaimers
-     * @returns {Object} Accepted disclaimers
-     */
-    getAcceptedDisclaimers() {
-        const accepted = {};
-        this.acceptances.forEach((data, id) => {
-            accepted[id] = data;
-        });
-        return accepted;
-    }
+  /**
+   * Get all accepted disclaimers
+   * @returns {Object} Accepted disclaimers
+   */
+  getAcceptedDisclaimers() {
+    const accepted = {};
+    this.acceptances.forEach((data, id) => {
+      accepted[id] = data;
+    });
+    return accepted;
+  }
 
-    /**
-     * Reset acceptances (for testing)
-     */
-    resetAcceptances() {
-        this.acceptances.clear();
-        this.saveAcceptances();
-        this.logger.debug('Legal acceptances reset');
-    }
+  /**
+   * Reset acceptances (for testing)
+   */
+  resetAcceptances() {
+    this.acceptances.clear();
+    this.saveAcceptances();
+    this.logger.debug('Legal acceptances reset');
+  }
 }
 
 // Create global instance
@@ -241,5 +241,5 @@ window.LegalCopy = new LegalCopy();
 
 // Export for module systems
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = LegalCopy;
+  module.exports = LegalCopy;
 }

@@ -8,7 +8,7 @@ import {
   teardownTestDB,
   getTestDatabase,
   createTestUser,
-  cleanupTestData
+  cleanupTestData,
 } from './helpers/db.js';
 
 describe('User Preferences Tests', () => {
@@ -30,7 +30,7 @@ describe('User Preferences Tests', () => {
     testUser = await createTestUser({
       external_id: `test_user_${Date.now()}`,
       username: `testuser_${Date.now()}`,
-      status: 'active'
+      status: 'active',
     });
   });
 
@@ -58,8 +58,8 @@ describe('User Preferences Tests', () => {
       const event = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
-        }
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+        },
       };
 
       const response = await handler(event);
@@ -87,8 +87,8 @@ describe('User Preferences Tests', () => {
       const event = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
-        }
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+        },
       };
 
       const response = await handler(event);
@@ -114,8 +114,8 @@ describe('User Preferences Tests', () => {
       const fakeEvent = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': 'Bearer invalid_token_for_nonexistent_user'
-        }
+          Authorization: 'Bearer invalid_token_for_nonexistent_user',
+        },
       };
 
       const response = await handler(fakeEvent);
@@ -142,8 +142,12 @@ describe('User Preferences Tests', () => {
         return;
       }
 
-      const { handler: patchHandler } = await import('../../netlify/functions/users-preferences-patch.js');
-      const { handler: getHandler } = await import('../../netlify/functions/users-preferences-get.js');
+      const { handler: patchHandler } = await import(
+        '../../netlify/functions/users-preferences-patch.js'
+      );
+      const { handler: getHandler } = await import(
+        '../../netlify/functions/users-preferences-get.js'
+      );
 
       const updateData = {
         timezone: 'America/New_York',
@@ -151,16 +155,16 @@ describe('User Preferences Tests', () => {
         theme: 'dark',
         sleep_goal_hours: 8,
         workout_goal_per_week: 4,
-        notifications_enabled: true
+        notifications_enabled: true,
       };
 
       const patchEvent = {
         httpMethod: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(updateData)
+        body: JSON.stringify(updateData),
       };
 
       const patchResponse = await patchHandler(patchEvent);
@@ -170,8 +174,8 @@ describe('User Preferences Tests', () => {
       const getEvent = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
-        }
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+        },
       };
 
       const getResponse = await getHandler(getEvent);
@@ -194,10 +198,10 @@ describe('User Preferences Tests', () => {
       const invalidTimezoneEvent = {
         httpMethod: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ timezone: 'Invalid/Timezone' })
+        body: JSON.stringify({ timezone: 'Invalid/Timezone' }),
       };
 
       const response1 = await handler(invalidTimezoneEvent);
@@ -209,10 +213,10 @@ describe('User Preferences Tests', () => {
       const invalidThemeEvent = {
         httpMethod: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ theme: 'invalid_theme' })
+        body: JSON.stringify({ theme: 'invalid_theme' }),
       };
 
       const response2 = await handler(invalidThemeEvent);
@@ -223,10 +227,10 @@ describe('User Preferences Tests', () => {
       const invalidSleepEvent = {
         httpMethod: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ sleep_goal_hours: 25 }) // Max should be 14
+        body: JSON.stringify({ sleep_goal_hours: 25 }), // Max should be 14
       };
 
       const response3 = await handler(invalidSleepEvent);
@@ -237,10 +241,10 @@ describe('User Preferences Tests', () => {
       const invalidUnitsEvent = {
         httpMethod: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ units: 'invalid_units' })
+        body: JSON.stringify({ units: 'invalid_units' }),
       };
 
       const response4 = await handler(invalidUnitsEvent);
@@ -254,21 +258,25 @@ describe('User Preferences Tests', () => {
         return;
       }
 
-      const { handler: patchHandler } = await import('../../netlify/functions/users-preferences-patch.js');
-      const { handler: getHandler } = await import('../../netlify/functions/users-preferences-get.js');
+      const { handler: patchHandler } = await import(
+        '../../netlify/functions/users-preferences-patch.js'
+      );
+      const { handler: getHandler } = await import(
+        '../../netlify/functions/users-preferences-get.js'
+      );
 
       // First, set initial preferences
       const initialEvent = {
         httpMethod: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           timezone: 'America/New_York',
           theme: 'light',
-          units: 'metric'
-        })
+          units: 'metric',
+        }),
       };
 
       await patchHandler(initialEvent);
@@ -277,12 +285,12 @@ describe('User Preferences Tests', () => {
       const partialEvent = {
         httpMethod: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          theme: 'dark'
-        })
+          theme: 'dark',
+        }),
       };
 
       const partialResponse = await patchHandler(partialEvent);
@@ -292,8 +300,8 @@ describe('User Preferences Tests', () => {
       const getEvent = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
-        }
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+        },
       };
 
       const getResponse = await getHandler(getEvent);
@@ -312,21 +320,25 @@ describe('User Preferences Tests', () => {
         return;
       }
 
-      const { handler: patchHandler } = await import('../../netlify/functions/users-preferences-patch.js');
-      const { handler: getHandler } = await import('../../netlify/functions/users-preferences-get.js');
+      const { handler: patchHandler } = await import(
+        '../../netlify/functions/users-preferences-patch.js'
+      );
+      const { handler: getHandler } = await import(
+        '../../netlify/functions/users-preferences-get.js'
+      );
 
       const displayPrefs = {
         theme: 'system', // Valid themes: 'system', 'light', 'dark'
-        units: 'imperial'
+        units: 'imperial',
       };
 
       const patchEvent = {
         httpMethod: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(displayPrefs)
+        body: JSON.stringify(displayPrefs),
       };
 
       const patchResponse = await patchHandler(patchEvent);
@@ -336,8 +348,8 @@ describe('User Preferences Tests', () => {
       const getEvent = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
-        }
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+        },
       };
 
       const getResponse = await getHandler(getEvent);
@@ -353,20 +365,24 @@ describe('User Preferences Tests', () => {
         return;
       }
 
-      const { handler: patchHandler } = await import('../../netlify/functions/users-preferences-patch.js');
-      const { handler: getHandler } = await import('../../netlify/functions/users-preferences-get.js');
+      const { handler: patchHandler } = await import(
+        '../../netlify/functions/users-preferences-patch.js'
+      );
+      const { handler: getHandler } = await import(
+        '../../netlify/functions/users-preferences-get.js'
+      );
 
       const notificationPrefs = {
-        notifications_enabled: true
+        notifications_enabled: true,
       };
 
       const patchEvent = {
         httpMethod: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(notificationPrefs)
+        body: JSON.stringify(notificationPrefs),
       };
 
       const patchResponse = await patchHandler(patchEvent);
@@ -376,8 +392,8 @@ describe('User Preferences Tests', () => {
       const getEvent = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
-        }
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+        },
       };
 
       const getResponse = await getHandler(getEvent);
@@ -389,10 +405,10 @@ describe('User Preferences Tests', () => {
       const disableEvent = {
         httpMethod: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ notifications_enabled: false })
+        body: JSON.stringify({ notifications_enabled: false }),
       };
 
       await patchHandler(disableEvent);
@@ -408,19 +424,23 @@ describe('User Preferences Tests', () => {
         return;
       }
 
-      const { handler: getHandler } = await import('../../netlify/functions/users-preferences-get.js');
-      const { handler: patchHandler } = await import('../../netlify/functions/users-preferences-patch.js');
+      const { handler: getHandler } = await import(
+        '../../netlify/functions/users-preferences-get.js'
+      );
+      const { handler: patchHandler } = await import(
+        '../../netlify/functions/users-preferences-patch.js'
+      );
 
       // Test privacy-related preferences
       const patchEvent = {
         httpMethod: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          timezone: 'UTC' // Privacy-related preference
-        })
+          timezone: 'UTC', // Privacy-related preference
+        }),
       };
 
       const patchResponse = await patchHandler(patchEvent);
@@ -430,8 +450,8 @@ describe('User Preferences Tests', () => {
       const getEvent = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
-        }
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+        },
       };
 
       const getResponse = await getHandler(getEvent);
@@ -451,21 +471,25 @@ describe('User Preferences Tests', () => {
         return;
       }
 
-      const { handler: patchHandler } = await import('../../netlify/functions/users-preferences-patch.js');
-      const { handler: getHandler } = await import('../../netlify/functions/users-preferences-get.js');
+      const { handler: patchHandler } = await import(
+        '../../netlify/functions/users-preferences-patch.js'
+      );
+      const { handler: getHandler } = await import(
+        '../../netlify/functions/users-preferences-get.js'
+      );
 
       const trainingPrefs = {
         workout_goal_per_week: 5,
-        sleep_goal_hours: 7.5
+        sleep_goal_hours: 7.5,
       };
 
       const patchEvent = {
         httpMethod: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(trainingPrefs)
+        body: JSON.stringify(trainingPrefs),
       };
 
       const patchResponse = await patchHandler(patchEvent);
@@ -475,8 +499,8 @@ describe('User Preferences Tests', () => {
       const getEvent = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
-        }
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+        },
       };
 
       const getResponse = await getHandler(getEvent);
@@ -500,16 +524,16 @@ describe('User Preferences Tests', () => {
       const validPrefs = {
         sleep_goal_hours: 8, // Valid range: 0-14
         workout_goal_per_week: 5, // Valid range: 0-14
-        theme: 'dark' // Valid: 'system', 'light', 'dark'
+        theme: 'dark', // Valid: 'system', 'light', 'dark'
       };
 
       const validEvent = {
         httpMethod: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(validPrefs)
+        body: JSON.stringify(validPrefs),
       };
 
       const validResponse = await handler(validEvent);
@@ -520,17 +544,17 @@ describe('User Preferences Tests', () => {
         { sleep_goal_hours: 15 }, // Out of range (max 14)
         { workout_goal_per_week: -1 }, // Negative value
         { workout_goal_per_week: 20 }, // Out of range (max 14)
-        { theme: 'invalid_theme' } // Invalid theme
+        { theme: 'invalid_theme' }, // Invalid theme
       ];
 
       for (const invalidPrefs of invalidValueTests) {
         const invalidEvent = {
           httpMethod: 'PATCH',
           headers: {
-            'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+            'Content-Type': 'application/json',
           },
-          body: JSON.stringify(invalidPrefs)
+          body: JSON.stringify(invalidPrefs),
         };
 
         const invalidResponse = await handler(invalidEvent);
@@ -552,14 +576,14 @@ describe('User Preferences Tests', () => {
       const invalidStructureEvent = {
         httpMethod: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           timezone: { nested: 'invalid' }, // Should be string
           theme: ['array', 'invalid'], // Should be string
-          notifications_enabled: 'not-boolean' // Should be boolean
-        })
+          notifications_enabled: 'not-boolean', // Should be boolean
+        }),
       };
 
       const response = await handler(invalidStructureEvent);
@@ -582,17 +606,17 @@ describe('User Preferences Tests', () => {
       const xssAttempts = [
         { timezone: '<script>alert("XSS")</script>' },
         { theme: 'dark"><img src=x onerror=alert(1)>' },
-        { units: '<svg/onload=alert(1)>' }
+        { units: '<svg/onload=alert(1)>' },
       ];
 
       for (const maliciousPrefs of xssAttempts) {
         const event = {
           httpMethod: 'PATCH',
           headers: {
-            'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+            'Content-Type': 'application/json',
           },
-          body: JSON.stringify(maliciousPrefs)
+          body: JSON.stringify(maliciousPrefs),
         };
 
         const response = await handler(event);
@@ -606,7 +630,7 @@ describe('User Preferences Tests', () => {
           const getHandler = await import('../../netlify/functions/users-preferences-get.js');
           const getResponse = await getHandler({
             httpMethod: 'GET',
-            headers: { 'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}` }
+            headers: { Authorization: `Bearer ${testUser.jwt_token || 'test-token'}` },
           });
           const getData = JSON.parse(getResponse.body);
 
@@ -627,14 +651,16 @@ describe('User Preferences Tests', () => {
         return;
       }
 
-      const { handler: getHandler } = await import('../../netlify/functions/users-preferences-get.js');
+      const { handler: getHandler } = await import(
+        '../../netlify/functions/users-preferences-get.js'
+      );
 
       // Get preferences for test user (should return defaults if none set)
       const event = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
-        }
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+        },
       };
 
       const response = await getHandler(event);
@@ -657,14 +683,16 @@ describe('User Preferences Tests', () => {
         return;
       }
 
-      const { handler: getHandler } = await import('../../netlify/functions/users-preferences-get.js');
+      const { handler: getHandler } = await import(
+        '../../netlify/functions/users-preferences-get.js'
+      );
 
       // Get current preferences (should handle version compatibility)
       const getEvent = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
-        }
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+        },
       };
 
       const getResponse = await getHandler(getEvent);
@@ -688,15 +716,19 @@ describe('User Preferences Tests', () => {
         return;
       }
 
-      const { handler: getHandler } = await import('../../netlify/functions/users-preferences-get.js');
-      const { handler: patchHandler } = await import('../../netlify/functions/users-preferences-patch.js');
+      const { handler: getHandler } = await import(
+        '../../netlify/functions/users-preferences-get.js'
+      );
+      const { handler: patchHandler } = await import(
+        '../../netlify/functions/users-preferences-patch.js'
+      );
 
       // Test that schema changes are handled (preferences should always have valid structure)
       const getEvent = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
-        }
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+        },
       };
 
       const getResponse = await getHandler(getEvent);
@@ -722,14 +754,16 @@ describe('User Preferences Tests', () => {
         return;
       }
 
-      const { handler: getHandler } = await import('../../netlify/functions/users-preferences-get.js');
+      const { handler: getHandler } = await import(
+        '../../netlify/functions/users-preferences-get.js'
+      );
 
       // First request
       const event1 = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
-        }
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+        },
       };
 
       const start1 = Date.now();
@@ -769,17 +803,17 @@ describe('User Preferences Tests', () => {
         { theme: 'dark' },
         { theme: 'light' },
         { units: 'metric' },
-        { units: 'imperial' }
+        { units: 'imperial' },
       ];
 
       const promises = concurrentUpdates.map(prefs =>
         handler({
           httpMethod: 'PATCH',
           headers: {
-            'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+            'Content-Type': 'application/json',
           },
-          body: JSON.stringify(prefs)
+          body: JSON.stringify(prefs),
         })
       );
 
@@ -802,14 +836,16 @@ describe('User Preferences Tests', () => {
         return;
       }
 
-      const { handler: getHandler } = await import('../../netlify/functions/users-preferences-get.js');
+      const { handler: getHandler } = await import(
+        '../../netlify/functions/users-preferences-get.js'
+      );
 
       // Measure query performance
       const event = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
-        }
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+        },
       };
 
       const startTime = Date.now();
@@ -834,14 +870,16 @@ describe('User Preferences Tests', () => {
         return;
       }
 
-      const { handler: getHandler } = await import('../../netlify/functions/users-preferences-get.js');
+      const { handler: getHandler } = await import(
+        '../../netlify/functions/users-preferences-get.js'
+      );
 
       // Test that sensitive preference data is not exposed in plain text
       const event = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
-        }
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+        },
       };
 
       const response = await getHandler(event);
@@ -867,14 +905,16 @@ describe('User Preferences Tests', () => {
         return;
       }
 
-      const { handler: getHandler } = await import('../../netlify/functions/users-preferences-get.js');
+      const { handler: getHandler } = await import(
+        '../../netlify/functions/users-preferences-get.js'
+      );
 
       // Test that users can only access their own preferences
       const event = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
-        }
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+        },
       };
 
       const response = await getHandler(event);
@@ -896,19 +936,23 @@ describe('User Preferences Tests', () => {
         return;
       }
 
-      const { handler: patchHandler } = await import('../../netlify/functions/users-preferences-patch.js');
-      const { handler: getHandler } = await import('../../netlify/functions/users-preferences-get.js');
+      const { handler: patchHandler } = await import(
+        '../../netlify/functions/users-preferences-patch.js'
+      );
+      const { handler: getHandler } = await import(
+        '../../netlify/functions/users-preferences-get.js'
+      );
 
       // Make a preference change (audit should be logged internally)
       const patchEvent = {
         httpMethod: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          theme: 'dark'
-        })
+          theme: 'dark',
+        }),
       };
 
       const patchResponse = await patchHandler(patchEvent);
@@ -918,8 +962,8 @@ describe('User Preferences Tests', () => {
       const getEvent = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
-        }
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+        },
       };
 
       const getResponse = await getHandler(getEvent);
@@ -937,14 +981,16 @@ describe('User Preferences Tests', () => {
         return;
       }
 
-      const { handler: getHandler } = await import('../../netlify/functions/users-preferences-get.js');
+      const { handler: getHandler } = await import(
+        '../../netlify/functions/users-preferences-get.js'
+      );
 
       // Test that preferences integrate with user profile (preferences are user-specific)
       const event = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
-        }
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+        },
       };
 
       const response = await getHandler(event);
@@ -966,20 +1012,24 @@ describe('User Preferences Tests', () => {
         return;
       }
 
-      const { handler: getHandler } = await import('../../netlify/functions/users-preferences-get.js');
-      const { handler: patchHandler } = await import('../../netlify/functions/users-preferences-patch.js');
+      const { handler: getHandler } = await import(
+        '../../netlify/functions/users-preferences-get.js'
+      );
+      const { handler: patchHandler } = await import(
+        '../../netlify/functions/users-preferences-patch.js'
+      );
 
       // Test that training preferences can be set
       const patchEvent = {
         httpMethod: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           workout_goal_per_week: 5,
-          sleep_goal_hours: 8
-        })
+          sleep_goal_hours: 8,
+        }),
       };
 
       const patchResponse = await patchHandler(patchEvent);
@@ -989,8 +1039,8 @@ describe('User Preferences Tests', () => {
       const getEvent = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
-        }
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+        },
       };
 
       const getResponse = await getHandler(getEvent);
@@ -1013,19 +1063,23 @@ describe('User Preferences Tests', () => {
         return;
       }
 
-      const { handler: getHandler } = await import('../../netlify/functions/users-preferences-get.js');
-      const { handler: patchHandler } = await import('../../netlify/functions/users-preferences-patch.js');
+      const { handler: getHandler } = await import(
+        '../../netlify/functions/users-preferences-get.js'
+      );
+      const { handler: patchHandler } = await import(
+        '../../netlify/functions/users-preferences-patch.js'
+      );
 
       // Test notification preferences integration
       const patchEvent = {
         httpMethod: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          notifications_enabled: true
-        })
+          notifications_enabled: true,
+        }),
       };
 
       const patchResponse = await patchHandler(patchEvent);
@@ -1035,8 +1089,8 @@ describe('User Preferences Tests', () => {
       const getEvent = {
         httpMethod: 'GET',
         headers: {
-          'Authorization': `Bearer ${testUser.jwt_token || 'test-token'}`
-        }
+          Authorization: `Bearer ${testUser.jwt_token || 'test-token'}`,
+        },
       };
 
       const getResponse = await getHandler(getEvent);

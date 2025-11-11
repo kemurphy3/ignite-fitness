@@ -7,7 +7,8 @@
 [![Accessibility](https://img.shields.io/badge/Accessibility-WCAG%20AA%20Compliant-green.svg)](https://www.w3.org/WAI/WCAG21/quickref/)
 [![Security](https://img.shields.io/badge/Security-Hardened-red.svg)](https://owasp.org/)
 
-A modern Progressive Web Application (PWA) for fitness tracking with AI-powered workout generation, Strava integration, and comprehensive analytics.
+A modern Progressive Web Application (PWA) for fitness tracking with AI-powered
+workout generation, Strava integration, and comprehensive analytics.
 
 ## 🛡️ Safety & Stability Enhancements
 
@@ -15,10 +16,14 @@ A modern Progressive Web Application (PWA) for fitness tracking with AI-powered 
 
 ### Safety Features Implemented
 
-- **Load Calculation Bounds Checking** - Prevents crashes from negative values, zero divisions, and extreme ratios
-- **Exercise Alternative Fallbacks** - Always provides safe alternatives for injured users (progressive fallback chain)
-- **Mandatory Context Validation** - All user inputs validated with graceful degradation and caching
-- **Recovery Day User Control** - Clear notifications and override options for Simple Mode + Recovery Day conflicts
+- **Load Calculation Bounds Checking** - Prevents crashes from negative values,
+  zero divisions, and extreme ratios
+- **Exercise Alternative Fallbacks** - Always provides safe alternatives for
+  injured users (progressive fallback chain)
+- **Mandatory Context Validation** - All user inputs validated with graceful
+  degradation and caching
+- **Recovery Day User Control** - Clear notifications and override options for
+  Simple Mode + Recovery Day conflicts
 
 ### Safety Guarantees
 
@@ -27,15 +32,17 @@ A modern Progressive Web Application (PWA) for fitness tracking with AI-powered 
 - ✅ Context validation is mandatory (no bypasses)
 - ✅ Clear user communication during mode conflicts
 
-*See `docs/PRIORITY_3_IMPLEMENTATION.md` for detailed implementation notes.*
+_See `docs/PRIORITY_3_IMPLEMENTATION.md` for detailed implementation notes._
 
 ### Beta Testing
 
 **Comprehensive Beta Testing Checklist Available** ✅
 
-For beta testers and developers, a complete step-by-step testing checklist is available:
+For beta testers and developers, a complete step-by-step testing checklist is
+available:
 
-- **[Beta Testing Checklist](docs/beta_checklist.md)** - Comprehensive validation guide for all beta features
+- **[Beta Testing Checklist](docs/beta_checklist.md)** - Comprehensive
+  validation guide for all beta features
   - Step-by-step test scripts for all beta features
   - Clear pass/fail criteria for each test
   - Troubleshooting guide for common issues
@@ -43,6 +50,7 @@ For beta testers and developers, a complete step-by-step testing checklist is av
   - Mobile and desktop testing procedures
 
 **Quick Beta Setup:**
+
 1. Copy `env.example` to `.env` with valid Supabase credentials
 2. Set `DEMO_MODE=true` for quick start
 3. Run `npm run demo` to start demo server
@@ -67,14 +75,14 @@ For beta testers and developers, a complete step-by-step testing checklist is av
 
 ### Security Tickets Completed
 
-| Ticket | Issue | Status | Completion Date |
-|--------|-------|--------|----------------|
-| H2 | SQL Injection Vulnerabilities | ✅ Fixed | Sep 26, 2025 |
-| H3 | Client-Side Environment Variable Access | ✅ Fixed | Sep 26, 2025 |
-| H4 | JWT Secret & Error Logging Sanitization | ✅ Fixed | Sep 26, 2025 |
-| H5 | Strava Token Logging Removal | ✅ Fixed | Sep 26, 2025 |
+| Ticket | Issue                                   | Status   | Completion Date |
+| ------ | --------------------------------------- | -------- | --------------- |
+| H2     | SQL Injection Vulnerabilities           | ✅ Fixed | Sep 26, 2025    |
+| H3     | Client-Side Environment Variable Access | ✅ Fixed | Sep 26, 2025    |
+| H4     | JWT Secret & Error Logging Sanitization | ✅ Fixed | Sep 26, 2025    |
+| H5     | Strava Token Logging Removal            | ✅ Fixed | Sep 26, 2025    |
 
-*Last Security Audit: September 26, 2025*
+_Last Security Audit: September 26, 2025_
 
 ## 🛡️ Comprehensive Security Implementation
 
@@ -91,12 +99,12 @@ The application implements a multi-layered security approach:
 
 ### Security Utilities
 
-| Utility | Purpose | Key Features |
-|---------|---------|--------------|
-| `safe-query.js` | SQL Injection Prevention | Parameterized queries, input sanitization |
-| `error-handler.js` | Error Sanitization | Unique error IDs, sensitive data removal |
-| `safe-logging.js` | Token Security | Token masking, sensitive field detection |
-| `admin-auth.js` | Admin Authentication | JWT verification, role-based access |
+| Utility            | Purpose                  | Key Features                              |
+| ------------------ | ------------------------ | ----------------------------------------- |
+| `safe-query.js`    | SQL Injection Prevention | Parameterized queries, input sanitization |
+| `error-handler.js` | Error Sanitization       | Unique error IDs, sensitive data removal  |
+| `safe-logging.js`  | Token Security           | Token masking, sensitive field detection  |
+| `admin-auth.js`    | Admin Authentication     | JWT verification, role-based access       |
 
 ### Security Testing
 
@@ -115,7 +123,7 @@ node -e "const { createLogger } = require('./netlify/functions/utils/safe-loggin
 
 ### Prerequisites
 
-- **Node.js** 18+ 
+- **Node.js** 18+
 - **PostgreSQL** 13+ (or Neon PostgreSQL)
 - **Git**
 - **Netlify CLI** (for deployment)
@@ -217,12 +225,14 @@ node test-user-profiles.js
 The project includes comprehensive test coverage organized into:
 
 - **Unit Tests** (`/tests/unit/`): Test individual functions and utilities
-- **Integration Tests** (`/tests/integration/`): Test API endpoints and database interactions
+- **Integration Tests** (`/tests/integration/`): Test API endpoints and database
+  interactions
 - **Feature Tests** (`/tests/`): Test complete feature workflows
 
 #### Where Tests Live
 
 **Test Files Location:**
+
 ```
 tests/
 ├── setup.js                           # Global test setup and teardown
@@ -253,12 +263,17 @@ The following test files contain placeholder tests ready for implementation:
 
 1. **`/tests/sessions.test.js`** - Session management API tests (18 tests)
 2. **`/tests/exercises.test.js`** - Exercise CRUD and bulk operations (21 tests)
-3. **`/tests/strava-token-refresh.test.js`** - Strava token refresh functionality (22 tests)
-4. **`/tests/strava-import.test.js`** - Strava data import and processing (23 tests)
-5. **`/tests/user-preferences.test.js`** - User preferences management (27 tests)
-6. **`/tests/admin-analytics.test.js`** - Admin analytics and reporting (28 tests)
+3. **`/tests/strava-token-refresh.test.js`** - Strava token refresh
+   functionality (22 tests)
+4. **`/tests/strava-import.test.js`** - Strava data import and processing (23
+   tests)
+5. **`/tests/user-preferences.test.js`** - User preferences management (27
+   tests)
+6. **`/tests/admin-analytics.test.js`** - Admin analytics and reporting (28
+   tests)
 
 Each file includes:
+
 - ✅ **Working authentication tests** (401 without token)
 - 🔄 **Placeholder tests marked with `test.skip`**
 - 📝 **Comprehensive test coverage plans**
@@ -267,6 +282,7 @@ Each file includes:
 #### How to Expand Tests
 
 **1. Implement Placeholder Tests:**
+
 ```javascript
 // Change from:
 it.skip('should create a new session with valid data', async () => {
@@ -284,6 +300,7 @@ it('should create a new session with valid data', async () => {
 ```
 
 **2. Add New Test Files:**
+
 ```bash
 # Create new test file
 touch tests/new-feature.test.js
@@ -293,8 +310,13 @@ touch tests/new-feature.test.js
 ```
 
 **3. Use Test Helpers:**
+
 ```javascript
-import { createTestUser, createTestSession, cleanupTestData } from './helpers/db.js';
+import {
+  createTestUser,
+  createTestSession,
+  cleanupTestData,
+} from './helpers/db.js';
 
 // Create test data
 const user = await createTestUser({ username: 'testuser' });
@@ -305,6 +327,7 @@ await cleanupTestData();
 ```
 
 **4. Test Categories:**
+
 - **Authentication Tests**: Verify 401 responses without valid tokens
 - **CRUD Operations**: Test create, read, update, delete functionality
 - **Validation Tests**: Test input validation and error handling
@@ -312,6 +335,7 @@ await cleanupTestData();
 - **Integration Tests**: Test complete workflows and API interactions
 
 **5. Running Specific Tests:**
+
 ```bash
 # Run specific test file
 npm test tests/sessions.test.js
@@ -325,9 +349,10 @@ npm run test:coverage
 # Run in watch mode
 npm run test:ui
 ```
-node test-exercises-api.js
-node test-api-endpoints.js
-```
+
+node test-exercises-api.js node test-api-endpoints.js
+
+````
 
 > **💡 CI/CD**: This project includes automated CI/CD with GitHub Actions. Tests run automatically on every push and pull request. See the [CI/CD Pipeline](#-cicd-pipeline) section for details.
 
@@ -339,13 +364,14 @@ netlify dev
 
 # Or start with specific port
 netlify dev --port 8888
-```
+````
 
 The application will be available at `http://localhost:8888`
 
 ## ♿ Accessibility & WCAG Compliance
 
-IgniteFitness is designed with accessibility as a core principle, meeting WCAG 2.1 AA standards for inclusive user experience.
+IgniteFitness is designed with accessibility as a core principle, meeting WCAG
+2.1 AA standards for inclusive user experience.
 
 ### Accessibility Features
 
@@ -360,24 +386,28 @@ IgniteFitness is designed with accessibility as a core principle, meeting WCAG 2
 ### Accessibility Implementation
 
 #### ARIA Labels & Roles
+
 - **Form Labels**: All form inputs have associated labels
 - **Live Regions**: Dynamic content updates announced to screen readers
 - **Landmark Roles**: `main`, `banner`, `form` roles for navigation
 - **Status Indicators**: Connection status and errors announced appropriately
 
 #### Keyboard Navigation
+
 - **Tab Order**: Logical tab sequence through all interactive elements
 - **Skip Links**: "Skip to main content" for efficient navigation
 - **Focus Management**: Clear focus indicators with 2px outline
 - **Keyboard Shortcuts**: Standard form submission with Enter key
 
 #### Visual Accessibility
+
 - **Color Contrast**: All text meets WCAG AA contrast requirements
 - **Focus Indicators**: High-contrast focus outlines for keyboard users
 - **Touch Targets**: Minimum 44px touch targets for mobile users
 - **Responsive Design**: Works across all device sizes and orientations
 
 #### Screen Reader Support
+
 - **Semantic HTML**: Proper use of headings, lists, and form elements
 - **ARIA Descriptions**: Helpful descriptions for complex interactions
 - **Hidden Content**: Screen reader-only content for additional context
@@ -388,6 +418,7 @@ IgniteFitness is designed with accessibility as a core principle, meeting WCAG 2
 #### 1. **Automated Testing Tools**
 
 **Lighthouse Accessibility Audit:**
+
 1. Open the app in Chrome/Edge
 2. Press `F12` to open DevTools
 3. Go to **Lighthouse** tab
@@ -396,6 +427,7 @@ IgniteFitness is designed with accessibility as a core principle, meeting WCAG 2
 6. Verify accessibility score is 90+ and all checks pass
 
 **axe DevTools Extension:**
+
 1. Install axe DevTools browser extension
 2. Open the app in your browser
 3. Click the axe icon in DevTools
@@ -403,6 +435,7 @@ IgniteFitness is designed with accessibility as a core principle, meeting WCAG 2
 5. Review and fix any violations found
 
 **WAVE Web Accessibility Evaluator:**
+
 1. Visit [wave.webaim.org](https://wave.webaim.org/)
 2. Enter your app URL
 3. Review accessibility report
@@ -411,6 +444,7 @@ IgniteFitness is designed with accessibility as a core principle, meeting WCAG 2
 #### 2. **Manual Testing**
 
 **Keyboard Navigation Testing:**
+
 1. Use `Tab` to navigate through all interactive elements
 2. Verify logical tab order and focus indicators
 3. Test `Enter` and `Space` keys on buttons and links
@@ -418,6 +452,7 @@ IgniteFitness is designed with accessibility as a core principle, meeting WCAG 2
 5. Test arrow keys for custom components
 
 **Screen Reader Testing:**
+
 1. **NVDA (Windows)**: Free screen reader
    - Download from [nvaccess.org](https://www.nvaccess.org/)
    - Test with Firefox for best compatibility
@@ -432,6 +467,7 @@ IgniteFitness is designed with accessibility as a core principle, meeting WCAG 2
    - Enable in Settings → Accessibility
 
 **Color Contrast Testing:**
+
 1. Use browser DevTools color picker
 2. Check contrast ratios with tools like:
    - [WebAIM Contrast Checker](https://webaim.org/resources/contrastchecker/)
@@ -442,6 +478,7 @@ IgniteFitness is designed with accessibility as a core principle, meeting WCAG 2
 #### 3. **Accessibility Checklist**
 
 **Visual Accessibility:**
+
 - [ ] All text has sufficient color contrast (4.5:1 minimum)
 - [ ] Focus indicators are clearly visible
 - [ ] Touch targets are at least 44px
@@ -449,6 +486,7 @@ IgniteFitness is designed with accessibility as a core principle, meeting WCAG 2
 - [ ] No information conveyed by color alone
 
 **Keyboard Accessibility:**
+
 - [ ] All interactive elements are keyboard accessible
 - [ ] Tab order is logical and intuitive
 - [ ] Focus indicators are visible
@@ -456,6 +494,7 @@ IgniteFitness is designed with accessibility as a core principle, meeting WCAG 2
 - [ ] Skip links are available
 
 **Screen Reader Accessibility:**
+
 - [ ] All images have alt text
 - [ ] Form inputs have labels
 - [ ] Headings are properly structured
@@ -463,6 +502,7 @@ IgniteFitness is designed with accessibility as a core principle, meeting WCAG 2
 - [ ] Dynamic content is announced
 
 **Motor Accessibility:**
+
 - [ ] Large enough touch targets
 - [ ] No time-based interactions
 - [ ] Error prevention and correction
@@ -471,6 +511,7 @@ IgniteFitness is designed with accessibility as a core principle, meeting WCAG 2
 #### 4. **Testing Scenarios**
 
 **Scenario 1: Screen Reader User**
+
 1. Open app with screen reader enabled
 2. Navigate using only screen reader commands
 3. Verify all content is announced properly
@@ -478,6 +519,7 @@ IgniteFitness is designed with accessibility as a core principle, meeting WCAG 2
 5. Check that dynamic updates are announced
 
 **Scenario 2: Keyboard-Only User**
+
 1. Disable mouse/trackpad
 2. Navigate using only keyboard
 3. Test all interactive elements
@@ -485,6 +527,7 @@ IgniteFitness is designed with accessibility as a core principle, meeting WCAG 2
 5. Check skip links functionality
 
 **Scenario 3: Low Vision User**
+
 1. Increase browser zoom to 200%
 2. Test with high contrast mode
 3. Verify all content remains accessible
@@ -492,6 +535,7 @@ IgniteFitness is designed with accessibility as a core principle, meeting WCAG 2
 5. Test with different color schemes
 
 **Scenario 4: Motor Impairment User**
+
 1. Test with voice control software
 2. Verify large touch targets
 3. Test with assistive devices
@@ -501,6 +545,7 @@ IgniteFitness is designed with accessibility as a core principle, meeting WCAG 2
 ### Testing & Validation
 
 The application is regularly tested with:
+
 - **axe-core**: Automated accessibility testing
 - **Lighthouse**: PWA and accessibility audits
 - **Screen Readers**: Tested with NVDA, JAWS, and VoiceOver
@@ -509,18 +554,26 @@ The application is regularly tested with:
 ### Accessibility Resources
 
 **Testing Tools:**
+
 - [axe DevTools](https://www.deque.com/axe/devtools/) - Browser extension
 - [WAVE](https://wave.webaim.org/) - Web accessibility evaluator
-- [Lighthouse](https://developers.google.com/web/tools/lighthouse) - Chrome DevTools
-- [Colour Contrast Analyser](https://www.tpgi.com/color-contrast-checker/) - Color testing
+- [Lighthouse](https://developers.google.com/web/tools/lighthouse) - Chrome
+  DevTools
+- [Colour Contrast Analyser](https://www.tpgi.com/color-contrast-checker/) -
+  Color testing
 
 **Screen Readers:**
+
 - [NVDA](https://www.nvaccess.org/) - Free Windows screen reader
-- [JAWS](https://www.freedomscientific.com/products/software/jaws/) - Commercial Windows screen reader
-- [VoiceOver](https://www.apple.com/accessibility/vision/) - Built-in macOS/iOS screen reader
-- [TalkBack](https://support.google.com/accessibility/android/answer/6283677) - Built-in Android screen reader
+- [JAWS](https://www.freedomscientific.com/products/software/jaws/) - Commercial
+  Windows screen reader
+- [VoiceOver](https://www.apple.com/accessibility/vision/) - Built-in macOS/iOS
+  screen reader
+- [TalkBack](https://support.google.com/accessibility/android/answer/6283677) -
+  Built-in Android screen reader
 
 **Standards & Guidelines:**
+
 - [WCAG 2.1 Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)
 - [Section 508](https://www.section508.gov/) - US federal requirements
 - [ADA Compliance](https://www.ada.gov/) - Americans with Disabilities Act
@@ -534,7 +587,8 @@ The application is regularly tested with:
 
 ## 📱 PWA & Offline Support
 
-IgniteFitness is a fully functional Progressive Web App (PWA) with comprehensive offline capabilities.
+IgniteFitness is a fully functional Progressive Web App (PWA) with comprehensive
+offline capabilities.
 
 ### PWA Features
 
@@ -547,6 +601,7 @@ IgniteFitness is a fully functional Progressive Web App (PWA) with comprehensive
 ### Offline Capabilities
 
 #### ✅ Available Offline
+
 - **View Workouts**: Access previously loaded workout plans
 - **Track Exercises**: Log new exercises and workouts
 - **View Progress**: Check training history and metrics
@@ -554,6 +609,7 @@ IgniteFitness is a fully functional Progressive Web App (PWA) with comprehensive
 - **Data Storage**: All changes saved locally until sync
 
 #### 🔄 Auto-Sync Features
+
 - **Background Sync**: Data syncs automatically when connection restored
 - **Conflict Resolution**: Smart handling of offline/online data conflicts
 - **Progress Tracking**: Offline progress preserved and synced
@@ -562,12 +618,14 @@ IgniteFitness is a fully functional Progressive Web App (PWA) with comprehensive
 ### PWA Installation
 
 #### Mobile (iOS/Android)
+
 1. Open the app in your mobile browser
 2. Tap the "Add to Home Screen" option
 3. Follow the installation prompts
 4. Access the app from your home screen
 
 #### Desktop (Chrome/Edge)
+
 1. Open the app in your browser
 2. Click the install icon in the address bar
 3. Or use the browser menu: "Install IgniteFitness"
@@ -576,6 +634,7 @@ IgniteFitness is a fully functional Progressive Web App (PWA) with comprehensive
 ### Offline Behavior
 
 When offline, the app:
+
 - Shows a clear offline indicator
 - Displays the offline page for new navigation
 - Maintains full functionality for cached content
@@ -595,6 +654,7 @@ When offline, the app:
 #### 1. **Test Offline Functionality**
 
 **Method A: Browser DevTools**
+
 1. Open the app in Chrome/Edge
 2. Press `F12` to open DevTools
 3. Go to **Network** tab
@@ -603,6 +663,7 @@ When offline, the app:
 6. Navigate to different sections to test offline functionality
 
 **Method B: Disconnect Network**
+
 1. Disconnect your internet connection
 2. Open the app - it should load from cache
 3. Test offline features like viewing workouts and tracking exercises
@@ -611,17 +672,20 @@ When offline, the app:
 #### 2. **Verify PWA Features**
 
 **Service Worker Status:**
+
 1. Open DevTools → **Application** tab
 2. Go to **Service Workers** section
 3. Verify service worker is **activated** and **running**
 4. Check **Cache Storage** to see cached resources
 
 **PWA Manifest:**
+
 1. DevTools → **Application** → **Manifest**
 2. Verify all manifest properties are correct
 3. Check icons are properly configured
 
 **Lighthouse PWA Audit:**
+
 1. DevTools → **Lighthouse** tab
 2. Select **Progressive Web App** category
 3. Click **Generate report**
@@ -630,12 +694,14 @@ When offline, the app:
 #### 3. **Test Offline Scenarios**
 
 **Scenario 1: First Visit (Online)**
+
 1. Clear browser cache and data
 2. Visit the app with internet connection
 3. Navigate through different sections
 4. Verify resources are cached
 
 **Scenario 2: Offline Access**
+
 1. Disconnect internet
 2. Visit the app - should load from cache
 3. Test offline features:
@@ -645,6 +711,7 @@ When offline, the app:
 4. Verify offline fallback page appears for uncached content
 
 **Scenario 3: Background Sync**
+
 1. Make changes while offline
 2. Reconnect to internet
 3. Verify changes sync automatically
@@ -653,6 +720,7 @@ When offline, the app:
 #### 4. **PWA Installation Testing**
 
 **Mobile Testing:**
+
 1. Open app in mobile browser
 2. Look for "Add to Home Screen" banner
 3. Install the app
@@ -660,6 +728,7 @@ When offline, the app:
 5. Verify it behaves like a native app
 
 **Desktop Testing:**
+
 1. Open app in Chrome/Edge
 2. Look for install icon in address bar
 3. Install the app
@@ -669,18 +738,21 @@ When offline, the app:
 ### Troubleshooting PWA Issues
 
 **Service Worker Not Working:**
+
 1. Check browser console for errors
 2. Verify HTTPS is enabled (required for PWA)
 3. Clear browser cache and reload
 4. Check service worker registration in DevTools
 
 **Offline Page Not Showing:**
+
 1. Verify `offline.html` exists in root directory
 2. Check service worker cache configuration
 3. Test with different network conditions
 4. Verify fallback routes are properly configured
 
 **Installation Not Available:**
+
 1. Check PWA manifest is valid
 2. Verify all required icons are present
 3. Ensure HTTPS is enabled
@@ -835,12 +907,14 @@ headers: {
 All admin endpoints require proper authentication and authorization:
 
 #### **Authentication Requirements:**
+
 - **JWT Token**: Valid JWT token in `Authorization: Bearer <token>` header
 - **Admin Role**: User must have `role: 'admin'` in database
 - **Token Validation**: JWT must be signed with correct `JWT_SECRET`
 - **Expiration**: Tokens expire after 24 hours with 30-second clock tolerance
 
 #### **Admin Endpoints:**
+
 1. **`/api/admin/get-all-users`** - Get all users with pagination
 2. **`/api/admin/health`** - System health and database status
 3. **`/api/admin/overview`** - Platform metrics and statistics
@@ -850,6 +924,7 @@ All admin endpoints require proper authentication and authorization:
 7. **`/api/test-db-connection`** - Database connection test
 
 #### **Response Codes:**
+
 - **401 Unauthorized**: Missing or invalid JWT token
 - **403 Forbidden**: Valid token but user lacks admin role
 - **200 Success**: Valid admin token with proper permissions
@@ -857,12 +932,14 @@ All admin endpoints require proper authentication and authorization:
 #### **Testing Admin Authentication:**
 
 **1. Test Without Token:**
+
 ```bash
 curl -X GET http://localhost:8888/.netlify/functions/admin-get-all-users
 # Returns: 401 Unauthorized
 ```
 
 **2. Test With Invalid Token:**
+
 ```bash
 curl -X GET http://localhost:8888/.netlify/functions/admin-get-all-users \
   -H "Authorization: Bearer invalid-token"
@@ -870,6 +947,7 @@ curl -X GET http://localhost:8888/.netlify/functions/admin-get-all-users \
 ```
 
 **3. Test With Non-Admin Token:**
+
 ```bash
 curl -X GET http://localhost:8888/.netlify/functions/admin-get-all-users \
   -H "Authorization: Bearer <user-token>"
@@ -877,6 +955,7 @@ curl -X GET http://localhost:8888/.netlify/functions/admin-get-all-users \
 ```
 
 **4. Test With Admin Token:**
+
 ```bash
 curl -X GET http://localhost:8888/.netlify/functions/admin-get-all-users \
   -H "Authorization: Bearer <admin-token>"
@@ -884,7 +963,9 @@ curl -X GET http://localhost:8888/.netlify/functions/admin-get-all-users \
 ```
 
 #### **Admin Role Assignment:**
+
 To assign admin role to a user, update the database:
+
 ```sql
 UPDATE users SET role = 'admin' WHERE id = <user_id>;
 ```
@@ -894,18 +975,22 @@ UPDATE users SET role = 'admin' WHERE id = <user_id>;
 The application includes comprehensive SQL injection protection:
 
 #### **Security Features:**
+
 - **Parameterized Queries**: All database queries use parameterized statements
 - **Input Sanitization**: User input is sanitized using regex patterns
 - **Safe Query Utilities**: Centralized safe query execution functions
 - **Input Validation**: Strict validation of all parameters and data types
 
 #### **Protected Endpoints:**
+
 All admin endpoints are protected against SQL injection attacks:
+
 - `admin-sessions-by-type.js` - Session type distribution queries
-- `admin-sessions-series.js` - Time series data queries  
+- `admin-sessions-series.js` - Time series data queries
 - `admin-users-top.js` - Top users analytics queries
 
 #### **Security Testing:**
+
 ```bash
 # Test SQL injection protection
 curl "http://localhost:8888/.netlify/functions/admin-sessions-by-type?from=2025-01-01&to=2025-12-31'; DROP TABLE sessions; --"
@@ -916,7 +1001,9 @@ curl "http://localhost:8888/.netlify/functions/admin-sessions-series?bucket=inva
 ```
 
 #### **Safe Query Utilities:**
+
 Located in `netlify/functions/utils/safe-query.js`:
+
 - `sanitizeInput()` - Sanitizes user input
 - `safeQuery()` - Executes queries with timeout protection
 - `validateMetric()` - Validates metric parameters
@@ -928,8 +1015,9 @@ Located in `netlify/functions/utils/safe-query.js`:
 ### ✅ COMPLETED TICKETS
 
 #### H1: Exposed Secrets in Test Files ✅ **COMPLETED**
+
 - **Status**: Fixed
-- **Files Updated**: 
+- **Files Updated**:
   - `test-api-endpoints.js` - Updated to use `process.env.TEST_API_KEY`
   - `env-test-template.txt` - Created template for test environment variables
 - **Changes Made**:
@@ -940,13 +1028,14 @@ Located in `netlify/functions/utils/safe-query.js`:
 - **Completion Date**: September 26, 2025
 
 #### H2: SQL Injection Vulnerabilities ✅ **COMPLETED**
+
 - **Status**: Fixed
-- **Files Updated**: 
+- **Files Updated**:
   - `netlify/functions/admin-sessions-by-type.js`
   - `netlify/functions/admin-sessions-series.js`
   - `netlify/functions/admin-users-top.js`
   - `netlify/functions/utils/safe-query.js` (new)
-- **Features Added**: 
+- **Features Added**:
   - Parameterized queries using Neon template literals
   - Input sanitization with regex patterns
   - Safe query execution utilities
@@ -958,15 +1047,16 @@ Located in `netlify/functions/utils/safe-query.js`:
 - **Completion Date**: September 26, 2025
 
 #### H3: Client-Side Environment Variable Access ✅ **COMPLETED**
+
 - **Status**: Fixed
-- **Files Updated**: 
+- **Files Updated**:
   - `config.js` - Removed server-side environment variables
   - `netlify/functions/strava-proxy.js` - Use env vars directly
   - `netlify/functions/ai-proxy.js` - Use env vars directly
   - `tracker.html` - Updated to use new config system
   - `ignitefitness_tracker.html` - Updated to use new config system
   - `netlify/functions/public-config.js` (new) - Safe public config endpoint
-- **Features Added**: 
+- **Features Added**:
   - Public configuration endpoint for safe client-side config
   - Configuration loader class for dynamic config loading
   - Server-side environment variable handling
@@ -979,13 +1069,15 @@ Located in `netlify/functions/utils/safe-query.js`:
 - **Completion Date**: September 26, 2025
 
 #### H4: JWT Secret & Error Logging Sanitization ✅ **COMPLETED**
+
 - **Status**: Fixed
-- **Files Updated**: 
-  - `netlify/functions/utils/error-handler.js` (new) - Comprehensive error handling utility
+- **Files Updated**:
+  - `netlify/functions/utils/error-handler.js` (new) - Comprehensive error
+    handling utility
   - `netlify/functions/utils/auth.js` - Sanitized JWT error logging
   - `netlify/functions/admin-users-top.js` - Updated error handling
   - `netlify/functions/sessions-list.js` - Updated error handling
-- **Features Added**: 
+- **Features Added**:
   - Error sanitization utility with sensitive pattern detection
   - Unique error ID generation for debugging
   - Safe error responses for clients
@@ -1000,16 +1092,24 @@ Located in `netlify/functions/utils/safe-query.js`:
 - **Completion Date**: September 26, 2025
 
 #### H5: Strava Token Logging Removal ✅ **COMPLETED**
+
 - **Status**: Fixed
-- **Files Updated**: 
-  - `netlify/functions/utils/safe-logging.js` (new) - Comprehensive safe logging utility
-  - `netlify/functions/strava-refresh-token.js` - Removed token logging, added safe logging
-  - `netlify/functions/strava-oauth-exchange.js` - Removed token logging, added safe logging
-  - `netlify/functions/integrations-strava-import.js` - Removed token logging, added safe logging
-  - `netlify/functions/strava-proxy.js` - Updated error logging with safe patterns
-  - `netlify/functions/strava-oauth.js` - Updated error logging with safe patterns
-  - `netlify/functions/strava-auto-refresh.js` - Updated all logging with safe patterns
-- **Features Added**: 
+- **Files Updated**:
+  - `netlify/functions/utils/safe-logging.js` (new) - Comprehensive safe logging
+    utility
+  - `netlify/functions/strava-refresh-token.js` - Removed token logging, added
+    safe logging
+  - `netlify/functions/strava-oauth-exchange.js` - Removed token logging, added
+    safe logging
+  - `netlify/functions/integrations-strava-import.js` - Removed token logging,
+    added safe logging
+  - `netlify/functions/strava-proxy.js` - Updated error logging with safe
+    patterns
+  - `netlify/functions/strava-oauth.js` - Updated error logging with safe
+    patterns
+  - `netlify/functions/strava-auto-refresh.js` - Updated all logging with safe
+    patterns
+- **Features Added**:
   - Safe logging utility with token masking
   - Context-aware loggers for each Strava function
   - Token masking showing only last 4 characters
@@ -1019,13 +1119,14 @@ Located in `netlify/functions/utils/safe-query.js`:
 - **Security Improvements**:
   - No access tokens or refresh tokens in logs
   - No bearer tokens or authorization headers logged
-  - Masked token values for debugging (****abc1)
+  - Masked token values for debugging (\*\*\*\*abc1)
   - Sensitive field pattern detection
   - Safe metadata logging for operations
   - Debug mode for development environments only
 - **Completion Date**: September 26, 2025
 
 #### Ticket 9: Add Unit & Integration Test Harness ✅ **COMPLETED**
+
 - **Status**: Fixed
 - **Files Created/Updated**:
   - `vitest.config.js` - Vitest configuration for Node 18 + ESM
@@ -1041,6 +1142,7 @@ Located in `netlify/functions/utils/safe-query.js`:
 - **Completion Date**: September 26, 2025
 
 #### Ticket 10: Add CI Workflow ✅ **COMPLETED**
+
 - **Status**: Fixed
 - **Files Created/Updated**:
   - `.github/workflows/ci.yml` - GitHub Actions CI workflow
@@ -1054,6 +1156,7 @@ Located in `netlify/functions/utils/safe-query.js`:
 - **Completion Date**: September 26, 2025
 
 #### Ticket 11: PWA & Offline Caching ✅ **COMPLETED**
+
 - **Status**: Fixed
 - **Files Created/Updated**:
   - `sw.js` - Service worker with comprehensive caching
@@ -1070,6 +1173,7 @@ Located in `netlify/functions/utils/safe-query.js`:
 - **Completion Date**: September 26, 2025
 
 #### Ticket 12: Accessibility & UX Fixes ✅ **COMPLETED**
+
 - **Status**: Fixed
 - **Files Created/Updated**:
   - `index.html` - Semantic HTML, ARIA labels, skip links
@@ -1087,6 +1191,7 @@ Located in `netlify/functions/utils/safe-query.js`:
 - **Completion Date**: September 26, 2025
 
 #### Ticket 13: Top 10 Missing Tests ✅ **COMPLETED**
+
 - **Status**: Fixed
 - **Files Created/Updated**:
   - `tests/sessions.test.js` - Session management API tests (18 tests)
@@ -1105,24 +1210,31 @@ Located in `netlify/functions/utils/safe-query.js`:
 - **Completion Date**: September 26, 2025
 
 #### H2: Unauthenticated Admin Endpoints ✅ **COMPLETED**
+
 - **Status**: Fixed
-- **Files Updated**: 
-  - `netlify/functions/admin-get-all-users.js` - Added JWT + admin role verification
-  - `netlify/functions/test-db-connection.js` - Added JWT + admin role verification
+- **Files Updated**:
+  - `netlify/functions/admin-get-all-users.js` - Added JWT + admin role
+    verification
+  - `netlify/functions/test-db-connection.js` - Added JWT + admin role
+    verification
   - `netlify/functions/admin-health.js` - Added JWT + admin role verification
   - `netlify/functions/admin-overview.js` - Added JWT + admin role verification
-  - `netlify/functions/admin-sessions-by-type.js` - Added JWT + admin role verification
-  - `netlify/functions/admin-sessions-series.js` - Added JWT + admin role verification
+  - `netlify/functions/admin-sessions-by-type.js` - Added JWT + admin role
+    verification
+  - `netlify/functions/admin-sessions-series.js` - Added JWT + admin role
+    verification
   - `netlify/functions/admin-users-top.js` - Added JWT + admin role verification
   - `netlify/functions/utils/admin-auth.js` - Fixed import path
-- **Security Impact**: All admin endpoints now require valid JWT token with admin role
+- **Security Impact**: All admin endpoints now require valid JWT token with
+  admin role
 - **Completion Date**: September 26, 2025
 
 ### 🔴 CRITICAL TICKETS (In Progress)
 
 #### H3: Client-Side Environment Variable Access
+
 - **Status**: Pending
-- **Files Affected**: 
+- **Files Affected**:
   - `js/app.js:1823`
   - `config.js`
   - `js/core/data-store.js`
@@ -1130,16 +1242,18 @@ Located in `netlify/functions/utils/safe-query.js`:
 - **Next Action**: Remove client-side env access
 
 #### H4: JWT Secret Exposed in Logs
+
 - **Status**: Pending
-- **Files Affected**: 
+- **Files Affected**:
   - `netlify/functions/utils/auth.js:16`
   - Multiple functions logging full error objects
 - **Priority**: HIGH
 - **Next Action**: Sanitize error logging
 
 #### H5: SQL Injection Vulnerabilities
+
 - **Status**: Pending
-- **Files Affected**: 
+- **Files Affected**:
   - `netlify/functions/admin-users-top.js:60`
   - `netlify/functions/admin-sessions-series.js`
   - `netlify/functions/admin-sessions-by-type.js`
@@ -1147,8 +1261,9 @@ Located in `netlify/functions/utils/safe-query.js`:
 - **Next Action**: Use parameterized queries
 
 #### H6: Strava Token Logging
+
 - **Status**: Pending
-- **Files Affected**: 
+- **Files Affected**:
   - `netlify/functions/strava-refresh-token.js:143-144`
   - `netlify/functions/strava-oauth-exchange.js`
   - `netlify/functions/integrations-strava-import.js`
@@ -1160,7 +1275,7 @@ Located in `netlify/functions/utils/safe-query.js`:
 ### Core Audits
 
 - [ ] **01-endpoint-inventory.md** - API Endpoint Analysis
-- [ ] **02-spec-compliance.md** - Specification Compliance  
+- [ ] **02-spec-compliance.md** - Specification Compliance
 - [ ] **03-security-audit.md** - Security Audit (CRITICAL)
 - [ ] **04-performance-scalability.md** - Performance Analysis
 - [ ] **05-pwa-ux-audit.md** - PWA & User Experience
@@ -1175,19 +1290,20 @@ Located in `netlify/functions/utils/safe-query.js`:
 
 ## 📊 Overall Progress
 
-| Category | Total | Completed | In Progress | Pending |
-|----------|-------|-----------|-------------|---------|
-| Critical Security | 6 | 1 | 0 | 5 |
-| High Priority | 6 | 0 | 0 | 6 |
-| Medium Priority | 6 | 0 | 0 | 6 |
-| Low Priority | 3 | 0 | 0 | 3 |
-| **TOTAL** | **21** | **1** | **0** | **20** |
+| Category          | Total  | Completed | In Progress | Pending |
+| ----------------- | ------ | --------- | ----------- | ------- |
+| Critical Security | 6      | 1         | 0           | 5       |
+| High Priority     | 6      | 0         | 0           | 6       |
+| Medium Priority   | 6      | 0         | 0           | 6       |
+| Low Priority      | 3      | 0         | 0           | 3       |
+| **TOTAL**         | **21** | **1**     | **0**       | **20**  |
 
 ## 🎯 Next Actions
 
 1. **H2: Unauthenticated Admin Endpoints** - Add authentication middleware
 2. **H5: SQL Injection Vulnerabilities** - Fix parameterized queries
-3. **H3: Client-Side Environment Variable Access** - Remove client-side env access
+3. **H3: Client-Side Environment Variable Access** - Remove client-side env
+   access
 4. **H4: JWT Secret Exposed in Logs** - Sanitize error logging
 5. **H6: Strava Token Logging** - Remove token logging
 
@@ -1207,16 +1323,19 @@ Located in `netlify/functions/utils/safe-query.js`:
 
 ## 🧪 Testing
 
-IgniteFitness includes a comprehensive test suite with unit and integration tests.
+IgniteFitness includes a comprehensive test suite with unit and integration
+tests.
 
 ### Test Setup
 
 1. **Install test dependencies**:
+
    ```bash
    npm install
    ```
 
 2. **Set up test environment**:
+
    ```bash
    # Copy environment template for testing
    cp .env .env.test
@@ -1224,16 +1343,17 @@ IgniteFitness includes a comprehensive test suite with unit and integration test
    ```
 
 3. **Run tests**:
+
    ```bash
    # Run all tests
    npm test
-   
+
    # Run tests once (CI mode)
    npm run test:run
-   
+
    # Run with coverage
    npm run test:coverage
-   
+
    # Run with UI
    npm run test:ui
    ```
@@ -1274,10 +1394,11 @@ tests/
 ### Writing Tests
 
 1. **Unit Tests**: Test individual functions in isolation
+
    ```javascript
    import { describe, it, expect } from 'vitest';
    import { validatePaginationParams } from '@utils/pagination';
-   
+
    describe('Pagination Utils', () => {
      it('should validate parameters', () => {
        const result = validatePaginationParams({ limit: '50' });
@@ -1287,9 +1408,10 @@ tests/
    ```
 
 2. **Integration Tests**: Test with real database
+
    ```javascript
    import { getTestDatabase, createTestUser } from '../helpers/database.js';
-   
+
    describe('Sessions API', () => {
      it('should create and retrieve sessions', async () => {
        const db = getTestDatabase();
@@ -1312,7 +1434,8 @@ IgniteFitness uses GitHub Actions for continuous integration and deployment.
 
 ### CI Workflow
 
-The CI pipeline runs automatically on every push and pull request to the main and develop branches.
+The CI pipeline runs automatically on every push and pull request to the main
+and develop branches.
 
 #### Workflow Jobs
 
@@ -1358,14 +1481,17 @@ act -j build
 
 ### CI Status
 
-- **Main Branch**: [![CI](https://github.com/yourusername/ignite-fitness/workflows/CI/badge.svg)](https://github.com/yourusername/ignite-fitness/actions)
-- **Test Coverage**: [![Test Coverage](https://codecov.io/gh/yourusername/ignite-fitness/branch/main/graph/badge.svg)](https://codecov.io/gh/yourusername/ignite-fitness)
+- **Main Branch**:
+  [![CI](https://github.com/yourusername/ignite-fitness/workflows/CI/badge.svg)](https://github.com/yourusername/ignite-fitness/actions)
+- **Test Coverage**:
+  [![Test Coverage](https://codecov.io/gh/yourusername/ignite-fitness/branch/main/graph/badge.svg)](https://codecov.io/gh/yourusername/ignite-fitness)
 
 ### Deployment
 
 The CI pipeline also handles deployment to production:
 
-- **Automatic Deployment**: Deploys to production on successful main branch builds
+- **Automatic Deployment**: Deploys to production on successful main branch
+  builds
 - **Environment Variables**: Secure environment variable management
 - **Rollback Support**: Automatic rollback on deployment failures
 - **Health Checks**: Post-deployment health verification
@@ -1386,17 +1512,22 @@ The CI pipeline also handles deployment to production:
 
 ### ✅ Security Tickets Resolved
 
-1. **SQL Injection Vulnerabilities** - Implemented parameterized queries and input sanitization
-2. **Client-Side Environment Variable Access** - Removed server secrets from browser exposure
-3. **JWT Secret & Error Logging Sanitization** - Sanitized error responses with unique tracking IDs
-4. **Strava Token Logging Removal** - Implemented safe logging with token masking
+1. **SQL Injection Vulnerabilities** - Implemented parameterized queries and
+   input sanitization
+2. **Client-Side Environment Variable Access** - Removed server secrets from
+   browser exposure
+3. **JWT Secret & Error Logging Sanitization** - Sanitized error responses with
+   unique tracking IDs
+4. **Strava Token Logging Removal** - Implemented safe logging with token
+   masking
 
 ### 🛡️ Security Features Added
 
 - **Safe Query Execution** - Comprehensive SQL injection protection
 - **Error Sanitization** - Unique error IDs without sensitive data exposure
-- **Token Security** - Masked logging (****abc1 format) for debugging
-- **Client-Side Security** - Public configuration endpoint for safe client access
+- **Token Security** - Masked logging (\*\*\*\*abc1 format) for debugging
+- **Client-Side Security** - Public configuration endpoint for safe client
+  access
 - **Input Validation** - Multi-layer validation with regex-based sanitization
 
 ### 📊 Security Metrics
@@ -1409,6 +1540,7 @@ The CI pipeline also handles deployment to production:
 ## 📞 Support
 
 For questions or issues:
+
 1. Check the audit reports in `docs/audit-checks/`
 2. Review API specifications in `docs/specs/`
 3. Check existing issues and pull requests

@@ -1,7 +1,7 @@
 /**
  * LoadingOverlay - reusable delayed loading indicator (500ms threshold)
  */
-(function() {
+(function () {
   class LoadingOverlay {
     constructor() {
       this.visible = false;
@@ -11,20 +11,23 @@
 
     show(target = document.body, delayMs = 500, message = 'Loading...') {
       this.clear();
-      this.timer = setTimeout(() => {
-        this.visible = true;
-        this.container = document.createElement('div');
-        this.container.className = 'if-loading-overlay';
-        this.container.setAttribute('aria-live', 'polite');
-        this.container.innerHTML = `
+      this.timer = setTimeout(
+        () => {
+          this.visible = true;
+          this.container = document.createElement('div');
+          this.container.className = 'if-loading-overlay';
+          this.container.setAttribute('aria-live', 'polite');
+          this.container.innerHTML = `
           <div class="if-loading-backdrop"></div>
           <div class="if-loading-content" role="status">
             <div class="if-spinner"></div>
             <span class="if-loading-text">${message}</span>
           </div>
         `;
-        (target || document.body).appendChild(this.container);
-      }, Math.max(0, delayMs || 0));
+          (target || document.body).appendChild(this.container);
+        },
+        Math.max(0, delayMs || 0)
+      );
     }
 
     hide() {
@@ -58,5 +61,3 @@
   // Export
   window.LoadingOverlay = LoadingOverlay;
 })();
-
-

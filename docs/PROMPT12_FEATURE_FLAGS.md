@@ -4,13 +4,14 @@
 
 ### **Done Means Checklist**
 
-✅ Flags: advanced_nutrition, coach_chat_history, periodization_editor, detailed_benchmarks  
+✅ Flags: advanced_nutrition, coach_chat_history, periodization_editor,
+detailed_benchmarks  
 ✅ If flag off, show friendly nudge  
 ✅ Never blocks core session  
 ✅ Flags stored per user  
 ✅ Defaults all on for now  
 ✅ Toggling flags changes UI live  
-✅ No breakage in Simple Mode  
+✅ No breakage in Simple Mode
 
 ---
 
@@ -48,18 +49,19 @@
 ### **Friendly Nudge** ✅
 
 **When Feature Disabled:**
+
 ```html
 <div class="upgrade-nudge">
-    <div class="nudge-content">
-        <div class="nudge-icon">🍎</div>
-        <div class="nudge-text">
-            <div class="nudge-title">Advanced Nutrition</div>
-            <div class="nudge-description">
-                Detailed macro tracking and meal timing optimization
-            </div>
-            <button class="btn-upgrade">Learn More →</button>
-        </div>
+  <div class="nudge-content">
+    <div class="nudge-icon">🍎</div>
+    <div class="nudge-text">
+      <div class="nudge-title">Advanced Nutrition</div>
+      <div class="nudge-description">
+        Detailed macro tracking and meal timing optimization
+      </div>
+      <button class="btn-upgrade">Learn More →</button>
     </div>
+  </div>
 </div>
 ```
 
@@ -71,6 +73,7 @@
 ### **Never Blocks Core** ✅
 
 **Core Session Always Available:**
+
 - ✅ Start workout
 - ✅ Basic timer
 - ✅ Record RPE
@@ -79,6 +82,7 @@
 - ✅ Basic progression
 
 **Disabled Flags Only Show:**
+
 - Nudge instead of feature
 - "Learn More" button
 - Never blocks workflow
@@ -88,18 +92,20 @@
 ### **Live UI Updates** ✅
 
 **Event System:**
+
 ```javascript
-document.addEventListener('featureFlagChanged', (e) => {
-    const { flag, enabled } = e.detail;
-    
-    // Update UI based on flag
-    if (flag === 'advanced_nutrition') {
-        updateNutritionSection(enabled);
-    }
+document.addEventListener('featureFlagChanged', e => {
+  const { flag, enabled } = e.detail;
+
+  // Update UI based on flag
+  if (flag === 'advanced_nutrition') {
+    updateNutritionSection(enabled);
+  }
 });
 ```
 
 **Immediate Updates:**
+
 - Toggling flag → UI updates instantly
 - No page reload needed
 - Smooth transitions
@@ -109,6 +115,7 @@ document.addEventListener('featureFlagChanged', (e) => {
 ### **Simple Mode Guarantee** ✅
 
 **Simple Mode Features Always Work:**
+
 ```javascript
 Simple Mode Features:
   ✓ Start Workout button
@@ -129,6 +136,7 @@ Never Affected By:
 ## **Example Flows** ✅
 
 ### **Flag Enabled:**
+
 ```javascript
 Feature: Advanced Nutrition
 Status: Enabled
@@ -138,6 +146,7 @@ Access: Full access
 ```
 
 ### **Flag Disabled:**
+
 ```javascript
 Feature: Advanced Nutrition
 Status: Disabled
@@ -151,17 +160,20 @@ Access: Core nutrition (basic macros)
 ### **Toggling Flag:**
 
 **Step 1: User toggles flag**
+
 ```javascript
 FeatureFlags.toggleFlag('advanced_nutrition');
 ```
 
 **Step 2: UI updates live**
+
 ```javascript
 // Before: Full nutrition section visible
 // After: Nudge shows, section simplified
 ```
 
 **Step 3: No reload needed**
+
 ```javascript
 // UI changes instantly
 // No data loss
@@ -173,24 +185,27 @@ FeatureFlags.toggleFlag('advanced_nutrition');
 ## **Flag Management** ✅
 
 **Get All Flags:**
+
 ```javascript
 const flags = FeatureFlags.getAllFlags();
 // { advanced_nutrition: true, coach_chat_history: true, ... }
 ```
 
 **Toggle Flag:**
+
 ```javascript
 const newState = await FeatureFlags.toggleFlag('advanced_nutrition');
 // Returns: true (enabled) or false (disabled)
 ```
 
 **Check Status:**
+
 ```javascript
 const enabled = FeatureFlags.isEnabled('advanced_nutrition');
 if (enabled) {
-    showAdvancedFeature();
+  showAdvancedFeature();
 } else {
-    showNudge();
+  showNudge();
 }
 ```
 
@@ -199,25 +214,28 @@ if (enabled) {
 ## **Future Paywall Scaffolding** ✅
 
 **Current (All Flags On):**
+
 - ✅ No paywall
 - ✅ All features enabled
 - ✅ Easy to add paywall later
 
 **Future Paywall:**
+
 ```javascript
 // Later: Check subscription
 const hasActiveSubscription = await checkSubscription();
 
 if (!hasActiveSubscription) {
-    // Show nudge instead of feature
-    UpgradeNudge.render(flagName);
+  // Show nudge instead of feature
+  UpgradeNudge.render(flagName);
 } else {
-    // Show feature
-    renderFeature();
+  // Show feature
+  renderFeature();
 }
 ```
 
 **No Changes Needed To:**
+
 - ✅ Core workout flow
 - ✅ Simple Mode
 - ✅ Basic features
@@ -228,6 +246,7 @@ if (!hasActiveSubscription) {
 ## **UI Nudge Examples** ✅
 
 ### **Advanced Nutrition Disabled:**
+
 ```
 🍎 Advanced Nutrition
 Detailed macro tracking and meal timing optimization
@@ -235,6 +254,7 @@ Detailed macro tracking and meal timing optimization
 ```
 
 ### **Coach Chat Disabled:**
+
 ```
 💬 Coach Chat History
 Save and review AI coaching conversations
@@ -242,6 +262,7 @@ Save and review AI coaching conversations
 ```
 
 ### **Periodization Editor Disabled:**
+
 ```
 📅 Periodization Editor
 Edit and customize training blocks
@@ -252,9 +273,11 @@ Edit and customize training blocks
 
 ## ✅ **PROMPT 12: COMPLETE**
 
-**Summary**: Feature flag system that never blocks core workouts but allows graceful upsell.
+**Summary**: Feature flag system that never blocks core workouts but allows
+graceful upsell.
 
 **Key Features:**
+
 - ✅ 4 feature flags (nutrition, chat, periodization, benchmarks)
 - ✅ Friendly nudge when disabled
 - ✅ Never blocks core session
@@ -263,4 +286,5 @@ Edit and customize training blocks
 - ✅ Simple Mode always works
 - ✅ Future paywall ready
 
-**Users always have core functionality, with optional advanced features available later.** 🚀
+**Users always have core functionality, with optional advanced features
+available later.** 🚀

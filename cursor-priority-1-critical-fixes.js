@@ -2,7 +2,7 @@
 
 /**
  * CURSOR PRIORITY 1: CRITICAL SYNTAX FIXES
- * 
+ *
  * URGENT: Fix deployment-blocking syntax errors in core app functionality
  * These errors will cause runtime crashes and prevent app from functioning
  */
@@ -18,38 +18,38 @@ console.log('   🎯 FILES: js/app.js (3 specific lines)\n');
 console.log('🔍 SPECIFIC ERRORS IDENTIFIED:\n');
 
 const criticalErrors = [
-    {
-        file: 'js/app.js',
-        line: 626,
-        function: 'savePersonalInfo()',
-        error: 'await saveUserDataToDatabase(); // ❌ await outside async function',
-        fix: 'Add async keyword to function declaration',
-        runtimeImpact: 'SyntaxError when user tries to save personal information'
-    },
-    {
-        file: 'js/app.js', 
-        line: 669,
-        function: 'saveGoals()',
-        error: 'await saveUserDataToDatabase(); // ❌ await outside async function',
-        fix: 'Add async keyword to function declaration',
-        runtimeImpact: 'SyntaxError when user tries to save fitness goals'
-    },
-    {
-        file: 'js/app.js',
-        line: 1596, 
-        function: 'Unknown function context',
-        error: 'await dataStore.save(...); // ❌ await outside async function',
-        fix: 'Add async keyword to containing function',
-        runtimeImpact: 'SyntaxError during data persistence operations'
-    }
+  {
+    file: 'js/app.js',
+    line: 626,
+    function: 'savePersonalInfo()',
+    error: 'await saveUserDataToDatabase(); // ❌ await outside async function',
+    fix: 'Add async keyword to function declaration',
+    runtimeImpact: 'SyntaxError when user tries to save personal information',
+  },
+  {
+    file: 'js/app.js',
+    line: 669,
+    function: 'saveGoals()',
+    error: 'await saveUserDataToDatabase(); // ❌ await outside async function',
+    fix: 'Add async keyword to function declaration',
+    runtimeImpact: 'SyntaxError when user tries to save fitness goals',
+  },
+  {
+    file: 'js/app.js',
+    line: 1596,
+    function: 'Unknown function context',
+    error: 'await dataStore.save(...); // ❌ await outside async function',
+    fix: 'Add async keyword to containing function',
+    runtimeImpact: 'SyntaxError during data persistence operations',
+  },
 ];
 
 criticalErrors.forEach((error, index) => {
-    console.log(`${index + 1}. ${error.file}:${error.line}`);
-    console.log(`   Function: ${error.function}`);
-    console.log(`   Error: ${error.error}`);
-    console.log(`   Fix: ${error.fix}`);
-    console.log(`   Impact: ${error.runtimeImpact}\n`);
+  console.log(`${index + 1}. ${error.file}:${error.line}`);
+  console.log(`   Function: ${error.function}`);
+  console.log(`   Error: ${error.error}`);
+  console.log(`   Fix: ${error.fix}`);
+  console.log(`   Impact: ${error.runtimeImpact}\n`);
 });
 
 console.log('=' * 80);
@@ -61,7 +61,7 @@ console.log('\n🎯 TASK: Fix all await/async syntax errors in js/app.js\n');
 console.log('📍 STEP 1: Locate and examine the problematic functions');
 console.log('   • Open js/app.js');
 console.log('   • Find savePersonalInfo() function around line 626');
-console.log('   • Find saveGoals() function around line 669'); 
+console.log('   • Find saveGoals() function around line 669');
 console.log('   • Find the third await usage around line 1596\n');
 
 console.log('🔧 STEP 2: Fix each function declaration');
@@ -79,7 +79,7 @@ console.log('   • Run full test suite: npm run test\n');
 
 console.log('🚨 CRITICAL SUCCESS CRITERIA:');
 console.log('   ✅ No syntax errors in js/app.js');
-console.log('   ✅ savePersonalInfo() and saveGoals() are async functions'); 
+console.log('   ✅ savePersonalInfo() and saveGoals() are async functions');
 console.log('   ✅ All await calls have proper async context');
 console.log('   ✅ npm run test:syntax passes');
 console.log('   ✅ Core app functionality works without crashes\n');

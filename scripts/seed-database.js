@@ -12,44 +12,44 @@ const path = require('path');
 const { neon } = require('@neondatabase/serverless');
 
 class DatabaseSeeder {
-    constructor() {
-        this.sql = null;
-        this.seedDataPath = path.join(__dirname, '../data/seed');
+  constructor() {
+    this.sql = null;
+    this.seedDataPath = path.join(__dirname, '../data/seed');
+  }
+
+  async initialize() {
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      throw new Error('DATABASE_URL environment variable is required');
     }
 
-    async initialize() {
-        const databaseUrl = process.env.DATABASE_URL;
-        if (!databaseUrl) {
-            throw new Error('DATABASE_URL environment variable is required');
-        }
+    this.sql = neon(databaseUrl);
+    console.log('🔗 Database connection initialized');
+  }
 
-        this.sql = neon(databaseUrl);
-        console.log('🔗 Database connection initialized');
-    }
+  async seedWorkoutTemplates() {
+    console.log('🏃‍♂️ Seeding workout templates...');
 
-    async seedWorkoutTemplates() {
-        console.log('🏃‍♂️ Seeding workout templates...');
+    const workoutFiles = [
+      'workouts_running.json',
+      'workouts_cycling.json',
+      'workouts_swimming.json',
+      'soccer_shape_workouts.json',
+    ];
 
-        const workoutFiles = [
-            'workouts_running.json',
-            'workouts_cycling.json',
-            'workouts_swimming.json',
-            'soccer_shape_workouts.json'
-        ];
+    let totalWorkouts = 0;
 
-        let totalWorkouts = 0;
+    for (const file of workoutFiles) {
+      const filePath = path.join(this.seedDataPath, file);
+      const data = JSON.parse(await fs.readFile(filePath, 'utf-8'));
 
-        for (const file of workoutFiles) {
-            const filePath = path.join(this.seedDataPath, file);
-            const data = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+      const workoutArray = data.workouts || [];
+      console.log(`  📄 Processing ${file} (${workoutArray.length} workouts)`);
 
-            const workoutArray = data.workouts || [];
-            console.log(`  📄 Processing ${file} (${workoutArray.length} workouts)`);
-
-            for (const workout of workoutArray) {
-                try {
-                    // Insert workout template
-                    await this.sql`
+      for (const workout of workoutArray) {
+        try {
+          // Insert workout template
+          await this.sql`
                         INSERT INTO workout_templates (
                             template_id, name, modality, category, adaptation,
                             estimated_load, time_required, difficulty_level,
@@ -68,10 +68,10 @@ class DatabaseSeeder {
                             updated_at = CURRENT_TIMESTAMP
                     `;
 
-                    // Insert workout blocks
-                    for (let i = 0; i < workout.structure.length; i++) {
-                        const block = workout.structure[i];
-                        await this.sql`
+          // Insert workout blocks
+          for (let i = 0; i < workout.structure.length; i++) {
+            const block = workout.structure[i];
+            await this.sql`
                             INSERT INTO workout_blocks (
                                 template_id, block_order, block_type, duration, sets,
                                 work_duration, rest_duration, intensity, distance, description
@@ -86,28 +86,28 @@ class DatabaseSeeder {
                                 intensity = EXCLUDED.intensity,
                                 description = EXCLUDED.description
                         `;
-                    }
+          }
 
-                    totalWorkouts++;
-                } catch (error) {
-                    console.error(`  ❌ Error seeding workout ${workout.template_id}:`, error.message);
-                }
-            }
+          totalWorkouts++;
+        } catch (error) {
+          console.error(`  ❌ Error seeding workout ${workout.template_id}:`, error.message);
         }
-
-        console.log(`  ✅ Seeded ${totalWorkouts} workout templates`);
+      }
     }
 
-    async seedSubstitutionRules() {
-        console.log('🔄 Seeding substitution rules...');
+    console.log(`  ✅ Seeded ${totalWorkouts} workout templates`);
+  }
 
-        const filePath = path.join(this.seedDataPath, 'substitution_rules.json');
-        const data = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+  async seedSubstitutionRules() {
+    console.log('🔄 Seeding substitution rules...');
 
-        // Seed modality factors
-        for (const factor of data.modality_factors) {
-            try {
-                await this.sql`
+    const filePath = path.join(this.seedDataPath, 'substitution_rules.json');
+    const data = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+
+    // Seed modality factors
+    for (const factor of data.modality_factors) {
+      try {
+        await this.sql`
                     INSERT INTO modality_factors (
                         from_modality, to_modality, base_time_factor, met_ratio,
                         biomechanical_factor, z1_adjustment, z2_adjustment,
@@ -126,17 +126,19 @@ class DatabaseSeeder {
                         z4_adjustment = EXCLUDED.z4_adjustment,
                         z5_adjustment = EXCLUDED.z5_adjustment
                 `;
-            } catch (error) {
-                console.error(`  ❌ Error seeding modality factor ${factor.from_modality} to ${factor.to_modality}:`,
-                    error.message);
-            }
-        }
+      } catch (error) {
+        console.error(
+          `  ❌ Error seeding modality factor ${factor.from_modality} to ${factor.to_modality}:`,
+          error.message
+        );
+      }
+    }
 
-        // Seed substitution rules
-        let rulesSeeded = 0;
-        for (const rule of data.substitution_rules) {
-            try {
-                await this.sql`
+    // Seed substitution rules
+    let rulesSeeded = 0;
+    for (const rule of data.substitution_rules) {
+      try {
+        await this.sql`
                     INSERT INTO substitution_rules (
                         rule_id, from_modality, to_modality, from_zone, to_zone,
                         time_factor, load_factor, confidence_score, min_duration,
@@ -154,26 +156,28 @@ class DatabaseSeeder {
                         confidence_score = EXCLUDED.confidence_score,
                         updated_at = CURRENT_TIMESTAMP
                 `;
-                rulesSeeded++;
-            } catch (error) {
-                console.error(`  ❌ Error seeding substitution rule ${rule.rule_id}:`, error.message);
-            }
-        }
-
-        console.log(`  ✅ Seeded ${data.modality_factors.length} modality factors and ${rulesSeeded} substitution rules`);
+        rulesSeeded++;
+      } catch (error) {
+        console.error(`  ❌ Error seeding substitution rule ${rule.rule_id}:`, error.message);
+      }
     }
 
-    async seedGuardrails() {
-        console.log('🛡️ Seeding safety guardrails...');
+    console.log(
+      `  ✅ Seeded ${data.modality_factors.length} modality factors and ${rulesSeeded} substitution rules`
+    );
+  }
 
-        const filePath = path.join(this.seedDataPath, 'guardrails.json');
-        const data = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+  async seedGuardrails() {
+    console.log('🛡️ Seeding safety guardrails...');
 
-        // Seed guardrail configurations
-        let configsSeeded = 0;
-        for (const config of data.guardrails_configs) {
-            try {
-                await this.sql`
+    const filePath = path.join(this.seedDataPath, 'guardrails.json');
+    const data = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+
+    // Seed guardrail configurations
+    let configsSeeded = 0;
+    for (const config of data.guardrails_configs) {
+      try {
+        await this.sql`
                     INSERT INTO guardrails_config (
                         config_name, training_level, weekly_load_cap, weekly_hard_minutes_cap,
                         daily_load_cap, max_weekly_load_increase, max_weekly_volume_increase,
@@ -194,17 +198,17 @@ class DatabaseSeeder {
                         max_weekly_load_increase = EXCLUDED.max_weekly_load_increase,
                         updated_at = CURRENT_TIMESTAMP
                 `;
-                configsSeeded++;
-            } catch (error) {
-                console.error(`  ❌ Error seeding guardrail config ${config.config_name}:`, error.message);
-            }
-        }
+        configsSeeded++;
+      } catch (error) {
+        console.error(`  ❌ Error seeding guardrail config ${config.config_name}:`, error.message);
+      }
+    }
 
-        // Seed zone definitions
-        let zonesSeeded = 0;
-        for (const zone of data.zone_definitions) {
-            try {
-                await this.sql`
+    // Seed zone definitions
+    let zonesSeeded = 0;
+    for (const zone of data.zone_definitions) {
+      try {
+        await this.sql`
                     INSERT INTO zone_definitions (
                         zone_name, zone_number, description, physiological_marker,
                         perceived_exertion_range, hr_percent_min, hr_percent_max,
@@ -221,83 +225,91 @@ class DatabaseSeeder {
                         physiological_marker = EXCLUDED.physiological_marker,
                         primary_adaptations = EXCLUDED.primary_adaptations
                 `;
-                zonesSeeded++;
-            } catch (error) {
-                console.error(`  ❌ Error seeding zone definition ${zone.zone_name}:`, error.message);
-            }
-        }
-
-        console.log(`  ✅ Seeded ${configsSeeded} guardrail configs and ${zonesSeeded} zone definitions`);
+        zonesSeeded++;
+      } catch (error) {
+        console.error(`  ❌ Error seeding zone definition ${zone.zone_name}:`, error.message);
+      }
     }
 
-    async verifySeeding() {
-        console.log('🔍 Verifying seeded data...');
+    console.log(
+      `  ✅ Seeded ${configsSeeded} guardrail configs and ${zonesSeeded} zone definitions`
+    );
+  }
 
-        try {
-            const [templates] = await this.sql`SELECT COUNT(*) as count FROM workout_templates WHERE is_active = true`;
-            const [rules] = await this.sql`SELECT COUNT(*) as count FROM substitution_rules WHERE is_active = true`;
-            const [configs] = await this.sql`SELECT COUNT(*) as count FROM guardrails_config WHERE is_active = true`;
-            const [zones] = await this.sql`SELECT COUNT(*) as count FROM zone_definitions`;
+  async verifySeeding() {
+    console.log('🔍 Verifying seeded data...');
 
-            console.log(`  📊 Workout Templates: ${templates.count}`);
-            console.log(`  📊 Substitution Rules: ${rules.count}`);
-            console.log(`  📊 Guardrail Configs: ${configs.count}`);
-            console.log(`  📊 Zone Definitions: ${zones.count}`);
+    try {
+      const [templates] = await this
+        .sql`SELECT COUNT(*) as count FROM workout_templates WHERE is_active = true`;
+      const [rules] = await this
+        .sql`SELECT COUNT(*) as count FROM substitution_rules WHERE is_active = true`;
+      const [configs] = await this
+        .sql`SELECT COUNT(*) as count FROM guardrails_config WHERE is_active = true`;
+      const [zones] = await this.sql`SELECT COUNT(*) as count FROM zone_definitions`;
 
-            // Verify specific test cases
-            const [runToBikeZ2] = await this.sql`
+      console.log(`  📊 Workout Templates: ${templates.count}`);
+      console.log(`  📊 Substitution Rules: ${rules.count}`);
+      console.log(`  📊 Guardrail Configs: ${configs.count}`);
+      console.log(`  📊 Zone Definitions: ${zones.count}`);
+
+      // Verify specific test cases
+      const [runToBikeZ2] = await this.sql`
                 SELECT time_factor FROM substitution_rules
                 WHERE from_modality = 'running' AND to_modality = 'cycling' AND from_zone = 'Z2'
             `;
 
-            if (runToBikeZ2 && Math.abs(runToBikeZ2.time_factor - 1.3) <= 0.05) {
-                console.log(`  ✅ Run→Bike Z2 factor verified: ${runToBikeZ2.time_factor}`);
-            } else {
-                console.log(`  ❌ Run→Bike Z2 factor incorrect: ${runToBikeZ2?.time_factor || 'not found'}`);
-            }
+      if (runToBikeZ2 && Math.abs(runToBikeZ2.time_factor - 1.3) <= 0.05) {
+        console.log(`  ✅ Run→Bike Z2 factor verified: ${runToBikeZ2.time_factor}`);
+      } else {
+        console.log(
+          `  ❌ Run→Bike Z2 factor incorrect: ${runToBikeZ2?.time_factor || 'not found'}`
+        );
+      }
 
-            return {
-                templates: templates.count,
-                rules: rules.count,
-                configs: configs.count,
-                zones: zones.count
-            };
-        } catch (error) {
-            console.error('❌ Error verifying seeded data:', error.message);
-            return null;
-        }
+      return {
+        templates: templates.count,
+        rules: rules.count,
+        configs: configs.count,
+        zones: zones.count,
+      };
+    } catch (error) {
+      console.error('❌ Error verifying seeded data:', error.message);
+      return null;
     }
+  }
 
-    async run() {
-        try {
-            console.log('🌱 Starting database seeding...');
+  async run() {
+    try {
+      console.log('🌱 Starting database seeding...');
 
-            await this.initialize();
-            await this.seedWorkoutTemplates();
-            await this.seedSubstitutionRules();
-            await this.seedGuardrails();
+      await this.initialize();
+      await this.seedWorkoutTemplates();
+      await this.seedSubstitutionRules();
+      await this.seedGuardrails();
 
-            const verification = await this.verifySeeding();
+      const verification = await this.verifySeeding();
 
-            if (verification) {
-                console.log('\n✅ Database seeding completed successfully!');
-                console.log(`📈 Total records seeded: ${verification.templates + verification.rules + verification.configs + verification.zones}`);
-            } else {
-                console.log('\n⚠️ Seeding completed but verification failed');
-                process.exit(1);
-            }
-        } catch (error) {
-            console.error('💥 Seeding failed:', error.message);
-            process.exit(1);
-        }
+      if (verification) {
+        console.log('\n✅ Database seeding completed successfully!');
+        console.log(
+          `📈 Total records seeded: ${verification.templates + verification.rules + verification.configs + verification.zones}`
+        );
+      } else {
+        console.log('\n⚠️ Seeding completed but verification failed');
+        process.exit(1);
+      }
+    } catch (error) {
+      console.error('💥 Seeding failed:', error.message);
+      process.exit(1);
     }
+  }
 }
 
 // Run seeding if called directly
 if (require.main === module) {
-    const seeder = new DatabaseSeeder();
-    seeder.run();
+  const seeder = new DatabaseSeeder();
+  seeder.run();
 }
 
 module.exports = DatabaseSeeder;
-

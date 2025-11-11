@@ -2,7 +2,8 @@
 
 ## Overview
 
-This guide covers the deployment of the comprehensive user preferences settings system with JWT authentication, atomic upserts, and robust validation.
+This guide covers the deployment of the comprehensive user preferences settings
+system with JWT authentication, atomic upserts, and robust validation.
 
 ## Prerequisites
 
@@ -87,12 +88,14 @@ netlify deploy --prod
 ## 4. API Endpoints
 
 ### 4.1 Get User Preferences
+
 ```bash
 GET /.netlify/functions/users-preferences-get
 Authorization: Bearer <jwt-token>
 ```
 
 ### 4.2 Update User Preferences
+
 ```bash
 PATCH /.netlify/functions/users-preferences-patch
 Authorization: Bearer <jwt-token>
@@ -111,23 +114,27 @@ Content-Type: application/json
 ## 5. Key Features
 
 ### Atomic Operations ⚡
+
 - **Get-or-create**: Automatically creates default preferences if none exist
 - **Atomic upserts**: Handles concurrent updates without race conditions
 - **Last write wins**: Concurrent updates are handled gracefully
 
 ### Validation & Coercion 🔍
+
 - **Timezone validation**: Uses moment-timezone for IANA timezone validation
 - **Type coercion**: Automatic conversion of string values to proper types
 - **Range validation**: Sleep goal (0-14 hours), workout goal (0-14 per week)
 - **Enum validation**: Units, theme, and other enum fields
 
 ### Security & Privacy 🔐
+
 - **JWT authentication**: Required for all endpoints
 - **User isolation**: Users can only access their own preferences
 - **Input sanitization**: Unknown fields are silently ignored
 - **Request size limits**: 10KB maximum request body size
 
 ### Performance & Reliability 📊
+
 - **Database functions**: Optimized PostgreSQL functions for atomic operations
 - **Error handling**: Comprehensive error responses with specific codes
 - **CORS support**: Full CORS headers for web applications
@@ -136,12 +143,14 @@ Content-Type: application/json
 ## 6. Data Model
 
 ### User Preferences Table
+
 - **Core preferences**: timezone, units, sleep_goal_hours, workout_goal_per_week
 - **UI preferences**: notifications_enabled, theme
 - **Schema versioning**: For future migrations
 - **Timestamps**: created_at, updated_at for tracking
 
 ### Default Values
+
 - **timezone**: NULL (client falls back to browser detection)
 - **units**: 'imperial'
 - **sleep_goal_hours**: 8.0
@@ -150,6 +159,7 @@ Content-Type: application/json
 - **theme**: 'system'
 
 ### Atomic Functions
+
 - **get_or_create_user_preferences**: Gets existing or creates with defaults
 - **update_user_preferences**: Atomic upsert with only provided fields
 - **is_valid_timezone**: Validates IANA timezone strings
@@ -158,6 +168,7 @@ Content-Type: application/json
 ## 7. API Response Format
 
 ### Success Response (GET)
+
 ```json
 {
   "timezone": "America/Denver",
@@ -170,11 +181,13 @@ Content-Type: application/json
 ```
 
 ### Success Response (PATCH)
+
 ```
 204 No Content
 ```
 
 ### Error Response
+
 ```json
 {
   "error": "ERROR_CODE",
@@ -185,49 +198,55 @@ Content-Type: application/json
 
 ## 8. Error Codes
 
-| Code | Description | Status |
-|------|-------------|--------|
-| AUTH_REQUIRED | Missing/invalid JWT | 401 |
-| USER_NOT_FOUND | Token valid but user not found | 403 |
-| INVALID_JSON | Malformed JSON | 400 |
-| BODY_TOO_LARGE | Request > 10KB | 400 |
-| INVALID_TIMEZONE | Unknown IANA timezone | 400 |
-| INVALID_UNITS | Not 'metric' or 'imperial' | 400 |
-| INVALID_SLEEP_GOAL | Outside 0-14 range | 400 |
-| INVALID_WORKOUT_GOAL | Outside 0-14 range | 400 |
-| INVALID_THEME | Not 'system', 'light', or 'dark' | 400 |
-| VALIDATION_FAILED | Multiple validation errors | 400 |
-| DB_ERROR | Server error | 500 |
+| Code                 | Description                      | Status |
+| -------------------- | -------------------------------- | ------ |
+| AUTH_REQUIRED        | Missing/invalid JWT              | 401    |
+| USER_NOT_FOUND       | Token valid but user not found   | 403    |
+| INVALID_JSON         | Malformed JSON                   | 400    |
+| BODY_TOO_LARGE       | Request > 10KB                   | 400    |
+| INVALID_TIMEZONE     | Unknown IANA timezone            | 400    |
+| INVALID_UNITS        | Not 'metric' or 'imperial'       | 400    |
+| INVALID_SLEEP_GOAL   | Outside 0-14 range               | 400    |
+| INVALID_WORKOUT_GOAL | Outside 0-14 range               | 400    |
+| INVALID_THEME        | Not 'system', 'light', or 'dark' | 400    |
+| VALIDATION_FAILED    | Multiple validation errors       | 400    |
+| DB_ERROR             | Server error                     | 500    |
 
 ## 9. Validation Rules
 
 ### Timezone
+
 - **Format**: IANA timezone string (e.g., "America/Denver")
 - **Validation**: Uses moment-timezone library
 - **NULL allowed**: Client falls back to browser detection
 
 ### Units
+
 - **Values**: 'metric' or 'imperial'
 - **Case insensitive**: Stored as lowercase
 - **Default**: 'imperial'
 
 ### Sleep Goal Hours
+
 - **Range**: 0.0 to 14.0
 - **Precision**: 0.1 (rounded)
 - **Type**: Decimal
 - **Default**: 8.0
 
 ### Workout Goal Per Week
+
 - **Range**: 0 to 14
 - **Type**: Integer
 - **Default**: 3
 
 ### Notifications Enabled
+
 - **Type**: Boolean
 - **Accepts**: true/false, 1/0, "true"/"false"
 - **Default**: true
 
 ### Theme
+
 - **Values**: 'system', 'light', 'dark'
 - **Case insensitive**: Stored as lowercase
 - **Default**: 'system'
@@ -250,13 +269,15 @@ node test-user-preferences.js
 ### Step 2: Manual Testing
 
 1. **Create Test User**:
+
 ```sql
 -- Create a test user with external_id
-INSERT INTO users (external_id, email, created_at) 
+INSERT INTO users (external_id, email, created_at)
 VALUES ('test-user-123', 'test@example.com', NOW());
 ```
 
 2. **Generate Test Token**:
+
 ```bash
 # Use the test script to generate a proper JWT token
 node -e "
@@ -271,12 +292,14 @@ console.log('Test Token:', token);
 ```
 
 3. **Test Get Preferences**:
+
 ```bash
 curl https://your-site.netlify.app/.netlify/functions/users-preferences-get \
   -H "Authorization: Bearer <test-token>"
 ```
 
 4. **Test Update Preferences**:
+
 ```bash
 curl -X PATCH https://your-site.netlify.app/.netlify/functions/users-preferences-patch \
   -H "Authorization: Bearer <test-token>" \
@@ -287,16 +310,19 @@ curl -X PATCH https://your-site.netlify.app/.netlify/functions/users-preferences
 ## 11. Performance Considerations
 
 ### Database Optimization
+
 - **Indexed lookups**: user_id index for fast queries
 - **Atomic functions**: PostgreSQL functions for atomic operations
 - **Connection pooling**: Efficient database connections
 
 ### Caching Strategy
+
 - **Client-side caching**: Store preferences in localStorage
 - **Server-side caching**: Consider Redis for high-traffic scenarios
 - **Cache invalidation**: Update cache on PATCH requests
 
 ### Rate Limiting
+
 - **Per-user limits**: 10 requests per minute per user
 - **Request size limits**: 10KB maximum request body
 - **Timeout protection**: 30-second function timeout
@@ -304,16 +330,19 @@ curl -X PATCH https://your-site.netlify.app/.netlify/functions/users-preferences
 ## 12. Security Considerations
 
 ### Authentication
+
 - **JWT validation**: Proper token verification
 - **User resolution**: External ID to internal ID mapping
 - **Token expiration**: 24-hour token lifetime
 
 ### Data Privacy
+
 - **User isolation**: Users can only access their own preferences
 - **No PII logging**: Sanitized error messages
 - **Input sanitization**: Unknown fields are ignored
 
 ### Input Validation
+
 - **Type validation**: Proper type checking and coercion
 - **Range validation**: Bounds checking for numeric fields
 - **Format validation**: IANA timezone validation
@@ -361,17 +390,20 @@ psql $DATABASE_URL -c "SELECT round_sleep_goal(7.55);"
 ## 14. Maintenance
 
 ### Regular Tasks
+
 - **Monitor error rates**: Check for validation failures
 - **Review logs**: Look for authentication issues
 - **Update dependencies**: Keep moment-timezone current
 - **Test timezone validation**: Ensure IANA timezone support
 
 ### Data Cleanup
+
 - **Orphaned preferences**: Clean up preferences for deleted users
 - **Old preferences**: Consider archiving old preference history
 - **Schema migrations**: Plan for future schema changes
 
 ### Updates
+
 - **Schema changes**: Use versioning for migrations
 - **API versioning**: Maintain backward compatibility
 - **Dependency updates**: Keep packages current
@@ -380,12 +412,14 @@ psql $DATABASE_URL -c "SELECT round_sleep_goal(7.55);"
 ## 15. Future Enhancements
 
 ### Phase 2 Features
+
 - **Unit conversion**: Server-side unit conversion in API responses
 - **Audit trail**: Track preference changes over time
 - **Advanced notifications**: Granular notification preferences
 - **Timezone display**: Server-side timezone formatting
 
 ### Phase 3 Features
+
 - **Preference categories**: Group related preferences
 - **Bulk operations**: Update multiple preferences at once
 - **Preference templates**: Default preference sets
@@ -394,6 +428,7 @@ psql $DATABASE_URL -c "SELECT round_sleep_goal(7.55);"
 ## Support
 
 For issues or questions:
+
 1. Check the error codes and descriptions
 2. Review the validation rules
 3. Verify environment configuration

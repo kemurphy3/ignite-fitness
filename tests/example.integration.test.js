@@ -10,7 +10,7 @@ import {
   createTestUser,
   createTestSession,
   createTestExercise,
-  cleanupTestData
+  cleanupTestData,
 } from './helpers/db.js';
 
 describe('Database Integration Tests', () => {
@@ -50,7 +50,7 @@ describe('Database Integration Tests', () => {
       const userData = {
         external_id: 'test_user_123',
         username: 'testuser123',
-        status: 'active'
+        status: 'active',
       };
 
       const user = await createTestUser(userData);
@@ -66,7 +66,7 @@ describe('Database Integration Tests', () => {
     it('should retrieve user by ID', async () => {
       const user = await createTestUser({
         external_id: 'test_user_456',
-        username: 'testuser456'
+        username: 'testuser456',
       });
 
       // In mock mode, just verify the user was created
@@ -95,7 +95,7 @@ describe('Database Integration Tests', () => {
 
       const userData = {
         external_id: 'unique_test_user',
-        username: 'uniqueuser'
+        username: 'uniqueuser',
       };
 
       // Create first user
@@ -105,7 +105,7 @@ describe('Database Integration Tests', () => {
       try {
         await createTestUser({
           ...userData,
-          external_id: 'different_external_id'
+          external_id: 'different_external_id',
         });
         expect.fail('Should have thrown an error for duplicate username');
       } catch (error) {
@@ -120,7 +120,7 @@ describe('Database Integration Tests', () => {
     beforeEach(async () => {
       testUser = await createTestUser({
         external_id: 'session_test_user',
-        username: 'sessionuser'
+        username: 'sessionuser',
       });
     });
 
@@ -133,7 +133,7 @@ describe('Database Integration Tests', () => {
         start_at: new Date(),
         end_at: new Date(Date.now() + 3600000),
         duration: 3600,
-        payload: { test: true, notes: 'Test workout session' }
+        payload: { test: true, notes: 'Test workout session' },
       };
 
       const session = await createTestSession(sessionData);
@@ -153,14 +153,14 @@ describe('Database Integration Tests', () => {
         user_id: testUser.id,
         type: 'workout',
         source: 'test',
-        source_id: 'session1'
+        source_id: 'session1',
       });
 
       const session2 = await createTestSession({
         user_id: testUser.id,
         type: 'cardio',
         source: 'test',
-        source_id: 'session2'
+        source_id: 'session2',
       });
 
       // In mock mode, just verify the sessions were created
@@ -190,14 +190,14 @@ describe('Database Integration Tests', () => {
     beforeEach(async () => {
       testUser = await createTestUser({
         external_id: 'exercise_test_user',
-        username: 'exerciseuser'
+        username: 'exerciseuser',
       });
 
       testSession = await createTestSession({
         user_id: testUser.id,
         type: 'workout',
         source: 'test',
-        source_id: 'exercise_test_session'
+        source_id: 'exercise_test_session',
       });
     });
 
@@ -209,7 +209,7 @@ describe('Database Integration Tests', () => {
         reps: 10,
         weight_kg: 80.5,
         rpe: 8,
-        order_index: 1
+        order_index: 1,
       };
 
       const exercise = await createTestExercise(exerciseData);
@@ -233,7 +233,7 @@ describe('Database Integration Tests', () => {
         sets: 4,
         reps: 12,
         weight_kg: 100.0,
-        order_index: 1
+        order_index: 1,
       });
 
       const exercise2 = await createTestExercise({
@@ -242,7 +242,7 @@ describe('Database Integration Tests', () => {
         sets: 3,
         reps: 8,
         weight_kg: 120.0,
-        order_index: 2
+        order_index: 2,
       });
 
       // In mock mode, just verify the exercises were created
@@ -279,7 +279,7 @@ describe('Database Integration Tests', () => {
         await createTestSession({
           user_id: 99999, // Non-existent user
           type: 'workout',
-          source: 'test'
+          source: 'test',
         });
         expect.fail('Should have thrown an error for invalid user_id');
       } catch (error) {
@@ -297,18 +297,18 @@ describe('Database Integration Tests', () => {
       // Create user, session, and exercise
       const user = await createTestUser({
         external_id: 'cascade_test_user',
-        username: 'cascadeuser'
+        username: 'cascadeuser',
       });
 
       const session = await createTestSession({
         user_id: user.id,
         type: 'workout',
-        source: 'test'
+        source: 'test',
       });
 
       const exercise = await createTestExercise({
         session_id: session.id,
-        name: 'Test Exercise'
+        name: 'Test Exercise',
       });
 
       // Verify they exist
@@ -344,13 +344,13 @@ describe('Database Integration Tests', () => {
 
       const user = await createTestUser({
         external_id: 'batch_test_user',
-        username: 'batchuser'
+        username: 'batchuser',
       });
 
       const session = await createTestSession({
         user_id: user.id,
         type: 'workout',
-        source: 'test'
+        source: 'test',
       });
 
       // Create multiple exercises in a batch
@@ -362,7 +362,7 @@ describe('Database Integration Tests', () => {
           sets: 3,
           reps: 10,
           weight_kg: 50 + i * 5,
-          order_index: i + 1
+          order_index: i + 1,
         });
       }
 

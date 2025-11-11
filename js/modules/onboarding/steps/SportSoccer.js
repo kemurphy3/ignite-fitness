@@ -3,20 +3,20 @@
  * Captures position, season phase, and soccer-specific preferences
  */
 class SportSoccerStep {
-    constructor() {
-        this.logger = window.SafeLogger || console;
-    }
+  constructor() {
+    this.logger = window.SafeLogger || console;
+  }
 
-    /**
-     * Render soccer selection step
-     * @param {Object} existingData - Existing onboarding data
-     * @returns {string} HTML for soccer step
-     */
-    render(existingData = {}) {
-        const selectedPosition = existingData.position || '';
-        const selectedPhase = existingData.season_phase || 'in-season';
+  /**
+   * Render soccer selection step
+   * @param {Object} existingData - Existing onboarding data
+   * @returns {string} HTML for soccer step
+   */
+  render(existingData = {}) {
+    const selectedPosition = existingData.position || '';
+    const selectedPhase = existingData.season_phase || 'in-season';
 
-        return `
+    return `
             <div class="onboarding-step sport-soccer-step">
                 <h2>Soccer-Specific Details</h2>
                 <p class="step-description">Help us personalize your training for soccer.</p>
@@ -101,29 +101,31 @@ class SportSoccerStep {
                 </div>
             </div>
         `;
-    }
+  }
 
-    /**
-     * Get selected values
-     * @returns {Object} Selected position and phase
-     */
-    getSelectedValues() {
-        const position = document.querySelector('input[name="position"]:checked')?.value || 'midfielder';
-        const season_phase = document.querySelector('input[name="season_phase"]:checked')?.value || 'in-season';
+  /**
+   * Get selected values
+   * @returns {Object} Selected position and phase
+   */
+  getSelectedValues() {
+    const position =
+      document.querySelector('input[name="position"]:checked')?.value || 'midfielder';
+    const season_phase =
+      document.querySelector('input[name="season_phase"]:checked')?.value || 'in-season';
 
-        return {
-            position,
-            season_phase
-        };
-    }
+    return {
+      position,
+      season_phase,
+    };
+  }
 
-    /**
-     * Validate step
-     * @returns {boolean} Is valid
-     */
-    validate() {
-        return true; // Position has default
-    }
+  /**
+   * Validate step
+   * @returns {boolean} Is valid
+   */
+  validate() {
+    return true; // Position has default
+  }
 }
 
 window.SportSoccerStep = SportSoccerStep;

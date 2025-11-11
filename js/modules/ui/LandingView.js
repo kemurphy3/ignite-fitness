@@ -4,16 +4,16 @@
  */
 
 class LandingView {
-    constructor() {
-        this.logger = window.SafeLogger || console;
-    }
+  constructor() {
+    this.logger = window.SafeLogger || console;
+  }
 
-    /**
-     * Render landing page
-     * @returns {string} Landing HTML
-     */
-    render() {
-        return `
+  /**
+   * Render landing page
+   * @returns {string} Landing HTML
+   */
+  render() {
+    return `
             <div data-component="LandingView" class="landing-view">
                 <section class="hero-modern">
                     <div class="hero-content">
@@ -77,7 +77,7 @@ class LandingView {
                 </section>
             </div>
         `;
-    }
+  }
 }
 
 // Create global instance
@@ -85,6 +85,5 @@ window.LandingView = LandingView;
 
 // Export for module systems
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = LandingView;
+  module.exports = LandingView;
 }
-

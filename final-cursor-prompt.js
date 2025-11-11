@@ -21,8 +21,12 @@ console.log('🔧 FINAL CURSOR PROMPT:\n');
 
 console.log('```');
 console.log('In js/modules/ai/ExpertCoordinator.js line 329: Add empty workout validation after');
-console.log('expert proposals gathering. Before "return proposals", add: if (Object.values(proposals).');
-console.log('every(p => !p.blocks || p.blocks.length === 0)) return this.getFallbackPlanStructured(context);');
+console.log(
+  'expert proposals gathering. Before "return proposals", add: if (Object.values(proposals).'
+);
+console.log(
+  'every(p => !p.blocks || p.blocks.length === 0)) return this.getFallbackPlanStructured(context);'
+);
 console.log('```\n');
 
 console.log('📊 PROMPT SPECIFICATIONS:\n');

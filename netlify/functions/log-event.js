@@ -3,14 +3,16 @@
 
 const { successResponse, errorResponse } = require('./utils/admin-auth');
 
-exports.handler = async (event) => {
+exports.handler = async event => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
   try {
     let body = {};
-    try { body = JSON.parse(event.body || '{}'); } catch {
+    try {
+      body = JSON.parse(event.body || '{}');
+    } catch {
       return errorResponse(400, 'BAD_JSON', 'Invalid JSON');
     }
 
@@ -25,5 +27,3 @@ exports.handler = async (event) => {
     return errorResponse(500, 'SERVER_ERROR', e.message || 'error');
   }
 };
-
-

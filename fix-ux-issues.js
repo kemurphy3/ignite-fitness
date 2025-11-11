@@ -2,7 +2,7 @@
 
 /**
  * Comprehensive UX fixes for Ignite Fitness
- * 
+ *
  * Issues addressed:
  * 1. Login screen disappearing immediately
  * 2. Too technical for beta users

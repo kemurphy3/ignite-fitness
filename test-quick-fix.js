@@ -1,7 +1,12 @@
 // test-quick-fix.js
 // Quick test to verify the fixes
 
-const { validatePaginationParams, encodeCursor, decodeCursor, PAGINATION_CONFIG } = require('./netlify/functions/utils/pagination');
+const {
+  validatePaginationParams,
+  encodeCursor,
+  decodeCursor,
+  PAGINATION_CONFIG,
+} = require('./netlify/functions/utils/pagination');
 
 console.log('🔍 Testing Pagination Fixes\n');
 
@@ -27,7 +32,7 @@ console.log('📊 Test 2: Cursor Encoding/Decoding');
 const testData = {
   id: '123',
   timestamp: '2024-01-01T00:00:00Z',
-  order: '2024-01-01T00:00:00Z'
+  order: '2024-01-01T00:00:00Z',
 };
 
 const encoded = encodeCursor(testData);
@@ -38,6 +43,8 @@ console.log(`   Decoded: ${JSON.stringify(decoded)}`);
 console.log(`   ID match: ${decoded.id === testData.id ? 'PASS' : 'FAIL'}`);
 console.log(`   Timestamp match: ${decoded.timestamp === testData.timestamp ? 'PASS' : 'FAIL'}`);
 console.log(`   Order match: ${decoded.order === testData.order ? 'PASS' : 'FAIL'}`);
-console.log(`   Version present: ${decoded.v === PAGINATION_CONFIG.CURSOR_VERSION ? 'PASS' : 'FAIL'}\n`);
+console.log(
+  `   Version present: ${decoded.v === PAGINATION_CONFIG.CURSOR_VERSION ? 'PASS' : 'FAIL'}\n`
+);
 
 console.log('🎉 Quick fix verification complete!');

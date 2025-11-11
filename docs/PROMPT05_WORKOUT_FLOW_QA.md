@@ -1,18 +1,24 @@
 # Prompt 5 - Workout Flow & Timer Manual QA Guide
 
 ## Overview
-This document provides manual QA instructions for testing the Workout Flow & Timer feature (Prompt 5).
+
+This document provides manual QA instructions for testing the Workout Flow &
+Timer feature (Prompt 5).
 
 ## Implementation Summary
 
 ### Files Created/Modified
-- `js/modules/ui/components/WorkoutTimer.js` - Session and rest timer functionality
+
+- `js/modules/ui/components/WorkoutTimer.js` - Session and rest timer
+  functionality
 - `styles/workout-timer.css` - Timer styling
-- `js/modules/workout/WorkoutTracker.js` - Integrated timer rendering and session management
+- `js/modules/workout/WorkoutTracker.js` - Integrated timer rendering and
+  session management
 - `index.html` - Added WorkoutTimer script and CSS links
 - `tests/workout/workout-timer.test.js` - Unit tests for timer logic
 
 ### Key Features
+
 1. **Session Timer**: Overall workout duration tracking with pause/resume
 2. **Rest Countdown**: Per-set rest periods with +15s and skip controls
 3. **State Persistence**: Survives page refresh and app backgrounding
@@ -24,6 +30,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 ### 1. Session Timer Functionality
 
 #### Test: Start Session
+
 1. Navigate to workout view
 2. Start a new workout session
 3. Verify "Session" timer starts counting from 00:00
@@ -32,6 +39,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 **Expected:** Timer displays and counts up continuously
 
 #### Test: Pause Session
+
 1. Session timer running
 2. Click ⏸ (pause) button
 3. Verify timer stops counting
@@ -40,6 +48,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 **Expected:** Timer pauses immediately on button click
 
 #### Test: Resume Session
+
 1. Session paused
 2. Click ▶ (resume) button
 3. Verify timer resumes from where it paused
@@ -48,6 +57,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 **Expected:** Timer resumes without losing time
 
 #### Test: Stop Session
+
 1. Session running
 2. Click ⏹ (stop) button
 3. Verify timer stops and resets to 00:00
@@ -58,6 +68,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 ### 2. Rest Timer Functionality
 
 #### Test: Start Rest Period
+
 1. Complete a set (or manually trigger rest)
 2. Verify "Rest" timer appears
 3. Verify countdown starts from configured duration (e.g., 90 seconds)
@@ -66,6 +77,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 **Expected:** Rest timer displays and counts down
 
 #### Test: Rest Timer Completion
+
 1. Rest timer counting down
 2. Wait for timer to reach 0
 3. Verify timer disappears
@@ -74,6 +86,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 **Expected:** Timer auto-completes and hides when reaching 0
 
 #### Test: Add Time to Rest
+
 1. Rest timer active
 2. Click "+15s" button
 3. Verify timer adds 15 seconds
@@ -82,6 +95,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 **Expected:** Rest time increases by 15 seconds
 
 #### Test: Skip Rest
+
 1. Rest timer active
 2. Click "Skip" button
 3. Verify rest timer stops and disappears
@@ -91,6 +105,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 ### 3. Session Persistence
 
 #### Test: Page Refresh Persistence
+
 1. Start workout session with timer running
 2. Wait 10-15 seconds
 3. Note the current session time
@@ -101,6 +116,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 **Expected:** Session state survives page refresh
 
 #### Test: Background App Resumption
+
 1. Start workout on mobile device
 2. Let timer run for 10-15 seconds
 3. Note the current time
@@ -112,6 +128,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 **Expected:** Timer continues where it left off
 
 #### Test: Data Loss Prevention
+
 1. Start workout and complete 1-2 sets
 2. Force close the app (swipe away)
 3. Reopen the app
@@ -124,6 +141,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 ### 4. Rest Timer Accuracy
 
 #### Test: Timer Accuracy
+
 1. Start a 90-second rest timer
 2. Use external clock/timer to verify
 3. Monitor countdown over full period
@@ -132,6 +150,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 **Expected:** Timer accurate to within 1 second
 
 #### Test: Precision Over Time
+
 1. Start session timer
 2. Let it run for 5 minutes (300 seconds)
 3. Compare with external timer
@@ -142,6 +161,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 ### 5. Mobile Optimization
 
 #### Test: Touch Targets
+
 1. Open on mobile device (≤ 390px width)
 2. Verify all timer buttons are at least 44px × 44px
 3. Verify buttons are easily tappable
@@ -150,6 +170,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 **Expected:** All buttons meet 44px minimum touch target size
 
 #### Test: UI Responsiveness
+
 1. Start workout on mobile viewport
 2. Interact with timers
 3. Verify no lag or jank
@@ -158,6 +179,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 **Expected:** Smooth, responsive UI with no lag
 
 #### Test: Visual Hierarchy
+
 1. View workout screen on mobile
 2. Verify session timer is prominent
 3. Verify rest timer stands out when active
@@ -168,6 +190,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 ### 6. Offline Functionality
 
 #### Test: No Network Required
+
 1. Enable airplane mode on device
 2. Start workout session
 3. Complete several sets
@@ -179,6 +202,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 **Expected:** Full functionality without network
 
 #### Test: Network Reconnection
+
 1. Complete workout offline
 2. Reconnect to network
 3. Verify session data syncs
@@ -189,6 +213,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 ### 7. Integration with Workout Flow
 
 #### Test: Timer with Exercise Completion
+
 1. Complete a set of exercises
 2. Verify rest timer starts automatically
 3. Verify session timer continues
@@ -198,6 +223,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 **Expected:** Timers work seamlessly with exercise flow
 
 #### Test: Multiple Set Rest Periods
+
 1. Complete set 1, verify 90s rest timer
 2. Wait or skip rest
 3. Complete set 2, verify 90s rest timer again
@@ -206,6 +232,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 **Expected:** Rest timer works for each set
 
 #### Test: Timer with Exercise Substitution
+
 1. During workout, substitute an exercise
 2. Verify session timer continues uninterrupted
 3. Verify no timer reset
@@ -217,6 +244,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 ### 8. Edge Cases
 
 #### Test: Rapid Start/Stop
+
 1. Start session
 2. Immediately stop
 3. Start again
@@ -225,6 +253,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 **Expected:** No errors with rapid state changes
 
 #### Test: Very Long Session
+
 1. Start session
 2. Let run for 60+ minutes
 3. Verify timer displays correctly (01:00:00 format)
@@ -233,6 +262,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 **Expected:** Timer handles long sessions gracefully
 
 #### Test: Browser Tab Switching
+
 1. Start workout in browser tab
 2. Switch to another tab for 30 seconds
 3. Return to workout tab
@@ -243,6 +273,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 ### 9. Performance
 
 #### Test: CPU Usage
+
 1. Open DevTools Performance tab
 2. Start workout
 3. Monitor CPU usage for 1 minute
@@ -251,6 +282,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 **Expected:** Low CPU usage
 
 #### Test: Memory Usage
+
 1. Open DevTools Memory tab
 2. Start workout
 3. Monitor memory usage for 5 minutes
@@ -259,6 +291,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 **Expected:** Stable memory usage, no leaks
 
 #### Test: Battery Impact
+
 1. Start workout on mobile device
 2. Monitor battery usage for 10 minutes
 3. Verify reasonable power consumption
@@ -268,6 +301,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 ### 10. Accessibility
 
 #### Test: Screen Reader Support
+
 1. Enable screen reader (NVDA/JAWS/VoiceOver)
 2. Navigate to workout timers
 3. Verify timer values are announced
@@ -277,6 +311,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 **Expected:** Complete screen reader support
 
 #### Test: Keyboard Navigation
+
 1. Tab to session timer controls
 2. Verify focus indicators visible
 3. Press Space or Enter to activate buttons
@@ -285,6 +320,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 **Expected:** Full keyboard navigation support
 
 #### Test: High Contrast Mode
+
 1. Enable high contrast mode in OS
 2. View workout timers
 3. Verify text is readable
@@ -295,6 +331,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 ## Definition of Done Checklist
 
 ### Timer Functionality
+
 - [ ] Session timer starts and counts accurately
 - [ ] Rest timer counts down and auto-completes
 - [ ] Pause/resume works correctly
@@ -303,29 +340,34 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 - [ ] Skip stops rest timer
 
 ### State Persistence
+
 - [ ] Session survives page refresh
 - [ ] Session survives app backgrounding
 - [ ] Rest state persists across refresh
 - [ ] No data loss on reload
 
 ### Offline Functionality
+
 - [ ] Works without network connection
 - [ ] Data syncs when network returns
 - [ ] All features work offline
 
 ### Performance
+
 - [ ] Timer accurate to ±1 second
 - [ ] No UI jank on mobile
 - [ ] Smooth animations (60fps)
 - [ ] Low CPU/battery usage
 
 ### Mobile Optimization
+
 - [ ] Touch targets ≥ 44px
 - [ ] Responsive on ≤ 390px width
 - [ ] Large, readable fonts
 - [ ] No horizontal scrolling
 
 ### Integration
+
 - [ ] Works with exercise flow
 - [ ] Handles exercise substitutions
 - [ ] No timer reset on overrides
@@ -333,6 +375,7 @@ This document provides manual QA instructions for testing the Workout Flow & Tim
 ## Browser Testing
 
 Test on:
+
 - Chrome/Edge (latest) - Desktop and mobile
 - Firefox (latest)
 - Safari (iOS) - if available
@@ -349,4 +392,3 @@ None at this time.
 - Timer sound alerts for rest completion
 - Volume control for audio alerts
 - Ambient mode (keep screen on during workout)
-

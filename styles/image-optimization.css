@@ -2,276 +2,285 @@
 
 /* Lazy Image Styles */
 .lazy-image {
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    background-color: var(--color-surface-secondary);
-    background-image: linear-gradient(90deg, var(--color-surface-secondary) 25%, var(--color-surface-hover) 50%, var(--color-surface-secondary) 75%);
-    background-size: 200% 100%;
-    animation: loading-shimmer 1.5s infinite;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background-color: var(--color-surface-secondary);
+  background-image: linear-gradient(
+    90deg,
+    var(--color-surface-secondary) 25%,
+    var(--color-surface-hover) 50%,
+    var(--color-surface-secondary) 75%
+  );
+  background-size: 200% 100%;
+  animation: loading-shimmer 1.5s infinite;
 }
 
 .lazy-image.loaded {
-    opacity: 1;
-    animation: none;
-    background: none;
+  opacity: 1;
+  animation: none;
+  background: none;
 }
 
 /* Loading Shimmer Animation */
 @keyframes loading-shimmer {
-    0% {
-        background-position: -200% 0;
-    }
-    100% {
-        background-position: 200% 0;
-    }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 /* Responsive Image Styles */
 img {
-    max-width: 100%;
-    height: auto;
-    display: block;
+  max-width: 100%;
+  height: auto;
+  display: block;
 }
 
 /* Image Container Styles */
 .image-container {
-    position: relative;
-    overflow: hidden;
-    border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
 }
 
 .image-container img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* Aspect Ratio Containers */
 .aspect-ratio-16-9 {
-    aspect-ratio: 16 / 9;
+  aspect-ratio: 16 / 9;
 }
 
 .aspect-ratio-4-3 {
-    aspect-ratio: 4 / 3;
+  aspect-ratio: 4 / 3;
 }
 
 .aspect-ratio-1-1 {
-    aspect-ratio: 1 / 1;
+  aspect-ratio: 1 / 1;
 }
 
 /* Image Error States */
 .image-error {
-    background-color: var(--color-surface-secondary);
-    color: var(--color-text-secondary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    min-height: 100px;
+  background-color: var(--color-surface-secondary);
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  min-height: 100px;
 }
 
 /* Image Loading States */
 .image-loading {
-    background-color: var(--color-surface-secondary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100px;
+  background-color: var(--color-surface-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
 }
 
 .image-loading::after {
-    content: '';
-    width: 20px;
-    height: 20px;
-    border: 2px solid var(--color-border);
-    border-top: 2px solid var(--color-primary);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+  content: '';
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-border);
+  border-top: 2px solid var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Hero Image Styles */
 .hero-image {
-    width: 100%;
-    height: 300px;
-    object-fit: cover;
-    border-radius: 12px;
-    margin-bottom: 1rem;
+  width: 100%;
+  height: 300px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: 1rem;
 }
 
 @media (min-width: 768px) {
-    .hero-image {
-        height: 400px;
-    }
+  .hero-image {
+    height: 400px;
+  }
 }
 
 /* Avatar Image Styles */
 .avatar-image {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid var(--color-border);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--color-border);
 }
 
 .avatar-image.large {
-    width: 80px;
-    height: 80px;
+  width: 80px;
+  height: 80px;
 }
 
 .avatar-image.small {
-    width: 32px;
-    height: 32px;
+  width: 32px;
+  height: 32px;
 }
 
 /* Card Image Styles */
 .card-image {
-    width: 100%;
-    height: 200px;
-    object-fit: cover;
-    border-radius: 8px 8px 0 0;
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 8px 8px 0 0;
 }
 
 /* Exercise Image Styles */
 .exercise-image {
-    width: 100%;
-    height: 150px;
-    object-fit: cover;
-    border-radius: 8px;
-    margin-bottom: 0.5rem;
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
 }
 
 /* Chart Image Styles */
 .chart-image {
-    width: 100%;
-    height: 300px;
-    object-fit: contain;
-    background-color: var(--color-surface);
-    border-radius: 8px;
-    padding: 1rem;
+  width: 100%;
+  height: 300px;
+  object-fit: contain;
+  background-color: var(--color-surface);
+  border-radius: 8px;
+  padding: 1rem;
 }
 
 /* Icon Image Styles */
 .icon-image {
-    width: 24px;
-    height: 24px;
-    object-fit: contain;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
 }
 
 .icon-image.large {
-    width: 48px;
-    height: 48px;
+  width: 48px;
+  height: 48px;
 }
 
 .icon-image.small {
-    width: 16px;
-    height: 16px;
+  width: 16px;
+  height: 16px;
 }
 
 /* Background Image Styles */
 .background-image {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: -1;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -1;
 }
 
 /* Image Gallery Styles */
 .image-gallery {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin: 1rem 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
 }
 
 .image-gallery img {
-    width: 100%;
-    height: 200px;
-    object-fit: cover;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: transform 0.2s ease;
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
 }
 
 .image-gallery img:hover {
-    transform: scale(1.05);
+  transform: scale(1.05);
 }
 
 /* Image Modal Styles */
 .image-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.9);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    cursor: pointer;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  cursor: pointer;
 }
 
 .image-modal img {
-    max-width: 90%;
-    max-height: 90%;
-    object-fit: contain;
-    border-radius: 8px;
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+  border-radius: 8px;
 }
 
 /* Mobile Optimizations */
 @media (max-width: 768px) {
-    .hero-image {
-        height: 250px;
-    }
-    
-    .card-image {
-        height: 150px;
-    }
-    
-    .exercise-image {
-        height: 120px;
-    }
-    
-    .chart-image {
-        height: 200px;
-    }
-    
-    .image-gallery {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    }
-    
-    .image-gallery img {
-        height: 150px;
-    }
+  .hero-image {
+    height: 250px;
+  }
+
+  .card-image {
+    height: 150px;
+  }
+
+  .exercise-image {
+    height: 120px;
+  }
+
+  .chart-image {
+    height: 200px;
+  }
+
+  .image-gallery {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+
+  .image-gallery img {
+    height: 150px;
+  }
 }
 
 /* High DPI Display Optimizations */
 @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-    .hero-image,
-    .card-image,
-    .exercise-image {
-        image-rendering: -webkit-optimize-contrast;
-        image-rendering: crisp-edges;
-    }
+  .hero-image,
+  .card-image,
+  .exercise-image {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
 }
 
 /* Print Styles */
 @media print {
-    .lazy-image {
-        opacity: 1 !important;
-        animation: none !important;
-        background: none !important;
-    }
-    
-    .image-loading::after {
-        display: none;
-    }
+  .lazy-image {
+    opacity: 1 !important;
+    animation: none !important;
+    background: none !important;
+  }
+
+  .image-loading::after {
+    display: none;
+  }
 }

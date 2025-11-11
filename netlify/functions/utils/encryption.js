@@ -21,12 +21,12 @@ class TokenEncryption {
       try {
         const { KMSClient, DecryptCommand } = require('@aws-sdk/client-kms');
         const kmsClient = new KMSClient({
-          region: process.env.AWS_REGION
+          region: process.env.AWS_REGION,
         });
 
         const command = new DecryptCommand({
           CiphertextBlob: Buffer.from(process.env[`KMS_KEY_V${version}`], 'base64'),
-          KeyId: process.env.KMS_KEY_ID
+          KeyId: process.env.KMS_KEY_ID,
         });
 
         const response = await kmsClient.send(command);
@@ -34,7 +34,7 @@ class TokenEncryption {
 
         this.keyCache.set(cacheKey, {
           key,
-          expiry: Date.now() + this.cacheExpiry
+          expiry: Date.now() + this.cacheExpiry,
         });
 
         return key;
@@ -48,7 +48,7 @@ class TokenEncryption {
       const key = Buffer.from(this.fallbackKey, 'hex');
       this.keyCache.set(cacheKey, {
         key,
-        expiry: Date.now() + this.cacheExpiry
+        expiry: Date.now() + this.cacheExpiry,
       });
       return key;
     }
@@ -68,7 +68,7 @@ class TokenEncryption {
 
     return {
       encrypted: `${keyVersion}:${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`,
-      keyVersion
+      keyVersion,
     };
   }
 

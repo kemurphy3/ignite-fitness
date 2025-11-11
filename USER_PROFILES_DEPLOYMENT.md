@@ -2,7 +2,8 @@
 
 ## Overview
 
-This guide covers the deployment of the comprehensive user profiles management system with enhanced security, validation, and multi-user isolation.
+This guide covers the deployment of the comprehensive user profiles management
+system with enhanced security, validation, and multi-user isolation.
 
 ## Prerequisites
 
@@ -76,6 +77,7 @@ netlify deploy --prod
 ## 4. API Endpoints
 
 ### 4.1 Create Profile
+
 ```bash
 POST /.netlify/functions/users-profile-post
 Authorization: Bearer <jwt-token>
@@ -94,12 +96,14 @@ Content-Type: application/json
 ```
 
 ### 4.2 Get Profile
+
 ```bash
 GET /.netlify/functions/users-profile-get
 Authorization: Bearer <jwt-token>
 ```
 
 ### 4.3 Update Profile
+
 ```bash
 PATCH /.netlify/functions/users-profile-patch
 Authorization: Bearer <jwt-token>
@@ -112,6 +116,7 @@ Content-Type: application/json
 ```
 
 ### 4.4 Validate Profile
+
 ```bash
 POST /.netlify/functions/users-profile-validate
 Authorization: Bearer <jwt-token>
@@ -144,6 +149,7 @@ node test-user-profiles.js
 ### Step 2: Manual Testing
 
 1. **Create Profile Test**:
+
 ```bash
 curl -X POST https://your-site.netlify.app/.netlify/functions/users-profile-post \
   -H "Content-Type: application/json" \
@@ -152,12 +158,14 @@ curl -X POST https://your-site.netlify.app/.netlify/functions/users-profile-post
 ```
 
 2. **Get Profile Test**:
+
 ```bash
 curl https://your-site.netlify.app/.netlify/functions/users-profile-get \
   -H "Authorization: Bearer <your-jwt-token>"
 ```
 
 3. **Update Profile Test**:
+
 ```bash
 curl -X PATCH https://your-site.netlify.app/.netlify/functions/users-profile-patch \
   -H "Content-Type: application/json" \
@@ -168,22 +176,26 @@ curl -X PATCH https://your-site.netlify.app/.netlify/functions/users-profile-pat
 ## 6. Security Features
 
 ### Authentication
+
 - JWT-based authentication for all endpoints
 - Row-level security prevents cross-user data access
 - Token validation and expiration checking
 
 ### Input Validation
+
 - Comprehensive field validation with AJV
 - Unit conversion with validation
 - Physical consistency checks (BMI, lift ratios)
 - Goal conflict detection
 
 ### Rate Limiting
+
 - 10 profile updates per hour per user
 - Request deduplication via hash tracking
 - Anomaly detection for suspicious patterns
 
 ### Data Protection
+
 - PII sanitization in logs
 - SQL injection prevention
 - XSS protection
@@ -192,6 +204,7 @@ curl -X PATCH https://your-site.netlify.app/.netlify/functions/users-profile-pat
 ## 7. Data Model
 
 ### User Profiles Table
+
 - Demographics: age, height, weight, sex
 - Unit preferences: metric/imperial
 - Goals: JSONB array with validation
@@ -199,11 +212,13 @@ curl -X PATCH https://your-site.netlify.app/.netlify/functions/users-profile-pat
 - Calculated fields: BMI, total lifts, completeness score
 
 ### History Tracking
+
 - Field-level change tracking
 - Version control with optimistic locking
 - Audit trail for all modifications
 
 ### Rate Limiting
+
 - Hourly update limits
 - Request deduplication
 - Anomaly detection
@@ -211,11 +226,13 @@ curl -X PATCH https://your-site.netlify.app/.netlify/functions/users-profile-pat
 ## 8. Unit Conversion
 
 ### Supported Units
+
 - **Height**: cm, inches, feet+inches
 - **Weight**: kg, lbs
 - **Lifts**: kg, lbs (automatic conversion)
 
 ### Conversion Examples
+
 ```javascript
 // Height conversion
 { value: 6, unit: 'feet', inches: 2 } → 187.96 cm
@@ -231,12 +248,14 @@ curl -X PATCH https://your-site.netlify.app/.netlify/functions/users-profile-pat
 ## 9. Validation Rules
 
 ### Demographics
+
 - Age: 13-120 years
 - Height: 50-300 cm (20-120 inches)
 - Weight: 20-500 kg (44-1100 lbs)
 - Sex: male, female, other, prefer_not_to_say
 
 ### Baseline Metrics
+
 - Bench Press: 0-500 kg
 - Squat: 0-500 kg
 - Deadlift: 0-500 kg
@@ -246,34 +265,37 @@ curl -X PATCH https://your-site.netlify.app/.netlify/functions/users-profile-pat
 - Mile Time: 4-30 minutes
 
 ### Physical Consistency
+
 - BMI: 15-50 (warning if outside 18.5-30)
 - Deadlift ≥ Squat × 0.7
 - Bench Press ≤ Weight × 3
 
 ## 10. Error Codes
 
-| Code | Description |
-|------|-------------|
-| AUTH_001 | Unauthorized - Invalid or missing JWT |
-| RATE_001 | Rate limit exceeded |
-| VAL_001 | Validation failed |
-| VAL_002 | Invalid goals specified |
-| VAL_003 | Invalid field value |
-| VAL_004 | No valid fields to update |
-| PROF_404 | Profile not found |
+| Code     | Description                               |
+| -------- | ----------------------------------------- |
+| AUTH_001 | Unauthorized - Invalid or missing JWT     |
+| RATE_001 | Rate limit exceeded                       |
+| VAL_001  | Validation failed                         |
+| VAL_002  | Invalid goals specified                   |
+| VAL_003  | Invalid field value                       |
+| VAL_004  | No valid fields to update                 |
+| PROF_404 | Profile not found                         |
 | PROF_409 | Profile already exists / Version conflict |
-| DUP_001 | Duplicate request |
-| SEC_001 | Security validation failed |
-| SYS_001 | Internal server error |
+| DUP_001  | Duplicate request                         |
+| SEC_001  | Security validation failed                |
+| SYS_001  | Internal server error                     |
 
 ## 11. Performance Metrics
 
 ### Target Performance
+
 - GET requests: < 200ms (p95)
 - PATCH requests: < 500ms (p95)
 - POST requests: < 500ms (p95)
 
 ### Optimization Features
+
 - Calculated fields cached via GENERATED columns
 - Composite indexes for history queries
 - ETag headers for client-side caching
@@ -282,6 +304,7 @@ curl -X PATCH https://your-site.netlify.app/.netlify/functions/users-profile-pat
 ## 12. Monitoring
 
 ### Key Metrics
+
 - Profile creation/update rates
 - Validation failure rates
 - Rate limiting triggers
@@ -289,6 +312,7 @@ curl -X PATCH https://your-site.netlify.app/.netlify/functions/users-profile-pat
 - Error rates by endpoint
 
 ### Logging
+
 - All operations logged with sanitized data
 - No PII in application logs
 - Request tracking for debugging
@@ -335,12 +359,14 @@ curl -X POST -H "Authorization: Bearer <token>" \
 ## 14. Maintenance
 
 ### Regular Tasks
+
 - Monitor rate limiting metrics
 - Review validation error patterns
 - Check performance metrics
 - Update goal definitions as needed
 
 ### Data Cleanup
+
 - Profile history auto-cleanup (90 days)
 - Rate limit data cleanup (hourly)
 - Request tracking cleanup (daily)
@@ -348,6 +374,7 @@ curl -X POST -H "Authorization: Bearer <token>" \
 ## Support
 
 For issues or questions:
+
 1. Check the error codes and descriptions
 2. Review the validation rules
 3. Check the test suite for examples

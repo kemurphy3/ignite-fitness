@@ -2,7 +2,8 @@
 
 ## Overview
 
-This guide covers the deployment of the comprehensive session exercises management API with bulk operations, pagination, and multi-user isolation.
+This guide covers the deployment of the comprehensive session exercises
+management API with bulk operations, pagination, and multi-user isolation.
 
 ## Prerequisites
 
@@ -74,6 +75,7 @@ netlify deploy --prod
 ## 4. API Endpoints
 
 ### 4.1 Create Exercises (Bulk)
+
 ```bash
 POST /.netlify/functions/sessions-exercises-create
 Authorization: Bearer <jwt-token>
@@ -99,12 +101,14 @@ Content-Type: application/json
 ```
 
 ### 4.2 List Exercises (Paginated)
+
 ```bash
 GET /.netlify/functions/sessions-exercises-list?limit=20&cursor=eyJvIjoxLCJjIjoiMjAyNC0wMS0xNVQxMDozMDowMC4wMDBaIiwiaS...
 Authorization: Bearer <jwt-token>
 ```
 
 ### 4.3 Update Exercise
+
 ```bash
 PUT /.netlify/functions/sessions-exercises-update
 Authorization: Bearer <jwt-token>
@@ -120,6 +124,7 @@ Content-Type: application/json
 ```
 
 ### 4.4 Delete Exercise
+
 ```bash
 DELETE /.netlify/functions/sessions-exercises-delete
 Authorization: Bearer <jwt-token>
@@ -143,6 +148,7 @@ node test-exercises-api.js
 ### Step 2: Manual Testing
 
 1. **Create Exercises Test**:
+
 ```bash
 curl -X POST https://your-site.netlify.app/.netlify/functions/sessions-exercises-create \
   -H "Content-Type: application/json" \
@@ -161,12 +167,14 @@ curl -X POST https://your-site.netlify.app/.netlify/functions/sessions-exercises
 ```
 
 2. **List Exercises Test**:
+
 ```bash
 curl https://your-site.netlify.app/.netlify/functions/sessions-exercises-list \
   -H "Authorization: Bearer <your-jwt-token>"
 ```
 
 3. **Update Exercise Test**:
+
 ```bash
 curl -X PUT https://your-site.netlify.app/.netlify/functions/sessions-exercises-update \
   -H "Content-Type: application/json" \
@@ -177,18 +185,21 @@ curl -X PUT https://your-site.netlify.app/.netlify/functions/sessions-exercises-
 ## 6. Key Features
 
 ### Bulk Operations
+
 - **Transaction-wrapped**: All exercises created in single atomic transaction
 - **Partial failure handling**: All-or-nothing approach ensures data consistency
 - **Idempotency**: Duplicate requests return existing data
 - **Rate limiting**: 60 requests per 60 seconds per user
 
 ### Pagination
+
 - **Cursor-based**: Stable pagination using composite ordering
 - **JSON cursors**: Versioned cursor format for future compatibility
 - **Efficient queries**: Composite indexes for 10,000+ exercises
 - **Configurable limits**: 1-100 items per page, default 20
 
 ### Data Validation
+
 - **Comprehensive validation**: All fields validated with AJV schemas
 - **Range checks**: Sets (1-20), reps (1-100), weight (0-500kg), RPE (1-10)
 - **String limits**: Name (1-100 chars), notes (≤500 chars)
@@ -196,6 +207,7 @@ curl -X PUT https://your-site.netlify.app/.netlify/functions/sessions-exercises-
 - **Muscle groups**: Validated against enum type
 
 ### Security
+
 - **JWT authentication**: Token-based authentication for all endpoints
 - **Two-step ownership**: Session ownership verified before exercise access
 - **User isolation**: Users can only access their own exercises
@@ -203,6 +215,7 @@ curl -X PUT https://your-site.netlify.app/.netlify/functions/sessions-exercises-
 - **Rate limiting**: Sliding window rate limiting prevents abuse
 
 ### Order Management
+
 - **Automatic reindexing**: Gaps in order_index are automatically filled
 - **Superset grouping**: Exercises can be grouped (e.g., "A", "B")
 - **Stable ordering**: Consistent ordering for pagination
@@ -211,6 +224,7 @@ curl -X PUT https://your-site.netlify.app/.netlify/functions/sessions-exercises-
 ## 7. Data Model
 
 ### Session Exercises Table
+
 - **Core data**: name, sets, reps, weight_kg, rpe
 - **Advanced fields**: tempo, rest_seconds, notes, superset_group
 - **Tracking**: equipment_type, muscle_groups, exercise_type
@@ -218,12 +232,14 @@ curl -X PUT https://your-site.netlify.app/.netlify/functions/sessions-exercises-
 - **Idempotency**: request_hash for duplicate prevention
 
 ### History Tracking
+
 - **Change tracking**: All modifications logged to history table
 - **Action types**: create, update, delete, bulk_create
 - **Data snapshots**: Old and new data stored as JSONB
 - **Audit trail**: Complete history of all changes
 
 ### Rate Limiting
+
 - **Sliding window**: 60 requests per 60 seconds per user
 - **Per-endpoint**: Different limits for different operations
 - **Automatic cleanup**: Old rate limit entries cleaned up
@@ -232,18 +248,21 @@ curl -X PUT https://your-site.netlify.app/.netlify/functions/sessions-exercises-
 ## 8. Performance Optimization
 
 ### Database Indexes
+
 - **Composite indexes**: Optimized for pagination queries
 - **User isolation**: Efficient user-specific queries
 - **Order indexing**: Fast ordering and reindexing
 - **Superset queries**: Optimized for superset grouping
 
 ### Query Optimization
+
 - **Stable ordering**: Consistent results for pagination
 - **Limit optimization**: Efficient LIMIT + 1 for has_more detection
 - **Cursor decoding**: Fast cursor parsing and validation
 - **Transaction efficiency**: Minimal transaction overhead
 
 ### Caching
+
 - **Client-side**: ETag headers for conditional requests
 - **Response caching**: Short-term caching for list operations
 - **Connection pooling**: Efficient database connections
@@ -251,24 +270,26 @@ curl -X PUT https://your-site.netlify.app/.netlify/functions/sessions-exercises-
 ## 9. Error Handling
 
 ### Error Codes
-| Code | Description |
-|------|-------------|
-| AUTH_001 | Authorization required |
-| AUTH_002 | Invalid token |
-| AUTHZ_001 | Access denied |
-| VAL_001 | Invalid path format |
-| VAL_002 | Exercises array required |
-| VAL_003 | Too many exercises |
-| VAL_004 | Validation failed |
-| VAL_005 | Invalid cursor |
-| VAL_006 | No valid fields to update |
-| SESS_001 | Session not found |
-| EX_001 | Exercise not found |
-| RATE_001 | Rate limit exceeded |
-| SYS_001 | Transaction failed |
-| SYS_002 | Internal server error |
+
+| Code      | Description               |
+| --------- | ------------------------- |
+| AUTH_001  | Authorization required    |
+| AUTH_002  | Invalid token             |
+| AUTHZ_001 | Access denied             |
+| VAL_001   | Invalid path format       |
+| VAL_002   | Exercises array required  |
+| VAL_003   | Too many exercises        |
+| VAL_004   | Validation failed         |
+| VAL_005   | Invalid cursor            |
+| VAL_006   | No valid fields to update |
+| SESS_001  | Session not found         |
+| EX_001    | Exercise not found        |
+| RATE_001  | Rate limit exceeded       |
+| SYS_001   | Transaction failed        |
+| SYS_002   | Internal server error     |
 
 ### Error Response Format
+
 ```json
 {
   "error": {
@@ -284,18 +305,21 @@ curl -X PUT https://your-site.netlify.app/.netlify/functions/sessions-exercises-
 ## 10. Rate Limiting
 
 ### Limits
+
 - **Create**: 60 requests per 60 seconds
 - **List**: 60 requests per 60 seconds
 - **Update**: 60 requests per 60 seconds
 - **Delete**: 60 requests per 60 seconds
 
 ### Implementation
+
 - **Sliding window**: More accurate than fixed windows
 - **Per-user**: Individual limits for each user
 - **Per-endpoint**: Different limits for different operations
 - **Automatic cleanup**: Old entries removed automatically
 
 ### Response Headers
+
 - **Retry-After**: Seconds to wait before retrying
 - **X-RateLimit-Limit**: Maximum requests allowed
 - **X-RateLimit-Remaining**: Requests remaining in window
@@ -304,34 +328,39 @@ curl -X PUT https://your-site.netlify.app/.netlify/functions/sessions-exercises-
 ## 11. Pagination
 
 ### Cursor Format
+
 ```json
 {
-  "o": 19,  // order_index
-  "c": "2024-01-15T10:30:00.000Z",  // created_at
-  "i": "987fcdeb-51a2-43f1-b890-123456789abc",  // id
-  "v": 1    // version
+  "o": 19, // order_index
+  "c": "2024-01-15T10:30:00.000Z", // created_at
+  "i": "987fcdeb-51a2-43f1-b890-123456789abc", // id
+  "v": 1 // version
 }
 ```
 
 ### Usage
+
 1. **First page**: No cursor parameter
 2. **Next page**: Use `next_cursor` from previous response
 3. **Stable ordering**: Consistent results even with concurrent modifications
 4. **Version support**: Cursor format versioned for future changes
 
 ### Query Parameters
+
 - **limit**: Number of items per page (1-100, default 20)
 - **cursor**: Base64-encoded cursor for pagination
 
 ## 12. Superset Grouping
 
 ### Features
+
 - **Group identification**: Use `superset_group` field (e.g., "A", "B")
 - **Ordering**: Exercises within groups maintain order
 - **Querying**: Filter by superset group
 - **Validation**: Group names limited to 10 characters
 
 ### Example
+
 ```json
 {
   "exercises": [
@@ -356,18 +385,21 @@ curl -X PUT https://your-site.netlify.app/.netlify/functions/sessions-exercises-
 ## 13. Monitoring
 
 ### Key Metrics
+
 - **Request rates**: Per endpoint and per user
 - **Response times**: P95 and P99 latencies
 - **Error rates**: By error code and endpoint
 - **Rate limiting**: Number of rate limited requests
 
 ### Logging
+
 - **Structured logs**: JSON format for easy parsing
 - **User anonymization**: User IDs hashed in logs
 - **Request tracking**: Unique request IDs for tracing
 - **Error details**: Comprehensive error information
 
 ### Health Checks
+
 - **Database connectivity**: Connection pool health
 - **Function performance**: Response time monitoring
 - **Rate limit status**: Current rate limit state
@@ -420,17 +452,20 @@ curl -X POST -H "Authorization: Bearer <token>" \
 ## 15. Maintenance
 
 ### Regular Tasks
+
 - **Monitor rate limiting**: Check for abuse patterns
 - **Review error rates**: Identify common issues
 - **Check performance**: Monitor response times
 - **Clean up data**: Remove old rate limit entries
 
 ### Data Cleanup
+
 - **Rate limits**: Automatic cleanup after 2 minutes
 - **History**: Consider archiving old history data
 - **Exercises**: Clean up orphaned exercises
 
 ### Updates
+
 - **Schema changes**: Use migrations for database updates
 - **API versioning**: Maintain backward compatibility
 - **Dependency updates**: Keep packages current
@@ -439,6 +474,7 @@ curl -X POST -H "Authorization: Bearer <token>" \
 ## Support
 
 For issues or questions:
+
 1. Check the error codes and descriptions
 2. Review the validation rules
 3. Check the test suite for examples

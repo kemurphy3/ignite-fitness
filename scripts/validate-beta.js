@@ -14,7 +14,7 @@ class BetaValidator {
       passed: 0,
       failed: 0,
       warnings: 0,
-      tests: []
+      tests: [],
     };
   }
 
@@ -34,8 +34,9 @@ class BetaValidator {
   async validateEnvironment() {
     console.log('📦 Validating Environment...');
 
-    this.test('Environment templates exist', () =>
-      fs.existsSync('env.example') && fs.existsSync('.env.example')
+    this.test(
+      'Environment templates exist',
+      () => fs.existsSync('env.example') && fs.existsSync('.env.example')
     );
 
     this.test('Package manifest exists', () => fs.existsSync('package.json'));
@@ -75,8 +76,9 @@ class BetaValidator {
   async validatePerformance() {
     console.log('⚡ Validating Performance...');
 
-    this.test('Performance scripts available', () =>
-      fs.existsSync('scripts/perf-budget.js') && fs.existsSync('lighthouse-ci.json')
+    this.test(
+      'Performance scripts available',
+      () => fs.existsSync('scripts/perf-budget.js') && fs.existsSync('lighthouse-ci.json')
     );
 
     this.test('Demo configuration exists', () => fs.existsSync('data/demo-config.json'));
@@ -85,16 +87,16 @@ class BetaValidator {
   async validateSecurity() {
     console.log('🔒 Validating Security...');
 
-    this.test('Security headers configured', () =>
-      this.fileContains('env.example', 'CSP_ENABLED')
-    );
+    this.test('Security headers configured', () => this.fileContains('env.example', 'CSP_ENABLED'));
 
-    this.test('No obvious secrets committed', () =>
-      !this.containsDangerousPatterns([
-        /SUPABASE_SERVICE_ROLE_KEY\s*=\s*(?!your-)/i,
-        /JWT_SECRET\s*=\s*(?!your-)/i,
-        /API_KEY\s*=\s*(?!your-)/i
-      ])
+    this.test(
+      'No obvious secrets committed',
+      () =>
+        !this.containsDangerousPatterns([
+          /SUPABASE_SERVICE_ROLE_KEY\s*=\s*(?!your-)/i,
+          /JWT_SECRET\s*=\s*(?!your-)/i,
+          /API_KEY\s*=\s*(?!your-)/i,
+        ])
     );
   }
 
@@ -179,7 +181,7 @@ class BetaValidator {
       passRate: Number(passRate),
       message: betaReady
         ? `All ${this.results.passed} validation tests passed. Ready for beta testing.`
-        : `${this.results.failed} tests failed. Review beta checklist and fix issues.`
+        : `${this.results.failed} tests failed. Review beta checklist and fix issues.`,
     };
 
     fs.writeFileSync('beta-results.json', JSON.stringify(report, null, 2));

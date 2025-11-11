@@ -12,7 +12,7 @@ let testPool = null;
 const mockDataStore = {
   sessions: [],
   users: [],
-  exercises: []
+  exercises: [],
 };
 
 /**
@@ -39,23 +39,23 @@ export async function setupTestDatabase() {
         connectionString: config.databaseUrl,
         max: 5,
         idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 2000
+        connectionTimeoutMillis: 2000,
       });
 
       // Create a client wrapper that mimics Neon's template literal interface
       testClient = async (strings, ...values) => {
         const client = await testPool.connect();
         try {
-          const query = strings.join(`$${ values.length + 1}`).replace(/\$(\d+)/g, (match, num) => {
+          const query = strings.join(`$${values.length + 1}`).replace(/\$(\d+)/g, (match, num) => {
             const index = parseInt(num) - 1;
-            return index < values.length ? `$${ index + 1}` : match;
+            return index < values.length ? `$${index + 1}` : match;
           });
 
           let finalQuery = '';
           for (let i = 0; i < strings.length; i++) {
             finalQuery += strings[i];
             if (i < values.length) {
-              finalQuery += `$${ i + 1}`;
+              finalQuery += `$${i + 1}`;
             }
           }
 
@@ -65,7 +65,6 @@ export async function setupTestDatabase() {
           client.release();
         }
       };
-
     } else {
       console.log('🔧 Using Neon client for cloud database');
 
@@ -73,8 +72,8 @@ export async function setupTestDatabase() {
       testClient = neon(config.databaseUrl, {
         poolQueryViaFetch: true,
         fetchOptions: {
-          priority: 'high'
-        }
+          priority: 'high',
+        },
       });
 
       // Create pg pool for more complex operations
@@ -82,7 +81,7 @@ export async function setupTestDatabase() {
         connectionString: config.databaseUrl,
         max: 5,
         idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 2000
+        connectionTimeoutMillis: 2000,
       });
     }
 
@@ -94,7 +93,6 @@ export async function setupTestDatabase() {
     await createTestSchema();
 
     console.log('✅ Test database setup complete');
-
   } catch (error) {
     console.error('❌ Test database setup failed:', error.message);
     throw error;
@@ -207,7 +205,6 @@ export async function teardownTestDatabase() {
 
     testClient = null;
     console.log('✅ Test database cleaned up');
-
   } catch (error) {
     console.error('❌ Test database teardown failed:', error.message);
     // Don't throw error during teardown
@@ -286,7 +283,7 @@ function createMockDatabase() {
           payload: values[7] || { test: true },
           session_hash: `mock_hash_${mockDataStore.sessions.length + 1}`,
           created_at: new Date(),
-          updated_at: new Date()
+          updated_at: new Date(),
         };
         mockDataStore.sessions.push(newSession);
         return Promise.resolve([newSession]);
@@ -299,7 +296,7 @@ function createMockDatabase() {
           username: values[1] || `testuser_${Date.now()}`,
           status: values[2] || 'active',
           created_at: new Date(),
-          updated_at: new Date()
+          updated_at: new Date(),
         };
         mockDataStore.users.push(newUser);
         return Promise.resolve([newUser]);
@@ -347,7 +344,7 @@ export async function createTestUser(userData = {}) {
     const defaultUser = {
       external_id: `test_${Date.now()}`,
       username: `testuser_${Date.now()}`,
-      status: 'active'
+      status: 'active',
     };
 
     const user = { ...defaultUser, ...userData };
@@ -366,7 +363,7 @@ export async function createTestUser(userData = {}) {
   const defaultUser = {
     external_id: `test_${Date.now()}`,
     username: `testuser_${Date.now()}`,
-    status: 'active'
+    status: 'active',
   };
 
   const user = { ...defaultUser, ...userData };
@@ -394,7 +391,7 @@ export async function createTestSession(sessionData = {}) {
       start_at: new Date(),
       end_at: new Date(Date.now() + 3600000),
       duration: 3600,
-      payload: { test: true }
+      payload: { test: true },
     };
 
     const session = { ...defaultSession, ...sessionData };
@@ -419,7 +416,7 @@ export async function createTestSession(sessionData = {}) {
     start_at: new Date(),
     end_at: new Date(Date.now() + 3600000), // 1 hour later
     duration: 3600,
-    payload: { test: true }
+    payload: { test: true },
   };
 
   const session = { ...defaultSession, ...sessionData };
@@ -447,7 +444,7 @@ export async function createTestExercise(exerciseData = {}) {
       reps: 10,
       weight_kg: 50.0,
       rpe: 7,
-      order_index: 0
+      order_index: 0,
     };
 
     const exercise = { ...defaultExercise, ...exerciseData };
@@ -462,7 +459,7 @@ export async function createTestExercise(exerciseData = {}) {
       rpe: exercise.rpe,
       order_index: exercise.order_index,
       created_at: new Date(),
-      updated_at: new Date()
+      updated_at: new Date(),
     };
   }
 
@@ -473,7 +470,7 @@ export async function createTestExercise(exerciseData = {}) {
     reps: 10,
     weight_kg: 50.0,
     rpe: 7,
-    order_index: 0
+    order_index: 0,
   };
 
   const exercise = { ...defaultExercise, ...exerciseData };

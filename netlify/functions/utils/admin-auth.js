@@ -14,7 +14,7 @@ const verifyAdmin = async (token, requestId) => {
       issuer: 'ignite-fitness',
       audience: 'api',
       algorithms: ['HS256'],
-      clockTolerance: 30 // 30 seconds clock skew
+      clockTolerance: 30, // 30 seconds clock skew
     });
 
     // Check admin role in database
@@ -61,16 +61,16 @@ const errorResponse = (statusCode, code, message, requestId) => ({
     'Content-Type': 'application/json',
     'Cache-Control': 'no-store',
     'Access-Control-Allow-Origin': '*',
-    'X-Request-ID': requestId
+    'X-Request-ID': requestId,
   },
   body: JSON.stringify({
     error: {
       code,
       message,
       request_id: requestId,
-      timestamp: new Date().toISOString()
-    }
-  })
+      timestamp: new Date().toISOString(),
+    },
+  }),
 });
 
 // Input validation functions
@@ -94,7 +94,7 @@ const validateDateRange = (from, to) => {
   return { fromDate, toDate };
 };
 
-const validateTimezone = (timezone) => {
+const validateTimezone = timezone => {
   // Use Intl API to validate timezone
   try {
     new Intl.DateTimeFormat('en-US', { timeZone: timezone });
@@ -109,15 +109,16 @@ const applyPrivacyThreshold = (count, threshold = 5) => {
   return count < threshold ? null : count;
 };
 
-const hashUserId = (userId) => {
-  const hash = crypto.createHash('md5')
+const hashUserId = userId => {
+  const hash = crypto
+    .createHash('md5')
     .update(userId + (process.env.HASH_SALT || 'default'))
     .digest('hex');
-  return `usr_${ hash.substring(0, 6)}`;
+  return `usr_${hash.substring(0, 6)}`;
 };
 
 // Rate limiting check
-const checkRateLimit = async (adminId) => {
+const checkRateLimit = async adminId => {
   const windowStart = new Date(Math.floor(Date.now() / 60000) * 60000); // 1-minute window
 
   try {
@@ -146,7 +147,7 @@ const encodeCursor = (value, id) => {
   return Buffer.from(JSON.stringify(cursor)).toString('base64');
 };
 
-const decodeCursor = (cursor) => {
+const decodeCursor = cursor => {
   try {
     const decoded = JSON.parse(Buffer.from(cursor, 'base64').toString());
     return { value: decoded.v, id: decoded.id };
@@ -179,7 +180,7 @@ const getResponseHeaders = (requestId, cacheControl = 'private, max-age=60') => 
   'Content-Type': 'application/json',
   'Cache-Control': cacheControl,
   'Access-Control-Allow-Origin': '*',
-  'X-Request-ID': requestId
+  'X-Request-ID': requestId,
 });
 
 // Success response helper
@@ -192,9 +193,9 @@ const successResponse = (data, meta, requestId, cacheControl = 'private, max-age
     meta: {
       ...meta,
       request_id: requestId,
-      generated_at: new Date().toISOString()
-    }
-  })
+      generated_at: new Date().toISOString(),
+    },
+  }),
 });
 
 module.exports = {
@@ -210,5 +211,5 @@ module.exports = {
   decodeCursor,
   withTimeout,
   getResponseHeaders,
-  successResponse
+  successResponse,
 };

@@ -12,8 +12,8 @@
       "weekly_load_cap": 250,
       "weekly_hard_minutes_cap": 50,
       "daily_load_cap": 60,
-      "max_weekly_load_increase": 0.10,
-      "max_weekly_volume_increase": 0.10,
+      "max_weekly_load_increase": 0.1,
+      "max_weekly_volume_increase": 0.1,
       "max_weekly_intensity_increase": 0.05,
       "min_hours_between_hard": 48,
       "max_consecutive_hard_days": 1,
@@ -21,7 +21,7 @@
       "deload_frequency_weeks": 3,
       "max_pain_threshold": 3,
       "high_soreness_threshold": 6,
-      "soreness_load_reduction": 0.30,
+      "soreness_load_reduction": 0.3,
       "missed_days_auto_deload": 2
     },
     {
@@ -30,8 +30,8 @@
       "weekly_load_cap": 400,
       "weekly_hard_minutes_cap": 80,
       "daily_load_cap": 100,
-      "max_weekly_load_increase": 0.10,
-      "max_weekly_volume_increase": 0.10,
+      "max_weekly_load_increase": 0.1,
+      "max_weekly_volume_increase": 0.1,
       "max_weekly_intensity_increase": 0.05,
       "min_hours_between_hard": 36,
       "max_consecutive_hard_days": 2,
@@ -49,7 +49,7 @@
       "weekly_hard_minutes_cap": 120,
       "daily_load_cap": 150,
       "max_weekly_load_increase": 0.08,
-      "max_weekly_volume_increase": 0.10,
+      "max_weekly_volume_increase": 0.1,
       "max_weekly_intensity_increase": 0.03,
       "min_hours_between_hard": 24,
       "max_consecutive_hard_days": 2,
@@ -57,7 +57,7 @@
       "deload_frequency_weeks": 4,
       "max_pain_threshold": 5,
       "high_soreness_threshold": 8,
-      "soreness_load_reduction": 0.20,
+      "soreness_load_reduction": 0.2,
       "missed_days_auto_deload": 4
     },
     {
@@ -177,4 +177,3 @@
     }
   ]
 }
-

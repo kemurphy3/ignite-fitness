@@ -1,16 +1,20 @@
 # Prompt 3 - Readiness Inference Manual QA Guide
 
 ## Overview
-This document provides manual QA instructions for testing the Readiness Inference feature (Prompt 3).
+
+This document provides manual QA instructions for testing the Readiness
+Inference feature (Prompt 3).
 
 ## Implementation Summary
 
 ### Files Modified
+
 - `js/modules/readiness/ReadinessInference.js` - Updated to new API signature
 - `js/modules/ai/ExpertCoordinator.js` - Integrated readiness inference
 - `tests/readiness/readiness-inference.test.js` - Unit tests
 
 ### Key Features
+
 1. **Passive Readiness Inference**: Infers readiness when user skips check-in
 2. **Multi-Factor Analysis**: Considers RPE, volume, schedule, back-to-back days
 3. **Intensity Scaling**: Applies 0.85x intensity when readiness inferred as low
@@ -22,6 +26,7 @@ This document provides manual QA instructions for testing the Readiness Inferenc
 ### 1. Basic Inference Test
 
 #### Test: Inference with No Check-In
+
 1. Skip daily check-in
 2. Generate workout plan
 3. Verify plan includes "Readiness inferred" message
@@ -31,6 +36,7 @@ This document provides manual QA instructions for testing the Readiness Inferenc
 **Expected:** Plan generates successfully with inferred readiness score
 
 #### Test: High RPE Lowers Readiness
+
 1. Complete workout yesterday with RPE 9
 2. Skip today's check-in
 3. Generate new plan
@@ -40,6 +46,7 @@ This document provides manual QA instructions for testing the Readiness Inferenc
 **Expected:** Lower readiness after hard session
 
 #### Test: Light Session Increases Readiness
+
 1. Complete workout yesterday with RPE 4
 2. Skip today's check-in
 3. Generate new plan
@@ -51,6 +58,7 @@ This document provides manual QA instructions for testing the Readiness Inferenc
 ### 2. Schedule-Based Inference
 
 #### Test: Game Soon Reduces Readiness
+
 1. Set schedule with game tomorrow
 2. Skip check-in
 3. Generate plan
@@ -60,6 +68,7 @@ This document provides manual QA instructions for testing the Readiness Inferenc
 **Expected:** Lower readiness before important game
 
 #### Test: Normal Schedule = Normal Readiness
+
 1. No upcoming games
 2. Skip check-in
 3. Generate plan
@@ -71,6 +80,7 @@ This document provides manual QA instructions for testing the Readiness Inferenc
 ### 3. Intensity Scaling
 
 #### Test: Inferred Low Readiness Scales Intensity
+
 1. Provide context with no readiness (undefined)
 2. Mock history with high RPE sessions
 3. Generate plan
@@ -80,6 +90,7 @@ This document provides manual QA instructions for testing the Readiness Inferenc
 **Expected:** Intensity automatically scaled down for safety
 
 #### Test: Inferred Normal Readiness Uses Normal Intensity
+
 1. Provide context with no readiness
 2. Mock history with moderate RPE sessions
 3. Generate plan
@@ -91,6 +102,7 @@ This document provides manual QA instructions for testing the Readiness Inferenc
 ### 4. Rationale Generation
 
 #### Test: Multi-Factor Rationale
+
 1. Skip check-in
 2. Provide context with:
    - High RPE yesterday (8+)
@@ -103,6 +115,7 @@ This document provides manual QA instructions for testing the Readiness Inferenc
 **Expected:** Comprehensive rationale with all relevant factors
 
 #### Test: Single Factor Rationale
+
 1. Skip check-in
 2. Provide context with only moderate RPE
 3. Generate plan
@@ -114,6 +127,7 @@ This document provides manual QA instructions for testing the Readiness Inferenc
 ### 5. Edge Cases
 
 #### Test: No History Data
+
 1. Skip check-in with no workout history
 2. Generate plan
 3. Verify uses default moderate readiness (7)
@@ -122,6 +136,7 @@ This document provides manual QA instructions for testing the Readiness Inferenc
 **Expected:** Graceful fallback to default
 
 #### Test: Very High RPE History
+
 1. History shows RPE 10 for last 3 sessions
 2. Skip check-in
 3. Generate plan
@@ -131,6 +146,7 @@ This document provides manual QA instructions for testing the Readiness Inferenc
 **Expected:** Conservative approach to high fatigue
 
 #### Test: Very Low RPE History
+
 1. History shows RPE 3-4 for last week
 2. Skip check-in
 3. Generate plan
@@ -142,6 +158,7 @@ This document provides manual QA instructions for testing the Readiness Inferenc
 ### 6. Integration with Expert Coordinator
 
 #### Test: Coordinator Uses Inference
+
 1. Call ExpertCoordinator.planToday() without readiness in context
 2. Verify inference is automatically called
 3. Verify plan uses inferred readiness
@@ -150,6 +167,7 @@ This document provides manual QA instructions for testing the Readiness Inferenc
 **Expected:** Seamless integration with planning system
 
 #### Test: Coordinator Prefers Explicit Check-In
+
 1. Provide context with explicit readiness (e.g., 8)
 2. Call planToday()
 3. Verify inference is NOT called
@@ -160,6 +178,7 @@ This document provides manual QA instructions for testing the Readiness Inferenc
 ### 7. Performance
 
 #### Test: Inference Speed
+
 1. Measure time to infer readiness with 7 days of history
 2. Verify completes in < 100ms
 3. Verify no UI lag
@@ -167,6 +186,7 @@ This document provides manual QA instructions for testing the Readiness Inferenc
 **Expected:** Fast inference, no perceptible delay
 
 #### Test: Memory Usage
+
 1. Run inference multiple times in session
 2. Monitor memory usage
 3. Verify no memory leaks
@@ -176,6 +196,7 @@ This document provides manual QA instructions for testing the Readiness Inferenc
 ## Definition of Done Checklist
 
 ### Inference Functionality
+
 - [ ] Returns readiness score (1-10)
 - [ ] Returns inferred: true flag
 - [ ] Provides rationale
@@ -185,18 +206,21 @@ This document provides manual QA instructions for testing the Readiness Inferenc
 - [ ] Considers back-to-back days
 
 ### Integration
+
 - [ ] ExpertCoordinator calls inference when needed
 - [ ] Intensity scaling applied for low inferred readiness
 - [ ] Rationale added to plan output
 - [ ] Explicit check-in takes precedence
 
 ### Edge Cases
+
 - [ ] Handles no history gracefully
 - [ ] Handles missing data gracefully
 - [ ] Clamps scores to 1-10 range
 - [ ] Returns sensible defaults
 
 ### Performance
+
 - [ ] Fast execution (<100ms)
 - [ ] No memory leaks
 - [ ] No UI blocking
@@ -204,24 +228,28 @@ This document provides manual QA instructions for testing the Readiness Inferenc
 ## Expected Outcomes
 
 ### Scenario 1: High RPE Yesterday
+
 - **Input**: RPE 9 yesterday, no check-in today
 - **Expected Readiness**: 5-6
 - **Rationale**: "Yesterday's session was intense (RPE ≥8)"
 - **Intensity Scale**: Reduced (0.85x if < 7)
 
 ### Scenario 2: Game Tomorrow
+
 - **Input**: Game in 1 day, no check-in
 - **Expected Readiness**: 6
 - **Rationale**: "Game very soon"
 - **Intensity Scale**: May be reduced
 
 ### Scenario 3: Light Week
+
 - **Input**: RPE 4-5 for past week, no check-in
 - **Expected Readiness**: 8
 - **Rationale**: "Yesterday's session was light"
 - **Intensity Scale**: Normal or slightly higher
 
 ### Scenario 4: No Data
+
 - **Input**: No history, no check-in
 - **Expected Readiness**: 7
 - **Rationale**: "Default moderate readiness"
@@ -237,4 +265,3 @@ None at this time.
 - Incorporate weather/external factors
 - Consider meal timing for readiness
 - Predict readiness multiple days ahead
-

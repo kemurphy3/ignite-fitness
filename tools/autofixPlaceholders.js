@@ -14,7 +14,8 @@ const reStubReturn = /return\s+null;\s*\/\/\s*stub/gi;
 
 function walk(dir) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (e.name === 'node_modules' || e.name === '.git' || e.name === 'dist' || e.name === 'build') continue;
+    if (e.name === 'node_modules' || e.name === '.git' || e.name === 'dist' || e.name === 'build')
+      continue;
     const p = path.join(dir, e.name);
     if (e.isDirectory()) walk(p);
     else if (/\.(t|j)sx?$/.test(e.name)) fix(p);
@@ -24,8 +25,14 @@ function walk(dir) {
 function fix(file) {
   let src = fs.readFileSync(file, 'utf8');
   const before = src;
-  src = src.replace(reThrow, 'throw new Error("UNIMPLEMENTED_CALL: Replace with real implementation. See docs/beta_checklist.md");');
-  src = src.replace(reStubReturn, 'throw new Error("UNIMPLEMENTED_RETURN: Replace with real implementation. See docs/beta_checklist.md");');
+  src = src.replace(
+    reThrow,
+    'throw new Error("UNIMPLEMENTED_CALL: Replace with real implementation. See docs/beta_checklist.md");'
+  );
+  src = src.replace(
+    reStubReturn,
+    'throw new Error("UNIMPLEMENTED_RETURN: Replace with real implementation. See docs/beta_checklist.md");'
+  );
   if (src !== before) {
     fs.writeFileSync(file, src, 'utf8');
     console.log(`🔧 Autofixed trivial stubs in ${file}`);

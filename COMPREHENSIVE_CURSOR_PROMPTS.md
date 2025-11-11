@@ -1,9 +1,11 @@
 # Comprehensive Cursor Execution Prompts
-*Detailed, actionable prompts with complete context and verification steps*
+
+_Detailed, actionable prompts with complete context and verification steps_
 
 ## 🚨 PRIORITY 1: CRITICAL SYNTAX BUG FIX
 
 ### PROMPT A1: Fix Function Redeclaration Error in Auth System
+
 ```
 CRITICAL BLOCKING BUG - IMMEDIATE ATTENTION REQUIRED
 
@@ -42,7 +44,7 @@ OPTION A (Recommended): Function Declaration Pattern
 3. Keep the function declaration: `function hideLoginForm() { ... }`
 4. Update the globals handling to not expect hideLoginForm as a parameter
 
-OPTION B: Variable Assignment Pattern  
+OPTION B: Variable Assignment Pattern
 1. Keep the variable declaration on line 5
 2. Change line 200 from `function hideLoginForm()` to `hideLoginForm = function()`
 3. Ensure proper assignment from globals
@@ -81,7 +83,8 @@ EDGE CASES TO VERIFY:
 ## 🔧 PRIORITY 2: BOOT SEQUENCE INTEGRATION CLEANUP
 
 ### PROMPT A2: Resolve Boot Sequence and Legacy Code Conflicts
-```
+
+````
 INTEGRATION CONFLICT RESOLUTION
 
 CONTEXT:
@@ -141,63 +144,67 @@ function initializeApp() {
 function checkAutoLogin() {
     // This conflicts with AuthManager - remove it
 }
-```
+````
 
 STEP 2: Consolidate DOMContentLoaded Handlers
+
 ```javascript
 // KEEP ONLY ONE DOMContentLoaded handler in index.html:
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize height unit selector (if needed for forms)
-    const heightUnitSelect = document.getElementById('heightUnit');
-    if (heightUnitSelect) {
-        heightUnitSelect.addEventListener('change', toggleHeightUnit);
-    }
-    
-    // Other non-auth related initialization can stay
+document.addEventListener('DOMContentLoaded', function () {
+  // Initialize height unit selector (if needed for forms)
+  const heightUnitSelect = document.getElementById('heightUnit');
+  if (heightUnitSelect) {
+    heightUnitSelect.addEventListener('change', toggleHeightUnit);
+  }
+
+  // Other non-auth related initialization can stay
 });
 ```
 
 STEP 3: Ensure app-modular.js Handles All Core Boot Logic
+
 ```javascript
 // Verify this pattern in app-modular.js:
-document.addEventListener('DOMContentLoaded', async function() {
-    try {
-        console.log('Ignite Fitness App Starting...');
-        
-        // Single initialization pathway
-        if (window.BootSequence) {
-            await window.BootSequence.boot();
-        } else {
-            // Fallback only for development
-            console.warn('BootSequence not available');
-            // Minimal fallback initialization
-        }
-        
-        // Non-blocking UI enhancements
-        initializeUIEnhancements();
-        
-    } catch (error) {
-        console.error('App initialization failed:', error);
-        // Show user-friendly error message
+document.addEventListener('DOMContentLoaded', async function () {
+  try {
+    console.log('Ignite Fitness App Starting...');
+
+    // Single initialization pathway
+    if (window.BootSequence) {
+      await window.BootSequence.boot();
+    } else {
+      // Fallback only for development
+      console.warn('BootSequence not available');
+      // Minimal fallback initialization
     }
+
+    // Non-blocking UI enhancements
+    initializeUIEnhancements();
+  } catch (error) {
+    console.error('App initialization failed:', error);
+    // Show user-friendly error message
+  }
 });
 ```
 
 IMPLEMENTATION CHECKLIST:
 
 PHASE 1: Remove Conflicts
+
 - [ ] Delete recursive initializeApp() function from index.html
-- [ ] Remove checkAutoLogin() function from index.html  
+- [ ] Remove checkAutoLogin() function from index.html
 - [ ] Remove duplicate DOMContentLoaded handlers
 - [ ] Comment out or remove legacy auth initialization
 
 PHASE 2: Verify Boot Sequence
+
 - [ ] Confirm BootSequence.boot() is the single entry point
 - [ ] Verify AuthManager.readFromStorage() runs first
 - [ ] Check Router.init(authState) receives proper auth state
 - [ ] Ensure SimpleModeManager initializes correctly
 
 PHASE 3: Clean Up Dependencies
+
 - [ ] Remove unused global variable assignments
 - [ ] Clean up function exports that are no longer needed
 - [ ] Update any hardcoded DOM manipulation to use proper modules
@@ -230,6 +237,7 @@ VERIFICATION TESTING:
    - Verify no memory leaks in dev tools
 
 ERROR SCENARIOS TO TEST:
+
 - Network disconnection during boot
 - Storage quota exceeded
 - Invalid auth tokens in storage
@@ -237,6 +245,7 @@ ERROR SCENARIOS TO TEST:
 - JavaScript disabled users
 
 POST-CLEANUP VALIDATION:
+
 1. Run `npm run lint` if available
 2. Check browser console for any warnings
 3. Test complete user registration → login → logout cycle
@@ -244,29 +253,34 @@ POST-CLEANUP VALIDATION:
 5. Test service worker functionality
 6. Confirm Simple Mode toggle works correctly
 
-ROLLBACK PLAN:
-If issues arise:
+ROLLBACK PLAN: If issues arise:
+
 1. Restore from git stash: `git stash apply`
 2. Or revert specific changes: `git checkout HEAD -- index.html`
 3. Test minimal functionality before proceeding
+
 ```
 
 ## 🎨 PRIORITY 3: AUTHENTICATION FLOW ENHANCEMENT
 
 ### PROMPT A3: Streamline Authentication Router Integration
 ```
+
 AUTHENTICATION SYSTEM OPTIMIZATION
 
-CONTEXT:
-The authentication system has been refactored with AuthManager and Router classes, but the integration needs refinement to ensure seamless user experience and proper state management across all scenarios.
+CONTEXT: The authentication system has been refactored with AuthManager and
+Router classes, but the integration needs refinement to ensure seamless user
+experience and proper state management across all scenarios.
 
 CURRENT STATE ANALYSIS:
+
 - AuthManager handles storage and state ✅
-- Router handles navigation guards ✅  
+- Router handles navigation guards ✅
 - BootSequence coordinates initialization ✅
 - Simple Mode integration exists ✅
 
 AREAS NEEDING ENHANCEMENT:
+
 1. Auth state transitions and event handling
 2. Router guard reliability under edge cases
 3. Storage cleanup on logout
@@ -276,209 +290,215 @@ AREAS NEEDING ENHANCEMENT:
 DETAILED ENHANCEMENT PLAN:
 
 ENHANCEMENT 1: Robust Auth State Management
+
 ```javascript
 // In js/modules/auth/AuthManager.js
 // ADD comprehensive event system:
 
 class AuthManager {
-    constructor() {
-        // existing code...
-        this.eventBus = window.EventBus;
-        this.authStateCallbacks = new Set();
+  constructor() {
+    // existing code...
+    this.eventBus = window.EventBus;
+    this.authStateCallbacks = new Set();
+  }
+
+  // ADD method for auth state subscriptions
+  onAuthStateChange(callback) {
+    this.authStateCallbacks.add(callback);
+    // Immediately call with current state
+    callback(this.getAuthState());
+  }
+
+  // ENHANCE existing methods to emit events
+  async login(username, password) {
+    try {
+      // existing login logic...
+      const authState = this.getAuthState();
+
+      // Emit auth change event
+      this.emitAuthChange('login', authState);
+
+      return { success: true, user: authState.user };
+    } catch (error) {
+      this.emitAuthChange('login_failed', { error: error.message });
+      throw error;
     }
+  }
 
-    // ADD method for auth state subscriptions
-    onAuthStateChange(callback) {
-        this.authStateCallbacks.add(callback);
-        // Immediately call with current state
-        callback(this.getAuthState());
+  logout() {
+    // ENHANCE to clear ALL auth-related storage
+    const keysToRemove = [
+      this.storageKeys.token,
+      this.storageKeys.user,
+      this.storageKeys.prefs,
+      this.storageKeys.currentUser,
+      'ignite.ui.simpleMode', // Reset simple mode on logout
+      'ignite_login_time', // Clear login timestamp
+    ];
+
+    keysToRemove.forEach(key => {
+      try {
+        localStorage.removeItem(key);
+      } catch (e) {
+        console.warn(`Failed to remove ${key}:`, e);
+      }
+    });
+
+    // Reset internal state
+    this.authState = {
+      isAuthenticated: false,
+      token: null,
+      user: null,
+    };
+
+    // Emit logout event
+    this.emitAuthChange('logout', this.authState);
+  }
+
+  // ADD private method for event emission
+  emitAuthChange(type, data) {
+    // Notify all callbacks
+    this.authStateCallbacks.forEach(callback => {
+      try {
+        callback({ type, ...data });
+      } catch (error) {
+        console.error('Auth state callback error:', error);
+      }
+    });
+
+    // Emit to global event bus if available
+    if (this.eventBus) {
+      this.eventBus.emit('auth:stateChange', { type, ...data });
     }
-
-    // ENHANCE existing methods to emit events
-    async login(username, password) {
-        try {
-            // existing login logic...
-            const authState = this.getAuthState();
-            
-            // Emit auth change event
-            this.emitAuthChange('login', authState);
-            
-            return { success: true, user: authState.user };
-        } catch (error) {
-            this.emitAuthChange('login_failed', { error: error.message });
-            throw error;
-        }
-    }
-
-    logout() {
-        // ENHANCE to clear ALL auth-related storage
-        const keysToRemove = [
-            this.storageKeys.token,
-            this.storageKeys.user,
-            this.storageKeys.prefs,
-            this.storageKeys.currentUser,
-            'ignite.ui.simpleMode', // Reset simple mode on logout
-            'ignite_login_time'     // Clear login timestamp
-        ];
-
-        keysToRemove.forEach(key => {
-            try {
-                localStorage.removeItem(key);
-            } catch (e) {
-                console.warn(`Failed to remove ${key}:`, e);
-            }
-        });
-
-        // Reset internal state
-        this.authState = {
-            isAuthenticated: false,
-            token: null,
-            user: null
-        };
-
-        // Emit logout event
-        this.emitAuthChange('logout', this.authState);
-    }
-
-    // ADD private method for event emission
-    emitAuthChange(type, data) {
-        // Notify all callbacks
-        this.authStateCallbacks.forEach(callback => {
-            try {
-                callback({ type, ...data });
-            } catch (error) {
-                console.error('Auth state callback error:', error);
-            }
-        });
-
-        // Emit to global event bus if available
-        if (this.eventBus) {
-            this.eventBus.emit('auth:stateChange', { type, ...data });
-        }
-    }
+  }
 }
 ```
 
 ENHANCEMENT 2: Router Guard Improvements
+
 ```javascript
 // In js/modules/ui/Router.js
 // ENHANCE navigation guards with better error handling:
 
 class Router {
-    navigate(path, options = {}) {
-        try {
-            // Existing navigation logic...
-            
-            // ADD timeout protection
-            const navigationTimeout = setTimeout(() => {
-                console.warn('Navigation timeout:', path);
-                this.handleNavigationError(path, 'timeout');
-            }, 5000);
+  navigate(path, options = {}) {
+    try {
+      // Existing navigation logic...
 
-            // Clear timeout on successful navigation
-            clearTimeout(navigationTimeout);
-            
-        } catch (error) {
-            this.handleNavigationError(path, error);
-        }
+      // ADD timeout protection
+      const navigationTimeout = setTimeout(() => {
+        console.warn('Navigation timeout:', path);
+        this.handleNavigationError(path, 'timeout');
+      }, 5000);
+
+      // Clear timeout on successful navigation
+      clearTimeout(navigationTimeout);
+    } catch (error) {
+      this.handleNavigationError(path, error);
+    }
+  }
+
+  // ADD comprehensive error handling
+  handleNavigationError(path, error) {
+    console.error('Navigation error:', { path, error });
+
+    // Fallback navigation based on auth state
+    const authState = this.authManager?.getAuthState();
+    const fallbackPath = authState?.isAuthenticated ? '#/dashboard' : '#/login';
+
+    // Prevent infinite loops
+    if (path !== fallbackPath) {
+      console.log('Falling back to:', fallbackPath);
+      window.location.hash = fallbackPath;
+    }
+  }
+
+  // ENHANCE route resolution with auth state validation
+  resolveRoute(path, authState) {
+    // Validate auth state freshness
+    if (authState && this.isTokenExpired(authState.token)) {
+      console.warn('Token expired during navigation');
+      this.authManager?.logout();
+      return this.routes.get('login');
     }
 
-    // ADD comprehensive error handling
-    handleNavigationError(path, error) {
-        console.error('Navigation error:', { path, error });
-        
-        // Fallback navigation based on auth state
-        const authState = this.authManager?.getAuthState();
-        const fallbackPath = authState?.isAuthenticated ? '#/dashboard' : '#/login';
-        
-        // Prevent infinite loops
-        if (path !== fallbackPath) {
-            console.log('Falling back to:', fallbackPath);
-            window.location.hash = fallbackPath;
-        }
-    }
+    // Existing route resolution logic...
+  }
 
-    // ENHANCE route resolution with auth state validation
-    resolveRoute(path, authState) {
-        // Validate auth state freshness
-        if (authState && this.isTokenExpired(authState.token)) {
-            console.warn('Token expired during navigation');
-            this.authManager?.logout();
-            return this.routes.get('login');
-        }
+  // ADD token expiration check
+  isTokenExpired(token) {
+    if (!token || !token.created_at) return true;
 
-        // Existing route resolution logic...
-    }
+    const now = Date.now();
+    const tokenAge = now - token.created_at;
+    const maxAge = 24 * 60 * 60 * 1000; // 24 hours
 
-    // ADD token expiration check
-    isTokenExpired(token) {
-        if (!token || !token.created_at) return true;
-        
-        const now = Date.now();
-        const tokenAge = now - token.created_at;
-        const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-        
-        return tokenAge > maxAge;
-    }
+    return tokenAge > maxAge;
+  }
 }
 ```
 
 ENHANCEMENT 3: Integration with Simple Mode
+
 ```javascript
 // ENSURE Simple Mode responds to auth changes
 // In js/modules/ui/SimpleModeManager.js
 
 class SimpleModeManager {
-    constructor() {
-        // existing code...
-        this.setupAuthListener();
-    }
+  constructor() {
+    // existing code...
+    this.setupAuthListener();
+  }
 
-    setupAuthListener() {
-        // Listen for auth changes
-        if (window.AuthManager) {
-            window.AuthManager.onAuthStateChange((authState) => {
-                if (authState.type === 'login') {
-                    // New user gets Simple Mode by default
-                    if (this.isNewUser(authState.user)) {
-                        this.setEnabled(true);
-                    }
-                } else if (authState.type === 'logout') {
-                    // Reset to default for next user
-                    this.reset();
-                }
-            });
+  setupAuthListener() {
+    // Listen for auth changes
+    if (window.AuthManager) {
+      window.AuthManager.onAuthStateChange(authState => {
+        if (authState.type === 'login') {
+          // New user gets Simple Mode by default
+          if (this.isNewUser(authState.user)) {
+            this.setEnabled(true);
+          }
+        } else if (authState.type === 'logout') {
+          // Reset to default for next user
+          this.reset();
         }
+      });
     }
+  }
 
-    isNewUser(user) {
-        // Check if this is a first-time login
-        return !localStorage.getItem('ignite.user.hasCompletedOnboarding');
-    }
+  isNewUser(user) {
+    // Check if this is a first-time login
+    return !localStorage.getItem('ignite.user.hasCompletedOnboarding');
+  }
 }
 ```
 
 IMPLEMENTATION STEPS:
 
 STEP 1: Enhance AuthManager
+
 - [ ] Add event system for auth state changes
 - [ ] Improve logout to clear all related storage
 - [ ] Add token expiration checking
 - [ ] Implement auth state validation
 
 STEP 2: Improve Router Guards
+
 - [ ] Add timeout protection for navigation
 - [ ] Implement fallback navigation on errors
 - [ ] Add token expiration handling in routes
 - [ ] Enhance error logging and recovery
 
 STEP 3: Integrate with Simple Mode
+
 - [ ] Connect Simple Mode to auth events
 - [ ] Reset Simple Mode on logout
 - [ ] Default new users to Simple Mode
 - [ ] Add onboarding completion tracking
 
 STEP 4: Add Development Debug Tools
+
 - [ ] Auth state inspector in debug panel
 - [ ] Navigation history logging
 - [ ] Storage state visualization
@@ -513,96 +533,105 @@ TESTING PROTOCOL:
    - JavaScript errors during navigation
 
 PERFORMANCE CONSIDERATIONS:
+
 - Minimize localStorage reads/writes
 - Debounce rapid auth state changes
 - Lazy load route components
 - Cache auth state validation results
 
 ACCESSIBILITY IMPROVEMENTS:
+
 - Announce navigation changes to screen readers
 - Ensure keyboard navigation works through auth flow
 - Add proper ARIA labels for auth states
 - Test with assistive technologies
 
 SECURITY ENHANCEMENTS:
+
 - Validate all auth tokens before use
 - Clear sensitive data from memory on logout
 - Implement proper session timeout
 - Add auth attempt rate limiting
+
 ```
 
 ## 🚀 PRIORITY 4: COMPLETE FIRST-TIME USER JOURNEY
 
 ### PROMPT A4: Implement Seamless Onboarding Experience
 ```
+
 END-TO-END USER EXPERIENCE IMPLEMENTATION
 
-CONTEXT:
-Create a complete, polished first-time user experience that takes someone from landing on the site to completing their first workout with clear guidance and engagement at every step.
+CONTEXT: Create a complete, polished first-time user experience that takes
+someone from landing on the site to completing their first workout with clear
+guidance and engagement at every step.
 
 CURRENT PAIN POINTS:
+
 1. Onboarding exists but lacks clear progression
 2. Goal setting is functional but not inspiring
 3. First workout generation needs better presentation
 4. Progress tracking is complex for beginners
 5. Success moments aren't celebrated
 
-TARGET USER JOURNEY:
-Landing → Value Prop → Quick Signup → 3-Step Setup → First Workout → Completion Success
+TARGET USER JOURNEY: Landing → Value Prop → Quick Signup → 3-Step Setup → First
+Workout → Completion Success
 
 DETAILED IMPLEMENTATION PLAN:
 
 PHASE 1: Enhanced Landing Experience
+
 ```html
 <!-- ADD to index.html or create new landing component -->
 <section id="hero-section" class="hero-modern">
-    <div class="hero-content">
-        <h1 class="hero-title">
-            Your AI Fitness Coach<br>
-            <span class="accent">Adapts to You</span>
-        </h1>
-        <p class="hero-subtitle">
-            Get personalized workouts that evolve with your progress. 
-            Start simple, grow stronger.
-        </p>
-        
-        <div class="social-proof">
-            <div class="stat">
-                <span class="stat-number">10K+</span>
-                <span class="stat-label">Workouts Generated</span>
-            </div>
-            <div class="stat">
-                <span class="stat-number">95%</span>
-                <span class="stat-label">User Satisfaction</span>
-            </div>
-        </div>
-        
-        <button class="cta-primary" onclick="startOnboarding()">
-            Start Your Fitness Journey
-            <span class="cta-subtext">Free • No App Download • Works Offline</span>
-        </button>
+  <div class="hero-content">
+    <h1 class="hero-title">
+      Your AI Fitness Coach<br />
+      <span class="accent">Adapts to You</span>
+    </h1>
+    <p class="hero-subtitle">
+      Get personalized workouts that evolve with your progress. Start simple,
+      grow stronger.
+    </p>
+
+    <div class="social-proof">
+      <div class="stat">
+        <span class="stat-number">10K+</span>
+        <span class="stat-label">Workouts Generated</span>
+      </div>
+      <div class="stat">
+        <span class="stat-number">95%</span>
+        <span class="stat-label">User Satisfaction</span>
+      </div>
     </div>
-    
-    <div class="hero-preview">
-        <div class="phone-mockup">
-            <div class="workout-preview">
-                <!-- Preview of actual workout interface -->
-            </div>
-        </div>
+
+    <button class="cta-primary" onclick="startOnboarding()">
+      Start Your Fitness Journey
+      <span class="cta-subtext">Free • No App Download • Works Offline</span>
+    </button>
+  </div>
+
+  <div class="hero-preview">
+    <div class="phone-mockup">
+      <div class="workout-preview">
+        <!-- Preview of actual workout interface -->
+      </div>
     </div>
+  </div>
 </section>
 ```
 
 PHASE 2: Streamlined Authentication
+
 ```javascript
 // CREATE simplified auth component
 class QuickAuth {
-    constructor() {
-        this.currentStep = 'signup';
-    }
+  constructor() {
+    this.currentStep = 'signup';
+  }
 
-    showQuickSignup() {
-        return `
+  showQuickSignup() {
+    return `
         <div class="quick-auth-container">
             <div class="auth-header">
                 <h2>Join IgniteFitness</h2>
@@ -639,60 +668,61 @@ class QuickAuth {
             </div>
         </div>
         `;
-    }
+  }
 
-    async handleQuickSignup(formData) {
-        try {
-            // Show loading state
-            this.showLoading('Creating your account...');
-            
-            // Create account
-            const result = await this.createAccount(formData);
-            
-            // Auto-login and proceed to onboarding
-            if (result.success) {
-                await this.autoLogin(formData.username, formData.password);
-                this.startOnboarding();
-            }
-        } catch (error) {
-            this.showError('Account creation failed. Please try again.');
-        }
+  async handleQuickSignup(formData) {
+    try {
+      // Show loading state
+      this.showLoading('Creating your account...');
+
+      // Create account
+      const result = await this.createAccount(formData);
+
+      // Auto-login and proceed to onboarding
+      if (result.success) {
+        await this.autoLogin(formData.username, formData.password);
+        this.startOnboarding();
+      }
+    } catch (error) {
+      this.showError('Account creation failed. Please try again.');
     }
+  }
 }
 ```
 
 PHASE 3: Guided 3-Step Onboarding
+
 ```javascript
 // CREATE comprehensive onboarding system
 class GuidedOnboarding {
-    constructor() {
-        this.steps = [
-            {
-                id: 'goals',
-                title: 'What\'s Your Fitness Goal?',
-                subtitle: 'Choose your main focus - you can change this anytime',
-                component: 'GoalSelection'
-            },
-            {
-                id: 'schedule',  
-                title: 'When Can You Work Out?',
-                subtitle: 'We\'ll create a plan that fits your life',
-                component: 'ScheduleSetup'
-            },
-            {
-                id: 'preferences',
-                title: 'Tell Us About Your Experience',
-                subtitle: 'This helps us start at the right level',
-                component: 'ExperienceLevel'
-            }
-        ];
-        this.currentStep = 0;
-        this.userData = {};
-    }
+  constructor() {
+    this.steps = [
+      {
+        id: 'goals',
+        title: "What's Your Fitness Goal?",
+        subtitle: 'Choose your main focus - you can change this anytime',
+        component: 'GoalSelection',
+      },
+      {
+        id: 'schedule',
+        title: 'When Can You Work Out?',
+        subtitle: "We'll create a plan that fits your life",
+        component: 'ScheduleSetup',
+      },
+      {
+        id: 'preferences',
+        title: 'Tell Us About Your Experience',
+        subtitle: 'This helps us start at the right level',
+        component: 'ExperienceLevel',
+      },
+    ];
+    this.currentStep = 0;
+    this.userData = {};
+  }
 
-    renderStep(stepIndex) {
-        const step = this.steps[stepIndex];
-        return `
+  renderStep(stepIndex) {
+    const step = this.steps[stepIndex];
+    return `
         <div class="onboarding-container">
             <div class="progress-header">
                 <div class="progress-bar">
@@ -718,44 +748,68 @@ class GuidedOnboarding {
             </div>
         </div>
         `;
+  }
+
+  renderStepComponent(component) {
+    switch (component) {
+      case 'GoalSelection':
+        return this.renderGoalSelection();
+      case 'ScheduleSetup':
+        return this.renderScheduleSetup();
+      case 'ExperienceLevel':
+        return this.renderExperienceLevel();
+      default:
+        return '';
     }
+  }
 
-    renderStepComponent(component) {
-        switch (component) {
-            case 'GoalSelection':
-                return this.renderGoalSelection();
-            case 'ScheduleSetup':
-                return this.renderScheduleSetup();
-            case 'ExperienceLevel':
-                return this.renderExperienceLevel();
-            default:
-                return '';
-        }
-    }
+  renderGoalSelection() {
+    const goals = [
+      {
+        id: 'lose_weight',
+        emoji: '⚖️',
+        title: 'Lose Weight',
+        description: 'Burn calories and reduce body fat',
+      },
+      {
+        id: 'build_muscle',
+        emoji: '💪',
+        title: 'Build Muscle',
+        description: 'Increase strength and muscle mass',
+      },
+      {
+        id: 'get_fit',
+        emoji: '🏃',
+        title: 'Get Fit',
+        description: 'Improve overall health and endurance',
+      },
+      {
+        id: 'stay_active',
+        emoji: '🎯',
+        title: 'Stay Active',
+        description: 'Maintain fitness and energy levels',
+      },
+    ];
 
-    renderGoalSelection() {
-        const goals = [
-            { id: 'lose_weight', emoji: '⚖️', title: 'Lose Weight', description: 'Burn calories and reduce body fat' },
-            { id: 'build_muscle', emoji: '💪', title: 'Build Muscle', description: 'Increase strength and muscle mass' },
-            { id: 'get_fit', emoji: '🏃', title: 'Get Fit', description: 'Improve overall health and endurance' },
-            { id: 'stay_active', emoji: '🎯', title: 'Stay Active', description: 'Maintain fitness and energy levels' }
-        ];
-
-        return `
+    return `
         <div class="goal-selection">
-            ${goals.map(goal => `
+            ${goals
+              .map(
+                goal => `
                 <div class="goal-card" data-goal="${goal.id}">
                     <div class="goal-emoji">${goal.emoji}</div>
                     <h3 class="goal-title">${goal.title}</h3>
                     <p class="goal-description">${goal.description}</p>
                 </div>
-            `).join('')}
+            `
+              )
+              .join('')}
         </div>
         `;
-    }
+  }
 
-    renderScheduleSetup() {
-        return `
+  renderScheduleSetup() {
+    return `
         <div class="schedule-setup">
             <div class="question-group">
                 <label class="question-label">How many days per week can you work out?</label>
@@ -778,29 +832,28 @@ class GuidedOnboarding {
             </div>
         </div>
         `;
-    }
+  }
 
-    async completeOnboarding() {
-        try {
-            // Show generating state
-            this.showGenerating();
-            
-            // Save user preferences
-            await this.saveUserPreferences();
-            
-            // Generate first workout
-            const workout = await this.generateFirstWorkout();
-            
-            // Show success and first workout
-            this.showOnboardingSuccess(workout);
-            
-        } catch (error) {
-            this.showError('Something went wrong. Let\'s try again.');
-        }
-    }
+  async completeOnboarding() {
+    try {
+      // Show generating state
+      this.showGenerating();
 
-    showGenerating() {
-        return `
+      // Save user preferences
+      await this.saveUserPreferences();
+
+      // Generate first workout
+      const workout = await this.generateFirstWorkout();
+
+      // Show success and first workout
+      this.showOnboardingSuccess(workout);
+    } catch (error) {
+      this.showError("Something went wrong. Let's try again.");
+    }
+  }
+
+  showGenerating() {
+    return `
         <div class="generating-state">
             <div class="spinner-large"></div>
             <h2>Creating Your Personalized Plan</h2>
@@ -813,16 +866,17 @@ class GuidedOnboarding {
             </div>
         </div>
         `;
-    }
+  }
 }
 ```
 
 PHASE 4: First Workout Experience
+
 ```javascript
 // CREATE engaging first workout presentation
 class FirstWorkoutExperience {
-    showWorkoutIntro(workout) {
-        return `
+  showWorkoutIntro(workout) {
+    return `
         <div class="workout-intro">
             <div class="celebration-header">
                 <div class="celebration-emoji">🎉</div>
@@ -842,9 +896,12 @@ class FirstWorkoutExperience {
                 <div class="workout-preview">
                     <h3>What you'll do:</h3>
                     <ul class="exercise-preview">
-                        ${workout.exercises.slice(0, 3).map(ex => 
-                            `<li>${ex.name} - ${ex.sets}x${ex.reps}</li>`
-                        ).join('')}
+                        ${workout.exercises
+                          .slice(0, 3)
+                          .map(
+                            ex => `<li>${ex.name} - ${ex.sets}x${ex.reps}</li>`
+                          )
+                          .join('')}
                         ${workout.exercises.length > 3 ? `<li>+ ${workout.exercises.length - 3} more exercises</li>` : ''}
                     </ul>
                 </div>
@@ -864,23 +921,24 @@ class FirstWorkoutExperience {
             </div>
         </div>
         `;
-    }
+  }
 
-    getEncouragementMessage(workout) {
-        const messages = [
-            "This workout is perfectly tailored to your fitness level. Take your time and focus on proper form!",
-            "Remember, consistency beats intensity. You're building a sustainable fitness habit!",
-            "Every expert was once a beginner. You're taking the first step toward your goals!",
-            "Listen to your body and adjust as needed. The AI will learn from your feedback!"
-        ];
-        return messages[Math.floor(Math.random() * messages.length)];
-    }
+  getEncouragementMessage(workout) {
+    const messages = [
+      'This workout is perfectly tailored to your fitness level. Take your time and focus on proper form!',
+      "Remember, consistency beats intensity. You're building a sustainable fitness habit!",
+      "Every expert was once a beginner. You're taking the first step toward your goals!",
+      'Listen to your body and adjust as needed. The AI will learn from your feedback!',
+    ];
+    return messages[Math.floor(Math.random() * messages.length)];
+  }
 }
 ```
 
 IMPLEMENTATION CHECKLIST:
 
 PHASE 1: Landing Enhancement
+
 - [ ] Create compelling hero section with social proof
 - [ ] Add preview/demo of the workout interface
 - [ ] Implement smooth scroll to signup
@@ -888,6 +946,7 @@ PHASE 1: Landing Enhancement
 - [ ] Mobile-optimize the landing experience
 
 PHASE 2: Streamlined Auth
+
 - [ ] Build quick signup flow (username + password only)
 - [ ] Add real-time validation and helpful hints
 - [ ] Implement auto-login after successful signup
@@ -895,6 +954,7 @@ PHASE 2: Streamlined Auth
 - [ ] Add "already have account" flow
 
 PHASE 3: Guided Onboarding
+
 - [ ] Build 3-step onboarding with progress indicator
 - [ ] Create engaging goal selection with emojis and descriptions
 - [ ] Design schedule setup with realistic time options
@@ -902,6 +962,7 @@ PHASE 3: Guided Onboarding
 - [ ] Implement data collection and validation
 
 PHASE 4: First Workout Experience
+
 - [ ] Create celebration moment for plan completion
 - [ ] Design engaging workout presentation
 - [ ] Add AI coach encouragement messages
@@ -909,6 +970,7 @@ PHASE 4: First Workout Experience
 - [ ] Implement smooth transition to workout tracking
 
 PHASE 5: Success and Retention
+
 - [ ] Create first workout completion celebration
 - [ ] Show simple progress visualization
 - [ ] Add next workout preview
@@ -939,6 +1001,7 @@ TESTING PROTOCOL:
    - Language and literacy considerations
 
 ANALYTICS TO IMPLEMENT:
+
 - Onboarding completion rate
 - Time to first workout
 - Drop-off points identification
@@ -947,28 +1010,34 @@ ANALYTICS TO IMPLEMENT:
 - First workout completion rate
 
 PERSONALIZATION OPPORTUNITIES:
+
 - Dynamic messaging based on selected goals
 - Time-of-day appropriate workout suggestions
 - Beginner-friendly exercise substitutions
 - Cultural and language localization
 - Equipment-based workout variations
+
 ```
 
 ## 🎨 PRIORITY 5: SIMPLE MODE UX ENHANCEMENT
 
 ### PROMPT A5: Create Adaptive UI with Simple Mode
 ```
+
 ADAPTIVE USER INTERFACE IMPLEMENTATION
 
-CONTEXT:
-The SimpleModeManager exists but needs deep integration with the UI to create genuinely different experiences for beginners vs advanced users. This is crucial for user retention and progressive engagement.
+CONTEXT: The SimpleModeManager exists but needs deep integration with the UI to
+create genuinely different experiences for beginners vs advanced users. This is
+crucial for user retention and progressive engagement.
 
 CURRENT STATE:
+
 - SimpleModeManager can toggle state ✅
 - Storage persistence works ✅
 - Event system partially implemented ✅
 
 MISSING PIECES:
+
 1. Visible UI toggle for users
 2. Component-level Simple Mode awareness
 3. Progressive feature revelation
@@ -978,43 +1047,48 @@ MISSING PIECES:
 COMPREHENSIVE IMPLEMENTATION PLAN:
 
 PHASE 1: UI Components that Respect Simple Mode
+
 ```javascript
 // CREATE base component system aware of Simple Mode
 class AdaptiveComponent {
-    constructor(element, options = {}) {
-        this.element = element;
-        this.options = options;
-        this.simpleMode = window.SimpleModeManager?.isEnabled() || true;
-        this.setupSimpleModeListener();
-    }
+  constructor(element, options = {}) {
+    this.element = element;
+    this.options = options;
+    this.simpleMode = window.SimpleModeManager?.isEnabled() || true;
+    this.setupSimpleModeListener();
+  }
 
-    setupSimpleModeListener() {
-        // Listen for Simple Mode changes
-        if (window.EventBus) {
-            window.EventBus.on('simpleMode:changed', (data) => {
-                this.simpleMode = data.enabled;
-                this.render();
-            });
-        }
+  setupSimpleModeListener() {
+    // Listen for Simple Mode changes
+    if (window.EventBus) {
+      window.EventBus.on('simpleMode:changed', data => {
+        this.simpleMode = data.enabled;
+        this.render();
+      });
     }
+  }
 
-    render() {
-        if (this.simpleMode) {
-            this.renderSimple();
-        } else {
-            this.renderAdvanced();
-        }
+  render() {
+    if (this.simpleMode) {
+      this.renderSimple();
+    } else {
+      this.renderAdvanced();
     }
+  }
 
-    // Override in subclasses
-    renderSimple() { /* Simple UI */ }
-    renderAdvanced() { /* Full UI */ }
+  // Override in subclasses
+  renderSimple() {
+    /* Simple UI */
+  }
+  renderAdvanced() {
+    /* Full UI */
+  }
 }
 
 // IMPLEMENT adaptive dashboard
 class AdaptiveDashboard extends AdaptiveComponent {
-    renderSimple() {
-        this.element.innerHTML = `
+  renderSimple() {
+    this.element.innerHTML = `
         <div class="dashboard-simple">
             <div class="welcome-card">
                 <h2>Welcome back!</h2>
@@ -1055,10 +1129,10 @@ class AdaptiveDashboard extends AdaptiveComponent {
             </div>
         </div>
         `;
-    }
+  }
 
-    renderAdvanced() {
-        this.element.innerHTML = `
+  renderAdvanced() {
+    this.element.innerHTML = `
         <div class="dashboard-advanced">
             <!-- Full dashboard with charts, analytics, etc. -->
             <div class="dashboard-grid">
@@ -1077,65 +1151,73 @@ class AdaptiveDashboard extends AdaptiveComponent {
             </div>
         </div>
         `;
-    }
+  }
 }
 ```
 
 PHASE 2: Adaptive Navigation System
+
 ```javascript
 // CREATE navigation that adapts to Simple Mode
 class AdaptiveNavigation {
-    constructor() {
-        this.simpleMode = window.SimpleModeManager?.isEnabled() || true;
-        this.setupNavigation();
-        this.setupSimpleModeListener();
-    }
+  constructor() {
+    this.simpleMode = window.SimpleModeManager?.isEnabled() || true;
+    this.setupNavigation();
+    this.setupSimpleModeListener();
+  }
 
-    setupNavigation() {
-        const navItems = {
-            simple: [
-                { icon: '🏠', label: 'Home', route: '#/dashboard', primary: true },
-                { icon: '🏋️', label: 'Workouts', route: '#/workouts', primary: true },
-                { icon: '📈', label: 'Progress', route: '#/progress', primary: true },
-                { icon: '⚙️', label: 'Settings', route: '#/settings', primary: false }
-            ],
-            advanced: [
-                { icon: '🏠', label: 'Dashboard', route: '#/dashboard' },
-                { icon: '🏋️', label: 'Workouts', route: '#/workouts' },
-                { icon: '📊', label: 'Analytics', route: '#/analytics' },
-                { icon: '🤖', label: 'AI Coach', route: '#/coach' },
-                { icon: '🔗', label: 'Integrations', route: '#/integrations' },
-                { icon: '⚙️', label: 'Settings', route: '#/settings' }
-            ]
-        };
+  setupNavigation() {
+    const navItems = {
+      simple: [
+        { icon: '🏠', label: 'Home', route: '#/dashboard', primary: true },
+        { icon: '🏋️', label: 'Workouts', route: '#/workouts', primary: true },
+        { icon: '📈', label: 'Progress', route: '#/progress', primary: true },
+        { icon: '⚙️', label: 'Settings', route: '#/settings', primary: false },
+      ],
+      advanced: [
+        { icon: '🏠', label: 'Dashboard', route: '#/dashboard' },
+        { icon: '🏋️', label: 'Workouts', route: '#/workouts' },
+        { icon: '📊', label: 'Analytics', route: '#/analytics' },
+        { icon: '🤖', label: 'AI Coach', route: '#/coach' },
+        { icon: '🔗', label: 'Integrations', route: '#/integrations' },
+        { icon: '⚙️', label: 'Settings', route: '#/settings' },
+      ],
+    };
 
-        this.navItems = navItems;
-        this.render();
-    }
+    this.navItems = navItems;
+    this.render();
+  }
 
-    render() {
-        const items = this.simpleMode ? this.navItems.simple : this.navItems.advanced;
-        const navContainer = document.getElementById('main-navigation');
-        
-        if (!navContainer) return;
+  render() {
+    const items = this.simpleMode
+      ? this.navItems.simple
+      : this.navItems.advanced;
+    const navContainer = document.getElementById('main-navigation');
 
-        navContainer.innerHTML = `
+    if (!navContainer) return;
+
+    navContainer.innerHTML = `
         <nav class="adaptive-nav ${this.simpleMode ? 'simple-mode' : 'advanced-mode'}">
             ${this.simpleMode ? this.renderSimpleNav(items) : this.renderAdvancedNav(items)}
         </nav>
         `;
-    }
+  }
 
-    renderSimpleNav(items) {
-        return `
+  renderSimpleNav(items) {
+    return `
         <div class="nav-simple">
             <div class="nav-primary">
-                ${items.filter(item => item.primary).map(item => `
+                ${items
+                  .filter(item => item.primary)
+                  .map(
+                    item => `
                     <a href="${item.route}" class="nav-item">
                         <span class="nav-icon">${item.icon}</span>
                         <span class="nav-label">${item.label}</span>
                     </a>
-                `).join('')}
+                `
+                  )
+                  .join('')}
             </div>
             
             <div class="nav-secondary">
@@ -1146,35 +1228,40 @@ class AdaptiveNavigation {
             </div>
         </div>
         `;
-    }
+  }
 
-    renderAdvancedNav(items) {
-        return `
+  renderAdvancedNav(items) {
+    return `
         <div class="nav-advanced">
-            ${items.map(item => `
+            ${items
+              .map(
+                item => `
                 <a href="${item.route}" class="nav-item">
                     <span class="nav-icon">${item.icon}</span>
                     <span class="nav-label">${item.label}</span>
                 </a>
-            `).join('')}
+            `
+              )
+              .join('')}
         </div>
         `;
-    }
+  }
 }
 ```
 
 PHASE 3: Simple Mode Toggle Component
+
 ```javascript
 // CREATE accessible Simple Mode toggle
 class SimpleModeToggle {
-    constructor(container) {
-        this.container = container;
-        this.simpleMode = window.SimpleModeManager?.isEnabled() || true;
-        this.render();
-    }
+  constructor(container) {
+    this.container = container;
+    this.simpleMode = window.SimpleModeManager?.isEnabled() || true;
+    this.render();
+  }
 
-    render() {
-        this.container.innerHTML = `
+  render() {
+    this.container.innerHTML = `
         <div class="simple-mode-toggle">
             <div class="toggle-header">
                 <h3>Interface Mode</h3>
@@ -1230,117 +1317,125 @@ class SimpleModeToggle {
         </div>
         `;
 
-        this.setupEventListeners();
+    this.setupEventListeners();
+  }
+
+  setupEventListeners() {
+    const radios = this.container.querySelectorAll(
+      'input[name="interface-mode"]'
+    );
+    radios.forEach(radio => {
+      radio.addEventListener('change', e => {
+        this.previewMode(e.target.value);
+      });
+    });
+  }
+
+  previewMode(mode) {
+    // Show preview of what changes
+    const isSimple = mode === 'simple';
+    this.showModePreview(isSimple);
+  }
+
+  applyModeChange() {
+    const selectedMode = this.container.querySelector(
+      'input[name="interface-mode"]:checked'
+    ).value;
+    const isSimple = selectedMode === 'simple';
+
+    // Update Simple Mode Manager
+    if (window.SimpleModeManager) {
+      window.SimpleModeManager.setEnabled(isSimple);
     }
 
-    setupEventListeners() {
-        const radios = this.container.querySelectorAll('input[name="interface-mode"]');
-        radios.forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                this.previewMode(e.target.value);
-            });
-        });
+    // Show success message
+    this.showSuccess(`Switched to ${selectedMode} mode successfully!`);
+
+    // Refresh relevant components
+    this.refreshInterface();
+  }
+
+  refreshInterface() {
+    // Trigger re-render of adaptive components
+    if (window.EventBus) {
+      window.EventBus.emit('simpleMode:changed', {
+        enabled: window.SimpleModeManager?.isEnabled(),
+      });
     }
 
-    previewMode(mode) {
-        // Show preview of what changes
-        const isSimple = mode === 'simple';
-        this.showModePreview(isSimple);
-    }
-
-    applyModeChange() {
-        const selectedMode = this.container.querySelector('input[name="interface-mode"]:checked').value;
-        const isSimple = selectedMode === 'simple';
-        
-        // Update Simple Mode Manager
-        if (window.SimpleModeManager) {
-            window.SimpleModeManager.setEnabled(isSimple);
-        }
-        
-        // Show success message
-        this.showSuccess(`Switched to ${selectedMode} mode successfully!`);
-        
-        // Refresh relevant components
-        this.refreshInterface();
-    }
-
-    refreshInterface() {
-        // Trigger re-render of adaptive components
-        if (window.EventBus) {
-            window.EventBus.emit('simpleMode:changed', { 
-                enabled: window.SimpleModeManager?.isEnabled() 
-            });
-        }
-        
-        // Smooth transition
-        document.body.classList.add('mode-transitioning');
-        setTimeout(() => {
-            document.body.classList.remove('mode-transitioning');
-        }, 500);
-    }
+    // Smooth transition
+    document.body.classList.add('mode-transitioning');
+    setTimeout(() => {
+      document.body.classList.remove('mode-transitioning');
+    }, 500);
+  }
 }
 ```
 
 PHASE 4: Contextual Help System
+
 ```javascript
 // CREATE adaptive help system
 class ContextualHelp {
-    constructor() {
-        this.simpleMode = window.SimpleModeManager?.isEnabled() || true;
-        this.helpTips = this.loadHelpContent();
-        this.setupHelpSystem();
-    }
+  constructor() {
+    this.simpleMode = window.SimpleModeManager?.isEnabled() || true;
+    this.helpTips = this.loadHelpContent();
+    this.setupHelpSystem();
+  }
 
-    loadHelpContent() {
-        return {
-            simple: {
-                dashboard: {
-                    title: "Your Fitness Dashboard",
-                    content: "This is your home base. Start workouts, check your progress, and celebrate your achievements!",
-                    tips: [
-                        "Tap 'Start Workout' when you're ready to exercise",
-                        "Check your streak to stay motivated",
-                        "Your progress updates automatically"
-                    ]
-                },
-                workouts: {
-                    title: "Your Workout Plan",
-                    content: "Your AI coach has created workouts just for you. Each one adapts based on your feedback.",
-                    tips: [
-                        "Start with today's recommended workout",
-                        "Rate how you feel after each exercise",
-                        "Don't worry about being perfect - focus on consistency"
-                    ]
-                }
-            },
-            advanced: {
-                analytics: {
-                    title: "Advanced Analytics",
-                    content: "Deep dive into your fitness data with detailed charts and AI insights.",
-                    tips: [
-                        "Use filters to focus on specific time periods",
-                        "Compare different metrics to find patterns",
-                        "Export data for external analysis"
-                    ]
-                }
-            }
-        };
-    }
+  loadHelpContent() {
+    return {
+      simple: {
+        dashboard: {
+          title: 'Your Fitness Dashboard',
+          content:
+            'This is your home base. Start workouts, check your progress, and celebrate your achievements!',
+          tips: [
+            "Tap 'Start Workout' when you're ready to exercise",
+            'Check your streak to stay motivated',
+            'Your progress updates automatically',
+          ],
+        },
+        workouts: {
+          title: 'Your Workout Plan',
+          content:
+            'Your AI coach has created workouts just for you. Each one adapts based on your feedback.',
+          tips: [
+            "Start with today's recommended workout",
+            'Rate how you feel after each exercise',
+            "Don't worry about being perfect - focus on consistency",
+          ],
+        },
+      },
+      advanced: {
+        analytics: {
+          title: 'Advanced Analytics',
+          content:
+            'Deep dive into your fitness data with detailed charts and AI insights.',
+          tips: [
+            'Use filters to focus on specific time periods',
+            'Compare different metrics to find patterns',
+            'Export data for external analysis',
+          ],
+        },
+      },
+    };
+  }
 
-    showContextualHelp(page) {
-        const helpContent = this.simpleMode ? 
-            this.helpTips.simple[page] : 
-            this.helpTips.advanced[page];
-            
-        if (!helpContent) return;
+  showContextualHelp(page) {
+    const helpContent = this.simpleMode
+      ? this.helpTips.simple[page]
+      : this.helpTips.advanced[page];
 
-        this.displayHelpOverlay(helpContent);
-    }
+    if (!helpContent) return;
 
-    displayHelpOverlay(content) {
-        const overlay = document.createElement('div');
-        overlay.className = 'help-overlay';
-        overlay.innerHTML = `
+    this.displayHelpOverlay(helpContent);
+  }
+
+  displayHelpOverlay(content) {
+    const overlay = document.createElement('div');
+    overlay.className = 'help-overlay';
+    overlay.innerHTML = `
         <div class="help-modal">
             <div class="help-header">
                 <h3>${content.title}</h3>
@@ -1350,14 +1445,18 @@ class ContextualHelp {
             <div class="help-content">
                 <p>${content.content}</p>
                 
-                ${content.tips ? `
+                ${
+                  content.tips
+                    ? `
                 <div class="help-tips">
                     <h4>💡 Tips:</h4>
                     <ul>
                         ${content.tips.map(tip => `<li>${tip}</li>`).join('')}
                     </ul>
                 </div>
-                ` : ''}
+                `
+                    : ''
+                }
             </div>
             
             <div class="help-actions">
@@ -1370,30 +1469,31 @@ class ContextualHelp {
         </div>
         `;
 
-        document.body.appendChild(overlay);
-        
-        // Add close handlers
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) this.closeHelp();
-        });
-    }
+    document.body.appendChild(overlay);
 
-    // ADD floating help button
-    addFloatingHelp() {
-        const helpButton = document.createElement('button');
-        helpButton.className = 'floating-help';
-        helpButton.innerHTML = '?';
-        helpButton.title = 'Get help with this page';
-        helpButton.onclick = () => this.showContextualHelp(this.getCurrentPage());
-        
-        document.body.appendChild(helpButton);
-    }
+    // Add close handlers
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) this.closeHelp();
+    });
+  }
+
+  // ADD floating help button
+  addFloatingHelp() {
+    const helpButton = document.createElement('button');
+    helpButton.className = 'floating-help';
+    helpButton.innerHTML = '?';
+    helpButton.title = 'Get help with this page';
+    helpButton.onclick = () => this.showContextualHelp(this.getCurrentPage());
+
+    document.body.appendChild(helpButton);
+  }
 }
 ```
 
 IMPLEMENTATION CHECKLIST:
 
 PHASE 1: Adaptive Components
+
 - [ ] Create AdaptiveComponent base class
 - [ ] Implement AdaptiveDashboard with simple/advanced views
 - [ ] Build adaptive workout list component
@@ -1401,6 +1501,7 @@ PHASE 1: Adaptive Components
 - [ ] Add adaptive settings panel
 
 PHASE 2: Navigation System
+
 - [ ] Build AdaptiveNavigation component
 - [ ] Create simple navigation (3-4 main items)
 - [ ] Design advanced navigation (full menu)
@@ -1408,6 +1509,7 @@ PHASE 2: Navigation System
 - [ ] Implement mobile-optimized navigation
 
 PHASE 3: Mode Toggle Interface
+
 - [ ] Create SimpleModeToggle component
 - [ ] Design comparison view (simple vs advanced)
 - [ ] Add preview functionality
@@ -1415,6 +1517,7 @@ PHASE 3: Mode Toggle Interface
 - [ ] Add confirmation for mode changes
 
 PHASE 4: Help System
+
 - [ ] Build ContextualHelp system
 - [ ] Create help content for each mode
 - [ ] Add floating help button
@@ -1422,6 +1525,7 @@ PHASE 4: Help System
 - [ ] Add help preferences (auto-show, etc.)
 
 PHASE 5: CSS and Styling
+
 - [ ] Create CSS variables for mode-specific styling
 - [ ] Design simple mode aesthetic (clean, minimal)
 - [ ] Design advanced mode aesthetic (data-rich)
@@ -1429,6 +1533,7 @@ PHASE 5: CSS and Styling
 - [ ] Ensure mobile responsiveness
 
 CSS IMPLEMENTATION:
+
 ```css
 /* Mode-specific CSS variables */
 :root {
@@ -1437,7 +1542,7 @@ CSS IMPLEMENTATION:
   --simple-bg: #ffffff;
   --simple-text: #2d3748;
   --simple-border: #e2e8f0;
-  
+
   /* Advanced mode colors */
   --advanced-primary: #805ad5;
   --advanced-bg: #1a202c;
@@ -1504,11 +1609,13 @@ TESTING PROTOCOL:
    - Mobile device performance
 
 SUCCESS METRICS:
+
 - User retention in simple mode vs advanced mode
 - Feature discovery rate (simple → advanced)
 - Support request reduction for new users
 - Engagement metrics by mode
 - Mode switching frequency and patterns
+
 ```
 
 This comprehensive set of Cursor prompts provides:
@@ -1522,3 +1629,4 @@ This comprehensive set of Cursor prompts provides:
 7. **Success metrics** for measuring impact
 
 Each prompt can be executed independently while building on previous improvements, giving Cursor clear, actionable guidance for implementing robust solutions.
+```

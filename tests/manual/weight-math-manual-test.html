@@ -1,513 +1,535 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Weight Math Manual QA Test</title>
-    <link rel="stylesheet" href="../../styles/design-tokens.css">
-    <link rel="stylesheet" href="../../styles/components.css">
+    <link rel="stylesheet" href="../../styles/design-tokens.css" />
+    <link rel="stylesheet" href="../../styles/components.css" />
     <style>
-        body {
-            padding: 2rem;
-            font-family: system-ui, -apple-system, sans-serif;
-            background: #f5f5f5;
-            color: #1a1a1a;
-        }
-        
-        .test-section {
-            margin-bottom: 3rem;
-            padding: 1.5rem;
-            background: white;
-            border-radius: 8px;
-            border: 1px solid #e5e5e5;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        h1 {
-            color: #4f46e5;
-            margin-bottom: 0.5rem;
-        }
-        
-        .test-description {
-            color: #6b7280;
-            margin-bottom: 1.5rem;
-        }
-        
-        .test-result {
-            padding: 1rem;
-            margin-top: 1rem;
-            border-radius: 6px;
-        }
-        
-        .pass {
-            background: rgba(34, 197, 94, 0.1);
-            border: 1px solid rgba(34, 197, 94, 0.3);
-            color: #16a34a;
-        }
-        
-        .fail {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #dc2626;
-        }
-        
-        button, input, select {
-            margin: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            background: #4f46e5;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 1rem;
-            position: relative;
-            z-index: 1;
-            display: inline-block;
-            visibility: visible;
-        }
-        
-        button:hover {
-            opacity: 0.9;
-        }
-        
-        input[type="number"] {
-            background: white;
-            color: #1a1a1a;
-            border: 2px solid #e5e5e5;
-            width: 150px;
-        }
-        
-        input[type="number"]:focus {
-            border-color: #4f46e5;
-            outline: none;
-        }
-        
-        select {
-            background: white;
-            color: #1a1a1a;
-        }
-        
-        .instruction-text {
-            font-family: 'Courier New', monospace;
-            font-size: 1.125rem;
-            font-weight: 600;
-            color: #059669;
-            padding: 1rem;
-            background: #ecfdf5;
-            border-left: 4px solid #10b981;
-            border-radius: 4px;
-            margin-top: 1rem;
-        }
-        
-        .plate-info {
-            margin: 0.5rem 0;
-            padding: 0.5rem;
-            background: #f3f4f6;
-            border-radius: 4px;
-        }
-        
-        #console-output {
-            background: #1a1a1a;
-            color: #fff;
-            padding: 1rem;
-            border-radius: 6px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.875rem;
-            max-height: 300px;
-            overflow-y: auto;
-            margin-top: 1rem;
-        }
-        
-        .log-entry {
-            padding: 0.25rem 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
+      body {
+        padding: 2rem;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background: #f5f5f5;
+        color: #1a1a1a;
+      }
+
+      .test-section {
+        margin-bottom: 3rem;
+        padding: 1.5rem;
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e5e5e5;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      h1 {
+        color: #4f46e5;
+        margin-bottom: 0.5rem;
+      }
+
+      .test-description {
+        color: #6b7280;
+        margin-bottom: 1.5rem;
+      }
+
+      .test-result {
+        padding: 1rem;
+        margin-top: 1rem;
+        border-radius: 6px;
+      }
+
+      .pass {
+        background: rgba(34, 197, 94, 0.1);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        color: #16a34a;
+      }
+
+      .fail {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #dc2626;
+      }
+
+      button,
+      input,
+      select {
+        margin: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        background: #4f46e5;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 1rem;
+        position: relative;
+        z-index: 1;
+        display: inline-block;
+        visibility: visible;
+      }
+
+      button:hover {
+        opacity: 0.9;
+      }
+
+      input[type='number'] {
+        background: white;
+        color: #1a1a1a;
+        border: 2px solid #e5e5e5;
+        width: 150px;
+      }
+
+      input[type='number']:focus {
+        border-color: #4f46e5;
+        outline: none;
+      }
+
+      select {
+        background: white;
+        color: #1a1a1a;
+      }
+
+      .instruction-text {
+        font-family: 'Courier New', monospace;
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #059669;
+        padding: 1rem;
+        background: #ecfdf5;
+        border-left: 4px solid #10b981;
+        border-radius: 4px;
+        margin-top: 1rem;
+      }
+
+      .plate-info {
+        margin: 0.5rem 0;
+        padding: 0.5rem;
+        background: #f3f4f6;
+        border-radius: 4px;
+      }
+
+      #console-output {
+        background: #1a1a1a;
+        color: #fff;
+        padding: 1rem;
+        border-radius: 6px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.875rem;
+        max-height: 300px;
+        overflow-y: auto;
+        margin-top: 1rem;
+      }
+
+      .log-entry {
+        padding: 0.25rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>🧪 Weight Math Manual QA Test</h1>
     <p>This page provides interactive tests for the WeightMath component (Prompt 4).</p>
-    
+
     <!-- Mock Dependencies -->
     <script>
-        // Mock SafeLogger
-        if (!window.SafeLogger) {
-            window.SafeLogger = {
-                info: console.log.bind(console, '[INFO]'),
-                debug: console.log.bind(console, '[DEBUG]'),
-                warn: console.warn.bind(console, '[WARN]'),
-                error: console.error.bind(console, '[ERROR]')
-            };
-        }
-        
-        // Console output capture
-        const consoleOutput = document.getElementById('console-output');
-        const originalLog = console.log;
-        const originalError = console.error;
-        
-        function addLogEntry(level, ...args) {
-            if (consoleOutput) {
-                const entry = document.createElement('div');
-                entry.className = 'log-entry';
-                entry.textContent = `[${new Date().toLocaleTimeString()}] ${level}: ${args.join(' ')}`;
-                consoleOutput.appendChild(entry);
-                consoleOutput.scrollTop = consoleOutput.scrollHeight;
-            }
-        }
-        
-        console.log = (...args) => {
-            addLogEntry('INFO', ...args);
-            originalLog(...args);
+      // Mock SafeLogger
+      if (!window.SafeLogger) {
+        window.SafeLogger = {
+          info: console.log.bind(console, '[INFO]'),
+          debug: console.log.bind(console, '[DEBUG]'),
+          warn: console.warn.bind(console, '[WARN]'),
+          error: console.error.bind(console, '[ERROR]'),
         };
-        
-        console.error = (...args) => {
-            addLogEntry('ERROR', ...args);
-            originalError(...args);
-        };
+      }
+
+      // Console output capture
+      const consoleOutput = document.getElementById('console-output');
+      const originalLog = console.log;
+      const originalError = console.error;
+
+      function addLogEntry(level, ...args) {
+        if (consoleOutput) {
+          const entry = document.createElement('div');
+          entry.className = 'log-entry';
+          entry.textContent = `[${new Date().toLocaleTimeString()}] ${level}: ${args.join(' ')}`;
+          consoleOutput.appendChild(entry);
+          consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+      }
+
+      console.log = (...args) => {
+        addLogEntry('INFO', ...args);
+        originalLog(...args);
+      };
+
+      console.error = (...args) => {
+        addLogEntry('ERROR', ...args);
+        originalError(...args);
+      };
     </script>
-    
+
     <!-- Load WeightMath -->
     <script src="../../js/modules/workout/WeightMath.js"></script>
-    
+
     <div class="test-section">
-        <h2>1. WeightMath Component Load Test</h2>
-        <p class="test-description">Verify WeightMath is loaded and accessible.</p>
-        <button onclick="testWeightMathLoad()">Test Load</button>
-        <div id="load-result"></div>
+      <h2>1. WeightMath Component Load Test</h2>
+      <p class="test-description">Verify WeightMath is loaded and accessible.</p>
+      <button onclick="testWeightMathLoad()">Test Load</button>
+      <div id="load-result"></div>
     </div>
-    
+
     <div class="test-section">
-        <h2>2. Basic Weight Calculation</h2>
-        <p class="test-description">Test plate math calculations.</p>
-        
-        <div>
-            <label>Target Weight: </label>
-            <input type="number" id="target-weight" value="135" min="0" step="0.5">
-        </div>
-        
-        <div style="margin-top: 1rem;">
-            <label>Unit: </label>
-            <select id="weight-unit">
-                <option value="us">US (lbs)</option>
-                <option value="metric">Metric (kg)</option>
-            </select>
-        </div>
-        
-        <button onclick="calculateWeight()">Calculate Load</button>
-        <div id="weight-result"></div>
+      <h2>2. Basic Weight Calculation</h2>
+      <p class="test-description">Test plate math calculations.</p>
+
+      <div>
+        <label>Target Weight: </label>
+        <input type="number" id="target-weight" value="135" min="0" step="0.5" />
+      </div>
+
+      <div style="margin-top: 1rem">
+        <label>Unit: </label>
+        <select id="weight-unit">
+          <option value="us">US (lbs)</option>
+          <option value="metric">Metric (kg)</option>
+        </select>
+      </div>
+
+      <button onclick="calculateWeight()">Calculate Load</button>
+      <div id="weight-result"></div>
     </div>
-    
+
     <div class="test-section">
-        <h2>3. Equipment Availability Test</h2>
-        <p class="test-description">Test with different plate availability.</p>
-        
-        <button onclick="testFullPlateSet()">Full Plate Set</button>
-        <button onclick="testWithout2_5s()">Without 2.5 lb plates</button>
-        <button onclick="testMinimalSet()">Minimal Set [45, 25, 10]</button>
-        
-        <div id="equipment-display"></div>
-        <div id="equipment-result"></div>
+      <h2>3. Equipment Availability Test</h2>
+      <p class="test-description">Test with different plate availability.</p>
+
+      <button onclick="testFullPlateSet()">Full Plate Set</button>
+      <button onclick="testWithout2_5s()">Without 2.5 lb plates</button>
+      <button onclick="testMinimalSet()">Minimal Set [45, 25, 10]</button>
+
+      <div id="equipment-display"></div>
+      <div id="equipment-result"></div>
     </div>
-    
+
     <div class="test-section">
-        <h2>4. Edge Cases</h2>
-        <p class="test-description">Test special cases.</p>
-        
-        <button onclick="testBelowBar()">Weight Below Bar</button>
-        <button onclick="testExactlyBar()">Exactly Bar Weight</button>
-        <button onclick="testHeavyLoad()">Very Heavy Load (500 lbs)</button>
-        <button onclick="testImpossibleWeight()">Impossible Weight (133.7 lbs)</button>
-        
-        <div id="edge-case-result"></div>
+      <h2>4. Edge Cases</h2>
+      <p class="test-description">Test special cases.</p>
+
+      <button onclick="testBelowBar()">Weight Below Bar</button>
+      <button onclick="testExactlyBar()">Exactly Bar Weight</button>
+      <button onclick="testHeavyLoad()">Very Heavy Load (500 lbs)</button>
+      <button onclick="testImpossibleWeight()">Impossible Weight (133.7 lbs)</button>
+
+      <div id="edge-case-result"></div>
     </div>
-    
+
     <div class="test-section">
-        <h2>5. Realistic Progression Test</h2>
-        <p class="test-description">Verify exercise-specific progression minimums.</p>
-        
-        <button onclick="testSquatProgression()">Test Squat (5 lbs min)</button>
-        <button onclick="testBenchProgression()">Test Bench (2.5 lbs min)</button>
-        <button onclick="testDeadliftProgression()">Test Deadlift (10 lbs min)</button>
-        <button onclick="testInvalidProgression()">Test Invalid Progression</button>
-        
-        <div id="progression-result"></div>
+      <h2>5. Realistic Progression Test</h2>
+      <p class="test-description">Verify exercise-specific progression minimums.</p>
+
+      <button onclick="testSquatProgression()">Test Squat (5 lbs min)</button>
+      <button onclick="testBenchProgression()">Test Bench (2.5 lbs min)</button>
+      <button onclick="testDeadliftProgression()">Test Deadlift (10 lbs min)</button>
+      <button onclick="testInvalidProgression()">Test Invalid Progression</button>
+
+      <div id="progression-result"></div>
     </div>
-    
+
     <div class="test-section">
-        <h2>6. Format Verification</h2>
-        <p class="test-description">Verify no decimal weights appear.</p>
-        
-        <button onclick="testFormatVerification()">Check Format</button>
-        <div id="format-result"></div>
+      <h2>6. Format Verification</h2>
+      <p class="test-description">Verify no decimal weights appear.</p>
+
+      <button onclick="testFormatVerification()">Check Format</button>
+      <div id="format-result"></div>
     </div>
-    
+
     <div class="test-section">
-        <h2>7. Console Output</h2>
-        <div id="console-output"></div>
-        <button onclick="document.getElementById('console-output').innerHTML = ''">Clear Console</button>
+      <h2>7. Console Output</h2>
+      <div id="console-output"></div>
+      <button onclick="document.getElementById('console-output').innerHTML = ''">
+        Clear Console
+      </button>
     </div>
-    
+
     <script>
-        let currentEquipment = 'full';
-        
-        // Test 1: WeightMath Load
-        function testWeightMathLoad() {
-            const resultDiv = document.getElementById('load-result');
-            
-            if (!window.WeightMath) {
-                resultDiv.className = 'test-result fail';
-                resultDiv.innerHTML = '❌ FAIL: WeightMath not loaded';
-                return;
-            }
-            
-            if (typeof window.WeightMath.gymLoadPlan !== 'function') {
-                resultDiv.className = 'test-result fail';
-                resultDiv.innerHTML = '❌ FAIL: WeightMath.gymLoadPlan() not found';
-                return;
-            }
-            
-            resultDiv.className = 'test-result pass';
-            resultDiv.innerHTML = '✅ PASS: WeightMath loaded and all methods available';
+      let currentEquipment = 'full';
+
+      // Test 1: WeightMath Load
+      function testWeightMathLoad() {
+        const resultDiv = document.getElementById('load-result');
+
+        if (!window.WeightMath) {
+          resultDiv.className = 'test-result fail';
+          resultDiv.innerHTML = '❌ FAIL: WeightMath not loaded';
+          return;
         }
-        
-        // Test 2: Calculate Weight
-        function calculateWeight() {
-            const targetWeight = parseFloat(document.getElementById('target-weight').value);
-            const unit = document.getElementById('weight-unit').value;
-            const resultDiv = document.getElementById('weight-result');
-            
-            if (!window.WeightMath) {
-                resultDiv.innerHTML = '<div class="test-result fail">WeightMath not loaded</div>';
-                return;
-            }
-            
-            const config = {
-                mode: unit,
-                barWeight: unit === 'metric' ? 20 : 45,
-                availablePlates: unit === 'metric' 
-                    ? [20, 15, 10, 5, 2.5, 1.25]
-                    : [45, 35, 25, 10, 5, 2.5],
-                unit: unit === 'metric' ? 'kg' : 'lb'
-            };
-            
-            const loadPlan = window.WeightMath.gymLoadPlan(config, targetWeight);
-            
-            let html = `<div class="instruction-text">${loadPlan.text}</div>`;
-            
-            html += `<div class="plate-info">`;
-            html += `Plates per side: ${loadPlan.sides.join(', ')}`;
-            html += `</div>`;
-            
-            if (!loadPlan.exact) {
-                html += `<div class="test-result fail">Note: ${loadPlan.note || 'Rounded to achievable weight'}</div>`;
-            } else {
-                html += `<div class="test-result pass">✓ Exact match</div>`;
-            }
-            
-            resultDiv.innerHTML = html;
+
+        if (typeof window.WeightMath.gymLoadPlan !== 'function') {
+          resultDiv.className = 'test-result fail';
+          resultDiv.innerHTML = '❌ FAIL: WeightMath.gymLoadPlan() not found';
+          return;
         }
-        
-        // Test 3: Equipment Availability
-        function testFullPlateSet() {
-            currentEquipment = 'full';
-            const display = document.getElementById('equipment-display');
-            display.innerHTML = '<div class="plate-info">Available plates: 45, 35, 25, 10, 5, 2.5</div>';
-            
-            const config = {
-                mode: 'us',
-                barWeight: 45,
-                availablePlates: [45, 35, 25, 10, 5, 2.5],
-                unit: 'lb'
-            };
-            
-            const result = window.WeightMath.gymLoadPlan(config, 135);
-            
-            document.getElementById('equipment-result').innerHTML = 
-                `<div class="instruction-text">${result.text}</div>`;
+
+        resultDiv.className = 'test-result pass';
+        resultDiv.innerHTML = '✅ PASS: WeightMath loaded and all methods available';
+      }
+
+      // Test 2: Calculate Weight
+      function calculateWeight() {
+        const targetWeight = parseFloat(document.getElementById('target-weight').value);
+        const unit = document.getElementById('weight-unit').value;
+        const resultDiv = document.getElementById('weight-result');
+
+        if (!window.WeightMath) {
+          resultDiv.innerHTML = '<div class="test-result fail">WeightMath not loaded</div>';
+          return;
         }
-        
-        function testWithout2_5s() {
-            currentEquipment = 'no-2.5';
-            const display = document.getElementById('equipment-display');
-            display.innerHTML = '<div class="plate-info">Available plates: 45, 35, 25, 10, 5 (NO 2.5 plates)</div>';
-            
-            const config = {
-                mode: 'us',
-                barWeight: 45,
-                availablePlates: [45, 35, 25, 10, 5],
-                unit: 'lb'
-            };
-            
-            const result = window.WeightMath.gymLoadPlan(config, 137.5);
-            
-            document.getElementById('equipment-result').innerHTML = 
-                `<div class="instruction-text">${result.text}</div>
+
+        const config = {
+          mode: unit,
+          barWeight: unit === 'metric' ? 20 : 45,
+          availablePlates:
+            unit === 'metric' ? [20, 15, 10, 5, 2.5, 1.25] : [45, 35, 25, 10, 5, 2.5],
+          unit: unit === 'metric' ? 'kg' : 'lb',
+        };
+
+        const loadPlan = window.WeightMath.gymLoadPlan(config, targetWeight);
+
+        let html = `<div class="instruction-text">${loadPlan.text}</div>`;
+
+        html += `<div class="plate-info">`;
+        html += `Plates per side: ${loadPlan.sides.join(', ')}`;
+        html += `</div>`;
+
+        if (!loadPlan.exact) {
+          html += `<div class="test-result fail">Note: ${loadPlan.note || 'Rounded to achievable weight'}</div>`;
+        } else {
+          html += `<div class="test-result pass">✓ Exact match</div>`;
+        }
+
+        resultDiv.innerHTML = html;
+      }
+
+      // Test 3: Equipment Availability
+      function testFullPlateSet() {
+        currentEquipment = 'full';
+        const display = document.getElementById('equipment-display');
+        display.innerHTML =
+          '<div class="plate-info">Available plates: 45, 35, 25, 10, 5, 2.5</div>';
+
+        const config = {
+          mode: 'us',
+          barWeight: 45,
+          availablePlates: [45, 35, 25, 10, 5, 2.5],
+          unit: 'lb',
+        };
+
+        const result = window.WeightMath.gymLoadPlan(config, 135);
+
+        document.getElementById('equipment-result').innerHTML =
+          `<div class="instruction-text">${result.text}</div>`;
+      }
+
+      function testWithout2_5s() {
+        currentEquipment = 'no-2.5';
+        const display = document.getElementById('equipment-display');
+        display.innerHTML =
+          '<div class="plate-info">Available plates: 45, 35, 25, 10, 5 (NO 2.5 plates)</div>';
+
+        const config = {
+          mode: 'us',
+          barWeight: 45,
+          availablePlates: [45, 35, 25, 10, 5],
+          unit: 'lb',
+        };
+
+        const result = window.WeightMath.gymLoadPlan(config, 137.5);
+
+        document.getElementById('equipment-result').innerHTML =
+          `<div class="instruction-text">${result.text}</div>
                  <div class="test-result ${result.exact ? 'pass' : 'fail'}">
                     ${result.exact ? '✓ Exact' : `Note: ${result.note}`}
                  </div>`;
-        }
-        
-        function testMinimalSet() {
-            currentEquipment = 'minimal';
-            const display = document.getElementById('equipment-display');
-            display.innerHTML = '<div class="plate-info">Available plates: 45, 25, 10 only</div>';
-            
-            const config = {
-                mode: 'us',
-                barWeight: 45,
-                availablePlates: [45, 25, 10],
-                unit: 'lb'
-            };
-            
-            const result = window.WeightMath.gymLoadPlan(config, 135);
-            
-            document.getElementById('equipment-result').innerHTML = 
-                `<div class="instruction-text">${result.text}</div>`;
-        }
-        
-        // Test 4: Edge Cases
-        function testBelowBar() {
-            const result = window.WeightMath.gymLoadPlan({ 
-                mode: 'us',
-                barWeight: 45,
-                availablePlates: [45, 35, 25, 10, 5, 2.5],
-                unit: 'lb'
-            }, 30);
-            
-            document.getElementById('edge-case-result').innerHTML = 
-                `<div class="instruction-text">${result.text}</div>
+      }
+
+      function testMinimalSet() {
+        currentEquipment = 'minimal';
+        const display = document.getElementById('equipment-display');
+        display.innerHTML = '<div class="plate-info">Available plates: 45, 25, 10 only</div>';
+
+        const config = {
+          mode: 'us',
+          barWeight: 45,
+          availablePlates: [45, 25, 10],
+          unit: 'lb',
+        };
+
+        const result = window.WeightMath.gymLoadPlan(config, 135);
+
+        document.getElementById('equipment-result').innerHTML =
+          `<div class="instruction-text">${result.text}</div>`;
+      }
+
+      // Test 4: Edge Cases
+      function testBelowBar() {
+        const result = window.WeightMath.gymLoadPlan(
+          {
+            mode: 'us',
+            barWeight: 45,
+            availablePlates: [45, 35, 25, 10, 5, 2.5],
+            unit: 'lb',
+          },
+          30
+        );
+
+        document.getElementById('edge-case-result').innerHTML =
+          `<div class="instruction-text">${result.text}</div>
                  <div class="plate-info">Weight below bar (30 < 45)</div>`;
-        }
-        
-        function testExactlyBar() {
-            const result = window.WeightMath.gymLoadPlan({ 
-                mode: 'us',
-                barWeight: 45,
-                availablePlates: [45, 35, 25, 10, 5, 2.5],
-                unit: 'lb'
-            }, 45);
-            
-            document.getElementById('edge-case-result').innerHTML = 
-                `<div class="instruction-text">${result.text}</div>
+      }
+
+      function testExactlyBar() {
+        const result = window.WeightMath.gymLoadPlan(
+          {
+            mode: 'us',
+            barWeight: 45,
+            availablePlates: [45, 35, 25, 10, 5, 2.5],
+            unit: 'lb',
+          },
+          45
+        );
+
+        document.getElementById('edge-case-result').innerHTML =
+          `<div class="instruction-text">${result.text}</div>
                  <div class="plate-info">Exactly bar weight</div>`;
-        }
-        
-        function testHeavyLoad() {
-            const result = window.WeightMath.gymLoadPlan({ 
-                mode: 'us',
-                barWeight: 45,
-                availablePlates: [45, 35, 25, 10, 5, 2.5],
-                unit: 'lb'
-            }, 500);
-            
-            document.getElementById('edge-case-result').innerHTML = 
-                `<div class="instruction-text">${result.text}</div>
+      }
+
+      function testHeavyLoad() {
+        const result = window.WeightMath.gymLoadPlan(
+          {
+            mode: 'us',
+            barWeight: 45,
+            availablePlates: [45, 35, 25, 10, 5, 2.5],
+            unit: 'lb',
+          },
+          500
+        );
+
+        document.getElementById('edge-case-result').innerHTML =
+          `<div class="instruction-text">${result.text}</div>
                  <div class="plate-info">Very heavy load (500 lbs)</div>`;
-        }
-        
-        function testImpossibleWeight() {
-            const result = window.WeightMath.gymLoadPlan({ 
-                mode: 'us',
-                barWeight: 45,
-                availablePlates: [45, 35, 25, 10, 5, 2.5],
-                unit: 'lb'
-            }, 133.7);
-            
-            document.getElementById('edge-case-result').innerHTML = 
-                `<div class="instruction-text">${result.text}</div>
+      }
+
+      function testImpossibleWeight() {
+        const result = window.WeightMath.gymLoadPlan(
+          {
+            mode: 'us',
+            barWeight: 45,
+            availablePlates: [45, 35, 25, 10, 5, 2.5],
+            unit: 'lb',
+          },
+          133.7
+        );
+
+        document.getElementById('edge-case-result').innerHTML =
+          `<div class="instruction-text">${result.text}</div>
                  <div class="test-result fail">Note: ${result.note || 'Rounded to nearest achievable'}</div>`;
-        }
-        
-        // Test 5: Progression Tests
-        function testSquatProgression() {
-            const weightMath = new window.WeightMath();
-            const validation = weightMath.validateProgression(225, 235, 'Back Squat');
-            
-            document.getElementById('progression-result').innerHTML = 
-                `<div class="plate-info">Exercise: Back Squat</div>
+      }
+
+      // Test 5: Progression Tests
+      function testSquatProgression() {
+        const weightMath = new window.WeightMath();
+        const validation = weightMath.validateProgression(225, 235, 'Back Squat');
+
+        document.getElementById('progression-result').innerHTML =
+          `<div class="plate-info">Exercise: Back Squat</div>
                  <div class="plate-info">Current: 225 lbs → Next: 235 lbs</div>
                  <div class="test-result ${validation.isValid ? 'pass' : 'fail'}">
                     ${validation.message}
                  </div>
                  <div class="plate-info">Minimum progression: ${validation.minimum} lbs per side</div>`;
-        }
-        
-        function testBenchProgression() {
-            const weightMath = new window.WeightMath();
-            const validation = weightMath.validateProgression(185, 190, 'Bench Press');
-            
-            document.getElementById('progression-result').innerHTML = 
-                `<div class="plate-info">Exercise: Bench Press</div>
+      }
+
+      function testBenchProgression() {
+        const weightMath = new window.WeightMath();
+        const validation = weightMath.validateProgression(185, 190, 'Bench Press');
+
+        document.getElementById('progression-result').innerHTML =
+          `<div class="plate-info">Exercise: Bench Press</div>
                  <div class="plate-info">Current: 185 lbs → Next: 190 lbs</div>
                  <div class="test-result ${validation.isValid ? 'pass' : 'fail'}">
                     ${validation.message}
                  </div>
                  <div class="plate-info">Minimum progression: ${validation.minimum} lbs per side</div>`;
-        }
-        
-        function testDeadliftProgression() {
-            const weightMath = new window.WeightMath();
-            const validation = weightMath.validateProgression(315, 335, 'Deadlift');
-            
-            document.getElementById('progression-result').innerHTML = 
-                `<div class="plate-info">Exercise: Deadlift</div>
+      }
+
+      function testDeadliftProgression() {
+        const weightMath = new window.WeightMath();
+        const validation = weightMath.validateProgression(315, 335, 'Deadlift');
+
+        document.getElementById('progression-result').innerHTML =
+          `<div class="plate-info">Exercise: Deadlift</div>
                  <div class="plate-info">Current: 315 lbs → Next: 335 lbs</div>
                  <div class="test-result ${validation.isValid ? 'pass' : 'fail'}">
                     ${validation.message}
                  </div>
                  <div class="plate-info">Minimum progression: ${validation.minimum} lbs per side</div>`;
-        }
-        
-        function testInvalidProgression() {
-            const weightMath = new window.WeightMath();
-            const validation = weightMath.validateProgression(225, 230, 'Back Squat');
-            
-            document.getElementById('progression-result').innerHTML = 
-                `<div class="plate-info">Exercise: Back Squat</div>
+      }
+
+      function testInvalidProgression() {
+        const weightMath = new window.WeightMath();
+        const validation = weightMath.validateProgression(225, 230, 'Back Squat');
+
+        document.getElementById('progression-result').innerHTML =
+          `<div class="plate-info">Exercise: Back Squat</div>
                  <div class="plate-info">Current: 225 lbs → Next: 230 lbs (too small!)</div>
                  <div class="test-result fail">
                     ❌ ${validation.message}
                  </div>
                  <div class="plate-info">Suggested weight: ${validation.suggestion} lbs</div>`;
-        }
-        
-        // Test 6: Format Verification
-        function testFormatVerification() {
-            const testWeights = [45, 135, 225, 315, 405];
-            let hasDecimals = false;
-            let allHaveInstructions = true;
-            
-            testWeights.forEach(weight => {
-                const result = window.WeightMath.gymLoadPlan({ 
-                    mode: 'us',
-                    barWeight: 45,
-                    availablePlates: [45, 35, 25, 10, 5, 2.5],
-                    unit: 'lb'
-                }, weight);
-                
-                if (result.text.includes('.')) {
-                    hasDecimals = true;
-                }
-                
-                if (!result.text.startsWith('Load')) {
-                    allHaveInstructions = false;
-                }
-            });
-            
-            const resultDiv = document.getElementById('format-result');
-            
-            if (hasDecimals) {
-                resultDiv.className = 'test-result fail';
-                resultDiv.innerHTML = '❌ FAIL: Decimal weights found in display';
-            } else if (!allHaveInstructions) {
-                resultDiv.className = 'test-result fail';
-                resultDiv.innerHTML = '❌ FAIL: Not all weights use instruction format';
-            } else {
-                resultDiv.className = 'test-result pass';
-                resultDiv.innerHTML = '✅ PASS: All weights use proper format, no decimals';
-            }
-        }
-    </script>
-</body>
-</html>
+      }
 
+      // Test 6: Format Verification
+      function testFormatVerification() {
+        const testWeights = [45, 135, 225, 315, 405];
+        let hasDecimals = false;
+        let allHaveInstructions = true;
+
+        testWeights.forEach(weight => {
+          const result = window.WeightMath.gymLoadPlan(
+            {
+              mode: 'us',
+              barWeight: 45,
+              availablePlates: [45, 35, 25, 10, 5, 2.5],
+              unit: 'lb',
+            },
+            weight
+          );
+
+          if (result.text.includes('.')) {
+            hasDecimals = true;
+          }
+
+          if (!result.text.startsWith('Load')) {
+            allHaveInstructions = false;
+          }
+        });
+
+        const resultDiv = document.getElementById('format-result');
+
+        if (hasDecimals) {
+          resultDiv.className = 'test-result fail';
+          resultDiv.innerHTML = '❌ FAIL: Decimal weights found in display';
+        } else if (!allHaveInstructions) {
+          resultDiv.className = 'test-result fail';
+          resultDiv.innerHTML = '❌ FAIL: Not all weights use instruction format';
+        } else {
+          resultDiv.className = 'test-result pass';
+          resultDiv.innerHTML = '✅ PASS: All weights use proper format, no decimals';
+        }
+      }
+    </script>
+  </body>
+</html>

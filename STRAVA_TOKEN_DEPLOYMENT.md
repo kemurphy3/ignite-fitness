@@ -2,7 +2,9 @@
 
 ## Overview
 
-This guide covers the deployment of the comprehensive Strava token management system with enhanced security, race condition prevention, and automatic refresh capabilities.
+This guide covers the deployment of the comprehensive Strava token management
+system with enhanced security, race condition prevention, and automatic refresh
+capabilities.
 
 ## Prerequisites
 
@@ -112,6 +114,7 @@ node test-strava-token-system.js
 ### Step 2: Manual Testing
 
 1. **OAuth Exchange Test**:
+
 ```bash
 curl -X POST https://your-site.netlify.app/.netlify/functions/strava-oauth-exchange \
   -H "Content-Type: application/json" \
@@ -119,11 +122,13 @@ curl -X POST https://your-site.netlify.app/.netlify/functions/strava-oauth-excha
 ```
 
 2. **Token Status Test**:
+
 ```bash
 curl https://your-site.netlify.app/.netlify/functions/strava-token-status?userId=test-user
 ```
 
 3. **Token Refresh Test**:
+
 ```bash
 curl -X POST https://your-site.netlify.app/.netlify/functions/strava-refresh-token \
   -H "Content-Type: application/json" \
@@ -164,21 +169,25 @@ curl -X POST https://your-site.netlify.app/.netlify/functions/strava-refresh-tok
 ## 6. Security Considerations
 
 ### Encryption
+
 - All tokens are encrypted at rest
 - Keys are managed through AWS KMS
 - Fallback encryption for development
 
 ### Rate Limiting
+
 - Per-user rate limits
 - Anomaly detection for bot-like behavior
 - Circuit breaker for external API calls
 
 ### Audit Logging
+
 - All operations are logged
 - IP addresses and user agents tracked
 - 90-day retention policy
 
 ### Access Control
+
 - API key authentication
 - User-specific data isolation
 - Admin functions protected
@@ -223,16 +232,19 @@ curl https://your-site.netlify.app/.netlify/functions/strava-token-status?userId
 ## 8. Performance Optimization
 
 ### Database
+
 - Use connection pooling
 - Optimize queries with indexes
 - Monitor slow queries
 
 ### Caching
+
 - Implement Redis for production
 - Use in-memory cache for development
 - Monitor cache hit rates
 
 ### Functions
+
 - Optimize cold start times
 - Use appropriate memory allocation
 - Monitor execution duration
@@ -240,11 +252,13 @@ curl https://your-site.netlify.app/.netlify/functions/strava-token-status?userId
 ## 9. Backup and Recovery
 
 ### Database Backups
+
 - Enable automated backups
 - Test restore procedures
 - Store backups securely
 
 ### Configuration Backups
+
 - Version control environment variables
 - Document configuration changes
 - Test configuration updates
@@ -252,11 +266,13 @@ curl https://your-site.netlify.app/.netlify/functions/strava-token-status?userId
 ## 10. Scaling Considerations
 
 ### Horizontal Scaling
+
 - Use read replicas for status checks
 - Implement load balancing
 - Monitor resource usage
 
 ### Vertical Scaling
+
 - Increase function memory as needed
 - Optimize database performance
 - Monitor connection limits
@@ -264,6 +280,7 @@ curl https://your-site.netlify.app/.netlify/functions/strava-token-status?userId
 ## Support
 
 For issues or questions:
+
 1. Check the audit logs for error details
 2. Review circuit breaker status
 3. Monitor rate limiting metrics

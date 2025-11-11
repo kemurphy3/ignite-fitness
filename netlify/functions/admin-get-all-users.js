@@ -5,7 +5,7 @@ const {
   auditLog,
   errorResponse,
   withTimeout,
-  successResponse
+  successResponse,
 } = require('./utils/admin-auth');
 
 const { getNeonClient } = require('./utils/connection-pool');
@@ -14,7 +14,7 @@ const {
   createPaginatedResponse,
   getCursorDataForItem,
   buildCursorCondition,
-  validatePaginationInput
+  validatePaginationInput,
 } = require('./utils/pagination');
 const sql = getNeonClient();
 
@@ -34,53 +34,57 @@ async function getTotalUsersCount(sql) {
 
 // Authentication is now handled by the centralized admin-auth utility
 
-exports.handler = async (event) => {
-    const startTime = Date.now();
-    const requestId = crypto.randomUUID();
+exports.handler = async event => {
+  const startTime = Date.now();
+  const requestId = crypto.randomUUID();
 
+  try {
+    // Handle preflight requests
+    if (event.httpMethod === 'OPTIONS') {
+      return {
+        statusCode: 200,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+        body: '',
+      };
+    }
+
+    if (event.httpMethod !== 'GET') {
+      return errorResponse(405, 'METHOD_NOT_ALLOWED', 'Method not allowed', requestId);
+    }
+
+    // Verify admin authentication
+    const token = event.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return errorResponse(401, 'MISSING_TOKEN', 'Authorization header required', requestId);
+    }
+
+    const { adminId } = await verifyAdmin(token, requestId);
+
+    // Validate pagination parameters
+    const queryParams = event.queryStringParameters || {};
+    const paginationErrors = validatePaginationInput(queryParams);
+    if (paginationErrors.length > 0) {
+      return errorResponse(400, 'VALIDATION_ERROR', paginationErrors.join(', '), requestId);
+    }
+
+    const pagination = validatePaginationParams(queryParams);
+
+    // Check if database is available
+    let adminData;
     try {
-        // Handle preflight requests
-        if (event.httpMethod === 'OPTIONS') {
-            return {
-                statusCode: 200,
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-                    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-                },
-                body: ''
-            };
-        }
+      // Build cursor condition for pagination
+      const cursorCondition = buildCursorCondition(
+        pagination.cursor,
+        'created_at DESC, id ASC',
+        'u'
+      );
 
-        if (event.httpMethod !== 'GET') {
-            return errorResponse(405, 'METHOD_NOT_ALLOWED', 'Method not allowed', requestId);
-        }
-
-        // Verify admin authentication
-        const token = event.headers.authorization?.split(' ')[1];
-        if (!token) {
-            return errorResponse(401, 'MISSING_TOKEN', 'Authorization header required', requestId);
-        }
-
-        const { adminId } = await verifyAdmin(token, requestId);
-
-        // Validate pagination parameters
-        const queryParams = event.queryStringParameters || {};
-        const paginationErrors = validatePaginationInput(queryParams);
-        if (paginationErrors.length > 0) {
-            return errorResponse(400, 'VALIDATION_ERROR', paginationErrors.join(', '), requestId);
-        }
-
-        const pagination = validatePaginationParams(queryParams);
-
-        // Check if database is available
-        let adminData;
-        try {
-            // Build cursor condition for pagination
-            const cursorCondition = buildCursorCondition(pagination.cursor, 'created_at DESC, id ASC', 'u');
-
-            // Try to get data from database with pagination
-            const usersQuery = `
+      // Try to get data from database with pagination
+      const usersQuery = `
                 SELECT 
                     u.id,
                     u.external_id,
@@ -112,10 +116,10 @@ exports.handler = async (event) => {
                 LIMIT $${cursorCondition.values.length + 1}
             `;
 
-            const queryParams = [...cursorCondition.values, pagination.limit + 1];
-            const users = await sql(usersQuery, queryParams);
+      const queryParams = [...cursorCondition.values, pagination.limit + 1];
+      const users = await sql(usersQuery, queryParams);
 
-            const recentActivity = await sql`
+      const recentActivity = await sql`
                 SELECT 
                     u.external_id,
                     u.username,
@@ -129,7 +133,7 @@ exports.handler = async (event) => {
                 ORDER BY last_activity DESC
             `;
 
-            const stats = await sql`
+      const stats = await sql`
                 SELECT 
                     (SELECT COUNT(*) FROM users) as total_users,
                     (SELECT COUNT(*) FROM sessions) as total_sessions,
@@ -139,105 +143,118 @@ exports.handler = async (event) => {
                     (SELECT COUNT(*) FROM user_preferences) as users_with_preferences
             `;
 
-            // Create paginated response for users
-            const paginatedUsers = createPaginatedResponse(
-                users,
-                pagination.limit,
-                (item) => getCursorDataForItem(item, 'users'),
-                {
-                    includeTotal: users.length < 1000,
-                    total: users.length < 1000 ? await getTotalUsersCount(sql) : undefined
-                }
-            );
-
-            // Sanitize user data to remove any potential PII
-            const sanitizedUsers = paginatedUsers.data.map(user => ({
-                id: user.id,
-                external_id: user.external_id,
-                username: user.username,
-                created_at: user.created_at,
-                updated_at: user.updated_at,
-                status: user.status,
-                age: user.age,
-                weight: user.weight,
-                height: user.height,
-                sex: user.sex,
-                goals: user.goals,
-                baseline_lifts: user.baseline_lifts,
-                workout_schedule: user.workout_schedule,
-                session_count: user.session_count,
-                sleep_count: user.sleep_count,
-                strava_count: user.strava_count,
-                last_workout: user.last_workout,
-                last_sleep: user.last_sleep,
-                last_strava_activity: user.last_strava_activity
-            }));
-
-            adminData = {
-                users: sanitizedUsers,
-                pagination: paginatedUsers.pagination,
-                recentActivity,
-                statistics: stats[0],
-                generatedAt: new Date().toISOString(),
-                totalUsers: sanitizedUsers.length,
-                requestedBy: adminId
-            };
-        } catch (dbError) {
-            // Database not available - return mock data for testing
-            console.log('Database not available, returning mock data for testing');
-            adminData = {
-                users: [{
-                    id: 1,
-                    external_id: 'test-user',
-                    username: 'testuser',
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString(),
-                    status: 'active',
-                    age: 25,
-                    weight: 70,
-                    height: 175,
-                    sex: 'male',
-                    goals: ['strength'],
-                    baseline_lifts: { squat: 100 },
-                    workout_schedule: { monday: 'upper' },
-                    session_count: 0,
-                    sleep_count: 0,
-                    strava_count: 0,
-                    last_workout: null,
-                    last_sleep: null,
-                    last_strava_activity: null
-                }],
-                recentActivity: [],
-                statistics: {
-                    total_users: 1,
-                    total_sessions: 0,
-                    total_sleep_sessions: 0,
-                    total_strava_activities: 0,
-                    total_exercises: 0,
-                    users_with_preferences: 1
-                },
-                generatedAt: new Date().toISOString(),
-                totalUsers: 1,
-                requestedBy: adminId,
-                testMode: true
-            };
+      // Create paginated response for users
+      const paginatedUsers = createPaginatedResponse(
+        users,
+        pagination.limit,
+        item => getCursorDataForItem(item, 'users'),
+        {
+          includeTotal: users.length < 1000,
+          total: users.length < 1000 ? await getTotalUsersCount(sql) : undefined,
         }
+      );
 
-        // Log admin action
-        await auditLog(adminId, '/api/admin/users/all', 'GET', queryParams, 200, Date.now() - startTime, requestId);
+      // Sanitize user data to remove any potential PII
+      const sanitizedUsers = paginatedUsers.data.map(user => ({
+        id: user.id,
+        external_id: user.external_id,
+        username: user.username,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+        status: user.status,
+        age: user.age,
+        weight: user.weight,
+        height: user.height,
+        sex: user.sex,
+        goals: user.goals,
+        baseline_lifts: user.baseline_lifts,
+        workout_schedule: user.workout_schedule,
+        session_count: user.session_count,
+        sleep_count: user.sleep_count,
+        strava_count: user.strava_count,
+        last_workout: user.last_workout,
+        last_sleep: user.last_sleep,
+        last_strava_activity: user.last_strava_activity,
+      }));
 
-        return successResponse(adminData, {
-            totalUsers: adminData.totalUsers,
-            message: `Retrieved data for ${adminData.totalUsers} users`
-        }, requestId);
-
-    } catch (error) {
-        console.error('Admin endpoint error:', {
-            error: error.message,
-            requestId,
-            timestamp: new Date().toISOString()
-        });
-
-        return errorResponse(500, 'INTERNAL_SERVER_ERROR', 'An unexpected error occurred', requestId);
+      adminData = {
+        users: sanitizedUsers,
+        pagination: paginatedUsers.pagination,
+        recentActivity,
+        statistics: stats[0],
+        generatedAt: new Date().toISOString(),
+        totalUsers: sanitizedUsers.length,
+        requestedBy: adminId,
+      };
+    } catch (dbError) {
+      // Database not available - return mock data for testing
+      console.log('Database not available, returning mock data for testing');
+      adminData = {
+        users: [
+          {
+            id: 1,
+            external_id: 'test-user',
+            username: 'testuser',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            status: 'active',
+            age: 25,
+            weight: 70,
+            height: 175,
+            sex: 'male',
+            goals: ['strength'],
+            baseline_lifts: { squat: 100 },
+            workout_schedule: { monday: 'upper' },
+            session_count: 0,
+            sleep_count: 0,
+            strava_count: 0,
+            last_workout: null,
+            last_sleep: null,
+            last_strava_activity: null,
+          },
+        ],
+        recentActivity: [],
+        statistics: {
+          total_users: 1,
+          total_sessions: 0,
+          total_sleep_sessions: 0,
+          total_strava_activities: 0,
+          total_exercises: 0,
+          users_with_preferences: 1,
+        },
+        generatedAt: new Date().toISOString(),
+        totalUsers: 1,
+        requestedBy: adminId,
+        testMode: true,
+      };
     }
+
+    // Log admin action
+    await auditLog(
+      adminId,
+      '/api/admin/users/all',
+      'GET',
+      queryParams,
+      200,
+      Date.now() - startTime,
+      requestId
+    );
+
+    return successResponse(
+      adminData,
+      {
+        totalUsers: adminData.totalUsers,
+        message: `Retrieved data for ${adminData.totalUsers} users`,
+      },
+      requestId
+    );
+  } catch (error) {
+    console.error('Admin endpoint error:', {
+      error: error.message,
+      requestId,
+      timestamp: new Date().toISOString(),
+    });
+
+    return errorResponse(500, 'INTERNAL_SERVER_ERROR', 'An unexpected error occurred', requestId);
+  }
 };

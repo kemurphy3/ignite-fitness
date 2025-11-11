@@ -1,10 +1,9 @@
-
 /**
  * Beginner-friendly UI components
  */
 class BeginnerUI {
-    static createWelcomeMessage() {
-        return `
+  static createWelcomeMessage() {
+    return `
         <div class="welcome-banner" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
             <h2>🎉 Welcome to Ignite Fitness!</h2>
             <p>Your personal AI fitness coach that learns from your progress and adapts to your goals.</p>
@@ -15,10 +14,10 @@ class BeginnerUI {
             </div>
         </div>
         `;
-    }
+  }
 
-    static createQuickStartGuide() {
-        return `
+  static createQuickStartGuide() {
+    return `
         <div class="quick-start-guide" style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
             <h3>🚀 Quick Start Guide</h3>
             <div class="steps">
@@ -37,10 +36,10 @@ class BeginnerUI {
             </div>
         </div>
         `;
-    }
+  }
 
-    static createProgressCard(title, value, icon, color = '#4299e1') {
-        return `
+  static createProgressCard(title, value, icon, color = '#4299e1') {
+    return `
         <div class="progress-card" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 15px;">
             <div style="display: flex; align-items: center; margin-bottom: 10px;">
                 <span style="font-size: 24px; margin-right: 10px;">${icon}</span>
@@ -49,10 +48,10 @@ class BeginnerUI {
             <div style="font-size: 24px; font-weight: bold; color: ${color};">${value}</div>
         </div>
         `;
-    }
+  }
 
-    static createSimpleWorkoutCard(workout) {
-        return `
+  static createSimpleWorkoutCard(workout) {
+    return `
         <div class="workout-card" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 15px;">
             <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 15px;">
                 <h3 style="margin: 0; color: #2d3748;">${workout.name}</h3>
@@ -64,5 +63,5 @@ class BeginnerUI {
             </button>
         </div>
         `;
-    }
+  }
 }

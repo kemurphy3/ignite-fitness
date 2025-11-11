@@ -38,12 +38,16 @@ async function acquireRefreshLock(sql, userId, timeoutMs = 5000) {
       WHERE user_id = ${userId}
     `;
 
-    if (lockStatus.length > 0 && lockStatus[0].refresh_lock_until && lockStatus[0].refresh_lock_until > new Date()) {
+    if (
+      lockStatus.length > 0 &&
+      lockStatus[0].refresh_lock_until &&
+      lockStatus[0].refresh_lock_until > new Date()
+    ) {
       return {
         lockId: null,
         acquired: false,
         retryAfter: lockStatus[0].refresh_lock_until,
-        reason: 'Another process is refreshing this token'
+        reason: 'Another process is refreshing this token',
       };
     }
 
@@ -102,7 +106,7 @@ async function isLockValid(sql, userId) {
       return {
         valid: true,
         expiresAt: lockExpiry,
-        timeRemaining: lockExpiry.getTime() - now.getTime()
+        timeRemaining: lockExpiry.getTime() - now.getTime(),
       };
     }
 
@@ -161,7 +165,7 @@ async function getLockStatus(sql, userId) {
       status: token.lock_status,
       lockedUntil: token.refresh_lock_until,
       lastRefresh: token.last_refresh_at,
-      refreshCount: token.refresh_count
+      refreshCount: token.refresh_count,
     };
   } catch (error) {
     console.error('Lock status check failed:', error);
@@ -175,5 +179,5 @@ module.exports = {
   isLockValid,
   forceReleaseLock,
   getLockStatus,
-  hashUserId
+  hashUserId,
 };

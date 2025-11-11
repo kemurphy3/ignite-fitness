@@ -24,7 +24,7 @@ if (typeof localStorage === 'undefined') {
     },
     get length() {
       return Object.keys(this._store).length;
-    }
+    },
   };
   global.localStorage = localStorageMock;
 }
@@ -35,7 +35,9 @@ if (typeof window === 'undefined') {
     location: { hash: '', href: 'http://localhost' },
     addEventListener() {},
     removeEventListener() {},
-    dispatchEvent() { return true; }
+    dispatchEvent() {
+      return true;
+    },
   };
 }
 
@@ -54,29 +56,29 @@ global.window = global.window || {};
 global.window.AuthManager = {
   getCurrentUser: vi.fn(),
   getCurrentUsername: vi.fn(),
-  isLoggedIn: vi.fn()
+  isLoggedIn: vi.fn(),
 };
 
 global.window.LoadCalculator = {
   calculateWeeklyLoad: vi.fn(),
-  computeLoad: vi.fn()
+  computeLoad: vi.fn(),
 };
 
 global.window.StorageManager = {
   getItem: vi.fn(),
-  setItem: vi.fn()
+  setItem: vi.fn(),
 };
 
 global.window.EventBus = {
   on: vi.fn(),
-  emit: vi.fn()
+  emit: vi.fn(),
 };
 
 global.window.SafeLogger = {
   info: vi.fn(),
   warn: vi.fn(),
   error: vi.fn(),
-  debug: vi.fn()
+  debug: vi.fn(),
 };
 
 // Keep console methods available for debugging

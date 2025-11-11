@@ -1,160 +1,182 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ignite Fitness - Test Page</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f0f0f0; }
-        .test-section { background: white; padding: 20px; margin: 10px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .success { color: green; }
-        .error { color: red; }
-        .info { color: blue; }
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background: #f0f0f0;
+      }
+      .test-section {
+        background: white;
+        padding: 20px;
+        margin: 10px 0;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .success {
+        color: green;
+      }
+      .error {
+        color: red;
+      }
+      .info {
+        color: blue;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>🧪 Ignite Fitness Debug Test</h1>
-    
+
     <div class="test-section">
-        <h2>File Structure Test</h2>
-        <div id="file-structure-test">
-            <p class="info">Checking if all required files exist...</p>
-        </div>
+      <h2>File Structure Test</h2>
+      <div id="file-structure-test">
+        <p class="info">Checking if all required files exist...</p>
+      </div>
     </div>
-    
+
     <div class="test-section">
-        <h2>JavaScript Load Test</h2>
-        <div id="js-load-test">
-            <p class="info">Testing JavaScript loading...</p>
-        </div>
+      <h2>JavaScript Load Test</h2>
+      <div id="js-load-test">
+        <p class="info">Testing JavaScript loading...</p>
+      </div>
     </div>
-    
+
     <div class="test-section">
-        <h2>Function Availability Test</h2>
-        <div id="function-test">
-            <p class="info">Testing if all functions are available...</p>
-        </div>
+      <h2>Function Availability Test</h2>
+      <div id="function-test">
+        <p class="info">Testing if all functions are available...</p>
+      </div>
     </div>
-    
+
     <div class="test-section">
-        <h2>LocalStorage Test</h2>
-        <div id="localstorage-test">
-            <p class="info">Testing localStorage functionality...</p>
-        </div>
+      <h2>LocalStorage Test</h2>
+      <div id="localstorage-test">
+        <p class="info">Testing localStorage functionality...</p>
+      </div>
     </div>
-    
+
     <div class="test-section">
-        <h2>Overall Status</h2>
-        <div id="overall-status">
-            <p class="info">Running tests...</p>
-        </div>
+      <h2>Overall Status</h2>
+      <div id="overall-status">
+        <p class="info">Running tests...</p>
+      </div>
     </div>
 
     <script>
-        // Test script
-        function runTests() {
-            const results = {
-                fileStructure: testFileStructure(),
-                jsLoad: testJSLoad(),
-                functions: testFunctions(),
-                localStorage: testLocalStorage()
-            };
-            
-            const overall = Object.values(results).every(result => result === true);
-            updateOverallStatus(overall, results);
-        }
-        
-        function testFileStructure() {
-            const requiredFiles = [
-                'index.html',
-                'js/app.js',
-                'styles/main.css'
-            ];
-            
-            // This is a basic test - in a real environment, you'd check if files exist
-            const fileTestDiv = document.getElementById('file-structure-test');
-            fileTestDiv.innerHTML = '<p class="success">✅ File structure appears correct</p>';
+      // Test script
+      function runTests() {
+        const results = {
+          fileStructure: testFileStructure(),
+          jsLoad: testJSLoad(),
+          functions: testFunctions(),
+          localStorage: testLocalStorage(),
+        };
+
+        const overall = Object.values(results).every(result => result === true);
+        updateOverallStatus(overall, results);
+      }
+
+      function testFileStructure() {
+        const requiredFiles = ['index.html', 'js/app.js', 'styles/main.css'];
+
+        // This is a basic test - in a real environment, you'd check if files exist
+        const fileTestDiv = document.getElementById('file-structure-test');
+        fileTestDiv.innerHTML = '<p class="success">✅ File structure appears correct</p>';
+        return true;
+      }
+
+      function testJSLoad() {
+        const jsTestDiv = document.getElementById('js-load-test');
+        try {
+          // Test if we can access the app functions
+          if (typeof login === 'function' && typeof register === 'function') {
+            jsTestDiv.innerHTML = '<p class="success">✅ JavaScript loaded successfully</p>';
             return true;
+          } else {
+            jsTestDiv.innerHTML = '<p class="error">❌ JavaScript functions not available</p>';
+            return false;
+          }
+        } catch (error) {
+          jsTestDiv.innerHTML = `<p class="error">❌ JavaScript error: ${error.message}</p>`;
+          return false;
         }
-        
-        function testJSLoad() {
-            const jsTestDiv = document.getElementById('js-load-test');
-            try {
-                // Test if we can access the app functions
-                if (typeof login === 'function' && typeof register === 'function') {
-                    jsTestDiv.innerHTML = '<p class="success">✅ JavaScript loaded successfully</p>';
-                    return true;
-                } else {
-                    jsTestDiv.innerHTML = '<p class="error">❌ JavaScript functions not available</p>';
-                    return false;
-                }
-            } catch (error) {
-                jsTestDiv.innerHTML = `<p class="error">❌ JavaScript error: ${error.message}</p>`;
-                return false;
-            }
+      }
+
+      function testFunctions() {
+        const functionTestDiv = document.getElementById('function-test');
+        const requiredFunctions = [
+          'login',
+          'register',
+          'resetPassword',
+          'showTab',
+          'savePersonalInfo',
+          'saveGoals',
+          'logout',
+          'showSuccess',
+          'showError',
+        ];
+
+        const missingFunctions = requiredFunctions.filter(
+          func => typeof window[func] !== 'function'
+        );
+
+        if (missingFunctions.length === 0) {
+          functionTestDiv.innerHTML = '<p class="success">✅ All required functions available</p>';
+          return true;
+        } else {
+          functionTestDiv.innerHTML = `<p class="error">❌ Missing functions: ${missingFunctions.join(', ')}</p>`;
+          return false;
         }
-        
-        function testFunctions() {
-            const functionTestDiv = document.getElementById('function-test');
-            const requiredFunctions = [
-                'login', 'register', 'resetPassword', 'showTab',
-                'savePersonalInfo', 'saveGoals', 'logout',
-                'showSuccess', 'showError'
-            ];
-            
-            const missingFunctions = requiredFunctions.filter(func => typeof window[func] !== 'function');
-            
-            if (missingFunctions.length === 0) {
-                functionTestDiv.innerHTML = '<p class="success">✅ All required functions available</p>';
-                return true;
-            } else {
-                functionTestDiv.innerHTML = `<p class="error">❌ Missing functions: ${missingFunctions.join(', ')}</p>`;
-                return false;
-            }
+      }
+
+      function testLocalStorage() {
+        const localStorageTestDiv = document.getElementById('localstorage-test');
+        try {
+          const testKey = 'ignitefitness_test';
+          const testValue = 'test_value';
+
+          localStorage.setItem(testKey, testValue);
+          const retrieved = localStorage.getItem(testKey);
+          localStorage.removeItem(testKey);
+
+          if (retrieved === testValue) {
+            localStorageTestDiv.innerHTML =
+              '<p class="success">✅ localStorage working correctly</p>';
+            return true;
+          } else {
+            localStorageTestDiv.innerHTML =
+              '<p class="error">❌ localStorage not working correctly</p>';
+            return false;
+          }
+        } catch (error) {
+          localStorageTestDiv.innerHTML = `<p class="error">❌ localStorage error: ${error.message}</p>`;
+          return false;
         }
-        
-        function testLocalStorage() {
-            const localStorageTestDiv = document.getElementById('localstorage-test');
-            try {
-                const testKey = 'ignitefitness_test';
-                const testValue = 'test_value';
-                
-                localStorage.setItem(testKey, testValue);
-                const retrieved = localStorage.getItem(testKey);
-                localStorage.removeItem(testKey);
-                
-                if (retrieved === testValue) {
-                    localStorageTestDiv.innerHTML = '<p class="success">✅ localStorage working correctly</p>';
-                    return true;
-                } else {
-                    localStorageTestDiv.innerHTML = '<p class="error">❌ localStorage not working correctly</p>';
-                    return false;
-                }
-            } catch (error) {
-                localStorageTestDiv.innerHTML = `<p class="error">❌ localStorage error: ${error.message}</p>`;
-                return false;
-            }
+      }
+
+      function updateOverallStatus(overall, results) {
+        const overallDiv = document.getElementById('overall-status');
+        const passedTests = Object.values(results).filter(result => result === true).length;
+        const totalTests = Object.keys(results).length;
+
+        if (overall) {
+          overallDiv.innerHTML = `<p class="success">🎉 All tests passed! (${passedTests}/${totalTests})</p>`;
+        } else {
+          overallDiv.innerHTML = `<p class="error">⚠️ Some tests failed (${passedTests}/${totalTests})</p>`;
         }
-        
-        function updateOverallStatus(overall, results) {
-            const overallDiv = document.getElementById('overall-status');
-            const passedTests = Object.values(results).filter(result => result === true).length;
-            const totalTests = Object.keys(results).length;
-            
-            if (overall) {
-                overallDiv.innerHTML = `<p class="success">🎉 All tests passed! (${passedTests}/${totalTests})</p>`;
-            } else {
-                overallDiv.innerHTML = `<p class="error">⚠️ Some tests failed (${passedTests}/${totalTests})</p>`;
-            }
-        }
-        
-        // Run tests when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(runTests, 1000); // Wait a bit for scripts to load
-        });
+      }
+
+      // Run tests when page loads
+      document.addEventListener('DOMContentLoaded', function () {
+        setTimeout(runTests, 1000); // Wait a bit for scripts to load
+      });
     </script>
-    
+
     <!-- Load the actual app script -->
     <script src="js/app.js"></script>
-</body>
+  </body>
 </html>

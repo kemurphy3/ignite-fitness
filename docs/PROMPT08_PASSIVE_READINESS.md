@@ -5,11 +5,12 @@
 ### **Done Means Checklist**
 
 ✅ With no daily input, plans still adapt  
-✅ Passive readiness inference works from: prior session RPE, volume change %, hard days streak, injury flags, external activities  
+✅ Passive readiness inference works from: prior session RPE, volume change %,
+hard days streak, injury flags, external activities  
 ✅ Strava hook scaffold with mock endpoint  
 ✅ Maps external activities to internal format  
 ✅ External load reduces next-day leg volume by ~20%  
-✅ Auto reduce intensity when passive readiness < 4 and explain why  
+✅ Auto reduce intensity when passive readiness < 4 and explain why
 
 ---
 
@@ -18,6 +19,7 @@
 ### **PassiveReadiness System** ✅
 
 **5 Input Factors:**
+
 1. **Prior Session RPE** (30% weight)
    - RPE ≥ 9 → -2 readiness
    - RPE ≥ 8 → -1 readiness
@@ -40,6 +42,7 @@
    - Long duration (>60min) + high intensity (>5) → -1 readiness
 
 **Confidence Levels:**
+
 - **High**: ≥4 data points
 - **Medium**: ≥2 data points
 - **Low**: <2 data points
@@ -49,13 +52,15 @@
 ### **StravaHook Scaffold** ✅
 
 **Mock Endpoints:**
+
 ```javascript
-fetchActivities(userId) // Returns mock activity
-authenticate(userId)   // Simulates auth flow
-syncActivities(userId)  // Maps and stores activities
+fetchActivities(userId); // Returns mock activity
+authenticate(userId); // Simulates auth flow
+syncActivities(userId); // Maps and stores activities
 ```
 
 **Activity Mapping:**
+
 ```javascript
 Strava Type → Internal Type
 'Run' → 'running'
@@ -66,6 +71,7 @@ Strava Type → Internal Type
 ```
 
 **Internal Format:**
+
 ```javascript
 {
     id: 'strava_123',
@@ -86,11 +92,13 @@ Strava Type → Internal Type
 ### **ExternalLoadAdapter** ✅
 
 **Conflict Detection:**
+
 1. **Leg Volume** - External running → reduce leg volume by 20%
 2. **Intensity** - Long endurance session → reduce intensity by 15%
 3. **Total Load** - High intensity external → reduce total load by 10%
 
 **Adaptation Example:**
+
 ```javascript
 Original: Back Squat 3 sets × 10 reps
 External: Morning Run 5km (60min)
@@ -105,11 +113,13 @@ Reason:   "External running reduces leg volume by 20%"
 ### **No Daily Check-In Flow:**
 
 **Scenario:**
+
 - Yesterday: Hard session (RPE 9)
 - Today: Morning run (5km, 30min)
 - Today's planned workout: Heavy legs
 
 **Inference:**
+
 ```javascript
 priorSession: RPE 9
 externalActivity: running, 1800s
@@ -121,6 +131,7 @@ result: {
 ```
 
 **Adaptation:**
+
 ```javascript
 Original: Back Squat 3×10, RDL 3×8, Split Squat 3×12
 Adapted:  Back Squat 2×10, RDL 2×8, Split Squat 2×12
@@ -132,6 +143,7 @@ Reason:   "External running reduces leg volume by 20%"
 ### **External Load Adaptation:**
 
 **Step 1: Detect Conflict**
+
 ```javascript
 External Activity: { type: 'running', duration: 3600, intensity: 6 }
 Planned Workout:  { hasLegWork: true }
@@ -139,6 +151,7 @@ Conflict:          leg_volume
 ```
 
 **Step 2: Apply Adaptation**
+
 ```javascript
 Leg Exercises → Reduce sets by 20%
 Back Squat:    3 sets → 2 sets
@@ -147,8 +160,9 @@ Split Squat:   3 sets → 2 sets
 ```
 
 **Step 3: Explain**
+
 ```javascript
-"External running (60min) reduces today's leg volume by 20%"
+"External running (60min) reduces today's leg volume by 20%";
 ```
 
 ---
@@ -156,6 +170,7 @@ Split Squat:   3 sets → 2 sets
 ## **Event Logging** ✅
 
 **Passive Readiness Events:**
+
 ```javascript
 {
     eventType: 'PASSIVE_READINESS_INFERRED',
@@ -180,6 +195,7 @@ Split Squat:   3 sets → 2 sets
 ## **Unit Tests** ✅
 
 ### **Passive Readiness Tests** ✅
+
 ```javascript
 ✅ Very hard session reduces readiness by 2
 ✅ Large volume increase reduces readiness by 1.5
@@ -189,6 +205,7 @@ Split Squat:   3 sets → 2 sets
 ```
 
 ### **External Load Tests** ✅
+
 ```javascript
 ✅ Mocked external run reduces next-day leg volume by 20%
 ✅ Conflict detection: running + leg work = reduce leg volume
@@ -197,6 +214,7 @@ Split Squat:   3 sets → 2 sets
 ```
 
 ### **Strava Hook Tests** ✅
+
 ```javascript
 ✅ Mock fetch returns activity data
 ✅ Activity maps to internal format
@@ -208,9 +226,11 @@ Split Squat:   3 sets → 2 sets
 
 ## ✅ **PROMPT 8: COMPLETE**
 
-**Summary**: Passive readiness inference allows plans to adapt without daily check-ins, using prior session data and external activities.
+**Summary**: Passive readiness inference allows plans to adapt without daily
+check-ins, using prior session data and external activities.
 
 **Key Features:**
+
 - ✅ 5 input factors for passive inference
 - ✅ Confidence scoring (high/medium/low)
 - ✅ Strava hook scaffold (mock)
@@ -220,4 +240,5 @@ Split Squat:   3 sets → 2 sets
 - ✅ Plans adapt without daily input
 - ✅ Unit test reduces leg volume by 20%
 
-**Users can now skip check-ins - system adapts intelligently from available data.** 🎯
+**Users can now skip check-ins - system adapts intelligently from available
+data.** 🎯

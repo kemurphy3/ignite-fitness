@@ -2,7 +2,12 @@
 // Integration tests for sessions API
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { getTestDatabase, createTestUser, createTestSession, cleanupTestData } from '../helpers/database.js';
+import {
+  getTestDatabase,
+  createTestUser,
+  createTestSession,
+  cleanupTestData,
+} from '../helpers/database.js';
 
 describe('Sessions API Integration', () => {
   let testDb;
@@ -16,7 +21,7 @@ describe('Sessions API Integration', () => {
     // Create test user
     testUser = await createTestUser({
       external_id: 'test_user_123',
-      username: 'testuser'
+      username: 'testuser',
     });
 
     // Create test sessions
@@ -26,8 +31,8 @@ describe('Sessions API Integration', () => {
         type: 'workout',
         source: 'test',
         source_id: `test_session_${i}`,
-        start_at: new Date(Date.now() - (i * 24 * 60 * 60 * 1000)), // One per day
-        duration: 3600 + (i * 300) // Increasing duration
+        start_at: new Date(Date.now() - i * 24 * 60 * 60 * 1000), // One per day
+        duration: 3600 + i * 300, // Increasing duration
       });
       testSessions.push(session);
     }
@@ -59,7 +64,7 @@ describe('Sessions API Integration', () => {
       await createTestSession({
         user_id: testUser.id,
         type: 'cardio',
-        source: 'test'
+        source: 'test',
       });
 
       const workoutSessions = await testDb`
@@ -76,8 +81,8 @@ describe('Sessions API Integration', () => {
     });
 
     it('should filter sessions by date range', async () => {
-      const threeDaysAgo = new Date(Date.now() - (3 * 24 * 60 * 60 * 1000));
-      const oneDayAgo = new Date(Date.now() - (1 * 24 * 60 * 60 * 1000));
+      const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+      const oneDayAgo = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000);
 
       const recentSessions = await testDb`
         SELECT id, start_at

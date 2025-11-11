@@ -2,7 +2,8 @@
 
 ## Overview
 
-This API provides comprehensive user data management and session CRUD operations with API key authentication, validation, and data synchronization.
+This API provides comprehensive user data management and session CRUD operations
+with API key authentication, validation, and data synchronization.
 
 ## Base URL
 
@@ -47,9 +48,11 @@ All errors follow this consistent format:
 ### 1. User Profile
 
 #### GET `/user-profile`
+
 Retrieve current user's profile.
 
 **Response 200:**
+
 ```json
 {
   "success": true,
@@ -72,9 +75,11 @@ Retrieve current user's profile.
 ```
 
 #### POST `/user-profile`
+
 Create or update user profile.
 
 **Request:**
+
 ```json
 {
   "age": 25,
@@ -91,6 +96,7 @@ Create or update user profile.
 ```
 
 **Validation:**
+
 - `age`: 13-120 (optional)
 - `weight`: 20-300 kg (optional)
 - `height`: 100-250 cm (optional)
@@ -101,9 +107,11 @@ Create or update user profile.
 ### 2. Sessions
 
 #### POST `/sessions-create`
+
 Create a new session.
 
 **Request:**
+
 ```json
 {
   "type": "workout",
@@ -119,21 +127,27 @@ Create a new session.
 ```
 
 **Validation:**
-- `type`: Required, must be one of: workout, soccer, climbing, recovery, cardio, strength, flexibility, sport_specific
-- `source`: Required, must be one of: manual, strava, apple_health, garmin, whoop, import
+
+- `type`: Required, must be one of: workout, soccer, climbing, recovery, cardio,
+  strength, flexibility, sport_specific
+- `source`: Required, must be one of: manual, strava, apple_health, garmin,
+  whoop, import
 - `source_id`: Optional, used for deduplication
 - `start_at`: Required, ISO 8601 UTC, max 24 hours in future
 - `end_at`: Optional, ISO 8601 UTC
 - `payload`: Optional, max 10KB JSON
 
 **Deduplication:**
+
 - With `source_id`: Unique on (user_id, source, source_id)
 - Without `source_id`: Unique on (user_id, start_at, type)
 
 #### GET `/sessions-list`
+
 List sessions with pagination.
 
 **Query Parameters:**
+
 - `type`: Filter by session type
 - `start_date`: ISO date string (inclusive)
 - `end_date`: ISO date string (inclusive)
@@ -141,6 +155,7 @@ List sessions with pagination.
 - `before`: Timestamp for pagination (exclusive)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -159,9 +174,11 @@ List sessions with pagination.
 ### 3. Exercises
 
 #### POST `/exercises-bulk-create`
+
 Add exercises to a session.
 
 **Request:**
+
 ```json
 {
   "session_id": 456,
@@ -179,6 +196,7 @@ Add exercises to a session.
 ```
 
 **Validation:**
+
 - `session_id`: Required, must exist and belong to user
 - `exercises`: Required array, 1-50 items
 - `name`: Required, 1-100 characters, trimmed
@@ -188,14 +206,17 @@ Add exercises to a session.
 - `rpe`: Optional, 1-10
 - `notes`: Optional, max 500 characters
 
-**Transaction:** All exercises are inserted atomically - either all succeed or all fail.
+**Transaction:** All exercises are inserted atomically - either all succeed or
+all fail.
 
 ### 4. API Key Management
 
 #### POST `/api-key-manager`
+
 Create new API key (admin only).
 
 **Request:**
+
 ```json
 {
   "user_id": 123,
@@ -205,12 +226,15 @@ Create new API key (admin only).
 ```
 
 #### GET `/api-key-manager?user_id=123`
+
 List API keys for user (admin only).
 
 #### PUT `/api-key-manager`
+
 Update API key status (admin only).
 
 **Request:**
+
 ```json
 {
   "key_id": 456,
@@ -219,9 +243,11 @@ Update API key status (admin only).
 ```
 
 #### DELETE `/api-key-manager`
+
 Delete API key (admin only).
 
 **Request:**
+
 ```json
 {
   "key_id": 456
@@ -244,6 +270,7 @@ Delete API key (admin only).
 ## Database Schema
 
 ### Users Table
+
 ```sql
 CREATE TABLE users (
     id INTEGER PRIMARY KEY,
@@ -259,6 +286,7 @@ CREATE TABLE users (
 ```
 
 ### Sessions Table
+
 ```sql
 CREATE TABLE sessions (
     id SERIAL PRIMARY KEY,
@@ -271,10 +299,10 @@ CREATE TABLE sessions (
     duration INTEGER,
     payload JSONB CHECK (octet_length(payload::text) <= 10240),
     session_hash VARCHAR(64) GENERATED ALWAYS AS (
-        CASE 
-            WHEN source_id IS NOT NULL THEN 
+        CASE
+            WHEN source_id IS NOT NULL THEN
                 encode(sha256((user_id || ':' || source || ':' || source_id)::bytea), 'hex')
-            ELSE 
+            ELSE
                 encode(sha256((user_id || ':' || start_at || ':' || type)::bytea), 'hex')
         END
     ) STORED,
@@ -285,6 +313,7 @@ CREATE TABLE sessions (
 ```
 
 ### Exercises Table
+
 ```sql
 CREATE TABLE exercises (
     id SERIAL PRIMARY KEY,
@@ -313,16 +342,19 @@ node test-api-endpoints.js
 ## Deployment
 
 1. Update database schema:
+
 ```bash
 psql $DATABASE_URL -f database-schema-update.sql
 ```
 
 2. Deploy to Netlify:
+
 ```bash
 netlify deploy --prod
 ```
 
 3. Set environment variables in Netlify dashboard:
+
 - `DATABASE_URL`
 - `ADMIN_KEY`
 
@@ -336,4 +368,5 @@ netlify deploy --prod
 
 ## Support
 
-For issues or questions, please check the error response format and status codes above. All errors include a request ID for debugging purposes.
+For issues or questions, please check the error response format and status codes
+above. All errors include a request ID for debugging purposes.

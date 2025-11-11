@@ -1,271 +1,280 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>WhyPanel Manual QA Test</title>
-    <link rel="stylesheet" href="../../styles/why-panel.css">
-    <link rel="stylesheet" href="../../styles/components.css">
-    <link rel="stylesheet" href="../../styles/design-tokens.css">
+    <link rel="stylesheet" href="../../styles/why-panel.css" />
+    <link rel="stylesheet" href="../../styles/components.css" />
+    <link rel="stylesheet" href="../../styles/design-tokens.css" />
     <style>
-        body {
-            padding: 2rem;
-            font-family: system-ui, -apple-system, sans-serif;
-            background: var(--color-background);
-            color: var(--color-text);
-        }
-        
-        .test-section {
-            margin-bottom: 3rem;
-            padding: 1.5rem;
-            background: var(--color-surface);
-            border-radius: 8px;
-            border: 1px solid var(--color-border);
-        }
-        
-        h1 {
-            margin-bottom: 0.5rem;
-        }
-        
-        .test-description {
-            color: var(--color-text-secondary);
-            margin-bottom: 1.5rem;
-        }
-        
-        .test-result {
-            padding: 1rem;
-            margin-top: 1rem;
-            border-radius: 6px;
-        }
-        
-        .pass {
-            background: rgba(34, 197, 94, 0.1);
-            border: 1px solid rgba(34, 197, 94, 0.3);
-            color: #16a34a;
-        }
-        
-        .fail {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #dc2626;
-        }
-        
-        button {
-            margin: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            background: #4f46e5;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 1rem;
-            position: relative;
-            z-index: 1;
-            display: inline-block;
-            visibility: visible;
-        }
-        
-        button:hover {
-            opacity: 0.9;
-        }
-        
-        #console-output {
-            background: #1a1a1a;
-            color: #fff;
-            padding: 1rem;
-            border-radius: 6px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.875rem;
-            max-height: 300px;
-            overflow-y: auto;
-            margin-top: 1rem;
-        }
-        
-        .log-entry {
-            padding: 0.25rem 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .log-entry:last-child {
-            border-bottom: none;
-        }
+      body {
+        padding: 2rem;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background: var(--color-background);
+        color: var(--color-text);
+      }
+
+      .test-section {
+        margin-bottom: 3rem;
+        padding: 1.5rem;
+        background: var(--color-surface);
+        border-radius: 8px;
+        border: 1px solid var(--color-border);
+      }
+
+      h1 {
+        margin-bottom: 0.5rem;
+      }
+
+      .test-description {
+        color: var(--color-text-secondary);
+        margin-bottom: 1.5rem;
+      }
+
+      .test-result {
+        padding: 1rem;
+        margin-top: 1rem;
+        border-radius: 6px;
+      }
+
+      .pass {
+        background: rgba(34, 197, 94, 0.1);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        color: #16a34a;
+      }
+
+      .fail {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #dc2626;
+      }
+
+      button {
+        margin: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        background: #4f46e5;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 1rem;
+        position: relative;
+        z-index: 1;
+        display: inline-block;
+        visibility: visible;
+      }
+
+      button:hover {
+        opacity: 0.9;
+      }
+
+      #console-output {
+        background: #1a1a1a;
+        color: #fff;
+        padding: 1rem;
+        border-radius: 6px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.875rem;
+        max-height: 300px;
+        overflow-y: auto;
+        margin-top: 1rem;
+      }
+
+      .log-entry {
+        padding: 0.25rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .log-entry:last-child {
+        border-bottom: none;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>🧪 WhyPanel Manual QA Test</h1>
-    <p>This page provides interactive tests for the WhyPanel component and override functionality.</p>
-    
+    <p>
+      This page provides interactive tests for the WhyPanel component and override functionality.
+    </p>
+
     <!-- Mock Dependencies -->
     <script>
-        // Mock window.WhyPanel
-        if (!window.WhyPanel) {
-            window.WhyPanel = null;
-            console.warn('WhyPanel not loaded. Make sure js/modules/ui/components/WhyPanel.js is included.');
-        }
-        
-        // Mock SafeLogger
-        if (!window.SafeLogger) {
-            window.SafeLogger = {
-                info: console.log.bind(console, '[INFO]'),
-                debug: console.log.bind(console, '[DEBUG]'),
-                warn: console.warn.bind(console, '[WARN]'),
-                error: console.error.bind(console, '[ERROR]')
-            };
-        }
-        
-        // Mock EventBus
-        if (!window.EventBus) {
-            window.EventBus = {
-                emit: (topic, data) => {
-                    console.log('[EventBus]', topic, data);
-                },
-                TOPICS: {
-                    EXERCISE_OVERRIDE: 'EXERCISE_OVERRIDE'
-                }
-            };
-        }
-        
-        // Console output capture
-        const consoleOutput = document.getElementById('console-output');
-        const originalLog = console.log;
-        const originalError = console.error;
-        
-        function addLogEntry(level, ...args) {
-            const entry = document.createElement('div');
-            entry.className = 'log-entry';
-            entry.textContent = `[${new Date().toLocaleTimeString()}] ${level}: ${args.join(' ')}`;
-            consoleOutput.appendChild(entry);
-            consoleOutput.scrollTop = consoleOutput.scrollHeight;
-        }
-        
-        console.log = (...args) => {
-            addLogEntry('INFO', ...args);
-            originalLog(...args);
+      // Mock window.WhyPanel
+      if (!window.WhyPanel) {
+        window.WhyPanel = null;
+        console.warn(
+          'WhyPanel not loaded. Make sure js/modules/ui/components/WhyPanel.js is included.'
+        );
+      }
+
+      // Mock SafeLogger
+      if (!window.SafeLogger) {
+        window.SafeLogger = {
+          info: console.log.bind(console, '[INFO]'),
+          debug: console.log.bind(console, '[DEBUG]'),
+          warn: console.warn.bind(console, '[WARN]'),
+          error: console.error.bind(console, '[ERROR]'),
         };
-        
-        console.error = (...args) => {
-            addLogEntry('ERROR', ...args);
-            originalError(...args);
+      }
+
+      // Mock EventBus
+      if (!window.EventBus) {
+        window.EventBus = {
+          emit: (topic, data) => {
+            console.log('[EventBus]', topic, data);
+          },
+          TOPICS: {
+            EXERCISE_OVERRIDE: 'EXERCISE_OVERRIDE',
+          },
         };
+      }
+
+      // Console output capture
+      const consoleOutput = document.getElementById('console-output');
+      const originalLog = console.log;
+      const originalError = console.error;
+
+      function addLogEntry(level, ...args) {
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${level}: ${args.join(' ')}`;
+        consoleOutput.appendChild(entry);
+        consoleOutput.scrollTop = consoleOutput.scrollHeight;
+      }
+
+      console.log = (...args) => {
+        addLogEntry('INFO', ...args);
+        originalLog(...args);
+      };
+
+      console.error = (...args) => {
+        addLogEntry('ERROR', ...args);
+        originalError(...args);
+      };
     </script>
-    
+
     <!-- Load WhyPanel -->
     <script src="../../js/modules/ui/components/WhyPanel.js"></script>
-    
+
     <div class="test-section">
-        <h2>1. WhyPanel Component Load Test</h2>
-        <p class="test-description">Verify WhyPanel is loaded and accessible.</p>
-        <button onclick="testWhyPanelLoad()">Test Load</button>
-        <div id="load-result"></div>
+      <h2>1. WhyPanel Component Load Test</h2>
+      <p class="test-description">Verify WhyPanel is loaded and accessible.</p>
+      <button onclick="testWhyPanelLoad()">Test Load</button>
+      <div id="load-result"></div>
     </div>
-    
+
     <div class="test-section">
-        <h2>2. WhyPanel Render Test</h2>
-        <p class="test-description">Test rendering of rationale panel with sample data.</p>
-        <button onclick="testWhyPanelRender()">Test Render</button>
-        <div id="render-area" style="margin-top: 1rem;"></div>
+      <h2>2. WhyPanel Render Test</h2>
+      <p class="test-description">Test rendering of rationale panel with sample data.</p>
+      <button onclick="testWhyPanelRender()">Test Render</button>
+      <div id="render-area" style="margin-top: 1rem"></div>
     </div>
-    
+
     <div class="test-section">
-        <h2>3. Override Button Test</h2>
-        <p class="test-description">Test override button rendering.</p>
-        <button onclick="testOverrideButton()">Test Button</button>
-        <div id="override-button-area" style="margin-top: 1rem;"></div>
+      <h2>3. Override Button Test</h2>
+      <p class="test-description">Test override button rendering.</p>
+      <button onclick="testOverrideButton()">Test Button</button>
+      <div id="override-button-area" style="margin-top: 1rem"></div>
     </div>
-    
+
     <div class="test-section">
-        <h2>4. Override Modal Test</h2>
-        <p class="test-description">Test opening the override modal.</p>
-        <button onclick="testOverrideModal()">Open Modal</button>
-        <p><small>Click the × button, press Escape, or click outside to close.</small></p>
+      <h2>4. Override Modal Test</h2>
+      <p class="test-description">Test opening the override modal.</p>
+      <button onclick="testOverrideModal()">Open Modal</button>
+      <p><small>Click the × button, press Escape, or click outside to close.</small></p>
     </div>
-    
+
     <div class="test-section">
-        <h2>5. Console Output</h2>
-        <div id="console-output"></div>
-        <button onclick="document.getElementById('console-output').innerHTML = ''">Clear Console</button>
+      <h2>5. Console Output</h2>
+      <div id="console-output"></div>
+      <button onclick="document.getElementById('console-output').innerHTML = ''">
+        Clear Console
+      </button>
     </div>
-    
+
     <script>
-        // Test 1: WhyPanel Load
-        function testWhyPanelLoad() {
-            const resultDiv = document.getElementById('load-result');
-            
-            if (!window.WhyPanel) {
-                resultDiv.className = 'test-result fail';
-                resultDiv.innerHTML = '❌ FAIL: WhyPanel not loaded';
-                return;
-            }
-            
-            if (typeof window.WhyPanel.render !== 'function') {
-                resultDiv.className = 'test-result fail';
-                resultDiv.innerHTML = '❌ FAIL: WhyPanel.render() not found';
-                return;
-            }
-            
-            if (typeof window.WhyPanel.toggle !== 'function') {
-                resultDiv.className = 'test-result fail';
-                resultDiv.innerHTML = '❌ FAIL: WhyPanel.toggle() not found';
-                return;
-            }
-            
-            resultDiv.className = 'test-result pass';
-            resultDiv.innerHTML = '✅ PASS: WhyPanel loaded and all methods available';
+      // Test 1: WhyPanel Load
+      function testWhyPanelLoad() {
+        const resultDiv = document.getElementById('load-result');
+
+        if (!window.WhyPanel) {
+          resultDiv.className = 'test-result fail';
+          resultDiv.innerHTML = '❌ FAIL: WhyPanel not loaded';
+          return;
         }
-        
-        // Test 2: WhyPanel Render
-        function testWhyPanelRender() {
-            const renderArea = document.getElementById('render-area');
-            
-            const mockPlan = {
-                blocks: [
-                    {
-                        name: 'Warm-up',
-                        items: [{ name: 'Dynamic Stretches', sets: 1, reps: '10' }],
-                        durationMin: 10
-                    },
-                    {
-                        name: 'Main',
-                        items: [{ name: 'Back Squat', sets: 3, reps: '8-10', targetRPE: 7 }],
-                        durationMin: 24
-                    }
-                ],
-                intensityScale: 0.9,
-                why: [
-                    'Dynamic warm-up prepares movement patterns',
-                    'Main movements target strength and power',
-                    'Volume adjusted based on low readiness'
-                ],
-                warnings: ['Low readiness. Focus on recovery and form.']
-            };
-            
-            if (!window.WhyPanel) {
-                renderArea.innerHTML = '<p style="color: red;">❌ WhyPanel not loaded</p>';
-                return;
-            }
-            
-            const html = window.WhyPanel.render(mockPlan);
-            renderArea.innerHTML = html;
-            
-            // Re-initialize toggle handler
-            const button = renderArea.querySelector('#why-panel-toggle');
-            if (button) {
-                button.onclick = () => window.WhyPanel.toggle();
-            }
+
+        if (typeof window.WhyPanel.render !== 'function') {
+          resultDiv.className = 'test-result fail';
+          resultDiv.innerHTML = '❌ FAIL: WhyPanel.render() not found';
+          return;
         }
-        
-        // Test 3: Override Button
-        function testOverrideButton() {
-            const area = document.getElementById('override-button-area');
-            
-            if (!window.WhyPanel) {
-                area.innerHTML = '<p style="color: red;">❌ WhyPanel not loaded</p>';
-                return;
-            }
-            
-            const buttonHtml = window.WhyPanel.renderOverrideButton('Back Squat', 0);
-            
-            area.innerHTML = `
+
+        if (typeof window.WhyPanel.toggle !== 'function') {
+          resultDiv.className = 'test-result fail';
+          resultDiv.innerHTML = '❌ FAIL: WhyPanel.toggle() not found';
+          return;
+        }
+
+        resultDiv.className = 'test-result pass';
+        resultDiv.innerHTML = '✅ PASS: WhyPanel loaded and all methods available';
+      }
+
+      // Test 2: WhyPanel Render
+      function testWhyPanelRender() {
+        const renderArea = document.getElementById('render-area');
+
+        const mockPlan = {
+          blocks: [
+            {
+              name: 'Warm-up',
+              items: [{ name: 'Dynamic Stretches', sets: 1, reps: '10' }],
+              durationMin: 10,
+            },
+            {
+              name: 'Main',
+              items: [{ name: 'Back Squat', sets: 3, reps: '8-10', targetRPE: 7 }],
+              durationMin: 24,
+            },
+          ],
+          intensityScale: 0.9,
+          why: [
+            'Dynamic warm-up prepares movement patterns',
+            'Main movements target strength and power',
+            'Volume adjusted based on low readiness',
+          ],
+          warnings: ['Low readiness. Focus on recovery and form.'],
+        };
+
+        if (!window.WhyPanel) {
+          renderArea.innerHTML = '<p style="color: red;">❌ WhyPanel not loaded</p>';
+          return;
+        }
+
+        const html = window.WhyPanel.render(mockPlan);
+        renderArea.innerHTML = html;
+
+        // Re-initialize toggle handler
+        const button = renderArea.querySelector('#why-panel-toggle');
+        if (button) {
+          button.onclick = () => window.WhyPanel.toggle();
+        }
+      }
+
+      // Test 3: Override Button
+      function testOverrideButton() {
+        const area = document.getElementById('override-button-area');
+
+        if (!window.WhyPanel) {
+          area.innerHTML = '<p style="color: red;">❌ WhyPanel not loaded</p>';
+          return;
+        }
+
+        const buttonHtml = window.WhyPanel.renderOverrideButton('Back Squat', 0);
+
+        area.innerHTML = `
                 <div style="padding: 1rem; border: 1px solid var(--color-border); border-radius: 6px;">
                     <strong>Exercise: Back Squat</strong>
                     <div style="margin-top: 0.5rem;">
@@ -273,49 +282,68 @@
                     </div>
                 </div>
             `;
-            
-            // Setup click handler
-            const button = area.querySelector('.override-exercise-btn');
-            if (button) {
-                button.onclick = () => testOverrideModal();
-            }
-        }
-        
-        // Test 4: Override Modal
-        function testOverrideModal() {
-            if (!window.WhyPanel) {
-                alert('WhyPanel not loaded');
-                return;
-            }
-            
-            // Mock ExerciseAdapter
-            if (!window.ExerciseAdapter) {
-                class ExerciseAdapter {
-                    getAlternates(exerciseName) {
-                        const alternates = {
-                            'back squat': [
-                                { name: 'Front Squat', rationale: 'Similar movement pattern, less load on lower back', restAdjustment: 0, volumeAdjustment: 0.9 },
-                                { name: 'Goblet Squat', rationale: 'More quad dominant, easier to maintain form', restAdjustment: -30, volumeAdjustment: 0.8 }
-                            ],
-                            'bulgarian split squat': [
-                                { name: 'Walking Lunges', rationale: 'Similar unilateral pattern, more functional', restAdjustment: 0, volumeAdjustment: 1.0 },
-                                { name: 'Goblet Squat', rationale: 'Bilateral alternative, easier on hips', restAdjustment: -30, volumeAdjustment: 0.9 }
-                            ]
-                        };
-                        
-                        return alternates[exerciseName.toLowerCase()] || [];
-                    }
-                }
-                window.ExerciseAdapter = ExerciseAdapter;
-            }
-            
-            const button = document.createElement('button');
-            button.dataset.exercise = 'Back Squat';
-            button.dataset.index = '0';
-            
-            window.WhyPanel.showOverrideModal(button);
-        }
-    </script>
-</body>
-</html>
 
+        // Setup click handler
+        const button = area.querySelector('.override-exercise-btn');
+        if (button) {
+          button.onclick = () => testOverrideModal();
+        }
+      }
+
+      // Test 4: Override Modal
+      function testOverrideModal() {
+        if (!window.WhyPanel) {
+          alert('WhyPanel not loaded');
+          return;
+        }
+
+        // Mock ExerciseAdapter
+        if (!window.ExerciseAdapter) {
+          class ExerciseAdapter {
+            getAlternates(exerciseName) {
+              const alternates = {
+                'back squat': [
+                  {
+                    name: 'Front Squat',
+                    rationale: 'Similar movement pattern, less load on lower back',
+                    restAdjustment: 0,
+                    volumeAdjustment: 0.9,
+                  },
+                  {
+                    name: 'Goblet Squat',
+                    rationale: 'More quad dominant, easier to maintain form',
+                    restAdjustment: -30,
+                    volumeAdjustment: 0.8,
+                  },
+                ],
+                'bulgarian split squat': [
+                  {
+                    name: 'Walking Lunges',
+                    rationale: 'Similar unilateral pattern, more functional',
+                    restAdjustment: 0,
+                    volumeAdjustment: 1.0,
+                  },
+                  {
+                    name: 'Goblet Squat',
+                    rationale: 'Bilateral alternative, easier on hips',
+                    restAdjustment: -30,
+                    volumeAdjustment: 0.9,
+                  },
+                ],
+              };
+
+              return alternates[exerciseName.toLowerCase()] || [];
+            }
+          }
+          window.ExerciseAdapter = ExerciseAdapter;
+        }
+
+        const button = document.createElement('button');
+        button.dataset.exercise = 'Back Squat';
+        button.dataset.index = '0';
+
+        window.WhyPanel.showOverrideModal(button);
+      }
+    </script>
+  </body>
+</html>

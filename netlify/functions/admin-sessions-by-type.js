@@ -6,18 +6,15 @@ const {
   auditLog,
   errorResponse,
   withTimeout,
-  successResponse
+  successResponse,
 } = require('./utils/admin-auth');
 
-const {
-  safeQuery,
-  validateBucket
-} = require('./utils/safe-query');
+const { safeQuery, validateBucket } = require('./utils/safe-query');
 
 const { getNeonClient } = require('./utils/connection-pool');
 const sql = getNeonClient();
 
-exports.handler = async (event) => {
+exports.handler = async event => {
   const startTime = Date.now();
   const requestId = crypto.randomUUID();
 
@@ -173,8 +170,15 @@ exports.handler = async (event) => {
     const total = distribution.reduce((sum, row) => sum + row.count, 0);
     const privacyApplied = distribution.some(row => !row.meets_privacy_threshold);
 
-    await auditLog(adminId, '/admin/sessions/by-type', 'GET',
-      { from, to }, 200, Date.now() - startTime, requestId);
+    await auditLog(
+      adminId,
+      '/admin/sessions/by-type',
+      'GET',
+      { from, to },
+      200,
+      Date.now() - startTime,
+      requestId
+    );
 
     return successResponse(
       {
@@ -182,26 +186,36 @@ exports.handler = async (event) => {
           session_type: row.session_type,
           count: row.count,
           percentage: row.percentage,
-          unique_users: row.unique_users
+          unique_users: row.unique_users,
         })),
-        total
+        total,
       },
       {
         privacy_applied: privacyApplied,
         privacy_threshold: 5,
-        response_time_ms: Date.now() - startTime
+        response_time_ms: Date.now() - startTime,
       },
       requestId,
       'private, max-age=300'
     );
-
   } catch (error) {
-    const statusCode = error.message.includes('Authentication') ? 401 :
-                      error.message.includes('Admin') ? 403 :
-                      error.message.includes('Query timeout') ? 500 : 500;
+    const statusCode = error.message.includes('Authentication')
+      ? 401
+      : error.message.includes('Admin')
+        ? 403
+        : error.message.includes('Query timeout')
+          ? 500
+          : 500;
 
-    await auditLog(null, '/admin/sessions/by-type', 'GET',
-      event.queryStringParameters, statusCode, Date.now() - startTime, requestId);
+    await auditLog(
+      null,
+      '/admin/sessions/by-type',
+      'GET',
+      event.queryStringParameters,
+      statusCode,
+      Date.now() - startTime,
+      requestId
+    );
 
     if (error.message.includes('Authentication failed')) {
       return errorResponse(401, 'UNAUTHORIZED', 'Invalid or expired token', requestId);
@@ -212,6 +226,11 @@ exports.handler = async (event) => {
     if (error.message.includes('Query timeout')) {
       return errorResponse(500, 'QUERY_TIMEOUT', 'Query exceeded timeout limit', requestId);
     }
-    return errorResponse(500, 'INTERNAL_ERROR', 'Failed to retrieve session distribution', requestId);
+    return errorResponse(
+      500,
+      'INTERNAL_ERROR',
+      'Failed to retrieve session distribution',
+      requestId
+    );
   }
 };

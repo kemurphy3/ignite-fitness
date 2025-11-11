@@ -10,7 +10,7 @@ const PAGINATION_CONFIG = {
   MIN_LIMIT: 1,
   MAX_LIMIT: 100,
   DEFAULT_LIMIT: 20,
-  CURSOR_VERSION: 1
+  CURSOR_VERSION: 1,
 };
 
 /**
@@ -21,7 +21,10 @@ const PAGINATION_CONFIG = {
 function validatePaginationParams(queryParams = {}) {
   const parsedLimit = parseInt(queryParams.limit);
   const limit = Math.min(
-    Math.max(isNaN(parsedLimit) ? PAGINATION_CONFIG.DEFAULT_LIMIT : parsedLimit, PAGINATION_CONFIG.MIN_LIMIT),
+    Math.max(
+      isNaN(parsedLimit) ? PAGINATION_CONFIG.DEFAULT_LIMIT : parsedLimit,
+      PAGINATION_CONFIG.MIN_LIMIT
+    ),
     PAGINATION_CONFIG.MAX_LIMIT
   );
 
@@ -34,7 +37,7 @@ function validatePaginationParams(queryParams = {}) {
     cursor,
     before,
     after,
-    offset: queryParams.offset ? Math.max(0, parseInt(queryParams.offset)) : 0
+    offset: queryParams.offset ? Math.max(0, parseInt(queryParams.offset)) : 0,
   };
 }
 
@@ -56,7 +59,7 @@ function decodeCursor(cursor) {
       timestamp: decoded.timestamp,
       order: decoded.order,
       v: decoded.v,
-      version: decoded.v // For backward compatibility
+      version: decoded.v, // For backward compatibility
     };
   } catch (error) {
     throw new Error('Invalid cursor format');
@@ -73,7 +76,7 @@ function encodeCursor(data) {
     id: data.id,
     timestamp: data.timestamp,
     order: data.order,
-    v: PAGINATION_CONFIG.CURSOR_VERSION
+    v: PAGINATION_CONFIG.CURSOR_VERSION,
   };
 
   return Buffer.from(JSON.stringify(cursorData)).toString('base64');
@@ -104,8 +107,8 @@ function createPaginatedResponse(items, limit, getCursorData, options = {}) {
       limit,
       has_more: hasMore,
       count: returnItems.length,
-      next_cursor: nextCursor
-    }
+      next_cursor: nextCursor,
+    },
   };
 
   // Add total count if requested and available
@@ -171,7 +174,7 @@ function buildCursorCondition(cursor, orderBy = 'created_at DESC, id ASC', table
 
     return {
       condition: conditions.length > 0 ? `AND (${conditions.join(' OR ')})` : '',
-      values
+      values,
     };
   } catch (error) {
     throw new Error('Invalid cursor format');
@@ -203,7 +206,7 @@ function buildTimestampCondition(before, after, timestampColumn = 'created_at', 
 
   return {
     condition: conditions.length > 0 ? `AND ${conditions.join(' AND ')}` : '',
-    values
+    values,
   };
 }
 
@@ -219,42 +222,42 @@ function getCursorDataForItem(item, type) {
       return {
         id: item.id,
         timestamp: item.start_at || item.created_at,
-        order: item.start_at || item.created_at
+        order: item.start_at || item.created_at,
       };
 
     case 'exercises':
       return {
         id: item.id,
         timestamp: item.created_at,
-        order: item.order_index || item.created_at
+        order: item.order_index || item.created_at,
       };
 
     case 'users':
       return {
         id: item.id,
         timestamp: item.created_at,
-        order: item.created_at
+        order: item.created_at,
       };
 
     case 'sleep_sessions':
       return {
         id: item.id,
         timestamp: item.start_at || item.created_at,
-        order: item.start_at || item.created_at
+        order: item.start_at || item.created_at,
       };
 
     case 'strava_activities':
       return {
         id: item.id,
         timestamp: item.start_date || item.created_at,
-        order: item.start_date || item.created_at
+        order: item.start_date || item.created_at,
       };
 
     default:
       return {
         id: item.id,
         timestamp: item.created_at,
-        order: item.created_at
+        order: item.created_at,
       };
   }
 }
@@ -270,8 +273,14 @@ function validatePaginationInput(queryParams = {}) {
   // Validate limit
   if (queryParams.limit !== undefined) {
     const limit = parseInt(queryParams.limit);
-    if (isNaN(limit) || limit < PAGINATION_CONFIG.MIN_LIMIT || limit > PAGINATION_CONFIG.MAX_LIMIT) {
-      errors.push(`Limit must be between ${PAGINATION_CONFIG.MIN_LIMIT} and ${PAGINATION_CONFIG.MAX_LIMIT}`);
+    if (
+      isNaN(limit) ||
+      limit < PAGINATION_CONFIG.MIN_LIMIT ||
+      limit > PAGINATION_CONFIG.MAX_LIMIT
+    ) {
+      errors.push(
+        `Limit must be between ${PAGINATION_CONFIG.MIN_LIMIT} and ${PAGINATION_CONFIG.MAX_LIMIT}`
+      );
     }
   }
 
@@ -320,13 +329,13 @@ function validatePaginationInput(queryParams = {}) {
 function createPaginationMetadata(pagination, baseUrl, queryParams = {}) {
   const metadata = {
     ...pagination,
-    links: {}
+    links: {},
   };
 
   if (pagination.next_cursor) {
     const nextParams = new URLSearchParams({
       ...queryParams,
-      cursor: pagination.next_cursor
+      cursor: pagination.next_cursor,
     });
     metadata.links.next = `${baseUrl}?${nextParams.toString()}`;
   }
@@ -334,7 +343,7 @@ function createPaginationMetadata(pagination, baseUrl, queryParams = {}) {
   if (pagination.previous_cursor) {
     const prevParams = new URLSearchParams({
       ...queryParams,
-      cursor: pagination.previous_cursor
+      cursor: pagination.previous_cursor,
     });
     metadata.links.previous = `${baseUrl}?${prevParams.toString()}`;
   }
@@ -352,5 +361,5 @@ module.exports = {
   buildTimestampCondition,
   getCursorDataForItem,
   validatePaginationInput,
-  createPaginationMetadata
+  createPaginationMetadata,
 };

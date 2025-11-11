@@ -3,15 +3,7 @@ const { getDB } = require('./database');
 
 async function auditLog(sql, data) {
   try {
-    const {
-      user_id,
-      action,
-      status,
-      error_message,
-      ip_address,
-      user_agent,
-      metadata = {}
-    } = data;
+    const { user_id, action, status, error_message, ip_address, user_agent, metadata = {} } = data;
 
     // Validate required fields
     if (!user_id || !action || !status) {
@@ -36,8 +28,8 @@ async function auditLog(sql, data) {
       metadata: {
         ...metadata,
         timestamp: new Date().toISOString(),
-        version: '1.0'
-      }
+        version: '1.0',
+      },
     };
 
     await sql`
@@ -59,13 +51,16 @@ async function auditLog(sql, data) {
 }
 
 function sanitizeIPAddress(ip) {
-  if (!ip) {return null;}
+  if (!ip) {
+    return null;
+  }
 
   // Remove any non-IP characters and limit length
   const sanitized = ip.replace(/[^0-9.:]/g, '').substring(0, 45);
 
   // Basic IP validation
-  const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+  const ipv4Regex =
+    /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
   const ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
 
   if (ipv4Regex.test(sanitized) || ipv6Regex.test(sanitized)) {
@@ -76,7 +71,9 @@ function sanitizeIPAddress(ip) {
 }
 
 function sanitizeUserAgent(ua) {
-  if (!ua) {return null;}
+  if (!ua) {
+    return null;
+  }
 
   // Remove potentially harmful characters and limit length
   return ua
@@ -102,14 +99,14 @@ async function getAuditLogs(sql, userId, limit = 50, offset = 0) {
     return {
       success: true,
       logs: result,
-      count: result.length
+      count: result.length,
     };
   } catch (error) {
     console.error('Failed to get audit logs:', error);
     return {
       success: false,
       error: error.message,
-      logs: []
+      logs: [],
     };
   }
 }
@@ -133,14 +130,14 @@ async function getAuditStats(sql, userId, days = 7) {
     return {
       success: true,
       stats: result,
-      period: `${days} days`
+      period: `${days} days`,
     };
   } catch (error) {
     console.error('Failed to get audit stats:', error);
     return {
       success: false,
       error: error.message,
-      stats: []
+      stats: [],
     };
   }
 }
@@ -156,14 +153,14 @@ async function cleanupAuditLogs(sql, retentionDays = 90) {
     return {
       success: true,
       deleted: result.length,
-      retentionDays
+      retentionDays,
     };
   } catch (error) {
     console.error('Audit cleanup failed:', error);
     return {
       success: false,
       error: error.message,
-      deleted: 0
+      deleted: 0,
     };
   }
 }
@@ -176,8 +173,8 @@ async function logSecurityEvent(sql, event) {
     metadata: {
       ...event.metadata,
       security_event: true,
-      severity: event.severity || 'medium'
-    }
+      severity: event.severity || 'medium',
+    },
   };
 
   return await auditLog(sql, securityEvent);
@@ -192,8 +189,8 @@ async function logPerformanceMetric(sql, metric) {
       ...metric.metadata,
       performance_metric: true,
       duration_ms: metric.duration_ms,
-      memory_usage: metric.memory_usage
-    }
+      memory_usage: metric.memory_usage,
+    },
   };
 
   return await auditLog(sql, performanceEvent);
@@ -207,5 +204,5 @@ module.exports = {
   logSecurityEvent,
   logPerformanceMetric,
   sanitizeIPAddress,
-  sanitizeUserAgent
+  sanitizeUserAgent,
 };

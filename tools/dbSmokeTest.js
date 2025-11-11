@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 (async () => {
-  const has = (dep) => {
-    try { require.resolve(dep, { paths: [process.cwd()] }); return true; }
-    catch { return false; }
+  const has = dep => {
+    try {
+      require.resolve(dep, { paths: [process.cwd()] });
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const url = process.env.DATABASE_URL || process.env.DB_URL || '';
@@ -10,7 +14,7 @@
     console.log('ℹ️ No real DATABASE_URL/DB_URL set; skipping DB smoke test.');
     process.exit(0);
   }
-  
+
   // For localhost PostgreSQL, try a simple connection test first
   if (url.includes('localhost') || url.includes('127.0.0.1')) {
     console.log('ℹ️ Localhost database detected; checking basic connectivity.');

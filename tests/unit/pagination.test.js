@@ -10,7 +10,7 @@ import {
   validatePaginationInput,
   encodeCursor,
   decodeCursor,
-  PAGINATION_CONFIG
+  PAGINATION_CONFIG,
 } from '../../netlify/functions/utils/pagination.js';
 
 describe('Pagination Utilities', () => {
@@ -81,7 +81,7 @@ describe('Pagination Utilities', () => {
       const testData = {
         id: '123',
         timestamp: '2024-01-01T00:00:00Z',
-        order: '2024-01-01T00:00:00Z'
+        order: '2024-01-01T00:00:00Z',
       };
 
       const encoded = encodeCursor(testData);
@@ -103,7 +103,7 @@ describe('Pagination Utilities', () => {
       const item = {
         id: 1,
         start_at: new Date('2024-01-01'),
-        created_at: new Date('2024-01-01')
+        created_at: new Date('2024-01-01'),
       };
 
       const cursorData = getCursorDataForItem(item, 'sessions');
@@ -117,7 +117,7 @@ describe('Pagination Utilities', () => {
       const item = {
         id: 1,
         created_at: new Date('2024-01-01'),
-        order_index: 5
+        order_index: 5,
       };
 
       const cursorData = getCursorDataForItem(item, 'exercises');
@@ -133,7 +133,7 @@ describe('Pagination Utilities', () => {
       const testData = {
         id: '123',
         timestamp: '2024-01-01T00:00:00Z',
-        order: '2024-01-01T00:00:00Z'
+        order: '2024-01-01T00:00:00Z',
       };
 
       const encoded = encodeCursor(testData);
@@ -158,13 +158,13 @@ describe('Pagination Utilities', () => {
         { id: 1, name: 'Item 1' },
         { id: 2, name: 'Item 2' },
         { id: 3, name: 'Item 3' },
-        { id: 4, name: 'Item 4' }
+        { id: 4, name: 'Item 4' },
       ];
 
       const response = createPaginatedResponse(
         items,
         3, // limit
-        (item) => ({ id: item.id, timestamp: new Date(), order: new Date() }),
+        item => ({ id: item.id, timestamp: new Date(), order: new Date() }),
         { includeTotal: true, total: 100 }
       );
 
@@ -179,13 +179,13 @@ describe('Pagination Utilities', () => {
     it('should create paginated response with has_more false', () => {
       const items = [
         { id: 1, name: 'Item 1' },
-        { id: 2, name: 'Item 2' }
+        { id: 2, name: 'Item 2' },
       ];
 
       const response = createPaginatedResponse(
         items,
         5, // limit
-        (item) => ({ id: item.id, timestamp: new Date(), order: new Date() })
+        item => ({ id: item.id, timestamp: new Date(), order: new Date() })
       );
 
       expect(response.data).toHaveLength(2);
@@ -195,11 +195,11 @@ describe('Pagination Utilities', () => {
     });
 
     it('should handle empty items array', () => {
-      const response = createPaginatedResponse(
-        [],
-        10,
-        (item) => ({ id: item.id, timestamp: new Date(), order: new Date() })
-      );
+      const response = createPaginatedResponse([], 10, item => ({
+        id: item.id,
+        timestamp: new Date(),
+        order: new Date(),
+      }));
 
       expect(response.data).toHaveLength(0);
       expect(response.pagination.has_more).toBe(false);

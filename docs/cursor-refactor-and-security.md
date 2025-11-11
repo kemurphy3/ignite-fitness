@@ -3,9 +3,12 @@
 ## Task 1: Fix Security Issues (DO THIS FIRST)
 
 ### Remove Exposed Secrets from config.js
-The current config.js file has exposed API secrets. These need to be replaced with environment variables.
+
+The current config.js file has exposed API secrets. These need to be replaced
+with environment variables.
 
 1. Create a new file `.env.local` (make sure it's in .gitignore):
+
 ```bash
 # .env.local
 STRAVA_CLIENT_ID=168662
@@ -16,23 +19,24 @@ DATABASE_URL=postgresql://...  # Your Neon connection string
 ```
 
 2. Update `config.js` to be a template:
+
 ```javascript
 // config.js - Safe to commit
 const CONFIG = {
   strava: {
     clientId: 'YOUR_CLIENT_ID_HERE',
     clientSecret: 'YOUR_CLIENT_SECRET_HERE',
-    redirectUri: window.location.origin + '/callback'
+    redirectUri: window.location.origin + '/callback',
   },
   openai: {
-    apiKey: 'YOUR_OPENAI_KEY_HERE'
+    apiKey: 'YOUR_OPENAI_KEY_HERE',
   },
   anthropic: {
-    apiKey: 'YOUR_ANTHROPIC_KEY_HERE'  // Optional
+    apiKey: 'YOUR_ANTHROPIC_KEY_HERE', // Optional
   },
   neon: {
-    connectionString: 'YOUR_DATABASE_URL_HERE'
-  }
+    connectionString: 'YOUR_DATABASE_URL_HERE',
+  },
 };
 
 // For local development, you'll need to manually replace these
@@ -71,7 +75,7 @@ ignite-fitness/
 
 1. **Extract workout-generator.js first** (this is likely 40% of your code):
    - Move `generateWorkoutPlan()` function
-   - Move `getGoalOrientedExercises()` function  
+   - Move `getGoalOrientedExercises()` function
    - Move `calculateRealisticWeight()` function
    - Move all exercise databases and progression logic
    - Move barbell plate math functions
@@ -108,20 +112,21 @@ ignite-fitness/
    - Move helper functions
 
 8. **Update index.html**:
+
 ```html
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>Ignite Fitness</title>
-    <link rel="stylesheet" href="css/styles.css">
-</head>
-<body>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
     <!-- Minimal HTML structure -->
     <div id="app"></div>
-    
+
     <!-- Load configuration first -->
     <script src="config/config.js"></script>
-    
+
     <!-- Load modules in dependency order -->
     <script src="js/utils.js"></script>
     <script src="js/database.js"></script>
@@ -132,7 +137,7 @@ ignite-fitness/
     <script src="js/data-sync.js"></script>
     <script src="js/ui-components.js"></script>
     <script src="js/app.js"></script>
-</body>
+  </body>
 </html>
 ```
 
@@ -141,34 +146,36 @@ ignite-fitness/
 ### Use Netlify Functions to Hide API Keys
 
 1. Create `netlify/functions/ai-proxy.js`:
+
 ```javascript
 // This runs on Netlify's server, hiding your API keys
 exports.handler = async (event, context) => {
   const { model, prompt } = JSON.parse(event.body);
-  
+
   // Keys are safe in Netlify environment variables
-  const apiKey = model.includes('gpt') 
-    ? process.env.OPENAI_API_KEY 
+  const apiKey = model.includes('gpt')
+    ? process.env.OPENAI_API_KEY
     : process.env.ANTHROPIC_API_KEY;
-    
+
   // Make the actual API call server-side
   const response = await callAI(model, prompt, apiKey);
-  
+
   return {
     statusCode: 200,
-    body: JSON.stringify(response)
+    body: JSON.stringify(response),
   };
 };
 ```
 
 2. Update client-side to call Netlify Function:
+
 ```javascript
 // ai-client.js
 async function callAI(model, prompt) {
   // Instead of calling OpenAI directly, call your Netlify function
   const response = await fetch('/.netlify/functions/ai-proxy', {
     method: 'POST',
-    body: JSON.stringify({ model, prompt })
+    body: JSON.stringify({ model, prompt }),
   });
   return response.json();
 }
@@ -189,6 +196,7 @@ If you want to start simple:
 2. Test workout generation
 3. Test data persistence to Neon
 4. Verify no secrets in git history:
+
 ```bash
 git grep "8d502e2d7f16d70bc03f75cafdef3fa0fc541be6"
 ```

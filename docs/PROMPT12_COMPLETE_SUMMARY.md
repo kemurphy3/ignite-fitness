@@ -11,7 +11,7 @@
 ✅ Loading instructions display clearly in workout interface  
 ✅ Progressive overload works with equipment constraints  
 ✅ 50+ test cases verify calculation accuracy  
-✅ Dumbbell and barbell alternatives both supported  
+✅ Dumbbell and barbell alternatives both supported
 
 ---
 
@@ -19,32 +19,39 @@
 
 ### ✅ **1. Weight Calculator Returns Practical Loading Instructions**
 
-**Implementation**: `netlify/functions/weight-calculator.js` + `js/modules/workout/WeightDisplay.js`
+**Implementation**: `netlify/functions/weight-calculator.js` +
+`js/modules/workout/WeightDisplay.js`
 
 **Example Output**:
+
 ```
 Load: 45 lb bar + 35 lb + 10 lb + 5 lb + 2.5 lb each side
 Total: 135 lb
 ```
 
 **Evidence**: Lines 72-120 of `weight-calculator.js`
+
 ```javascript
-function calculateWeightLoad(targetWeight, mode = 'us', equipmentAvailable = null) {
-    const config = BAR_CONFIGS[mode];
-    const barWeight = config.barWeight;
-    
-    // Calculate weight needed per side
-    const weightPerSide = (targetWeight - barWeight) / 2;
-    
-    // Calculate plate combination
-    const { plates, remainingWeight, warnings } = calculatePlateCombination(
-        weightPerSide,
-        sortedPlates,
-        config.unit
-    );
-    
-    // Generate instruction text
-    // "Load: 45lb bar + 35lb + 10lb each side = 125lb total"
+function calculateWeightLoad(
+  targetWeight,
+  mode = 'us',
+  equipmentAvailable = null
+) {
+  const config = BAR_CONFIGS[mode];
+  const barWeight = config.barWeight;
+
+  // Calculate weight needed per side
+  const weightPerSide = (targetWeight - barWeight) / 2;
+
+  // Calculate plate combination
+  const { plates, remainingWeight, warnings } = calculatePlateCombination(
+    weightPerSide,
+    sortedPlates,
+    config.unit
+  );
+
+  // Generate instruction text
+  // "Load: 45lb bar + 35lb + 10lb each side = 125lb total"
 }
 ```
 
@@ -53,6 +60,7 @@ function calculateWeightLoad(targetWeight, mode = 'us', equipmentAvailable = nul
 ### ✅ **2. Both US (lbs) and Metric (kg) Modes Work Correctly**
 
 **US Configuration** (lines 7-12):
+
 ```javascript
 us: {
     barWeight: 45,
@@ -62,6 +70,7 @@ us: {
 ```
 
 **Metric Configuration** (lines 13-17):
+
 ```javascript
 metric: {
     barWeight: 20,
@@ -71,6 +80,7 @@ metric: {
 ```
 
 **Mode Switching**:
+
 - `WeightDisplay.js` lines 56-71 support both modes
 - User preference stored and loaded
 - Calculations adjusted per mode
@@ -82,6 +92,7 @@ metric: {
 **Implementation**: `js/modules/settings/EquipmentPrefs.js`
 
 **Preferences Stored**:
+
 - Available plates
 - Has 2.5lb plates (US)
 - Has 1.25kg plates (Metric)
@@ -90,13 +101,15 @@ metric: {
 - Substitutions
 
 **Storage Integration**:
+
 ```javascript
 await this.storageManager.savePreferences(userId, {
-    equipment: this.preferences
+  equipment: this.preferences,
 });
 ```
 
 **Loading**:
+
 - `WeightDisplay.js` lines 19-41 load preferences
 - Falls back to defaults if missing
 - Applies available plates to calculations
@@ -108,6 +121,7 @@ await this.storageManager.savePreferences(userId, {
 **Implementation**: `EquipmentPrefs.js` lines 124-141
 
 **Fallback Examples**:
+
 ```javascript
 // Missing 2.5lb plates
 {
@@ -124,6 +138,7 @@ await this.storageManager.savePreferences(userId, {
 ```
 
 **Code**: `WeightDisplay.js` lines 202-233
+
 ```javascript
 getFallbackSuggestion(targetWeight, missingEquipment) {
     if (missingEquipment.includes('2.5lb')) {
@@ -142,11 +157,13 @@ getFallbackSuggestion(targetWeight, missingEquipment) {
 **Implementation**: `WeightDisplay.js` lines 156-186
 
 **Display Format**:
+
 ```
 "Load 45 lb bar + 35 lb + 10 lb + 2.5 lb each side → 135 lb total"
 ```
 
 **HTML Rendering**:
+
 ```javascript
 renderToHTML(result) {
     return `
@@ -168,18 +185,20 @@ renderToHTML(result) {
 **Implementation**: `WeightDisplay.js` + `ProgressionEngine.js`
 
 **Progression Logic**:
+
 ```javascript
 getNextProgression(currentWeight) {
     // Find next achievable weight with available plates
     const increment = this.getIncrement();
     const nextWeight = currentWeight + increment;
-    
+
     // Adjust to achievable weight
     return this.adjustToAchievableWeight(nextWeight);
 }
 ```
 
 **Equipment Constraints**:
+
 - Adjusts increments based on available plates
 - Skips impossible weights (e.g., 137.5 without 2.5lb plates)
 - Suggests weight + rep increases when needed
@@ -191,6 +210,7 @@ getNextProgression(currentWeight) {
 **Implementation**: Verification via multiple test scenarios
 
 **Test Categories**:
+
 1. US barbell calculations (135, 225, 315, 405 lbs)
 2. Metric barbell calculations (60, 100, 140 kg)
 3. Missing small plates (no 2.5lb plates)
@@ -213,12 +233,13 @@ getNextProgression(currentWeight) {
 **Implementation**: `EquipmentPrefs.js` + `WeightDisplay.js`
 
 **Dumbbell Loading** (lines 96-115):
+
 ```javascript
 getDumbbellLoading(targetWeight, isPair = true) {
     const increment = unit === 'us' ? 5 : 2.5;
     const weightPerDumbbell = isPair ? targetWeight / 2 : targetWeight;
     const adjustedWeight = Math.round(weightPerDumbbell / increment) * increment;
-    
+
     return {
         weightPerDumbbell: adjustedWeight,
         instruction: `Use ${adjustedWeight}${unit} dumbbells (pair)`
@@ -229,6 +250,7 @@ getDumbbellLoading(targetWeight, isPair = true) {
 **Barbell Loading**: Full support via `calculateLoad()`
 
 **Equipment Substitutions**:
+
 - Safety bar ↔ Regular bar
 - Trap bar ↔ Regular bar
 - Smith machine ↔ Free weights
@@ -238,6 +260,7 @@ getDumbbellLoading(targetWeight, isPair = true) {
 ## 📁 **Files Created**
 
 **Created**:
+
 1. ✅ `netlify/functions/weight-calculator.js` - Backend calculation
 2. ✅ `js/modules/workout/WeightDisplay.js` - Frontend display
 3. ✅ `js/modules/settings/EquipmentPrefs.js` - Equipment preferences
@@ -245,6 +268,7 @@ getDumbbellLoading(targetWeight, isPair = true) {
 5. ✅ `docs/PROMPT12_COMPLETE_SUMMARY.md` - This file
 
 **Modified**:
+
 1. ✅ `index.html` - Added new modules and verification
 
 ---
@@ -252,20 +276,24 @@ getDumbbellLoading(targetWeight, isPair = true) {
 ## **Key Features**
 
 ### **Practical Loading Instructions**
+
 Instead of: "Use 137.5 lbs"  
 Shows: "Load: 45 lb bar + 35 lb + 10 lb + 2.5 lb each side = 137.5 lb total"
 
 ### **Missing Equipment Handling**
+
 - No 2.5lb plates? → Suggest 5lb less + extra reps
 - No dumbbells? → Barbell alternative
 - Limited gym? → Optimize for available equipment
 
 ### **Both US and Metric**
+
 - US: 45lb bar + plates [45, 35, 25, 10, 5, 2.5]
 - Metric: 20kg bar + plates [20, 15, 10, 5, 2.5, 1.25]
 - Automatic mode switching
 
 ### **Equipment Preferences**
+
 - Commercial gym (full plates)
 - Home gym (limited plates)
 - Equipment type affects suggestions
@@ -276,28 +304,33 @@ Shows: "Load: 45 lb bar + 35 lb + 10 lb + 2.5 lb each side = 137.5 lb total"
 ## ✅ **All Requirements Met**
 
 ### **Standard Equipment Sets** ✅
+
 - US: 45lb bar + [45, 35, 25, 10, 5, 2.5] plates
 - Metric: 20kg bar + [20, 15, 10, 5, 2.5, 1.25] plates
 - Dumbbell increments: 5lb (US) / 2.5kg (Metric)
 
 ### **Loading Logic** ✅
+
 - Calculate closest achievable weight
 - Show loading instructions
 - Alternative suggestions for missing equipment
 - Progressive loading with logical jumps
 
 ### **Equipment Preferences** ✅
+
 - Available plate sets
 - Barbell vs dumbbell preference
 - Equipment substitutions
 - Home gym vs commercial settings
 
 ### **Fallback Logic** ✅
+
 - Missing small plates: Lower weight + extra reps
 - Missing dumbbells: Barbell alternative
 - Equipment unavailable: Exercise substitution
 
 ### **Integration Points** ✅
+
 - ✅ Uses exercise database
 - ✅ Uses user preference system
 - ✅ Integrates with workout display
@@ -310,6 +343,7 @@ Shows: "Load: 45 lb bar + 35 lb + 10 lb + 2.5 lb each side = 137.5 lb total"
 **Summary**: All "Done Means" criteria are fully implemented and working.
 
 The IgniteFitness weight calculation system is production-ready with:
+
 - ✅ Practical loading instructions (no more decimal weights)
 - ✅ US and metric support
 - ✅ Equipment preference management

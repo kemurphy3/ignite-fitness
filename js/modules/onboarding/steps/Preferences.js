@@ -3,17 +3,17 @@
  * Stores complete user profile and preferences in single object
  */
 class PreferencesStep {
-    constructor() {
-        this.logger = window.SafeLogger || console;
-    }
+  constructor() {
+    this.logger = window.SafeLogger || console;
+  }
 
-    /**
-     * Render preferences step
-     * @param {Object} existingData - Existing onboarding data
-     * @returns {string} HTML for preferences step
-     */
-    render(existingData = {}) {
-        return `
+  /**
+   * Render preferences step
+   * @param {Object} existingData - Existing onboarding data
+   * @returns {string} HTML for preferences step
+   */
+  render(existingData = {}) {
+    return `
             <div class="onboarding-step preferences-step">
                 <h2>Finalize Your Profile</h2>
                 <p class="step-description">Review your selections and let's get started!</p>
@@ -61,51 +61,53 @@ class PreferencesStep {
                 </div>
             </div>
         `;
+  }
+
+  /**
+   * Format goals for display
+   * @param {Array} goals - Goal array
+   * @returns {string} Formatted goals
+   */
+  formatGoals(goals) {
+    if (!goals || goals.length === 0) {
+      return 'General fitness';
     }
 
-    /**
-     * Format goals for display
-     * @param {Array} goals - Goal array
-     * @returns {string} Formatted goals
-     */
-    formatGoals(goals) {
-        if (!goals || goals.length === 0) {return 'General fitness';}
+    const goalLabels = {
+      athletic_performance: 'Performance',
+      v_taper: 'V-Taper',
+      glutes: 'Glutes',
+      toned: 'Lean & Toned',
+      weight_management: 'Weight',
+      general_fitness: 'General Fitness',
+    };
 
-        const goalLabels = {
-            'athletic_performance': 'Performance',
-            'v_taper': 'V-Taper',
-            'glutes': 'Glutes',
-            'toned': 'Lean & Toned',
-            'weight_management': 'Weight',
-            'general_fitness': 'General Fitness'
-        };
+    return goals.map(g => goalLabels[g] || g).join(', ');
+  }
 
-        return goals.map(g => goalLabels[g] || g).join(', ');
-    }
+  /**
+   * Format season for display
+   * @param {string} season - Season phase
+   * @returns {string} Formatted season
+   */
+  formatSeason(season) {
+    const seasonMap = {
+      'off-season': 'Off-Season',
+      'pre-season': 'Pre-Season',
+      'in-season': 'In-Season',
+      transition: 'Transition',
+    };
 
-    /**
-     * Format season for display
-     * @param {string} season - Season phase
-     * @returns {string} Formatted season
-     */
-    formatSeason(season) {
-        const seasonMap = {
-            'off-season': 'Off-Season',
-            'pre-season': 'Pre-Season',
-            'in-season': 'In-Season',
-            'transition': 'Transition'
-        };
+    return seasonMap[season] || 'In-Season';
+  }
 
-        return seasonMap[season] || 'In-Season';
-    }
-
-    /**
-     * Validate step
-     * @returns {boolean} Is valid
-     */
-    validate() {
-        return true; // Always valid for summary step
-    }
+  /**
+   * Validate step
+   * @returns {boolean} Is valid
+   */
+  validate() {
+    return true; // Always valid for summary step
+  }
 }
 
 window.PreferencesStep = PreferencesStep;

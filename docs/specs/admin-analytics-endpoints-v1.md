@@ -2,9 +2,13 @@
 
 ## Section 1: Summary
 
-Admin-only read endpoints providing aggregate metrics and system health monitoring for the Ignite Fitness platform. All endpoints enforce admin authentication with proper JWT validation, return privacy-protected responses, and support timezone-aware reporting with correct DST handling.
+Admin-only read endpoints providing aggregate metrics and system health
+monitoring for the Ignite Fitness platform. All endpoints enforce admin
+authentication with proper JWT validation, return privacy-protected responses,
+and support timezone-aware reporting with correct DST handling.
 
 **Key Features:**
+
 - Role-based access control via JWT with issuer/audience validation
 - Privacy protection: minimum 5-user threshold for aggregates
 - Timezone-aware aggregations with proper DST handling
@@ -19,14 +23,14 @@ Admin-only read endpoints providing aggregate metrics and system health monitori
 
 ```sql
 -- Add role column to existing users table
-ALTER TABLE users 
+ALTER TABLE users
 ADD COLUMN role TEXT DEFAULT 'user' CHECK (role IN ('user', 'admin'));
 
 -- Composite indexes for admin queries
 CREATE INDEX idx_users_role ON users(role) WHERE role = 'admin';
-CREATE INDEX idx_sessions_date_user ON sessions(created_at, user_id) 
+CREATE INDEX idx_sessions_date_user ON sessions(created_at, user_id)
   WHERE deleted_at IS NULL;
-CREATE INDEX idx_sessions_user_date ON sessions(user_id, created_at) 
+CREATE INDEX idx_sessions_user_date ON sessions(user_id, created_at)
   WHERE deleted_at IS NULL;
 CREATE INDEX idx_sessions_type_date ON sessions(session_type, created_at)
   WHERE deleted_at IS NULL;
@@ -54,7 +58,7 @@ CREATE INDEX idx_admin_audit_request ON admin_audit_log(request_id);
 ```sql
 -- Daily session aggregates with privacy thresholds
 CREATE MATERIALIZED VIEW mv_sessions_daily AS
-SELECT 
+SELECT
   DATE(created_at AT TIME ZONE 'UTC') as date_utc,
   COUNT(*) as session_count,
   COUNT(DISTINCT user_id) as unique_users,
@@ -83,13 +87,13 @@ DECLARE
   start_time BIGINT;
 BEGIN
   start_time := extract(epoch from now()) * 1000;
-  
+
   REFRESH MATERIALIZED VIEW CONCURRENTLY mv_sessions_daily;
-  
+
   INSERT INTO mv_refresh_log (view_name, last_refresh, refresh_duration_ms)
   VALUES ('mv_sessions_daily', NOW(), extract(epoch from now()) * 1000 - start_time)
-  ON CONFLICT (view_name) 
-  DO UPDATE SET 
+  ON CONFLICT (view_name)
+  DO UPDATE SET
     last_refresh = NOW(),
     row_version = mv_refresh_log.row_version + 1,
     refresh_duration_ms = EXCLUDED.refresh_duration_ms;
@@ -107,9 +111,9 @@ const verifyAdmin = async (token, requestId) => {
       issuer: 'ignite-fitness',
       audience: 'api',
       algorithms: ['HS256'],
-      clockTolerance: 30 // 30 seconds clock skew
+      clockTolerance: 30, // 30 seconds clock skew
     });
-    
+
     // Check admin role in database
     const user = await sql`
       SELECT id, role 
@@ -118,11 +122,11 @@ const verifyAdmin = async (token, requestId) => {
         AND role = 'admin'
         AND deleted_at IS NULL
     `;
-    
+
     if (!user.length) {
       throw new Error('Unauthorized: Admin access required');
     }
-    
+
     return { adminId: user[0].id };
   } catch (error) {
     console.error(`Auth failed for request ${requestId}:`, error.message);
@@ -130,7 +134,14 @@ const verifyAdmin = async (token, requestId) => {
   }
 };
 
-const auditLog = async (adminId, endpoint, params, status, responseTime, requestId) => {
+const auditLog = async (
+  adminId,
+  endpoint,
+  params,
+  status,
+  responseTime,
+  requestId
+) => {
   await sql`
     INSERT INTO admin_audit_log (
       request_id, admin_id, endpoint, method, query_params, 
@@ -146,6 +157,7 @@ const auditLog = async (adminId, endpoint, params, status, responseTime, request
 ## Section 3: API Specification
 
 ### Standard Error Envelope
+
 ```javascript
 const errorResponse = (statusCode, code, message, requestId) => ({
   statusCode,
@@ -153,16 +165,16 @@ const errorResponse = (statusCode, code, message, requestId) => ({
     'Content-Type': 'application/json',
     'Cache-Control': 'no-store',
     'Access-Control-Allow-Origin': '*',
-    'X-Request-ID': requestId
+    'X-Request-ID': requestId,
   },
   body: JSON.stringify({
     error: {
       code,
       message,
       request_id: requestId,
-      timestamp: new Date().toISOString()
-    }
-  })
+      timestamp: new Date().toISOString(),
+    },
+  }),
 });
 ```
 
@@ -171,6 +183,7 @@ const errorResponse = (statusCode, code, message, requestId) => ({
 **Purpose:** Global platform metrics with privacy protection
 
 **Response Example:**
+
 ```javascript
 {
   "status": "success",
@@ -194,22 +207,28 @@ const errorResponse = (statusCode, code, message, requestId) => ({
 ```
 
 **Implementation:**
+
 ```javascript
-exports.handler = async (event) => {
+exports.handler = async event => {
   const startTime = Date.now();
   const requestId = crypto.randomUUID();
-  
+
   try {
     // Set query timeout
     await sql`SET statement_timeout = '5s'`;
-    
+
     const token = event.headers.authorization?.split(' ')[1];
     if (!token) {
-      return errorResponse(401, 'MISSING_TOKEN', 'Authorization header required', requestId);
+      return errorResponse(
+        401,
+        'MISSING_TOKEN',
+        'Authorization header required',
+        requestId
+      );
     }
-    
+
     const { adminId } = await verifyAdmin(token, requestId);
-    
+
     // Get metrics with privacy thresholds
     const metrics = await sql`
       WITH metrics AS (
@@ -247,51 +266,80 @@ exports.handler = async (event) => {
       FROM metrics m
       CROSS JOIN session_metrics s
     `;
-    
+
     // Get data freshness
     const freshness = await sql`
       SELECT view_name, last_refresh, row_version
       FROM mv_refresh_log
       WHERE view_name = 'mv_sessions_daily'
     `;
-    
-    await auditLog(adminId, '/admin/overview', {}, 200, Date.now() - startTime, requestId);
-    
+
+    await auditLog(
+      adminId,
+      '/admin/overview',
+      {},
+      200,
+      Date.now() - startTime,
+      requestId
+    );
+
     return {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'private, max-age=60, s-maxage=300',
         'Access-Control-Allow-Origin': '*',
-        'X-Request-ID': requestId
+        'X-Request-ID': requestId,
       },
       body: JSON.stringify({
         status: 'success',
         data: {
           ...metrics[0],
-          last_updated: new Date().toISOString()
+          last_updated: new Date().toISOString(),
         },
         meta: {
           request_id: requestId,
           generated_at: new Date().toISOString(),
           cache_hit: false,
           response_time_ms: Date.now() - startTime,
-          data_version: freshness[0] ? `mv_${freshness[0].row_version}` : 'live'
-        }
-      })
+          data_version: freshness[0]
+            ? `mv_${freshness[0].row_version}`
+            : 'live',
+        },
+      }),
     };
   } catch (error) {
-    await auditLog(null, '/admin/overview', {}, 
-      error.message.includes('Admin') ? 403 : 500, 
-      Date.now() - startTime, requestId);
-    
+    await auditLog(
+      null,
+      '/admin/overview',
+      {},
+      error.message.includes('Admin') ? 403 : 500,
+      Date.now() - startTime,
+      requestId
+    );
+
     if (error.message.includes('Authentication failed')) {
-      return errorResponse(401, 'UNAUTHORIZED', 'Invalid or expired token', requestId);
+      return errorResponse(
+        401,
+        'UNAUTHORIZED',
+        'Invalid or expired token',
+        requestId
+      );
     }
     if (error.message.includes('Admin access')) {
-      return errorResponse(403, 'FORBIDDEN', 'Admin access required', requestId);
+      return errorResponse(
+        403,
+        'FORBIDDEN',
+        'Admin access required',
+        requestId
+      );
     }
-    return errorResponse(500, 'INTERNAL_ERROR', 'Failed to retrieve metrics', requestId);
+    return errorResponse(
+      500,
+      'INTERNAL_ERROR',
+      'Failed to retrieve metrics',
+      requestId
+    );
   }
 };
 ```
@@ -301,50 +349,82 @@ exports.handler = async (event) => {
 **Purpose:** Time series with proper timezone handling
 
 **Parameters:**
+
 - `from`: ISO date (required, max 730 days ago)
 - `to`: ISO date (required)
 - `bucket`: `day` | `week` (default: `day`)
 - `timezone`: IANA timezone (default: `UTC`)
 
 **Implementation:**
+
 ```javascript
-exports.handler = async (event) => {
+exports.handler = async event => {
   const startTime = Date.now();
   const requestId = crypto.randomUUID();
-  
+
   try {
     await sql`SET statement_timeout = '5s'`;
-    
+
     const token = event.headers.authorization?.split(' ')[1];
     if (!token) {
-      return errorResponse(401, 'MISSING_TOKEN', 'Authorization header required', requestId);
+      return errorResponse(
+        401,
+        'MISSING_TOKEN',
+        'Authorization header required',
+        requestId
+      );
     }
-    
+
     const { adminId } = await verifyAdmin(token, requestId);
-    
-    const { from, to, bucket = 'day', timezone = 'UTC' } = event.queryStringParameters || {};
-    
+
+    const {
+      from,
+      to,
+      bucket = 'day',
+      timezone = 'UTC',
+    } = event.queryStringParameters || {};
+
     // Validate required params
     if (!from || !to) {
-      return errorResponse(400, 'MISSING_PARAMS', 'Parameters from and to are required', requestId);
+      return errorResponse(
+        400,
+        'MISSING_PARAMS',
+        'Parameters from and to are required',
+        requestId
+      );
     }
-    
+
     // Validate date range (max 2 years)
     const fromDate = new Date(from);
     const toDate = new Date(to);
     if (isNaN(fromDate) || isNaN(toDate)) {
-      return errorResponse(400, 'INVALID_DATE', 'Invalid date format', requestId);
+      return errorResponse(
+        400,
+        'INVALID_DATE',
+        'Invalid date format',
+        requestId
+      );
     }
-    
+
     const daysDiff = (toDate - fromDate) / (1000 * 60 * 60 * 24);
     if (daysDiff > 730) {
-      return errorResponse(400, 'RANGE_TOO_LARGE', 'Date range cannot exceed 730 days', requestId);
+      return errorResponse(
+        400,
+        'RANGE_TOO_LARGE',
+        'Date range cannot exceed 730 days',
+        requestId
+      );
     }
-    
+
     if (fromDate > toDate) {
-      return errorResponse(400, 'INVALID_RANGE', 'From date must be before to date', requestId);
+      return errorResponse(
+        400,
+        'INVALID_RANGE',
+        'From date must be before to date',
+        requestId
+      );
     }
-    
+
     // Proper timezone conversion with DST handling
     let series;
     if (bucket === 'day') {
@@ -386,34 +466,47 @@ exports.handler = async (event) => {
         ORDER BY date ASC
       `;
     }
-    
+
     // Calculate summary with privacy
-    const summary = series.reduce((acc, row) => ({
-      total_sessions: acc.total_sessions + row.session_count,
-      total_users: Math.max(acc.total_users, row.unique_users_raw || 0),
-      completion_rate: null // Calculate after
-    }), { total_sessions: 0, total_users: 0 });
-    
-    const totalCompleted = series.reduce((sum, row) => sum + row.completed_count, 0);
-    summary.completion_rate = summary.total_sessions > 0 
-      ? Math.round((totalCompleted / summary.total_sessions) * 100) / 100
-      : null;
-    
+    const summary = series.reduce(
+      (acc, row) => ({
+        total_sessions: acc.total_sessions + row.session_count,
+        total_users: Math.max(acc.total_users, row.unique_users_raw || 0),
+        completion_rate: null, // Calculate after
+      }),
+      { total_sessions: 0, total_users: 0 }
+    );
+
+    const totalCompleted = series.reduce(
+      (sum, row) => sum + row.completed_count,
+      0
+    );
+    summary.completion_rate =
+      summary.total_sessions > 0
+        ? Math.round((totalCompleted / summary.total_sessions) * 100) / 100
+        : null;
+
     // Apply privacy threshold to summary
     if (summary.total_users < 5) {
       summary.total_users = null;
     }
-    
-    await auditLog(adminId, '/admin/sessions/series', 
-      { from, to, bucket, timezone }, 200, Date.now() - startTime, requestId);
-    
+
+    await auditLog(
+      adminId,
+      '/admin/sessions/series',
+      { from, to, bucket, timezone },
+      200,
+      Date.now() - startTime,
+      requestId
+    );
+
     return {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'private, max-age=300',
         'Access-Control-Allow-Origin': '*',
-        'X-Request-ID': requestId
+        'X-Request-ID': requestId,
       },
       body: JSON.stringify({
         status: 'success',
@@ -422,30 +515,47 @@ exports.handler = async (event) => {
             date: row.date,
             session_count: row.session_count,
             unique_users: row.unique_users,
-            completed_count: row.meets_privacy_threshold ? row.completed_count : null,
-            privacy_applied: !row.meets_privacy_threshold
+            completed_count: row.meets_privacy_threshold
+              ? row.completed_count
+              : null,
+            privacy_applied: !row.meets_privacy_threshold,
           })),
-          summary
+          summary,
         },
         meta: {
           request_id: requestId,
           timezone,
           bucket,
           privacy_threshold: 5,
-          generated_at: new Date().toISOString()
-        }
-      })
+          generated_at: new Date().toISOString(),
+        },
+      }),
     };
   } catch (error) {
-    const statusCode = error.message.includes('Authentication') ? 401 :
-                      error.message.includes('Admin') ? 403 : 500;
-    await auditLog(null, '/admin/sessions/series', 
-      event.queryStringParameters, statusCode, Date.now() - startTime, requestId);
-    
-    return errorResponse(statusCode, 
-      statusCode === 401 ? 'UNAUTHORIZED' : 
-      statusCode === 403 ? 'FORBIDDEN' : 'INTERNAL_ERROR',
-      error.message, requestId);
+    const statusCode = error.message.includes('Authentication')
+      ? 401
+      : error.message.includes('Admin')
+        ? 403
+        : 500;
+    await auditLog(
+      null,
+      '/admin/sessions/series',
+      event.queryStringParameters,
+      statusCode,
+      Date.now() - startTime,
+      requestId
+    );
+
+    return errorResponse(
+      statusCode,
+      statusCode === 401
+        ? 'UNAUTHORIZED'
+        : statusCode === 403
+          ? 'FORBIDDEN'
+          : 'INTERNAL_ERROR',
+      error.message,
+      requestId
+    );
   }
 };
 ```
@@ -455,10 +565,12 @@ exports.handler = async (event) => {
 **Purpose:** Distribution of session types with privacy protection
 
 **Parameters:**
+
 - `from`: ISO date string (optional)
 - `to`: ISO date string (optional)
 
 **Response Example:**
+
 ```javascript
 {
   "status": "success",
@@ -481,27 +593,33 @@ exports.handler = async (event) => {
 ```
 
 **Implementation:**
+
 ```javascript
-exports.handler = async (event) => {
+exports.handler = async event => {
   const startTime = Date.now();
   const requestId = crypto.randomUUID();
-  
+
   try {
     await sql`SET statement_timeout = '5s'`;
-    
+
     const token = event.headers.authorization?.split(' ')[1];
     if (!token) {
-      return errorResponse(401, 'MISSING_TOKEN', 'Authorization header required', requestId);
+      return errorResponse(
+        401,
+        'MISSING_TOKEN',
+        'Authorization header required',
+        requestId
+      );
     }
-    
+
     const { adminId } = await verifyAdmin(token, requestId);
-    
+
     const { from, to } = event.queryStringParameters || {};
-    
+
     // Build date filter
     let whereConditions = ['deleted_at IS NULL'];
     const params = [];
-    
+
     if (from) {
       const fromDate = new Date(from);
       if (!isNaN(fromDate)) {
@@ -509,7 +627,7 @@ exports.handler = async (event) => {
         params.push(fromDate);
       }
     }
-    
+
     if (to) {
       const toDate = new Date(to);
       if (!isNaN(toDate)) {
@@ -517,7 +635,7 @@ exports.handler = async (event) => {
         params.push(toDate);
       }
     }
-    
+
     // Get distribution with privacy thresholds
     const distribution = await sql`
       WITH type_counts AS (
@@ -547,20 +665,28 @@ exports.handler = async (event) => {
       CROSS JOIN totals t
       ORDER BY tc.count DESC
     `;
-    
+
     const total = distribution.reduce((sum, row) => sum + row.count, 0);
-    const privacyApplied = distribution.some(row => !row.meets_privacy_threshold);
-    
-    await auditLog(adminId, '/admin/sessions/by-type', 
-      { from, to }, 200, Date.now() - startTime, requestId);
-    
+    const privacyApplied = distribution.some(
+      row => !row.meets_privacy_threshold
+    );
+
+    await auditLog(
+      adminId,
+      '/admin/sessions/by-type',
+      { from, to },
+      200,
+      Date.now() - startTime,
+      requestId
+    );
+
     return {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'private, max-age=300',
         'Access-Control-Allow-Origin': '*',
-        'X-Request-ID': requestId
+        'X-Request-ID': requestId,
       },
       body: JSON.stringify({
         status: 'success',
@@ -569,28 +695,43 @@ exports.handler = async (event) => {
             session_type: row.session_type,
             count: row.count,
             percentage: row.percentage,
-            unique_users: row.unique_users
+            unique_users: row.unique_users,
           })),
-          total
+          total,
         },
         meta: {
           request_id: requestId,
           privacy_applied: privacyApplied,
           privacy_threshold: 5,
-          generated_at: new Date().toISOString()
-        }
-      })
+          generated_at: new Date().toISOString(),
+        },
+      }),
     };
   } catch (error) {
-    const statusCode = error.message.includes('Authentication') ? 401 :
-                      error.message.includes('Admin') ? 403 : 500;
-    await auditLog(null, '/admin/sessions/by-type', 
-      event.queryStringParameters, statusCode, Date.now() - startTime, requestId);
-    
-    return errorResponse(statusCode,
-      statusCode === 401 ? 'UNAUTHORIZED' :
-      statusCode === 403 ? 'FORBIDDEN' : 'INTERNAL_ERROR',
-      error.message, requestId);
+    const statusCode = error.message.includes('Authentication')
+      ? 401
+      : error.message.includes('Admin')
+        ? 403
+        : 500;
+    await auditLog(
+      null,
+      '/admin/sessions/by-type',
+      event.queryStringParameters,
+      statusCode,
+      Date.now() - startTime,
+      requestId
+    );
+
+    return errorResponse(
+      statusCode,
+      statusCode === 401
+        ? 'UNAUTHORIZED'
+        : statusCode === 403
+          ? 'FORBIDDEN'
+          : 'INTERNAL_ERROR',
+      error.message,
+      requestId
+    );
   }
 };
 ```
@@ -600,11 +741,13 @@ exports.handler = async (event) => {
 **Purpose:** Top users with keyset pagination
 
 **Parameters:**
+
 - `metric`: `sessions` | `duration` (default: `sessions`)
 - `limit`: 1-100 (default: 50)
 - `cursor`: Keyset pagination token
 
 **Response Example:**
+
 ```javascript
 {
   "status": "success",
@@ -627,30 +770,45 @@ exports.handler = async (event) => {
 ```
 
 **Implementation:**
+
 ```javascript
-exports.handler = async (event) => {
+exports.handler = async event => {
   const startTime = Date.now();
   const requestId = crypto.randomUUID();
-  
+
   try {
     await sql`SET statement_timeout = '5s'`;
-    
+
     const token = event.headers.authorization?.split(' ')[1];
     if (!token) {
-      return errorResponse(401, 'MISSING_TOKEN', 'Authorization header required', requestId);
+      return errorResponse(
+        401,
+        'MISSING_TOKEN',
+        'Authorization header required',
+        requestId
+      );
     }
-    
+
     const { adminId } = await verifyAdmin(token, requestId);
-    
-    const { metric = 'sessions', limit = 50, cursor } = event.queryStringParameters || {};
-    
+
+    const {
+      metric = 'sessions',
+      limit = 50,
+      cursor,
+    } = event.queryStringParameters || {};
+
     // Validate inputs
     if (!['sessions', 'duration'].includes(metric)) {
-      return errorResponse(400, 'INVALID_METRIC', 'Metric must be sessions or duration', requestId);
+      return errorResponse(
+        400,
+        'INVALID_METRIC',
+        'Metric must be sessions or duration',
+        requestId
+      );
     }
-    
+
     const parsedLimit = Math.min(Math.max(parseInt(limit) || 50, 1), 100);
-    
+
     // Parse keyset cursor
     let lastValue = null;
     let lastId = null;
@@ -660,10 +818,15 @@ exports.handler = async (event) => {
         lastValue = decoded.v;
         lastId = decoded.id;
       } catch (e) {
-        return errorResponse(400, 'INVALID_CURSOR', 'Invalid cursor format', requestId);
+        return errorResponse(
+          400,
+          'INVALID_CURSOR',
+          'Invalid cursor format',
+          requestId
+        );
       }
     }
-    
+
     // Keyset pagination query with privacy
     let users;
     if (metric === 'sessions') {
@@ -676,9 +839,13 @@ exports.handler = async (event) => {
             MAX(created_at) as last_active
           FROM sessions
           WHERE deleted_at IS NULL
-            ${lastValue !== null ? sql`
+            ${
+              lastValue !== null
+                ? sql`
               AND (COUNT(*), user_id) < (${lastValue}, ${lastId})
-            ` : sql``}
+            `
+                : sql``
+            }
           GROUP BY user_id
           HAVING COUNT(DISTINCT user_id) >= 5 OR user_id = ${adminId}
           ORDER BY COUNT(*) DESC, user_id DESC
@@ -696,9 +863,13 @@ exports.handler = async (event) => {
             MAX(created_at) as last_active
           FROM sessions
           WHERE deleted_at IS NULL
-            ${lastValue !== null ? sql`
+            ${
+              lastValue !== null
+                ? sql`
               AND (SUM(duration_minutes), user_id) < (${lastValue}, ${lastId})
-            ` : sql``}
+            `
+                : sql``
+            }
           GROUP BY user_id
           HAVING COUNT(DISTINCT user_id) >= 5 OR user_id = ${adminId}
           ORDER BY SUM(duration_minutes) DESC, user_id DESC
@@ -707,62 +878,85 @@ exports.handler = async (event) => {
         SELECT * FROM ranked_users
       `;
     }
-    
+
     // Check for next page
     let nextCursor = null;
     let results = users;
     if (users.length > parsedLimit) {
       results = users.slice(0, parsedLimit);
       const last = results[results.length - 1];
-      nextCursor = Buffer.from(JSON.stringify({
-        v: last.metric_value,
-        id: last.user_alias
-      })).toString('base64');
+      nextCursor = Buffer.from(
+        JSON.stringify({
+          v: last.metric_value,
+          id: last.user_alias,
+        })
+      ).toString('base64');
     }
-    
+
     // Add ranks (null for subsequent pages)
     const rankedResults = results.map((user, index) => ({
       user_alias: user.user_alias,
       metric_value: parseInt(user.metric_value),
       rank: cursor ? null : index + 1,
-      last_active: user.last_active
+      last_active: user.last_active,
     }));
-    
-    await auditLog(adminId, '/admin/users/top', 
-      { metric, limit: parsedLimit, cursor }, 200, Date.now() - startTime, requestId);
-    
+
+    await auditLog(
+      adminId,
+      '/admin/users/top',
+      { metric, limit: parsedLimit, cursor },
+      200,
+      Date.now() - startTime,
+      requestId
+    );
+
     return {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'private, no-cache',
         'Access-Control-Allow-Origin': '*',
-        'X-Request-ID': requestId
+        'X-Request-ID': requestId,
       },
       body: JSON.stringify({
         status: 'success',
         data: {
           users: rankedResults,
-          next_cursor: nextCursor
+          next_cursor: nextCursor,
         },
         meta: {
           request_id: requestId,
           metric,
           privacy_applied: false,
-          generated_at: new Date().toISOString()
-        }
-      })
+          generated_at: new Date().toISOString(),
+        },
+      }),
     };
   } catch (error) {
-    const statusCode = error.message.includes('Authentication') ? 401 :
-                      error.message.includes('Admin') ? 403 : 500;
-    await auditLog(null, '/admin/users/top', 
-      event.queryStringParameters, statusCode, Date.now() - startTime, requestId);
-    
-    return errorResponse(statusCode,
-      statusCode === 401 ? 'UNAUTHORIZED' :
-      statusCode === 403 ? 'FORBIDDEN' : 'INTERNAL_ERROR',
-      error.message, requestId);
+    const statusCode = error.message.includes('Authentication')
+      ? 401
+      : error.message.includes('Admin')
+        ? 403
+        : 500;
+    await auditLog(
+      null,
+      '/admin/users/top',
+      event.queryStringParameters,
+      statusCode,
+      Date.now() - startTime,
+      requestId
+    );
+
+    return errorResponse(
+      statusCode,
+      statusCode === 401
+        ? 'UNAUTHORIZED'
+        : statusCode === 403
+          ? 'FORBIDDEN'
+          : 'INTERNAL_ERROR',
+      error.message,
+      requestId
+    );
   }
 };
 ```
@@ -772,39 +966,45 @@ exports.handler = async (event) => {
 **Purpose:** System health with proper auth
 
 **Implementation:**
+
 ```javascript
-exports.handler = async (event) => {
+exports.handler = async event => {
   const startTime = Date.now();
   const requestId = crypto.randomUUID();
-  
+
   try {
     await sql`SET statement_timeout = '5s'`;
-    
+
     // Auth required even for health check
     const token = event.headers.authorization?.split(' ')[1];
     if (!token) {
-      return errorResponse(401, 'MISSING_TOKEN', 'Authorization header required', requestId);
+      return errorResponse(
+        401,
+        'MISSING_TOKEN',
+        'Authorization header required',
+        requestId
+      );
     }
-    
+
     const { adminId } = await verifyAdmin(token, requestId);
-    
+
     // Database checks
     const dbCheck = await sql`SELECT NOW() as time, version() as version`;
-    
+
     const migrations = await sql`
       SELECT version, applied_at 
       FROM schema_migrations 
       ORDER BY applied_at DESC 
       LIMIT 1
     `;
-    
+
     // Materialized view freshness
     const viewFreshness = await sql`
       SELECT view_name, last_refresh, row_version,
         EXTRACT(EPOCH FROM (NOW() - last_refresh)) as seconds_stale
       FROM mv_refresh_log
     `;
-    
+
     // Strava status
     const stravaStatus = await sql`
       SELECT 
@@ -813,7 +1013,7 @@ exports.handler = async (event) => {
       FROM integrations_strava
       WHERE deleted_at IS NULL
     `;
-    
+
     const health = {
       database: {
         connected: true,
@@ -822,30 +1022,37 @@ exports.handler = async (event) => {
           view: v.view_name,
           last_refresh: v.last_refresh,
           seconds_stale: Math.round(v.seconds_stale),
-          stale: v.seconds_stale > 3600 // Flag if > 1 hour
-        }))
+          stale: v.seconds_stale > 3600, // Flag if > 1 hour
+        })),
       },
       integrations: {
         strava: {
           last_import: stravaStatus[0]?.last_import || null,
-          tokens_active: stravaStatus[0]?.tokens_active || 0
-        }
+          tokens_active: stravaStatus[0]?.tokens_active || 0,
+        },
       },
       config: {
         environment: process.env.NODE_ENV || 'development',
-        version: process.env.APP_VERSION || '1.0.0'
-      }
+        version: process.env.APP_VERSION || '1.0.0',
+      },
     };
-    
-    await auditLog(adminId, '/admin/health', {}, 200, Date.now() - startTime, requestId);
-    
+
+    await auditLog(
+      adminId,
+      '/admin/health',
+      {},
+      200,
+      Date.now() - startTime,
+      requestId
+    );
+
     return {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'no-store',
         'Access-Control-Allow-Origin': '*',
-        'X-Request-ID': requestId
+        'X-Request-ID': requestId,
       },
       body: JSON.stringify({
         status: 'success',
@@ -853,38 +1060,48 @@ exports.handler = async (event) => {
         meta: {
           request_id: requestId,
           response_time_ms: Date.now() - startTime,
-          generated_at: new Date().toISOString()
-        }
-      })
+          generated_at: new Date().toISOString(),
+        },
+      }),
     };
   } catch (error) {
     // Auth errors return proper status
     if (error.message.includes('Authentication')) {
-      return errorResponse(401, 'UNAUTHORIZED', 'Invalid or expired token', requestId);
+      return errorResponse(
+        401,
+        'UNAUTHORIZED',
+        'Invalid or expired token',
+        requestId
+      );
     }
     if (error.message.includes('Admin')) {
-      return errorResponse(403, 'FORBIDDEN', 'Admin access required', requestId);
+      return errorResponse(
+        403,
+        'FORBIDDEN',
+        'Admin access required',
+        requestId
+      );
     }
-    
+
     // Database error returns degraded status
     return {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'no-store',
-        'X-Request-ID': requestId
+        'X-Request-ID': requestId,
       },
       body: JSON.stringify({
         status: 'degraded',
         data: {
           database: { connected: false },
-          error: 'Database connection failed'
+          error: 'Database connection failed',
         },
         meta: {
           request_id: requestId,
-          generated_at: new Date().toISOString()
-        }
-      })
+          generated_at: new Date().toISOString(),
+        },
+      }),
     };
   }
 };
@@ -893,28 +1110,29 @@ exports.handler = async (event) => {
 ## Section 4: Validation & Privacy
 
 ### Input Validation
+
 ```javascript
 const validateDateRange = (from, to) => {
   const fromDate = new Date(from);
   const toDate = new Date(to);
-  
+
   if (isNaN(fromDate) || isNaN(toDate)) {
     throw new Error('Invalid date format');
   }
-  
+
   const maxRange = 730 * 24 * 60 * 60 * 1000; // 730 days (2 years)
   if (toDate - fromDate > maxRange) {
     throw new Error('Date range exceeds maximum (730 days)');
   }
-  
+
   if (fromDate > toDate) {
     throw new Error('From date must be before to date');
   }
-  
+
   return { fromDate, toDate };
 };
 
-const validateTimezone = (timezone) => {
+const validateTimezone = timezone => {
   // Use Intl API to validate timezone
   try {
     new Intl.DateTimeFormat('en-US', { timeZone: timezone });
@@ -926,13 +1144,15 @@ const validateTimezone = (timezone) => {
 ```
 
 ### Privacy Protection
+
 ```javascript
 const applyPrivacyThreshold = (count, threshold = 5) => {
   return count < threshold ? null : count;
 };
 
-const hashUserId = (userId) => {
-  const hash = crypto.createHash('md5')
+const hashUserId = userId => {
+  const hash = crypto
+    .createHash('md5')
     .update(userId + (process.env.HASH_SALT || 'default'))
     .digest('hex');
   return 'usr_' + hash.substring(0, 6);
@@ -940,6 +1160,7 @@ const hashUserId = (userId) => {
 ```
 
 ### Rate Limiting (Database-backed)
+
 ```sql
 CREATE TABLE admin_rate_limits (
   admin_id UUID REFERENCES users(id),
@@ -952,9 +1173,9 @@ CREATE INDEX idx_rate_limits_window ON admin_rate_limits(window_start);
 ```
 
 ```javascript
-const checkRateLimit = async (adminId) => {
+const checkRateLimit = async adminId => {
   const windowStart = new Date(Math.floor(Date.now() / 60000) * 60000); // 1-minute window
-  
+
   const result = await sql`
     INSERT INTO admin_rate_limits (admin_id, window_start, attempts)
     VALUES (${adminId}, ${windowStart}, 1)
@@ -962,7 +1183,7 @@ const checkRateLimit = async (adminId) => {
     DO UPDATE SET attempts = admin_rate_limits.attempts + 1
     RETURNING attempts
   `;
-  
+
   if (result[0].attempts > 60) {
     throw new Error('Rate limit exceeded');
   }
@@ -1010,6 +1231,7 @@ const checkRateLimit = async (adminId) => {
 ## Section 6: Test Plan
 
 ### Unit Tests
+
 ```javascript
 describe('Admin Authentication', () => {
   test('validates issuer and audience', async () => {
@@ -1018,20 +1240,22 @@ describe('Admin Authentication', () => {
       process.env.JWT_SECRET,
       { issuer: 'wrong-issuer', audience: 'api' }
     );
-    
-    await expect(verifyAdmin(tokenWithWrongIssuer))
-      .rejects.toThrow('Authentication failed');
+
+    await expect(verifyAdmin(tokenWithWrongIssuer)).rejects.toThrow(
+      'Authentication failed'
+    );
   });
-  
+
   test('enforces admin role', async () => {
     const userToken = jwt.sign(
       { sub: 'user-id', role: 'user' },
       process.env.JWT_SECRET,
       { issuer: 'ignite-fitness', audience: 'api' }
     );
-    
-    await expect(verifyAdmin(userToken))
-      .rejects.toThrow('Admin access required');
+
+    await expect(verifyAdmin(userToken)).rejects.toThrow(
+      'Admin access required'
+    );
   });
 });
 
@@ -1041,7 +1265,7 @@ describe('Privacy Thresholds', () => {
     expect(applyPrivacyThreshold(5, 5)).toBe(5);
     expect(applyPrivacyThreshold(10, 5)).toBe(10);
   });
-  
+
   test('consistent user hashing', () => {
     const hash1 = hashUserId('user-123');
     const hash2 = hashUserId('user-123');
@@ -1055,7 +1279,7 @@ describe('Timezone Handling', () => {
     expect(() => validateTimezone('America/Denver')).not.toThrow();
     expect(() => validateTimezone('Invalid/Zone')).toThrow();
   });
-  
+
   test('DST boundary handling', async () => {
     // Test date range spanning March DST transition
     const result = await handler({
@@ -1063,10 +1287,10 @@ describe('Timezone Handling', () => {
         from: '2024-03-09',
         to: '2024-03-11',
         timezone: 'America/Denver',
-        bucket: 'day'
-      }
+        bucket: 'day',
+      },
     });
-    
+
     const data = JSON.parse(result.body);
     expect(data.data.series).toHaveLength(3);
     // March 10 should still appear despite 23-hour day
@@ -1076,17 +1300,18 @@ describe('Timezone Handling', () => {
 ```
 
 ### Integration Tests
+
 ```javascript
 describe('Keyset Pagination', () => {
   test('returns stable results', async () => {
     // Insert new data between page requests
     const page1 = await getTopUsers({ limit: 10 });
     await insertTestSession();
-    const page2 = await getTopUsers({ 
-      limit: 10, 
-      cursor: page1.data.next_cursor 
+    const page2 = await getTopUsers({
+      limit: 10,
+      cursor: page1.data.next_cursor,
     });
-    
+
     // Page 2 should not contain page 1 users
     const page1Ids = page1.data.users.map(u => u.user_alias);
     const page2Ids = page2.data.users.map(u => u.user_alias);
@@ -1100,7 +1325,7 @@ describe('Query Timeouts', () => {
     jest.spyOn(sql, 'query').mockImplementation(async () => {
       await new Promise(resolve => setTimeout(resolve, 6000));
     });
-    
+
     const response = await handler({});
     expect(response.statusCode).toBe(500);
     expect(JSON.parse(response.body).error.code).toBe('QUERY_TIMEOUT');
@@ -1109,15 +1334,17 @@ describe('Query Timeouts', () => {
 
 describe('Rate Limiting', () => {
   test('enforces per-admin limits', async () => {
-    const requests = Array(61).fill().map(() => 
-      handler({ headers: { authorization: `Bearer ${adminToken}` }})
-    );
-    
+    const requests = Array(61)
+      .fill()
+      .map(() =>
+        handler({ headers: { authorization: `Bearer ${adminToken}` } })
+      );
+
     const results = await Promise.allSettled(requests);
-    const rateLimited = results.filter(r => 
-      r.status === 'fulfilled' && r.value.statusCode === 429
+    const rateLimited = results.filter(
+      r => r.status === 'fulfilled' && r.value.statusCode === 429
     );
-    
+
     expect(rateLimited.length).toBeGreaterThan(0);
   });
 });
@@ -1126,13 +1353,20 @@ describe('Rate Limiting', () => {
 ## Section 7: Later (Deferred Items)
 
 ### Materialized View Auto-Refresh
-**Deferred:** Automatic refresh scheduling via pg_cron or external scheduler.
-**Reason:** Requires infrastructure setup beyond application code. For MVP, views can be refreshed manually or via admin API endpoint. Staleness is tracked and visible.
 
-### Redis-backed Rate Limiting  
-**Deferred:** Moving rate limiting from PostgreSQL to Redis.
-**Reason:** Current database solution is sufficient for expected admin traffic. Redis adds operational complexity without immediate benefit.
+**Deferred:** Automatic refresh scheduling via pg_cron or external scheduler.
+**Reason:** Requires infrastructure setup beyond application code. For MVP,
+views can be refreshed manually or via admin API endpoint. Staleness is tracked
+and visible.
+
+### Redis-backed Rate Limiting
+
+**Deferred:** Moving rate limiting from PostgreSQL to Redis. **Reason:** Current
+database solution is sufficient for expected admin traffic. Redis adds
+operational complexity without immediate benefit.
 
 ### GraphQL Admin API
-**Deferred:** GraphQL endpoint for flexible querying.
-**Reason:** REST endpoints cover current requirements. GraphQL can be added when admin UI needs more complex queries.
+
+**Deferred:** GraphQL endpoint for flexible querying. **Reason:** REST endpoints
+cover current requirements. GraphQL can be added when admin UI needs more
+complex queries.

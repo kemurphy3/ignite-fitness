@@ -2,7 +2,12 @@
 // Integration tests for API endpoints
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { getTestDatabase, createTestUser, createTestSession, cleanupTestData } from '../helpers/database.js';
+import {
+  getTestDatabase,
+  createTestUser,
+  createTestSession,
+  cleanupTestData,
+} from '../helpers/database.js';
 
 // Mock the Netlify function handler
 const mockHandler = async (event, userId = 1) => {
@@ -33,9 +38,9 @@ const mockHandler = async (event, userId = 1) => {
       pagination: {
         has_more: hasMore,
         count: returnSessions.length,
-        limit
-      }
-    })
+        limit,
+      },
+    }),
   };
 };
 
@@ -51,7 +56,7 @@ describe('API Endpoints Integration', () => {
     // Create test user
     testUser = await createTestUser({
       external_id: 'api_test_user',
-      username: 'apitestuser'
+      username: 'apitestuser',
     });
 
     // Create test sessions
@@ -61,8 +66,8 @@ describe('API Endpoints Integration', () => {
         type: 'workout',
         source: 'test',
         source_id: `api_session_${i}`,
-        start_at: new Date(Date.now() - (i * 2 * 60 * 60 * 1000)), // Every 2 hours
-        duration: 3600
+        start_at: new Date(Date.now() - i * 2 * 60 * 60 * 1000), // Every 2 hours
+        duration: 3600,
       });
       testSessions.push(session);
     }
@@ -75,7 +80,7 @@ describe('API Endpoints Integration', () => {
   describe('Sessions List API', () => {
     it('should return sessions with default pagination', async () => {
       const event = {
-        queryStringParameters: {}
+        queryStringParameters: {},
       };
 
       const response = await mockHandler(event, testUser.id);
@@ -90,7 +95,7 @@ describe('API Endpoints Integration', () => {
 
     it('should return sessions with custom limit', async () => {
       const event = {
-        queryStringParameters: { limit: '3' }
+        queryStringParameters: { limit: '3' },
       };
 
       const response = await mockHandler(event, testUser.id);
@@ -105,7 +110,7 @@ describe('API Endpoints Integration', () => {
 
     it('should enforce maximum limit', async () => {
       const event = {
-        queryStringParameters: { limit: '150' }
+        queryStringParameters: { limit: '150' },
       };
 
       const response = await mockHandler(event, testUser.id);
@@ -117,7 +122,7 @@ describe('API Endpoints Integration', () => {
 
     it('should handle empty result set', async () => {
       // Create a handler that returns no sessions
-      const emptyHandler = async (event) => {
+      const emptyHandler = async event => {
         const testDb = getTestDatabase();
         const limit = Math.min(parseInt(event.queryStringParameters?.limit) || 20, 100);
 
@@ -140,14 +145,14 @@ describe('API Endpoints Integration', () => {
             pagination: {
               has_more: hasMore,
               count: returnSessions.length,
-              limit
-            }
-          })
+              limit,
+            },
+          }),
         };
       };
 
       const event = {
-        queryStringParameters: { limit: '10' }
+        queryStringParameters: { limit: '10' },
       };
 
       const response = await emptyHandler(event);
@@ -163,7 +168,7 @@ describe('API Endpoints Integration', () => {
   describe('API Response Format', () => {
     it('should return properly formatted session data', async () => {
       const event = {
-        queryStringParameters: { limit: '1' }
+        queryStringParameters: { limit: '1' },
       };
 
       const response = await mockHandler(event, testUser.id);
@@ -187,7 +192,7 @@ describe('API Endpoints Integration', () => {
 
     it('should return properly formatted pagination metadata', async () => {
       const event = {
-        queryStringParameters: { limit: '3' }
+        queryStringParameters: { limit: '3' },
       };
 
       const response = await mockHandler(event, testUser.id);

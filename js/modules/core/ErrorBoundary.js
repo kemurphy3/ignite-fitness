@@ -4,174 +4,182 @@
  * Provides fallback UI and error reporting
  */
 
-(function() {
-    'use strict';
+(function () {
+  'use strict';
 
-    // Global error tracking
-    const errorQueue = [];
-    const MAX_ERROR_QUEUE_SIZE = 100;
+  // Global error tracking
+  const errorQueue = [];
+  const MAX_ERROR_QUEUE_SIZE = 100;
+
+  /**
+   * Error Boundary Class
+   * Provides comprehensive error catching and recovery
+   */
+  class ErrorBoundary {
+    constructor(config = {}) {
+      this.config = {
+        logToConsole: config.logToConsole !== false,
+        logToRemote: config.logToRemote || false,
+        remoteEndpoint: config.remoteEndpoint || null,
+        showFallbackUI: config.showFallbackUI !== false,
+        onError: config.onError || null,
+        ...config,
+      };
+
+      this.errorCount = 0;
+      this.isInitialized = false;
+    }
 
     /**
-     * Error Boundary Class
-     * Provides comprehensive error catching and recovery
+     * Initialize error boundary
      */
-    class ErrorBoundary {
-        constructor(config = {}) {
-            this.config = {
-                logToConsole: config.logToConsole !== false,
-                logToRemote: config.logToRemote || false,
-                remoteEndpoint: config.remoteEndpoint || null,
-                showFallbackUI: config.showFallbackUI !== false,
-                onError: config.onError || null,
-                ...config
-            };
+    init() {
+      if (this.isInitialized) {
+        return;
+      }
 
-            this.errorCount = 0;
-            this.isInitialized = false;
-        }
+      console.log('Error Boundary initialized');
 
-        /**
-         * Initialize error boundary
-         */
-        init() {
-            if (this.isInitialized) {return;}
+      // Catch unhandled promise rejections
+      this.setupPromiseRejectionHandler();
 
-            console.log('Error Boundary initialized');
+      // Catch JavaScript errors
+      this.setupErrorHandler();
 
-            // Catch unhandled promise rejections
-            this.setupPromiseRejectionHandler();
+      // Catch resource loading errors
+      this.setupResourceErrorHandler();
 
-            // Catch JavaScript errors
-            this.setupErrorHandler();
+      // Setup error recovery
+      this.setupErrorRecovery();
 
-            // Catch resource loading errors
-            this.setupResourceErrorHandler();
+      this.isInitialized = true;
+    }
 
-            // Setup error recovery
-            this.setupErrorRecovery();
+    /**
+     * Setup promise rejection handler
+     */
+    setupPromiseRejectionHandler() {
+      window.addEventListener('unhandledrejection', event => {
+        console.error('Unhandled promise rejection:', event.reason);
 
-            this.isInitialized = true;
-        }
+        this.handleError({
+          type: 'promise_rejection',
+          message: event.reason?.message || 'Unhandled Promise Rejection',
+          stack: event.reason?.stack || '',
+          timestamp: new Date().toISOString(),
+          url: window.location.href,
+          userAgent: navigator.userAgent,
+        });
 
-        /**
-         * Setup promise rejection handler
-         */
-        setupPromiseRejectionHandler() {
-            window.addEventListener('unhandledrejection', (event) => {
-                console.error('Unhandled promise rejection:', event.reason);
+        // Prevent default console error
+        event.preventDefault();
+      });
+    }
 
-                this.handleError({
-                    type: 'promise_rejection',
-                    message: event.reason?.message || 'Unhandled Promise Rejection',
-                    stack: event.reason?.stack || '',
-                    timestamp: new Date().toISOString(),
-                    url: window.location.href,
-                    userAgent: navigator.userAgent
-                });
+    /**
+     * Setup JavaScript error handler
+     */
+    setupErrorHandler() {
+      window.addEventListener('error', event => {
+        console.error('JavaScript error:', event.error);
 
-                // Prevent default console error
-                event.preventDefault();
+        this.handleError({
+          type: 'javascript_error',
+          message: event.message || 'JavaScript Error',
+          filename: event.filename || '',
+          lineno: event.lineno || 0,
+          colno: event.colno || 0,
+          stack: event.error?.stack || '',
+          timestamp: new Date().toISOString(),
+          url: window.location.href,
+          userAgent: navigator.userAgent,
+        });
+      });
+    }
+
+    /**
+     * Setup resource loading error handler
+     */
+    setupResourceErrorHandler() {
+      window.addEventListener(
+        'error',
+        event => {
+          // Check if it's a resource loading error
+          if (event.target && event.target !== window && !event.error) {
+            console.error('Resource loading error:', event.target);
+
+            this.handleError({
+              type: 'resource_error',
+              message: `Failed to load resource: ${event.target.tagName}`,
+              filename: event.target.src || event.target.href || '',
+              timestamp: new Date().toISOString(),
+              url: window.location.href,
             });
+          }
+        },
+        true
+      ); // Use capture phase
+    }
+
+    /**
+     * Handle error
+     */
+    handleError(errorInfo) {
+      this.errorCount++;
+
+      // Add to error queue
+      errorQueue.push(errorInfo);
+      if (errorQueue.length > MAX_ERROR_QUEUE_SIZE) {
+        errorQueue.shift();
+      }
+
+      // Log to console
+      if (this.config.logToConsole) {
+        console.group('🔴 Error Caught');
+        console.error('Type:', errorInfo.type);
+        console.error('Message:', errorInfo.message);
+        console.error('Timestamp:', errorInfo.timestamp);
+        if (errorInfo.stack) {
+          console.error('Stack:', errorInfo.stack);
         }
+        console.groupEnd();
+      }
 
-        /**
-         * Setup JavaScript error handler
-         */
-        setupErrorHandler() {
-            window.addEventListener('error', (event) => {
-                console.error('JavaScript error:', event.error);
+      // Show fallback UI
+      if (this.config.showFallbackUI && this.errorCount === 1) {
+        this.showErrorFallbackUI(errorInfo);
+      }
 
-                this.handleError({
-                    type: 'javascript_error',
-                    message: event.message || 'JavaScript Error',
-                    filename: event.filename || '',
-                    lineno: event.lineno || 0,
-                    colno: event.colno || 0,
-                    stack: event.error?.stack || '',
-                    timestamp: new Date().toISOString(),
-                    url: window.location.href,
-                    userAgent: navigator.userAgent
-                });
-            });
+      // Custom error handler
+      if (this.config.onError) {
+        try {
+          this.config.onError(errorInfo);
+        } catch (e) {
+          console.error('Error in custom error handler:', e);
         }
+      }
 
-        /**
-         * Setup resource loading error handler
-         */
-        setupResourceErrorHandler() {
-            window.addEventListener('error', (event) => {
-                // Check if it's a resource loading error
-                if (event.target && event.target !== window && !event.error) {
-                    console.error('Resource loading error:', event.target);
+      // Log to remote endpoint if configured
+      if (this.config.logToRemote && this.config.remoteEndpoint) {
+        this.logToRemote(errorInfo).catch(e => {
+          console.error('Failed to log error to remote:', e);
+        });
+      }
+    }
 
-                    this.handleError({
-                        type: 'resource_error',
-                        message: `Failed to load resource: ${event.target.tagName}`,
-                        filename: event.target.src || event.target.href || '',
-                        timestamp: new Date().toISOString(),
-                        url: window.location.href
-                    });
-                }
-            }, true); // Use capture phase
-        }
+    /**
+     * Show error fallback UI
+     */
+    showErrorFallbackUI(errorInfo) {
+      // Remove existing error UI
+      const existingErrorUI = document.getElementById('error-boundary-ui');
+      if (existingErrorUI) {
+        existingErrorUI.remove();
+      }
 
-        /**
-         * Handle error
-         */
-        handleError(errorInfo) {
-            this.errorCount++;
-
-            // Add to error queue
-            errorQueue.push(errorInfo);
-            if (errorQueue.length > MAX_ERROR_QUEUE_SIZE) {
-                errorQueue.shift();
-            }
-
-            // Log to console
-            if (this.config.logToConsole) {
-                console.group('🔴 Error Caught');
-                console.error('Type:', errorInfo.type);
-                console.error('Message:', errorInfo.message);
-                console.error('Timestamp:', errorInfo.timestamp);
-                if (errorInfo.stack) {console.error('Stack:', errorInfo.stack);}
-                console.groupEnd();
-            }
-
-            // Show fallback UI
-            if (this.config.showFallbackUI && this.errorCount === 1) {
-                this.showErrorFallbackUI(errorInfo);
-            }
-
-            // Custom error handler
-            if (this.config.onError) {
-                try {
-                    this.config.onError(errorInfo);
-                } catch (e) {
-                    console.error('Error in custom error handler:', e);
-                }
-            }
-
-            // Log to remote endpoint if configured
-            if (this.config.logToRemote && this.config.remoteEndpoint) {
-                this.logToRemote(errorInfo).catch(e => {
-                    console.error('Failed to log error to remote:', e);
-                });
-            }
-        }
-
-        /**
-         * Show error fallback UI
-         */
-        showErrorFallbackUI(errorInfo) {
-            // Remove existing error UI
-            const existingErrorUI = document.getElementById('error-boundary-ui');
-            if (existingErrorUI) {
-                existingErrorUI.remove();
-            }
-
-            const errorUI = document.createElement('div');
-            errorUI.id = 'error-boundary-ui';
-            errorUI.innerHTML = `
+      const errorUI = document.createElement('div');
+      errorUI.id = 'error-boundary-ui';
+      errorUI.innerHTML = `
                 <div class="error-boundary-container">
                     <div class="error-boundary-content">
                         <div class="error-boundary-icon">⚠️</div>
@@ -198,7 +206,7 @@
                 </div>
             `;
 
-            errorUI.style.cssText = `
+      errorUI.style.cssText = `
                 position: fixed;
                 top: 0;
                 left: 0;
@@ -212,13 +220,13 @@
                 padding: 20px;
             `;
 
-            document.body.appendChild(errorUI);
+      document.body.appendChild(errorUI);
 
-            // Add styles if not already added
-            if (!document.getElementById('error-boundary-styles')) {
-                const style = document.createElement('style');
-                style.id = 'error-boundary-styles';
-                style.textContent = `
+      // Add styles if not already added
+      if (!document.getElementById('error-boundary-styles')) {
+        const style = document.createElement('style');
+        style.id = 'error-boundary-styles';
+        style.textContent = `
                     .error-boundary-container {
                         background: white;
                         border-radius: 12px;
@@ -318,108 +326,107 @@
                         color: #2d3748;
                     }
                 `;
-                document.head.appendChild(style);
-            }
-        }
-
-        /**
-         * Log error to remote endpoint
-         */
-        async logToRemote(errorInfo) {
-            try {
-                await fetch(this.config.remoteEndpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        error: errorInfo,
-                        context: {
-                            url: window.location.href,
-                            userAgent: navigator.userAgent,
-                            timestamp: new Date().toISOString()
-                        }
-                    })
-                });
-            } catch (e) {
-                console.error('Failed to log error to remote:', e);
-            }
-        }
-
-        /**
-         * Setup error recovery
-         */
-        setupErrorRecovery() {
-            // Auto-recover after multiple errors
-            if (this.errorCount > 3) {
-                console.warn('Multiple errors detected, attempting recovery...');
-                setTimeout(() => {
-                    if (confirm('Multiple errors detected. Would you like to reload the page?')) {
-                        window.location.reload();
-                    }
-                }, 5000);
-            }
-        }
-
-        /**
-         * Get error queue
-         */
-        getErrorQueue() {
-            return [...errorQueue];
-        }
-
-        /**
-         * Clear error queue
-         */
-        clearErrorQueue() {
-            errorQueue.length = 0;
-        }
-
-        /**
-         * Reset error boundary
-         */
-        reset() {
-            this.errorCount = 0;
-            this.clearErrorQueue();
-            const errorUI = document.getElementById('error-boundary-ui');
-            if (errorUI) {
-                errorUI.remove();
-            }
-        }
+        document.head.appendChild(style);
+      }
     }
 
-    // Create global instance
-    const errorBoundary = new ErrorBoundary({
-        logToConsole: true,
-        showFallbackUI: true,
-        onError: (errorInfo) => {
-            // Custom error handling logic
-            console.log('Custom error handler called with:', errorInfo);
-        }
-    });
-
-    // Initialize when DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            errorBoundary.init();
+    /**
+     * Log error to remote endpoint
+     */
+    async logToRemote(errorInfo) {
+      try {
+        await fetch(this.config.remoteEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            error: errorInfo,
+            context: {
+              url: window.location.href,
+              userAgent: navigator.userAgent,
+              timestamp: new Date().toISOString(),
+            },
+          }),
         });
-    } else {
-        errorBoundary.init();
+      } catch (e) {
+        console.error('Failed to log error to remote:', e);
+      }
     }
 
-    // Expose globally
-    window.ErrorBoundary = errorBoundary;
-
-    // Handle sign out from error boundary
-    window.handleErrorBoundarySignOut = function() {
-        if (window.AuthManager) {
-            window.AuthManager.clearStorage();
-        }
-        if (window.Router) {
-            window.Router.navigate('#/login', { replace: true });
-        } else {
+    /**
+     * Setup error recovery
+     */
+    setupErrorRecovery() {
+      // Auto-recover after multiple errors
+      if (this.errorCount > 3) {
+        console.warn('Multiple errors detected, attempting recovery...');
+        setTimeout(() => {
+          if (confirm('Multiple errors detected. Would you like to reload the page?')) {
             window.location.reload();
-        }
-    };
+          }
+        }, 5000);
+      }
+    }
 
+    /**
+     * Get error queue
+     */
+    getErrorQueue() {
+      return [...errorQueue];
+    }
+
+    /**
+     * Clear error queue
+     */
+    clearErrorQueue() {
+      errorQueue.length = 0;
+    }
+
+    /**
+     * Reset error boundary
+     */
+    reset() {
+      this.errorCount = 0;
+      this.clearErrorQueue();
+      const errorUI = document.getElementById('error-boundary-ui');
+      if (errorUI) {
+        errorUI.remove();
+      }
+    }
+  }
+
+  // Create global instance
+  const errorBoundary = new ErrorBoundary({
+    logToConsole: true,
+    showFallbackUI: true,
+    onError: errorInfo => {
+      // Custom error handling logic
+      console.log('Custom error handler called with:', errorInfo);
+    },
+  });
+
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      errorBoundary.init();
+    });
+  } else {
+    errorBoundary.init();
+  }
+
+  // Expose globally
+  window.ErrorBoundary = errorBoundary;
+
+  // Handle sign out from error boundary
+  window.handleErrorBoundarySignOut = function () {
+    if (window.AuthManager) {
+      window.AuthManager.clearStorage();
+    }
+    if (window.Router) {
+      window.Router.navigate('#/login', { replace: true });
+    } else {
+      window.location.reload();
+    }
+  };
 })();

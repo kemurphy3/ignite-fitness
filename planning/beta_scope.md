@@ -5,17 +5,24 @@
 ## Repository Architecture Summary
 
 ### Technology Stack
+
 - **Backend:** Netlify Functions (Serverless)
 - **Database:** PostgreSQL/Neon
 - **Test Runner:** Vitest
-- **Frontend Routing:** Custom Router (js/modules/ui/Router.js) - Hash-based routing
+- **Frontend Routing:** Custom Router (js/modules/ui/Router.js) - Hash-based
+  routing
 - **Module Count:** 150+ JavaScript modules
-- **Module Categories:** accessibility, admin, ai, assessment, auth, cache, core, data, debug, goals, habits, injury, integration, integrations, load, monitoring, nutrition, offline, onboarding, preload, progress, readiness, safety, schedule, security, settings, sports, storage, ui, utils, workout
+- **Module Categories:** accessibility, admin, ai, assessment, auth, cache,
+  core, data, debug, goals, habits, injury, integration, integrations, load,
+  monitoring, nutrition, offline, onboarding, preload, progress, readiness,
+  safety, schedule, security, settings, sports, storage, ui, utils, workout
 
 ### Existing Database Tables
+
 Based on schema file analysis:
 
 **Core Tables:**
+
 - `user_profiles` - User profile data
 - `readiness_logs` - Daily readiness tracking
 - `session_logs` - Workout session tracking
@@ -27,17 +34,20 @@ Based on schema file analysis:
 - `migration_history` - Schema migration tracking
 
 **Profile & Preferences:**
+
 - `user_profile_history` - Profile change history
 - `profile_update_requests` - Profile update tracking
 - `profile_rate_limits` - Rate limiting
 - `valid_goals` - Valid goal definitions
 
 **Exercises & Sessions:**
+
 - `session_exercises` - Exercise data within sessions
 - `session_exercise_history` - Exercise history
 - `exercise_rate_limits` - Exercise endpoint rate limits
 
 **Integration:**
+
 - `integrations_strava` - Strava integration state
 - `strava_activity_cache` - Strava activity cache
 - `strava_tokens` - Strava OAuth tokens
@@ -46,12 +56,15 @@ Based on schema file analysis:
 - `activity_deduplication` - Deduplication tracking
 
 **Analytics & Admin:**
+
 - Admin analytics tables (from database-admin-analytics-schema.sql)
 
 **Goals & Habits:**
+
 - Goals and habits tables (from database-goals-habits-schema.sql)
 
 **Daily Readiness:**
+
 - Daily readiness tables (from database-daily-readiness-schema.sql)
 
 ## Beta Requirements vs Current State
@@ -59,24 +72,38 @@ Based on schema file analysis:
 ### ✅ **ALREADY IMPLEMENTED**
 
 #### Strong Foundation
-- **PWA Infrastructure:** Complete offline support, service worker (`sw.js`), manifest.json
-- **Security Implementation:** SQL injection protection, JWT auth, CSRF protection, security headers
-- **User Management:** Comprehensive profiles, preferences system, enhanced onboarding (8 steps)
+
+- **PWA Infrastructure:** Complete offline support, service worker (`sw.js`),
+  manifest.json
+- **Security Implementation:** SQL injection protection, JWT auth, CSRF
+  protection, security headers
+- **User Management:** Comprehensive profiles, preferences system, enhanced
+  onboarding (8 steps)
 - **Session Tracking:** Session logging, progression tracking, exercise tracking
-- **AI Infrastructure:** ExpertCoordinator, coaching engine, personalized coaching, substitution engine (Prompt 2)
-- **Load Calculation:** LoadCalculator with TRIMP/Banister math, load tracking, GuardrailManager (Prompt 3)
-- **Strava Integration:** OAuth, activity import, token management, deduplication
-- **Testing Infrastructure:** Vitest setup, 150+ test files, unit and integration tests
+- **AI Infrastructure:** ExpertCoordinator, coaching engine, personalized
+  coaching, substitution engine (Prompt 2)
+- **Load Calculation:** LoadCalculator with TRIMP/Banister math, load tracking,
+  GuardrailManager (Prompt 3)
+- **Strava Integration:** OAuth, activity import, token management,
+  deduplication
+- **Testing Infrastructure:** Vitest setup, 150+ test files, unit and
+  integration tests
 - **Accessibility:** Comprehensive a11y features (WCAG compliant)
-- **Performance:** Code splitting, web workers, virtual scrolling, service worker caching
+- **Performance:** Code splitting, web workers, virtual scrolling, service
+  worker caching
 
 #### Recently Implemented (Prompts 1-4)
-- ✅ **Multi-Sport Workout Catalog** (Prompt 1): `WorkoutCatalog.js` with 61 workouts
-- ✅ **AI Substitution Engine** (Prompt 2): `SubstitutionEngine.js` with load equivalence
-- ✅ **Safety Guardrails** (Prompt 3): `GuardrailManager.js` with comprehensive protection
+
+- ✅ **Multi-Sport Workout Catalog** (Prompt 1): `WorkoutCatalog.js` with 61
+  workouts
+- ✅ **AI Substitution Engine** (Prompt 2): `SubstitutionEngine.js` with load
+  equivalence
+- ✅ **Safety Guardrails** (Prompt 3): `GuardrailManager.js` with comprehensive
+  protection
 - ✅ **Enhanced Onboarding** (Prompt 4): 8-step multi-sport onboarding flow
 
 #### Existing Entity Mapping
+
 - `user_profiles` → UserProfile ✅
 - `session_logs` → CompletedSession (partial) ✅
 - `preferences` → UserProfile (partial) ✅
@@ -88,6 +115,7 @@ Based on schema file analysis:
 ### ❌ **REMAINING BETA-CRITICAL GAPS**
 
 #### Missing Database Tables (Required for Beta)
+
 1. **workout_templates** - Store structured workout templates
    - Status: In-memory only (`WorkoutCatalog.js`)
    - Need: Database persistence for admin management
@@ -119,6 +147,7 @@ Based on schema file analysis:
    - Priority: Low (current solution works)
 
 #### Missing Features for Beta
+
 1. **Workout Template Persistence**
    - ✅ Catalog exists in-memory (`WorkoutCatalog.js`)
    - ❌ No database persistence layer
@@ -153,13 +182,19 @@ Based on schema file analysis:
 ## Beta Success Criteria
 
 ### Must Ship (Beta-Critical)
-- [x] 50+ workout templates across 3 modalities minimum ✅ **COMPLETE** (61 workouts)
-- [x] AI substitution with mathematical load equivalence ✅ **COMPLETE** (SubstitutionEngine)
+
+- [x] 50+ workout templates across 3 modalities minimum ✅ **COMPLETE** (61
+      workouts)
+- [x] AI substitution with mathematical load equivalence ✅ **COMPLETE**
+      (SubstitutionEngine)
 - [x] Weekly caps and ramp-rate guardrails ✅ **COMPLETE** (GuardrailManager)
-- [x] Enhanced onboarding collecting all required data ✅ **COMPLETE** (8-step flow)
-- [ ] Today/Week dashboard views with substitute functionality ⚠️ **PARTIAL** (need dedicated views)
+- [x] Enhanced onboarding collecting all required data ✅ **COMPLETE** (8-step
+      flow)
+- [ ] Today/Week dashboard views with substitute functionality ⚠️ **PARTIAL**
+      (need dedicated views)
 
 ### Nice-to-Have (Beta+1)
+
 - [ ] Agility ladder library and soccer circuits
 - [ ] MTB terrain awareness and difficulty tags
 - [ ] Auto-tune zones from recent performance data
@@ -168,15 +203,19 @@ Based on schema file analysis:
 ## Implementation Priority
 
 ### Phase 1: Dashboard Views (REMAINING)
+
 **Priority:** HIGH - This is the only remaining critical gap
+
 - [ ] Create `TodayView.js` component
-- [ ] Create `WeekView.js` component  
+- [ ] Create `WeekView.js` component
 - [ ] Add status indicators (green/yellow/red)
 - [ ] Wire substitute button from WorkoutTracker
 - [ ] Integrate with existing DashboardRenderer
 
 ### Phase 2: Database Persistence (Optional Enhancement)
+
 **Priority:** MEDIUM - In-memory solutions work for beta
+
 - [ ] Create workout_templates table migration
 - [ ] Create substitution_rules table migration
 - [ ] Create guardrails_config table migration
@@ -184,7 +223,9 @@ Based on schema file analysis:
 - [ ] Build admin UI for template management
 
 ### Phase 3: Zone Management (Enhancement)
+
 **Priority:** MEDIUM - Improves accuracy
+
 - [ ] Create zone storage and calculation
 - [ ] Auto-calculate zones from recent efforts
 - [ ] Build zone editing UI
@@ -192,6 +233,7 @@ Based on schema file analysis:
 ## Risk Assessment
 
 ### Low Risk (Good Foundation)
+
 - ✅ Database and API infrastructure complete
 - ✅ Authentication and security complete
 - ✅ Testing framework complete
@@ -199,10 +241,12 @@ Based on schema file analysis:
 - ✅ Core features (catalog, substitution, guardrails) complete
 
 ### Medium Risk (Remaining Work)
+
 - ⚠️ Dashboard views - Requires new components but low complexity
 - ⚠️ Zone management - New feature but not critical for beta launch
 
 ### High Risk (Integration Complexity)
+
 - ✅ Guardrail system integration - **COMPLETE**
 - ✅ Onboarding flow - **COMPLETE**
 - ✅ Substitution integration - **COMPLETE**
@@ -210,12 +254,14 @@ Based on schema file analysis:
 ## Success Metrics
 
 ### Technical Metrics (Current State)
+
 - ✅ Unit test coverage: Vitest framework ready (target: 90%+ coverage)
 - ✅ Load substitution accuracy: Implemented (within 15% variance)
 - ⚠️ Dashboard load time: Needs measurement (target: < 2 seconds on mobile)
 - ✅ Offline functionality: Maintained
 
 ### User Experience Metrics (To Validate)
+
 - Onboarding completion rate: TBD (target: > 80%)
 - Substitution feature usage: TBD (target: > 30% of workouts)
 - Safety override trigger rate: TBD (target: < 5%)
@@ -224,6 +270,7 @@ Based on schema file analysis:
 ## Current Implementation Status
 
 ### ✅ **COMPLETE (Prompts 1-4)**
+
 1. **Multi-Sport Workout Catalog** ✅
    - `js/modules/sports/WorkoutCatalog.js` (1,286 lines, 61 workouts)
    - `data/seed/workout-templates.json`
@@ -247,11 +294,13 @@ Based on schema file analysis:
      - SportSelection.js (385 lines)
      - CurrentVolume.js (252 lines)
      - EquipmentAccess.js (236 lines)
-     - SecondarySports.js, RecentEfforts.js, InjuryHistory.js, TimeWindows.js, ReviewComplete.js
+     - SecondarySports.js, RecentEfforts.js, InjuryHistory.js, TimeWindows.js,
+       ReviewComplete.js
    - Comprehensive validation
    - Unit tests created
 
 ### ⚠️ **REMAINING WORK**
+
 1. **Dashboard Views** (High Priority)
    - Need: `TodayView.js` with substitute button
    - Need: `WeekView.js` with load status indicators
@@ -269,6 +318,7 @@ Based on schema file analysis:
 ## Beta Readiness
 
 ### Ready for Beta (95% Complete)
+
 - ✅ Core features implemented and tested
 - ✅ Security and infrastructure complete
 - ✅ User onboarding complete
@@ -276,7 +326,9 @@ Based on schema file analysis:
 - ⚠️ Dashboard views need completion (estimated 1-2 days)
 
 ### Recommendation
+
 **Status:** Ready for beta testing with dashboard view completion as final step.
 
-The application has all critical beta features except dedicated Today/Week dashboard views. The existing DashboardRenderer can be enhanced to provide these views quickly.
-
+The application has all critical beta features except dedicated Today/Week
+dashboard views. The existing DashboardRenderer can be enhanced to provide these
+views quickly.

@@ -2,7 +2,9 @@
 
 ## Overview
 
-This document outlines the comprehensive security and privacy measures implemented in the Ignite Fitness application. All security features have been implemented according to industry best practices and regulatory requirements.
+This document outlines the comprehensive security and privacy measures
+implemented in the Ignite Fitness application. All security features have been
+implemented according to industry best practices and regulatory requirements.
 
 ## 🔒 Security Features Implemented
 
@@ -11,18 +13,20 @@ This document outlines the comprehensive security and privacy measures implement
 **Implementation**: `netlify/functions/utils/safe-logging.js`
 
 **Features**:
+
 - Automatic masking of sensitive data in logs
 - Configurable masking patterns for tokens, passwords, and secrets
 - Support for both string and object masking
 - Production-safe logging with audit trail maintenance
 
 **Usage**:
+
 ```javascript
 const SafeLogger = require('./utils/safe-logging');
 const logger = SafeLogger.create({
-    enableMasking: true,
-    visibleChars: 4,
-    maskChar: '*'
+  enableMasking: true,
+  visibleChars: 4,
+  maskChar: '*',
 });
 
 // Tokens are automatically masked
@@ -31,23 +35,27 @@ logger.info('User login', { access_token: 'secret123' });
 ```
 
 **Security Benefits**:
+
 - Prevents accidental exposure of sensitive data in logs
 - Maintains audit trail without compromising security
 - Configurable masking for different environments
 
 ### 2. Token Revocation & Secure Disconnect
 
-**Implementation**: 
+**Implementation**:
+
 - `netlify/functions/strava-revoke-token.js` (Backend)
 - `js/modules/settings/IntegrationPanel.js` (Frontend)
 
 **Features**:
+
 - Secure token revocation with Strava API
 - Complete database cleanup of user data
 - Audit logging for compliance
 - User-friendly disconnect interface
 
 **Security Benefits**:
+
 - Users can securely disconnect from external services
 - Complete data removal upon disconnection
 - Audit trail for regulatory compliance
@@ -58,22 +66,25 @@ logger.info('User login', { access_token: 'secret123' });
 **Implementation**: `netlify/functions/utils/csrf.js`
 
 **Features**:
+
 - Token-based CSRF protection
 - Session-based token validation
 - Automatic token rotation
 - SameSite cookie protection
 
 **Usage**:
+
 ```javascript
 const { withCSRFProtection } = require('./utils/csrf');
 
 // Wrap your handler with CSRF protection
-exports.handler = withCSRFProtection(async (event) => {
-    // Your handler logic
+exports.handler = withCSRFProtection(async event => {
+  // Your handler logic
 });
 ```
 
 **Security Benefits**:
+
 - Prevents cross-site request forgery attacks
 - Protects all state-changing endpoints
 - Automatic token management
@@ -84,12 +95,14 @@ exports.handler = withCSRFProtection(async (event) => {
 **Implementation**: `netlify/functions/utils/auth.js`
 
 **Features**:
+
 - Production-grade JWT secret requirements
 - Entropy validation (minimum 256 bits)
 - Weak secret detection and rejection
 - Secure secret generation
 
 **Usage**:
+
 ```javascript
 const { validateJWTSecret, generateSecureSecret } = require('./utils/auth');
 
@@ -101,6 +114,7 @@ const newSecret = generateSecureSecret(64);
 ```
 
 **Security Benefits**:
+
 - Enforces strong JWT secrets
 - Prevents use of weak or common secrets
 - Cryptographically secure secret generation
@@ -113,18 +127,21 @@ const newSecret = generateSecureSecret(64);
 **Implementation**: `netlify/functions/utils/security-audit.js`
 
 **Features**:
+
 - Comprehensive security testing
 - Automated vulnerability detection
 - Security score calculation
 - Detailed reporting and recommendations
 
 **Usage**:
+
 ```bash
 # Run security audit
 node netlify/functions/utils/security-audit.js
 ```
 
 **Audit Coverage**:
+
 - Token masking functionality
 - Token revocation security
 - CSRF protection validation
@@ -165,6 +182,7 @@ node netlify/functions/utils/security-audit.js
 ### 1. Token Compromise
 
 **Response Steps**:
+
 1. Immediate token revocation via `/strava-revoke-token` endpoint
 2. Database cleanup of compromised tokens
 3. Audit logging of incident
@@ -173,6 +191,7 @@ node netlify/functions/utils/security-audit.js
 ### 2. Data Breach
 
 **Response Steps**:
+
 1. Immediate system isolation
 2. Forensic analysis using audit logs
 3. User notification within 72 hours
@@ -181,6 +200,7 @@ node netlify/functions/utils/security-audit.js
 ### 3. Security Vulnerabilities
 
 **Response Steps**:
+
 1. Immediate vulnerability assessment
 2. Patch deployment within 24 hours
 3. Security audit verification

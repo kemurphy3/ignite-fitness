@@ -6,7 +6,7 @@ const { createLogger } = require('./utils/safe-logging');
 // Create safe logger for this context
 const logger = createLogger('strava-auto-refresh');
 
-exports.handler = async (event) => {
+exports.handler = async event => {
   // This function is triggered by Netlify Scheduled Functions
   // Schedule: every 5 minutes
 
@@ -33,14 +33,17 @@ exports.handler = async (event) => {
     for (const token of expiringTokens) {
       try {
         // Call refresh endpoint
-        const response = await fetch(`${process.env.URL || 'https://your-site.netlify.app'}/.netlify/functions/strava-refresh-token`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'User-Agent': 'Strava-Auto-Refresh/1.0'
-          },
-          body: JSON.stringify({ userId: token.user_id })
-        });
+        const response = await fetch(
+          `${process.env.URL || 'https://your-site.netlify.app'}/.netlify/functions/strava-refresh-token`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'User-Agent': 'Strava-Auto-Refresh/1.0',
+            },
+            body: JSON.stringify({ userId: token.user_id }),
+          }
+        );
 
         const responseData = await response.json();
 
@@ -50,7 +53,7 @@ exports.handler = async (event) => {
           success: response.ok,
           status: response.status,
           cached: responseData.cached || false,
-          refresh_not_needed: responseData.refresh_not_needed || false
+          refresh_not_needed: responseData.refresh_not_needed || false,
         });
 
         // Log the auto-refresh attempt
@@ -63,21 +66,20 @@ exports.handler = async (event) => {
             status_code: response.status,
             cached: responseData.cached || false,
             refresh_not_needed: responseData.refresh_not_needed || false,
-            expires_at: token.expires_at
-          }
+            expires_at: token.expires_at,
+          },
         });
-
       } catch (error) {
         logger.error('Auto-refresh failed for user', {
           user_id: token.user_id,
-          error: error.message
+          error: error.message,
         });
 
         results.push({
           user_id: token.user_id,
           athlete_id: token.athlete_id,
           success: false,
-          error: error.message
+          error: error.message,
         });
 
         // Log the error
@@ -88,8 +90,8 @@ exports.handler = async (event) => {
           error_message: error.message,
           metadata: {
             athlete_id: token.athlete_id,
-            error_type: error.constructor.name
-          }
+            error_type: error.constructor.name,
+          },
         });
       }
     }
@@ -97,7 +99,7 @@ exports.handler = async (event) => {
     // Clean up old rate limits and expired locks
     const [rateLimitCleanup, lockCleanup] = await Promise.all([
       cleanupRateLimits(sql),
-      cleanupExpiredLocks(sql)
+      cleanupExpiredLocks(sql),
     ]);
 
     const summary = {
@@ -108,7 +110,7 @@ exports.handler = async (event) => {
       not_needed: results.filter(r => r.refresh_not_needed).length,
       rate_limit_cleanup: rateLimitCleanup,
       lock_cleanup: lockCleanup,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     logger.info('Auto-refresh completed', summary);
@@ -116,9 +118,8 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(summary)
+      body: JSON.stringify(summary),
     };
-
   } catch (error) {
     logger.error('Auto-refresh failed', { error: error.message });
 
@@ -128,8 +129,8 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         error: 'Auto-refresh failed',
         message: error.message,
-        timestamp: new Date().toISOString()
-      })
+        timestamp: new Date().toISOString(),
+      }),
     };
   }
 };

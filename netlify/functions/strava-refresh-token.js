@@ -13,7 +13,7 @@ const logger = createLogger('strava-refresh-token');
 // Simple in-memory cache for development (use Redis in production)
 const tokenCache = new Map();
 
-exports.handler = async (event) => {
+exports.handler = async event => {
   // Handle preflight requests
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -21,9 +21,9 @@ exports.handler = async (event) => {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type, X-API-Key',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS'
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
       },
-      body: ''
+      body: '',
     };
   }
 
@@ -31,7 +31,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 405,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Method not allowed' })
+      body: JSON.stringify({ error: 'Method not allowed' }),
     };
   }
 
@@ -46,7 +46,7 @@ exports.handler = async (event) => {
       return {
         statusCode: 400,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'User ID is required' })
+        body: JSON.stringify({ error: 'User ID is required' }),
       };
     }
 
@@ -57,13 +57,13 @@ exports.handler = async (event) => {
         statusCode: 429,
         headers: {
           'Content-Type': 'application/json',
-          ...getRateLimitHeaders(rateLimitResult)
+          ...getRateLimitHeaders(rateLimitResult),
         },
         body: JSON.stringify({
           error: 'Rate limit exceeded',
           reason: rateLimitResult.reason,
-          retryAfter: rateLimitResult.retryAfter
-        })
+          retryAfter: rateLimitResult.retryAfter,
+        }),
       };
     }
 
@@ -74,13 +74,13 @@ exports.handler = async (event) => {
         statusCode: 200,
         headers: {
           'Content-Type': 'application/json',
-          'X-Cache': 'HIT'
+          'X-Cache': 'HIT',
         },
         body: JSON.stringify({
           success: true,
           cached: true,
-          expires_at: cachedToken.expires_at
-        })
+          expires_at: cachedToken.expires_at,
+        }),
       };
     }
 
@@ -91,13 +91,13 @@ exports.handler = async (event) => {
         statusCode: 423, // Locked
         headers: {
           'Content-Type': 'application/json',
-          'Retry-After': '5'
+          'Retry-After': '5',
         },
         body: JSON.stringify({
           error: 'Token refresh in progress',
           retryAfter: lock.retryAfter,
-          reason: lock.reason
-        })
+          reason: lock.reason,
+        }),
       };
     }
 
@@ -111,17 +111,18 @@ exports.handler = async (event) => {
       return {
         statusCode: 404,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'No token found for user' })
+        body: JSON.stringify({ error: 'No token found for user' }),
       };
     }
 
     const token = result[0];
 
     // Check if refresh is actually needed
-    if (new Date(token.expires_at) > new Date(Date.now() + 300000)) { // 5 minutes buffer
+    if (new Date(token.expires_at) > new Date(Date.now() + 300000)) {
+      // 5 minutes buffer
       // Update cache
       tokenCache.set(`token_${userId}`, {
-        expires_at: token.expires_at
+        expires_at: token.expires_at,
       });
 
       return {
@@ -130,8 +131,8 @@ exports.handler = async (event) => {
         body: JSON.stringify({
           success: true,
           refresh_not_needed: true,
-          expires_at: token.expires_at
-        })
+          expires_at: token.expires_at,
+        }),
       };
     }
 
@@ -147,8 +148,8 @@ exports.handler = async (event) => {
           client_id: process.env.STRAVA_CLIENT_ID,
           client_secret: process.env.STRAVA_CLIENT_SECRET,
           refresh_token: refreshToken,
-          grant_type: 'refresh_token'
-        })
+          grant_type: 'refresh_token',
+        }),
       });
 
       if (!response.ok) {
@@ -166,8 +167,13 @@ exports.handler = async (event) => {
     }
 
     // Encrypt and update
-    const { encrypted: encryptedAccess, keyVersion } = await encryption.encrypt(newTokens.access_token);
-    const { encrypted: encryptedRefresh } = await encryption.encrypt(newTokens.refresh_token, keyVersion);
+    const { encrypted: encryptedAccess, keyVersion } = await encryption.encrypt(
+      newTokens.access_token
+    );
+    const { encrypted: encryptedRefresh } = await encryption.encrypt(
+      newTokens.refresh_token,
+      keyVersion
+    );
 
     const newExpiresAt = new Date(Date.now() + newTokens.expires_in * 1000);
 
@@ -186,7 +192,7 @@ exports.handler = async (event) => {
 
     // Update cache
     tokenCache.set(`token_${userId}`, {
-      expires_at: newExpiresAt
+      expires_at: newExpiresAt,
     });
 
     await auditLog(sql, {
@@ -196,15 +202,15 @@ exports.handler = async (event) => {
       metadata: {
         old_expires_at: token.expires_at,
         new_expires_at: newExpiresAt,
-        refresh_count: token.refresh_count + 1
-      }
+        refresh_count: token.refresh_count + 1,
+      },
     });
 
     // Log successful token refresh with safe metadata
     logger.tokenRefresh({
       userId: token.user_id,
       expiresAt: newExpiresAt,
-      scope: token.scope
+      scope: token.scope,
     });
 
     try {
@@ -217,7 +223,9 @@ exports.handler = async (event) => {
         WHERE id = ${userId}
       `;
     } catch (updateError) {
-      logger.warn('Unable to persist Strava refresh metadata on users table', { error: updateError.message });
+      logger.warn('Unable to persist Strava refresh metadata on users table', {
+        error: updateError.message,
+      });
     }
 
     return {
@@ -225,21 +233,20 @@ exports.handler = async (event) => {
       headers: {
         'Content-Type': 'application/json',
         'X-Cache': 'MISS',
-        'X-Circuit-Breaker-State': stravaCircuit.getStatus().state
+        'X-Circuit-Breaker-State': stravaCircuit.getStatus().state,
       },
       body: JSON.stringify({
         success: true,
         expires_at: newExpiresAt.toISOString(),
-        refresh_count: token.refresh_count + 1
-      })
+        refresh_count: token.refresh_count + 1,
+      }),
     };
-
   } catch (error) {
     // Log error with sanitized data
     logger.error('Token refresh failed', {
       error_type: error.constructor.name,
       error_message: error.message,
-      circuit_breaker_state: stravaCircuit.getStatus().state
+      circuit_breaker_state: stravaCircuit.getStatus().state,
     });
 
     // Log the error
@@ -252,8 +259,8 @@ exports.handler = async (event) => {
         error_message: error.message,
         metadata: {
           circuit_breaker_state: stravaCircuit.getStatus().state,
-          error_type: error.constructor.name
-        }
+          error_type: error.constructor.name,
+        },
       });
     } catch (auditError) {
       logger.error('Failed to log audit', { error: auditError.message });
@@ -265,10 +272,9 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         error: 'Token refresh failed',
         circuit_state: stravaCircuit.getStatus().state,
-        retry: stravaCircuit.getStatus().state !== 'OPEN'
-      })
+        retry: stravaCircuit.getStatus().state !== 'OPEN',
+      }),
     };
-
   } finally {
     if (lock?.acquired) {
       await releaseLock(sql, lock.lockId, JSON.parse(event.body || '{}').userId);
@@ -279,7 +285,7 @@ exports.handler = async (event) => {
 async function validateStravaToken(accessToken) {
   try {
     const response = await fetch('https://www.strava.com/api/v3/athlete', {
-      headers: { 'Authorization': `Bearer ${accessToken}` }
+      headers: { Authorization: `Bearer ${accessToken}` },
     });
     return response.ok;
   } catch (error) {

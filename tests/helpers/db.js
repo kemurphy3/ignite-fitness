@@ -10,7 +10,7 @@ import {
   createTestUser,
   createTestSession,
   createTestExercise,
-  cleanupTestData
+  cleanupTestData,
 } from './database.js';
 
 /**
@@ -36,5 +36,5 @@ export {
   createTestUser,
   createTestSession,
   createTestExercise,
-  cleanupTestData
+  cleanupTestData,
 };

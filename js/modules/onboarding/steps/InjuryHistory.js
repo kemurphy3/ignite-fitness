@@ -4,20 +4,20 @@
  */
 
 class InjuryHistory extends window.BaseComponent {
-    constructor() {
-        super();
-        this.currentInjuries = [];
-        this.pastInjuries = [];
-        this.limitations = new Set();
-    }
+  constructor() {
+    super();
+    this.currentInjuries = [];
+    this.pastInjuries = [];
+    this.limitations = new Set();
+  }
 
-    render(onboardingData = {}) {
-        this.onboardingData = onboardingData;
-        this.currentInjuries = onboardingData.currentInjuries || [];
-        this.pastInjuries = onboardingData.pastInjuries || [];
-        this.limitations = new Set(onboardingData.limitations || []);
+  render(onboardingData = {}) {
+    this.onboardingData = onboardingData;
+    this.currentInjuries = onboardingData.currentInjuries || [];
+    this.pastInjuries = onboardingData.pastInjuries || [];
+    this.limitations = new Set(onboardingData.limitations || []);
 
-        return `
+    return `
             <div class="onboarding-step injury-history-step">
                 <div class="step-header">
                     <h2>Injury Flags</h2>
@@ -27,7 +27,9 @@ class InjuryHistory extends window.BaseComponent {
                 <div class="injury-section">
                     <h3>Current Injuries/Limitations</h3>
                     <div class="limitation-checkboxes">
-                        ${['knee', 'ankle', 'hip', 'shoulder', 'back', 'wrist', 'elbow', 'none'].map(lim => `
+                        ${['knee', 'ankle', 'hip', 'shoulder', 'back', 'wrist', 'elbow', 'none']
+                          .map(
+                            lim => `
                             <label class="limitation-checkbox">
                                 <input type="checkbox" 
                                        value="${lim}" 
@@ -35,7 +37,9 @@ class InjuryHistory extends window.BaseComponent {
                                        onchange="window.InjuryHistory.toggleLimitation('${lim}', this.checked)">
                                 ${lim.charAt(0).toUpperCase() + lim.slice(1)}
                             </label>
-                        `).join('')}
+                        `
+                          )
+                          .join('')}
                     </div>
                 </div>
 
@@ -53,32 +57,34 @@ class InjuryHistory extends window.BaseComponent {
                 </div>
             </div>
         `;
-    }
+  }
 
-    toggleLimitation(lim, selected) {
-        if (selected) {this.limitations.add(lim);}
-        else {this.limitations.delete(lim);}
+  toggleLimitation(lim, selected) {
+    if (selected) {
+      this.limitations.add(lim);
+    } else {
+      this.limitations.delete(lim);
     }
+  }
 
-    updatePastInjuries(text) {
-        this.pastInjuries = text.split('\n').filter(line => line.trim());
-    }
+  updatePastInjuries(text) {
+    this.pastInjuries = text.split('\n').filter(line => line.trim());
+  }
 
-    saveAndContinue() {
-        const om = window.OnboardingManager;
-        if (om) {
-            om.onboardingData.currentInjuries = Array.from(this.limitations);
-            om.onboardingData.pastInjuries = this.pastInjuries;
-            om.onboardingData.limitations = Array.from(this.limitations);
-            om.saveStepData('injury_history', {
-                currentInjuries: Array.from(this.limitations),
-                pastInjuries: this.pastInjuries,
-                limitations: Array.from(this.limitations)
-            });
-            om.nextStep();
-        }
+  saveAndContinue() {
+    const om = window.OnboardingManager;
+    if (om) {
+      om.onboardingData.currentInjuries = Array.from(this.limitations);
+      om.onboardingData.pastInjuries = this.pastInjuries;
+      om.onboardingData.limitations = Array.from(this.limitations);
+      om.saveStepData('injury_history', {
+        currentInjuries: Array.from(this.limitations),
+        pastInjuries: this.pastInjuries,
+        limitations: Array.from(this.limitations),
+      });
+      om.nextStep();
     }
+  }
 }
 
 window.InjuryHistory = new InjuryHistory();
-

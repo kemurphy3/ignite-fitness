@@ -2,7 +2,9 @@
 
 ## Overview
 
-This guide covers the deployment of the comprehensive admin analytics system with role-based access control, privacy protection, timezone handling, and robust error management.
+This guide covers the deployment of the comprehensive admin analytics system
+with role-based access control, privacy protection, timezone handling, and
+robust error management.
 
 ## Prerequisites
 
@@ -47,8 +49,8 @@ Look for the new `role` column with CHECK constraint.
 
 ```sql
 -- Create admin user (replace with actual user ID)
-UPDATE users 
-SET role = 'admin' 
+UPDATE users
+SET role = 'admin'
 WHERE id = 'your-admin-user-id';
 
 -- Verify admin user
@@ -108,30 +110,35 @@ netlify deploy --prod
 ## 4. API Endpoints
 
 ### 4.1 Admin Overview
+
 ```bash
 GET /.netlify/functions/admin-overview
 Authorization: Bearer <admin-jwt-token>
 ```
 
 ### 4.2 Sessions Series
+
 ```bash
 GET /.netlify/functions/admin-sessions-series?from=2024-01-01&to=2024-01-31&bucket=day&timezone=UTC
 Authorization: Bearer <admin-jwt-token>
 ```
 
 ### 4.3 Sessions By Type
+
 ```bash
 GET /.netlify/functions/admin-sessions-by-type?from=2024-01-01&to=2024-01-31
 Authorization: Bearer <admin-jwt-token>
 ```
 
 ### 4.4 Top Users
+
 ```bash
 GET /.netlify/functions/admin-users-top?metric=sessions&limit=50&cursor=eyJ2IjoxNDUsImlkIjoidXNyX2ExYjJjMyJ9
 Authorization: Bearer <admin-jwt-token>
 ```
 
 ### 4.5 Admin Health
+
 ```bash
 GET /.netlify/functions/admin-health
 Authorization: Bearer <admin-jwt-token>
@@ -140,30 +147,35 @@ Authorization: Bearer <admin-jwt-token>
 ## 5. Key Features
 
 ### Role-Based Access Control (RBAC) 🔐
+
 - **JWT validation** with issuer/audience checks
 - **Admin role enforcement** on all endpoints
 - **Database role verification** for additional security
 - **Proper error responses** for unauthorized access
 
 ### Privacy Protection 🛡️
+
 - **5-user minimum threshold** for all aggregates
 - **User ID hashing** with salt for anonymity
 - **Privacy metadata** included in responses
 - **No PII exposure** in any response
 
 ### Timezone Handling 🌍
+
 - **DST transitions** handled correctly
 - **AT TIME ZONE conversion** for accurate local time
 - **Bucket boundaries** align with local midnight
 - **2-year date range limit** enforced
 
 ### Performance & Reliability ⚡
+
 - **Query timeouts** set to 5 seconds
 - **Keyset pagination** for stable results
 - **Materialized views** for performance
 - **Connection pooling** for efficiency
 
 ### Data Freshness 📊
+
 - **Materialized view staleness** tracked
 - **Health endpoint** shows view freshness
 - **Data version** included in responses
@@ -172,18 +184,21 @@ Authorization: Bearer <admin-jwt-token>
 ## 6. Security Implementation
 
 ### Authentication & Authorization 🔐
+
 - **JWT tokens** with proper validation
 - **Issuer/audience checks** for security
 - **Admin role enforcement** in database
 - **Token generation** for testing
 
 ### Privacy Protection 🛡️
+
 - **User ID hashing** with salt
 - **Privacy thresholds** applied consistently
 - **No PII in logs** or responses
 - **Audit logging** for compliance
 
 ### Input Validation & Sanitization 🛡️
+
 - **Date range validation** with limits
 - **Timezone validation** using Intl API
 - **Parameter validation** for all inputs
@@ -207,12 +222,14 @@ node test-admin-analytics.js
 ### Step 2: Manual Testing
 
 1. **Create Admin User**:
+
 ```bash
 # First, create an admin user in the database
 UPDATE users SET role = 'admin' WHERE id = 'your-user-id';
 ```
 
 2. **Generate Admin Token**:
+
 ```bash
 # Use the test script to generate a proper admin token
 node -e "
@@ -227,30 +244,35 @@ console.log('Admin Token:', token);
 ```
 
 3. **Test Admin Overview**:
+
 ```bash
 curl https://your-site.netlify.app/.netlify/functions/admin-overview \
   -H "Authorization: Bearer <admin-token>"
 ```
 
 4. **Test Sessions Series**:
+
 ```bash
 curl "https://your-site.netlify.app/.netlify/functions/admin-sessions-series?from=2024-01-01&to=2024-01-31&bucket=day&timezone=UTC" \
   -H "Authorization: Bearer <admin-token>"
 ```
 
 5. **Test Sessions By Type**:
+
 ```bash
 curl https://your-site.netlify.app/.netlify/functions/admin-sessions-by-type \
   -H "Authorization: Bearer <admin-token>"
 ```
 
 6. **Test Top Users**:
+
 ```bash
 curl "https://your-site.netlify.app/.netlify/functions/admin-users-top?metric=sessions&limit=10" \
   -H "Authorization: Bearer <admin-token>"
 ```
 
 7. **Test Admin Health**:
+
 ```bash
 curl https://your-site.netlify.app/.netlify/functions/admin-health \
   -H "Authorization: Bearer <admin-token>"
@@ -259,24 +281,28 @@ curl https://your-site.netlify.app/.netlify/functions/admin-health \
 ## 8. Data Model
 
 ### Admin Audit Log Table
+
 - **Request tracking** with unique request IDs
 - **Admin identification** for accountability
 - **Query parameters** stored as JSONB
 - **Response metrics** for performance monitoring
 
 ### Materialized Views
+
 - **Daily session aggregates** with privacy thresholds
 - **Refresh tracking** for data freshness
 - **Performance optimization** for complex queries
 - **Concurrent refresh** support
 
 ### Rate Limiting Table
+
 - **Per-admin limits** with sliding windows
 - **Attempt tracking** for monitoring
 - **Window-based** rate limiting
 - **Automatic cleanup** of old entries
 
 ### User Role Extension
+
 - **Role column** added to users table
 - **Admin role** enforcement
 - **Index optimization** for admin queries
@@ -285,6 +311,7 @@ curl https://your-site.netlify.app/.netlify/functions/admin-health \
 ## 9. API Response Format
 
 ### Success Response
+
 ```json
 {
   "status": "success",
@@ -302,6 +329,7 @@ curl https://your-site.netlify.app/.netlify/functions/admin-health \
 ```
 
 ### Error Response
+
 ```json
 {
   "error": {
@@ -315,33 +343,36 @@ curl https://your-site.netlify.app/.netlify/functions/admin-health \
 
 ## 10. Error Codes
 
-| Code | Description | Status |
-|------|-------------|--------|
-| MISSING_TOKEN | Authorization header required | 401 |
-| UNAUTHORIZED | Invalid or expired token | 401 |
-| FORBIDDEN | Admin access required | 403 |
-| MISSING_PARAMS | Required parameters missing | 400 |
-| INVALID_PARAM | Invalid parameter value | 400 |
-| INVALID_METRIC | Invalid metric type | 400 |
-| INVALID_CURSOR | Invalid cursor format | 400 |
-| QUERY_TIMEOUT | Query exceeded timeout | 500 |
-| INTERNAL_ERROR | Internal server error | 500 |
+| Code           | Description                   | Status |
+| -------------- | ----------------------------- | ------ |
+| MISSING_TOKEN  | Authorization header required | 401    |
+| UNAUTHORIZED   | Invalid or expired token      | 401    |
+| FORBIDDEN      | Admin access required         | 403    |
+| MISSING_PARAMS | Required parameters missing   | 400    |
+| INVALID_PARAM  | Invalid parameter value       | 400    |
+| INVALID_METRIC | Invalid metric type           | 400    |
+| INVALID_CURSOR | Invalid cursor format         | 400    |
+| QUERY_TIMEOUT  | Query exceeded timeout        | 500    |
+| INTERNAL_ERROR | Internal server error         | 500    |
 
 ## 11. Performance Considerations
 
 ### Query Optimization
+
 - **Materialized views** for complex aggregations
 - **Composite indexes** for admin queries
 - **Query timeouts** to prevent function timeouts
 - **Connection pooling** for efficiency
 
 ### Caching Strategy
+
 - **Response caching** with appropriate headers
 - **Materialized view caching** for performance
 - **Data freshness** tracking
 - **Cache invalidation** strategies
 
 ### Rate Limiting
+
 - **Per-admin limits** to prevent abuse
 - **Sliding window** rate limiting
 - **Automatic cleanup** of old entries
@@ -350,18 +381,21 @@ curl https://your-site.netlify.app/.netlify/functions/admin-health \
 ## 12. Monitoring
 
 ### Key Metrics
+
 - **Response times** for all endpoints
 - **Error rates** by error code
 - **Rate limit usage** per admin
 - **Data freshness** of materialized views
 
 ### Logging
+
 - **Structured logs** with request IDs
 - **Admin audit trail** for compliance
 - **Error logging** with context
 - **Performance metrics** tracking
 
 ### Health Checks
+
 - **Database connectivity** monitoring
 - **Materialized view freshness** checks
 - **Function performance** monitoring
@@ -410,17 +444,20 @@ psql $DATABASE_URL -c "SELECT * FROM admin_rate_limits ORDER BY window_start DES
 ## 14. Maintenance
 
 ### Regular Tasks
+
 - **Monitor audit logs** for security issues
 - **Refresh materialized views** as needed
 - **Clean up old rate limit entries**
 - **Review error rates** and performance
 
 ### Data Cleanup
+
 - **Audit logs**: Consider archiving old logs
 - **Rate limits**: Clean up old entries
 - **Materialized views**: Refresh regularly
 
 ### Updates
+
 - **Schema changes**: Use migrations
 - **API versioning**: Maintain backward compatibility
 - **Dependency updates**: Keep packages current
@@ -429,18 +466,21 @@ psql $DATABASE_URL -c "SELECT * FROM admin_rate_limits ORDER BY window_start DES
 ## 15. Security Considerations
 
 ### Token Security
+
 - **JWT secrets** must be strong and rotated
 - **Issuer/audience** validation for security
 - **Token expiration** for time-limited access
 - **Role verification** in database
 
 ### Data Privacy
+
 - **User ID hashing** with salt
 - **Privacy thresholds** enforced consistently
 - **No PII** in logs or responses
 - **Audit trails** for compliance
 
 ### API Security
+
 - **Admin-only access** enforced
 - **Rate limiting** to prevent abuse
 - **Input validation** for all parameters
@@ -449,6 +489,7 @@ psql $DATABASE_URL -c "SELECT * FROM admin_rate_limits ORDER BY window_start DES
 ## Support
 
 For issues or questions:
+
 1. Check the error codes and descriptions
 2. Review the audit logs for details
 3. Verify environment configuration

@@ -8,14 +8,14 @@ const errorResponse = (statusCode, code, message, details = null) => ({
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'GET, PATCH, OPTIONS'
+    'Access-Control-Allow-Methods': 'GET, PATCH, OPTIONS',
   },
   body: JSON.stringify({
     error: code,
     message,
     code,
-    ...(details && { details })
-  })
+    ...(details && { details }),
+  }),
 });
 
 // Success response
@@ -25,9 +25,9 @@ const successResponse = (data, statusCode = 200) => ({
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'GET, PATCH, OPTIONS'
+    'Access-Control-Allow-Methods': 'GET, PATCH, OPTIONS',
   },
-  body: JSON.stringify(data)
+  body: JSON.stringify(data),
 });
 
 // No content response
@@ -36,16 +36,22 @@ const noContentResponse = () => ({
   headers: {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'GET, PATCH, OPTIONS'
+    'Access-Control-Allow-Methods': 'GET, PATCH, OPTIONS',
   },
-  body: ''
+  body: '',
 });
 
 // Validation functions
-const isValidTimezone = (tz) => {
-  if (!tz || tz === null) {return true;} // NULL is valid
-  if (typeof tz !== 'string') {return false;}
-  if (tz.length > 100) {return false;}
+const isValidTimezone = tz => {
+  if (!tz || tz === null) {
+    return true;
+  } // NULL is valid
+  if (typeof tz !== 'string') {
+    return false;
+  }
+  if (tz.length > 100) {
+    return false;
+  }
 
   try {
     // Use moment-timezone to validate IANA timezone
@@ -55,73 +61,111 @@ const isValidTimezone = (tz) => {
   }
 };
 
-const isValidUnits = (units) => {
-  if (!units || typeof units !== 'string') {return false;}
+const isValidUnits = units => {
+  if (!units || typeof units !== 'string') {
+    return false;
+  }
   return ['metric', 'imperial'].includes(units.toLowerCase());
 };
 
-const isValidSleepGoal = (hours) => {
-  if (hours === null || hours === undefined) {return true;} // NULL is valid
+const isValidSleepGoal = hours => {
+  if (hours === null || hours === undefined) {
+    return true;
+  } // NULL is valid
   const n = Number(hours);
-  if (isNaN(n)) {return false;}
+  if (isNaN(n)) {
+    return false;
+  }
   return n >= 0 && n <= 14;
 };
 
-const isValidWorkoutGoal = (weeks) => {
-  if (weeks === null || weeks === undefined) {return true;} // NULL is valid
+const isValidWorkoutGoal = weeks => {
+  if (weeks === null || weeks === undefined) {
+    return true;
+  } // NULL is valid
   const n = Number(weeks);
-  if (!Number.isInteger(n)) {return false;}
+  if (!Number.isInteger(n)) {
+    return false;
+  }
   return n >= 0 && n <= 14;
 };
 
-const isValidNotificationsEnabled = (enabled) => {
-  if (enabled === null || enabled === undefined) {return true;} // NULL is valid
-  return typeof enabled === 'boolean' ||
-         enabled === 'true' || enabled === 'false' ||
-         enabled === 1 || enabled === 0;
+const isValidNotificationsEnabled = enabled => {
+  if (enabled === null || enabled === undefined) {
+    return true;
+  } // NULL is valid
+  return (
+    typeof enabled === 'boolean' ||
+    enabled === 'true' ||
+    enabled === 'false' ||
+    enabled === 1 ||
+    enabled === 0
+  );
 };
 
-const isValidTheme = (theme) => {
-  if (!theme || typeof theme !== 'string') {return false;}
+const isValidTheme = theme => {
+  if (!theme || typeof theme !== 'string') {
+    return false;
+  }
   return ['system', 'light', 'dark'].includes(theme.toLowerCase());
 };
 
 // Coercion functions
-const coerceUnits = (units) => {
-  if (!units) {return null;}
+const coerceUnits = units => {
+  if (!units) {
+    return null;
+  }
   return units.toLowerCase();
 };
 
-const coerceSleepGoal = (hours) => {
-  if (hours === null || hours === undefined) {return null;}
+const coerceSleepGoal = hours => {
+  if (hours === null || hours === undefined) {
+    return null;
+  }
   const n = Number(hours);
-  if (isNaN(n)) {return null;}
+  if (isNaN(n)) {
+    return null;
+  }
   // Round to 0.1 precision
   return Math.round(n * 10) / 10;
 };
 
-const coerceWorkoutGoal = (weeks) => {
-  if (weeks === null || weeks === undefined) {return null;}
+const coerceWorkoutGoal = weeks => {
+  if (weeks === null || weeks === undefined) {
+    return null;
+  }
   const n = Number(weeks);
-  if (!Number.isInteger(n)) {return null;}
+  if (!Number.isInteger(n)) {
+    return null;
+  }
   return n;
 };
 
-const coerceNotificationsEnabled = (enabled) => {
-  if (enabled === null || enabled === undefined) {return null;}
-  if (typeof enabled === 'boolean') {return enabled;}
-  if (enabled === 'true' || enabled === 1) {return true;}
-  if (enabled === 'false' || enabled === 0) {return false;}
+const coerceNotificationsEnabled = enabled => {
+  if (enabled === null || enabled === undefined) {
+    return null;
+  }
+  if (typeof enabled === 'boolean') {
+    return enabled;
+  }
+  if (enabled === 'true' || enabled === 1) {
+    return true;
+  }
+  if (enabled === 'false' || enabled === 0) {
+    return false;
+  }
   return Boolean(enabled);
 };
 
-const coerceTheme = (theme) => {
-  if (!theme) {return null;}
+const coerceTheme = theme => {
+  if (!theme) {
+    return null;
+  }
   return theme.toLowerCase();
 };
 
 // Validate all preferences fields
-const validatePreferences = (preferences) => {
+const validatePreferences = preferences => {
   const errors = [];
 
   if (preferences.timezone !== undefined && !isValidTimezone(preferences.timezone)) {
@@ -132,15 +176,24 @@ const validatePreferences = (preferences) => {
     errors.push('Invalid units');
   }
 
-  if (preferences.sleep_goal_hours !== undefined && !isValidSleepGoal(preferences.sleep_goal_hours)) {
+  if (
+    preferences.sleep_goal_hours !== undefined &&
+    !isValidSleepGoal(preferences.sleep_goal_hours)
+  ) {
     errors.push('Invalid sleep goal hours');
   }
 
-  if (preferences.workout_goal_per_week !== undefined && !isValidWorkoutGoal(preferences.workout_goal_per_week)) {
+  if (
+    preferences.workout_goal_per_week !== undefined &&
+    !isValidWorkoutGoal(preferences.workout_goal_per_week)
+  ) {
     errors.push('Invalid workout goal per week');
   }
 
-  if (preferences.notifications_enabled !== undefined && !isValidNotificationsEnabled(preferences.notifications_enabled)) {
+  if (
+    preferences.notifications_enabled !== undefined &&
+    !isValidNotificationsEnabled(preferences.notifications_enabled)
+  ) {
     errors.push('Invalid notifications enabled');
   }
 
@@ -152,7 +205,7 @@ const validatePreferences = (preferences) => {
 };
 
 // Coerce all preferences fields
-const coercePreferences = (preferences) => {
+const coercePreferences = preferences => {
   const coerced = {};
 
   if (preferences.timezone !== undefined) {
@@ -183,14 +236,14 @@ const coercePreferences = (preferences) => {
 };
 
 // Filter out unknown fields
-const filterKnownFields = (preferences) => {
+const filterKnownFields = preferences => {
   const knownFields = [
     'timezone',
     'units',
     'sleep_goal_hours',
     'workout_goal_per_week',
     'notifications_enabled',
-    'theme'
+    'theme',
   ];
 
   const filtered = {};
@@ -204,15 +257,16 @@ const filterKnownFields = (preferences) => {
 };
 
 // Check request size limit
-const checkRequestSize = (body) => {
-  if (body && body.length > 10240) { // 10KB limit
+const checkRequestSize = body => {
+  if (body && body.length > 10240) {
+    // 10KB limit
     return false;
   }
   return true;
 };
 
 // Sanitize data for logging
-const sanitizeForLog = (data) => {
+const sanitizeForLog = data => {
   const sanitized = { ...data };
 
   // Remove any potential PII
@@ -221,7 +275,7 @@ const sanitizeForLog = (data) => {
 
   // Truncate long strings
   if (sanitized.timezone && sanitized.timezone.length > 50) {
-    sanitized.timezone = `${sanitized.timezone.substring(0, 50) }...`;
+    sanitized.timezone = `${sanitized.timezone.substring(0, 50)}...`;
   }
 
   return sanitized;
@@ -234,7 +288,7 @@ const getDefaultPreferences = () => ({
   sleep_goal_hours: 8.0,
   workout_goal_per_week: 3,
   notifications_enabled: true,
-  theme: 'system'
+  theme: 'system',
 });
 
 module.exports = {
@@ -257,5 +311,5 @@ module.exports = {
   filterKnownFields,
   checkRequestSize,
   sanitizeForLog,
-  getDefaultPreferences
+  getDefaultPreferences,
 };

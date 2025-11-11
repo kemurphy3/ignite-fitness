@@ -3,21 +3,21 @@
  * Users can select multiple training goals with goal-specific follow-up questions
  */
 class GoalsStep {
-    constructor() {
-        this.logger = window.SafeLogger || console;
-        this.followUpData = {}; // Store follow-up responses by goal
-    }
+  constructor() {
+    this.logger = window.SafeLogger || console;
+    this.followUpData = {}; // Store follow-up responses by goal
+  }
 
-    /**
-     * Render goals selection step
-     * @param {Object} existingData - Existing onboarding data
-     * @returns {string} HTML for goals step
-     */
-    render(existingData = {}) {
-        const selectedGoals = existingData.goals || [];
-        this.followUpData = existingData.goalFollowUps || {};
+  /**
+   * Render goals selection step
+   * @param {Object} existingData - Existing onboarding data
+   * @returns {string} HTML for goals step
+   */
+  render(existingData = {}) {
+    const selectedGoals = existingData.goals || [];
+    this.followUpData = existingData.goalFollowUps || {};
 
-        return `
+    return `
             <div class="onboarding-step goals-step">
                 <h2>What are your training goals?</h2>
                 <p class="step-description">Select all that apply - we'll customize your plan based on your goals.</p>
@@ -144,40 +144,40 @@ class GoalsStep {
                 </div>
             </div>
         `;
+  }
+
+  /**
+   * Render follow-up questions for selected goals
+   * @param {Array} selectedGoals - Selected goal IDs
+   * @returns {string} Follow-up HTML
+   */
+  renderFollowUps(selectedGoals) {
+    if (!selectedGoals || selectedGoals.length === 0) {
+      return '';
     }
 
-    /**
-     * Render follow-up questions for selected goals
-     * @param {Array} selectedGoals - Selected goal IDs
-     * @returns {string} Follow-up HTML
-     */
-    renderFollowUps(selectedGoals) {
-        if (!selectedGoals || selectedGoals.length === 0) {
-            return '';
-        }
+    let html = '';
+    selectedGoals.forEach(goal => {
+      const followUpHtml = this.getFollowUpForGoal(goal);
+      if (followUpHtml) {
+        html += followUpHtml;
+      }
+    });
 
-        let html = '';
-        selectedGoals.forEach(goal => {
-            const followUpHtml = this.getFollowUpForGoal(goal);
-            if (followUpHtml) {
-                html += followUpHtml;
-            }
-        });
+    return html;
+  }
 
-        return html;
-    }
+  /**
+   * Get follow-up questions for a specific goal
+   * @param {string} goal - Goal ID
+   * @returns {string} Follow-up HTML
+   */
+  getFollowUpForGoal(goal) {
+    const existingData = this.followUpData[goal] || {};
 
-    /**
-     * Get follow-up questions for a specific goal
-     * @param {string} goal - Goal ID
-     * @returns {string} Follow-up HTML
-     */
-    getFollowUpForGoal(goal) {
-        const existingData = this.followUpData[goal] || {};
-
-        switch (goal) {
-            case 'weight_loss':
-                return `
+    switch (goal) {
+      case 'weight_loss':
+        return `
                     <div class="follow-up-section" data-goal="weight_loss">
                         <h3>Weight Loss Details</h3>
                         <div class="follow-up-question">
@@ -213,8 +213,8 @@ class GoalsStep {
                     </div>
                 `;
 
-            case 'muscle_gain':
-                return `
+      case 'muscle_gain':
+        return `
                     <div class="follow-up-section" data-goal="muscle_gain">
                         <h3>Muscle Gain Details</h3>
                         <div class="follow-up-question">
@@ -249,8 +249,8 @@ class GoalsStep {
                     </div>
                 `;
 
-            case 'endurance':
-                return `
+      case 'endurance':
+        return `
                     <div class="follow-up-section" data-goal="endurance">
                         <h3>Endurance Training Details</h3>
                         <div class="follow-up-question">
@@ -292,8 +292,8 @@ class GoalsStep {
                     </div>
                 `;
 
-            case 'sport_specific':
-                return `
+      case 'sport_specific':
+        return `
                     <div class="follow-up-section" data-goal="sport_specific">
                         <h3>Sport-Specific Training Details</h3>
                         <div class="follow-up-question">
@@ -329,154 +329,179 @@ class GoalsStep {
                     </div>
                 `;
 
-            default:
-                return '';
-        }
+      default:
+        return '';
+    }
+  }
+
+  /**
+   * Handle goal checkbox change
+   * @param {string} goal - Goal ID
+   * @param {boolean} checked - Is checked
+   */
+  handleGoalChange(goal, checked) {
+    const followUpsContainer = document.getElementById('goal-follow-ups');
+    if (!followUpsContainer) {
+      return;
     }
 
-    /**
-     * Handle goal checkbox change
-     * @param {string} goal - Goal ID
-     * @param {boolean} checked - Is checked
-     */
-    handleGoalChange(goal, checked) {
-        const followUpsContainer = document.getElementById('goal-follow-ups');
-        if (!followUpsContainer) {return;}
+    if (checked) {
+      // Show follow-up questions
+      const followUpHtml = this.getFollowUpForGoal(goal);
+      if (followUpHtml) {
+        // Check if already rendered
+        const existing = followUpsContainer.querySelector(`[data-goal="${goal}"]`);
+        if (!existing) {
+          followUpsContainer.insertAdjacentHTML('beforeend', followUpHtml);
+          this.attachFollowUpListeners(goal);
+        }
+      }
+    } else {
+      // Remove follow-up questions
+      const section = followUpsContainer.querySelector(`[data-goal="${goal}"]`);
+      if (section) {
+        section.remove();
+        delete this.followUpData[goal];
+      }
+    }
 
-        if (checked) {
-            // Show follow-up questions
-            const followUpHtml = this.getFollowUpForGoal(goal);
-            if (followUpHtml) {
-                // Check if already rendered
-                const existing = followUpsContainer.querySelector(`[data-goal="${goal}"]`);
-                if (!existing) {
-                    followUpsContainer.insertAdjacentHTML('beforeend', followUpHtml);
-                    this.attachFollowUpListeners(goal);
-                }
-            }
+    // Show/hide position question based on sport selection
+    if (goal === 'sport_specific') {
+      this.updateSportSpecificVisibility();
+    }
+  }
+
+  /**
+   * Attach event listeners to follow-up inputs
+   * @param {string} goal - Goal ID
+   */
+  attachFollowUpListeners(goal) {
+    const section = document.querySelector(`[data-goal="${goal}"]`);
+    if (!section) {
+      return;
+    }
+
+    // Handle select inputs
+    section.querySelectorAll('select.follow-up-input').forEach(select => {
+      select.addEventListener('change', e => {
+        const { question } = select.dataset;
+        if (!this.followUpData[goal]) {
+          this.followUpData[goal] = {};
+        }
+        this.followUpData[goal][question] = select.value;
+      });
+    });
+
+    // Handle text inputs
+    section.querySelectorAll('input[type="text"].follow-up-input').forEach(input => {
+      input.addEventListener('input', e => {
+        const { question } = input.dataset;
+        if (!this.followUpData[goal]) {
+          this.followUpData[goal] = {};
+        }
+        this.followUpData[goal][question] = input.value;
+      });
+    });
+
+    // Handle radio buttons
+    section.querySelectorAll('input[type="radio"]').forEach(radio => {
+      radio.addEventListener('change', e => {
+        const question = e.target.name.replace(`_${goal}`, '');
+        if (!this.followUpData[goal]) {
+          this.followUpData[goal] = {};
+        }
+        this.followUpData[goal][question] = e.target.value;
+      });
+    });
+
+    // Handle checkboxes
+    section.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+      checkbox.addEventListener('change', e => {
+        const question = 'focus_areas';
+        if (!this.followUpData[goal]) {
+          this.followUpData[goal] = {};
+        }
+        if (!this.followUpData[goal][question]) {
+          this.followUpData[goal][question] = [];
+        }
+
+        if (e.target.checked) {
+          this.followUpData[goal][question].push(e.target.value);
         } else {
-            // Remove follow-up questions
-            const section = followUpsContainer.querySelector(`[data-goal="${goal}"]`);
-            if (section) {
-                section.remove();
-                delete this.followUpData[goal];
-            }
+          this.followUpData[goal][question] = this.followUpData[goal][question].filter(
+            v => v !== e.target.value
+          );
         }
+      });
+    });
 
-        // Show/hide position question based on sport selection
-        if (goal === 'sport_specific') {
-            this.updateSportSpecificVisibility();
-        }
+    // Special handling for sport-specific
+    if (goal === 'sport_specific') {
+      const sportSelect = section.querySelector('[data-question="sport"]');
+      if (sportSelect) {
+        sportSelect.addEventListener('change', () => this.updateSportSpecificVisibility());
+      }
+      this.updateSportSpecificVisibility();
+    }
+  }
+
+  /**
+   * Update sport-specific visibility
+   */
+  updateSportSpecificVisibility() {
+    const positionQuestion = document.getElementById('sport-position-question');
+    if (!positionQuestion) {
+      return;
     }
 
-    /**
-     * Attach event listeners to follow-up inputs
-     * @param {string} goal - Goal ID
-     */
-    attachFollowUpListeners(goal) {
-        const section = document.querySelector(`[data-goal="${goal}"]`);
-        if (!section) {return;}
+    const sportSelect = document.querySelector(
+      '[data-goal="sport_specific"][data-question="sport"]'
+    );
+    if (
+      sportSelect &&
+      (sportSelect.value === 'soccer' ||
+        sportSelect.value === 'basketball' ||
+        sportSelect.value === 'football')
+    ) {
+      positionQuestion.style.display = 'block';
+    } else {
+      positionQuestion.style.display = 'none';
+    }
+  }
 
-        // Handle select inputs
-        section.querySelectorAll('select.follow-up-input').forEach(select => {
-            select.addEventListener('change', (e) => {
-                const {question} = select.dataset;
-                if (!this.followUpData[goal]) {this.followUpData[goal] = {};}
-                this.followUpData[goal][question] = select.value;
-            });
-        });
+  /**
+   * Save goals and follow-ups, then continue
+   */
+  saveAndContinue() {
+    const selectedGoals = this.getSelectedGoals();
 
-        // Handle text inputs
-        section.querySelectorAll('input[type="text"].follow-up-input').forEach(input => {
-            input.addEventListener('input', (e) => {
-                const {question} = input.dataset;
-                if (!this.followUpData[goal]) {this.followUpData[goal] = {};}
-                this.followUpData[goal][question] = input.value;
-            });
-        });
-
-        // Handle radio buttons
-        section.querySelectorAll('input[type="radio"]').forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                const question = e.target.name.replace(`_${goal}`, '');
-                if (!this.followUpData[goal]) {this.followUpData[goal] = {};}
-                this.followUpData[goal][question] = e.target.value;
-            });
-        });
-
-        // Handle checkboxes
-        section.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-            checkbox.addEventListener('change', (e) => {
-                const question = 'focus_areas';
-                if (!this.followUpData[goal]) {this.followUpData[goal] = {};}
-                if (!this.followUpData[goal][question]) {this.followUpData[goal][question] = [];}
-
-                if (e.target.checked) {
-                    this.followUpData[goal][question].push(e.target.value);
-                } else {
-                    this.followUpData[goal][question] = this.followUpData[goal][question].filter(v => v !== e.target.value);
-                }
-            });
-        });
-
-        // Special handling for sport-specific
-        if (goal === 'sport_specific') {
-            const sportSelect = section.querySelector('[data-question="sport"]');
-            if (sportSelect) {
-                sportSelect.addEventListener('change', () => this.updateSportSpecificVisibility());
-            }
-            this.updateSportSpecificVisibility();
-        }
+    // Save goals and follow-ups to onboarding data
+    if (window.OnboardingManager) {
+      window.OnboardingManager.setData('goals', selectedGoals);
+      window.OnboardingManager.setData('goalFollowUps', this.followUpData);
     }
 
-    /**
-     * Update sport-specific visibility
-     */
-    updateSportSpecificVisibility() {
-        const positionQuestion = document.getElementById('sport-position-question');
-        if (!positionQuestion) {return;}
+    // Continue to next step
+    window.OnboardingManager.nextStep();
+  }
 
-        const sportSelect = document.querySelector('[data-goal="sport_specific"][data-question="sport"]');
-        if (sportSelect && (sportSelect.value === 'soccer' || sportSelect.value === 'basketball' || sportSelect.value === 'football')) {
-            positionQuestion.style.display = 'block';
-        } else {
-            positionQuestion.style.display = 'none';
-        }
-    }
+  /**
+   * Get selected goals
+   * @returns {Array} Selected goal IDs
+   */
+  getSelectedGoals() {
+    const checkboxes = document.querySelectorAll('.goal-option input[type="checkbox"]:checked');
+    return Array.from(checkboxes).map(cb => cb.value);
+  }
 
-    /**
-     * Save goals and follow-ups, then continue
-     */
-    saveAndContinue() {
-        const selectedGoals = this.getSelectedGoals();
-
-        // Save goals and follow-ups to onboarding data
-        if (window.OnboardingManager) {
-            window.OnboardingManager.setData('goals', selectedGoals);
-            window.OnboardingManager.setData('goalFollowUps', this.followUpData);
-        }
-
-        // Continue to next step
-        window.OnboardingManager.nextStep();
-    }
-
-    /**
-     * Get selected goals
-     * @returns {Array} Selected goal IDs
-     */
-    getSelectedGoals() {
-        const checkboxes = document.querySelectorAll('.goal-option input[type="checkbox"]:checked');
-        return Array.from(checkboxes).map(cb => cb.value);
-    }
-
-    /**
-     * Validate step
-     * @returns {boolean} Is valid
-     */
-    validate() {
-        // At least one goal selected OR skipped
-        return true; // Goals are optional
-    }
+  /**
+   * Validate step
+   * @returns {boolean} Is valid
+   */
+  validate() {
+    // At least one goal selected OR skipped
+    return true; // Goals are optional
+  }
 }
 
 // Create global instance
@@ -484,5 +509,5 @@ window.GoalsStep = new GoalsStep();
 
 // Export for module systems
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = GoalsStep;
+  module.exports = GoalsStep;
 }

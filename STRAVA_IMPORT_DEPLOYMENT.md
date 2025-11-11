@@ -2,7 +2,8 @@
 
 ## Overview
 
-This guide covers the deployment of the comprehensive Strava activity import system with resume support, timezone handling, and robust error management.
+This guide covers the deployment of the comprehensive Strava activity import
+system with resume support, timezone handling, and robust error management.
 
 ## Prerequisites
 
@@ -41,6 +42,7 @@ Check that the sessions table has been extended:
 ```
 
 Look for the new columns:
+
 - `source`, `source_id`, `external_url`
 - `utc_date`, `timezone`, `timezone_offset`
 - `elapsed_duration`, `payload`
@@ -98,6 +100,7 @@ netlify deploy --prod
 ## 4. API Endpoints
 
 ### 4.1 Import Activities
+
 ```bash
 POST /.netlify/functions/integrations-strava-import
 Authorization: Bearer <jwt-token>
@@ -113,6 +116,7 @@ Content-Type: application/json
 ```
 
 ### 4.2 Get Import Status
+
 ```bash
 GET /.netlify/functions/integrations-strava-status
 Authorization: Bearer <jwt-token>
@@ -121,24 +125,28 @@ Authorization: Bearer <jwt-token>
 ## 5. Key Features
 
 ### Resume Support
+
 - **Time-boxed execution**: 9-second budget with resume tokens
 - **Continue tokens**: Base64-encoded state for resuming imports
 - **Progress tracking**: Detailed statistics and error reporting
 - **Automatic cleanup**: Orphaned activities removed after import
 
 ### Timezone Handling
+
 - **Dual storage**: Both local and UTC timestamps
 - **Timezone offset**: Minutes from UTC for accurate display
 - **Local time display**: Uses `start_date_local` from Strava
 - **UTC sorting**: Uses `start_date` for consistent ordering
 
 ### Data Mapping
+
 - **Complete field mapping**: All Strava data preserved in payload
 - **Sport type mapping**: Comprehensive mapping to internal types
 - **Pace calculation**: Automatic pace per km/mile calculation
 - **Rich metadata**: Heart rate, power, achievements, etc.
 
 ### Error Handling
+
 - **Network timeouts**: 5-second timeout with AbortController
 - **Rate limiting**: Exponential backoff with proper header parsing
 - **Token refresh**: Automatic token refresh when expired
@@ -162,12 +170,14 @@ node test-strava-import.js
 ### Step 2: Manual Testing
 
 1. **Connect Strava Account** (via Feature 2):
+
 ```bash
 # First, connect Strava account using the OAuth flow
 curl -X POST https://your-site.netlify.app/.netlify/functions/strava-oauth
 ```
 
 2. **Import Activities**:
+
 ```bash
 curl -X POST https://your-site.netlify.app/.netlify/functions/integrations-strava-import \
   -H "Authorization: Bearer <your-jwt-token>" \
@@ -175,12 +185,14 @@ curl -X POST https://your-site.netlify.app/.netlify/functions/integrations-strav
 ```
 
 3. **Check Import Status**:
+
 ```bash
 curl https://your-site.netlify.app/.netlify/functions/integrations-strava-status \
   -H "Authorization: Bearer <your-jwt-token>"
 ```
 
 4. **Resume Import** (if partial):
+
 ```bash
 curl -X POST https://your-site.netlify.app/.netlify/functions/integrations-strava-import \
   -H "Authorization: Bearer <your-jwt-token>" \
@@ -191,23 +203,27 @@ curl -X POST https://your-site.netlify.app/.netlify/functions/integrations-strav
 ## 7. Data Model
 
 ### Integration State Table
+
 - **Sync tracking**: Last import time, status, errors
 - **Resume support**: Continue tokens and progress state
 - **Statistics**: Total imported, duplicates, updates, failures
 - **User isolation**: Each user has separate sync state
 
 ### Activity Cache Table
+
 - **Orphan detection**: Track all activities seen on Strava
 - **Version tracking**: Detect updates via version changes
 - **Cleanup**: Remove activities no longer on Strava
 
 ### Import Log Table
+
 - **Detailed logging**: Page-by-page import details
 - **Error tracking**: Failed activities with error details
 - **Performance metrics**: Duration and timeout tracking
 - **Audit trail**: Complete history of import operations
 
 ### Session Extensions
+
 - **Source tracking**: `source` and `source_id` for deduplication
 - **External links**: `external_url` for Strava activity links
 - **Timezone data**: `utc_date`, `timezone`, `timezone_offset`
@@ -216,36 +232,42 @@ curl -X POST https://your-site.netlify.app/.netlify/functions/integrations-strav
 ## 8. Import Process
 
 ### 1. Authentication & Token Management
+
 - Verify JWT token and extract user ID
 - Check Strava token expiry
 - Refresh token if needed using Feature 2's refresh endpoint
 - Handle token decryption using AWS KMS
 
 ### 2. Resume State Management
+
 - Check for existing import in progress
 - Parse continue token if provided
 - Initialize or resume import state
 - Mark import as in progress
 
 ### 3. Strava API Interaction
+
 - Build paginated API URLs with proper parameters
 - Handle rate limiting with exponential backoff
 - Process activities in batches with time boxing
 - Track cursor for stable pagination
 
 ### 4. Data Processing
+
 - Map Strava activities to session format
 - Apply sport type mapping via SQL function
 - Handle timezone parsing and conversion
 - Calculate pace, speed, and other metrics
 
 ### 5. Database Operations
+
 - UPSERT activities with duplicate detection
 - Track in activity cache for orphan detection
 - Log detailed import statistics
 - Update sync state and statistics
 
 ### 6. Cleanup & Completion
+
 - Remove orphaned activities
 - Update final sync state
 - Return results or continue token
@@ -254,19 +276,21 @@ curl -X POST https://your-site.netlify.app/.netlify/functions/integrations-strav
 ## 9. Error Handling
 
 ### Error Codes
-| Code | Description | Status |
-|------|-------------|--------|
-| AUTH_REQUIRED | Authorization required | 401 |
-| AUTH_INVALID | Invalid token | 401 |
-| STRAVA_NOT_CONNECTED | Strava account not connected | 403 |
-| STRAVA_REVOKED | Strava access revoked | 403 |
-| IMPORT_IN_PROGRESS | Import already in progress | 409 |
-| INVALID_PARAM | Invalid parameter | 400 |
-| INVALID_CONTINUE_TOKEN | Invalid continue token | 400 |
-| TOKEN_REFRESH_FAILED | Token refresh failed | 502 |
-| IMPORT_FAILED | Import failed | 503 |
+
+| Code                   | Description                  | Status |
+| ---------------------- | ---------------------------- | ------ |
+| AUTH_REQUIRED          | Authorization required       | 401    |
+| AUTH_INVALID           | Invalid token                | 401    |
+| STRAVA_NOT_CONNECTED   | Strava account not connected | 403    |
+| STRAVA_REVOKED         | Strava access revoked        | 403    |
+| IMPORT_IN_PROGRESS     | Import already in progress   | 409    |
+| INVALID_PARAM          | Invalid parameter            | 400    |
+| INVALID_CONTINUE_TOKEN | Invalid continue token       | 400    |
+| TOKEN_REFRESH_FAILED   | Token refresh failed         | 502    |
+| IMPORT_FAILED          | Import failed                | 503    |
 
 ### Error Response Format
+
 ```json
 {
   "error": {
@@ -282,21 +306,25 @@ curl -X POST https://your-site.netlify.app/.netlify/functions/integrations-strav
 ## 10. Performance Considerations
 
 ### Time Boxing
+
 - **9-second budget**: Leaves 1 second buffer for Netlify's 10s limit
 - **Resume support**: Continue tokens for large imports
 - **Progress tracking**: Detailed statistics for monitoring
 
 ### Rate Limiting
+
 - **Exponential backoff**: Proper handling of Strava rate limits
 - **Header parsing**: Correct interpretation of Retry-After headers
 - **Usage tracking**: Monitor rate limit usage
 
 ### Database Optimization
+
 - **Composite indexes**: Efficient queries for pagination
 - **UPSERT operations**: Atomic duplicate handling
 - **Connection pooling**: Efficient database connections
 
 ### Memory Management
+
 - **Batch processing**: Process activities in batches
 - **Error limiting**: Limit error details to prevent memory issues
 - **State cleanup**: Clean up resume tokens after completion
@@ -304,18 +332,21 @@ curl -X POST https://your-site.netlify.app/.netlify/functions/integrations-strav
 ## 11. Monitoring
 
 ### Key Metrics
+
 - **Import success rate**: Percentage of successful imports
 - **Resume frequency**: How often imports need to be resumed
 - **Error rates**: By error code and endpoint
 - **Performance**: Import duration and page processing time
 
 ### Logging
+
 - **Structured logs**: JSON format for easy parsing
 - **User anonymization**: User IDs hashed in logs
 - **Request tracking**: Unique run IDs for tracing
 - **Error details**: Comprehensive error information
 
 ### Health Checks
+
 - **Database connectivity**: Connection pool health
 - **Function performance**: Response time monitoring
 - **Token validity**: Strava token status
@@ -365,17 +396,20 @@ psql $DATABASE_URL -c "SELECT * FROM integrations_strava WHERE user_id = 'your-u
 ## 13. Maintenance
 
 ### Regular Tasks
+
 - **Monitor import logs**: Check for errors and performance issues
 - **Clean up old data**: Remove old import logs and cache entries
 - **Update sport mappings**: Add new Strava sport types
 - **Review error rates**: Identify common issues
 
 ### Data Cleanup
+
 - **Import logs**: Consider archiving old logs
 - **Activity cache**: Clean up old cache entries
 - **Resume tokens**: Clean up expired tokens
 
 ### Updates
+
 - **Schema changes**: Use migrations for database updates
 - **API versioning**: Maintain backward compatibility
 - **Dependency updates**: Keep packages current
@@ -384,16 +418,19 @@ psql $DATABASE_URL -c "SELECT * FROM integrations_strava WHERE user_id = 'your-u
 ## 14. Security Considerations
 
 ### Token Security
+
 - **Encryption**: All tokens encrypted with AWS KMS
 - **Key rotation**: Regular key rotation for security
 - **Access control**: Proper IAM permissions for KMS
 
 ### Data Privacy
+
 - **User isolation**: Users can only access their own data
 - **PII protection**: No sensitive data in logs
 - **Audit trails**: Complete audit trail for compliance
 
 ### API Security
+
 - **JWT validation**: Proper token validation
 - **Rate limiting**: Prevent abuse and DoS attacks
 - **Input validation**: Validate all input parameters
@@ -401,6 +438,7 @@ psql $DATABASE_URL -c "SELECT * FROM integrations_strava WHERE user_id = 'your-u
 ## Support
 
 For issues or questions:
+
 1. Check the error codes and descriptions
 2. Review the import logs for details
 3. Verify environment configuration

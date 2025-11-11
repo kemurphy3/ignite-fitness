@@ -6,13 +6,13 @@ const {
   auditLog,
   errorResponse,
   withTimeout,
-  successResponse
+  successResponse,
 } = require('./utils/admin-auth');
 
 const { getNeonClient } = require('./utils/connection-pool');
 const sql = getNeonClient();
 
-exports.handler = async (event) => {
+exports.handler = async event => {
   const startTime = Date.now();
   const requestId = crypto.randomUUID();
 
@@ -63,19 +63,19 @@ exports.handler = async (event) => {
           view: v.view_name,
           last_refresh: v.last_refresh,
           seconds_stale: Math.round(v.seconds_stale),
-          stale: v.seconds_stale > 3600 // Flag if > 1 hour
-        }))
+          stale: v.seconds_stale > 3600, // Flag if > 1 hour
+        })),
       },
       integrations: {
         strava: {
           last_import: stravaStatus[0]?.last_import || null,
-          active_imports: stravaStatus[0]?.active_imports || 0
-        }
+          active_imports: stravaStatus[0]?.active_imports || 0,
+        },
       },
       config: {
         environment: process.env.NODE_ENV || 'development',
-        version: process.env.APP_VERSION || '1.0.0'
-      }
+        version: process.env.APP_VERSION || '1.0.0',
+      },
     };
 
     await auditLog(adminId, '/admin/health', 'GET', {}, 200, Date.now() - startTime, requestId);
@@ -83,12 +83,11 @@ exports.handler = async (event) => {
     return successResponse(
       health,
       {
-        response_time_ms: Date.now() - startTime
+        response_time_ms: Date.now() - startTime,
       },
       requestId,
       'no-store'
     );
-
   } catch (error) {
     // Auth errors return proper status
     if (error.message.includes('Authentication failed')) {
@@ -104,19 +103,19 @@ exports.handler = async (event) => {
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'no-store',
-        'X-Request-ID': requestId
+        'X-Request-ID': requestId,
       },
       body: JSON.stringify({
         status: 'degraded',
         data: {
           database: { connected: false },
-          error: 'Database connection failed'
+          error: 'Database connection failed',
         },
         meta: {
           request_id: requestId,
-          generated_at: new Date().toISOString()
-        }
-      })
+          generated_at: new Date().toISOString(),
+        },
+      }),
     };
   }
 };

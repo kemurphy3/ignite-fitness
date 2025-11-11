@@ -5,135 +5,137 @@
 
 // Safe HTML creation function
 function createSafeHTML(htmlString) {
-    const tempDiv = document.createElement('div');
-    tempDiv.textContent = htmlString;
-    return tempDiv;
+  const tempDiv = document.createElement('div');
+  tempDiv.textContent = htmlString;
+  return tempDiv;
 }
 
 // Safe content setting function
 function setContentSafely(element, content) {
-    if (typeof content === 'string') {
-        element.textContent = content;
-    } else {
-        const container = createSafeHTML(content);
-        while (element.firstChild) {
-            element.removeChild(element.firstChild);
-        }
-        while (container.firstChild) {
-            element.appendChild(container.firstChild);
-        }
+  if (typeof content === 'string') {
+    element.textContent = content;
+  } else {
+    const container = createSafeHTML(content);
+    while (element.firstChild) {
+      element.removeChild(element.firstChild);
     }
+    while (container.firstChild) {
+      element.appendChild(container.firstChild);
+    }
+  }
 }
 
 // Safe HTML template function
 function createHTMLTemplate(strings, ...values) {
-    return strings.reduce((result, string, i) => {
-        const value = values[i] || '';
-        return result + string + (typeof value === 'string' ? value : '');
-    }, '');
+  return strings.reduce((result, string, i) => {
+    const value = values[i] || '';
+    return result + string + (typeof value === 'string' ? value : '');
+  }, '');
 }
 
 // Initialize the application
 function initializeApp() {
-    // Initialize all modules
-    initializeAuth();
-    initializeWorkoutTracker();
-    initializeDashboard();
-    initializeGoalsAndHabits();
-    initializeLoadManagement();
+  // Initialize all modules
+  initializeAuth();
+  initializeWorkoutTracker();
+  initializeDashboard();
+  initializeGoalsAndHabits();
+  initializeLoadManagement();
 
-    // Set up event listeners
-    setupEventListeners();
+  // Set up event listeners
+  setupEventListeners();
 }
 
 // Event listener setup
 function setupEventListeners() {
-    // Auth events
-    if (window.EventBus) {
-        window.EventBus.on('auth:loggedIn', handleUserLogin);
-        window.EventBus.on('auth:loggedOut', handleUserLogout);
-    }
+  // Auth events
+  if (window.EventBus) {
+    window.EventBus.on('auth:loggedIn', handleUserLogin);
+    window.EventBus.on('auth:loggedOut', handleUserLogout);
+  }
 
-    // Workout events
-    if (window.EventBus) {
-        window.EventBus.on('workout:started', handleWorkoutStart);
-        window.EventBus.on('workout:completed', handleWorkoutComplete);
-    }
+  // Workout events
+  if (window.EventBus) {
+    window.EventBus.on('workout:started', handleWorkoutStart);
+    window.EventBus.on('workout:completed', handleWorkoutComplete);
+  }
 
-    // Goals and habits events
-    if (window.EventBus) {
-        window.EventBus.on('goal:created', handleGoalCreated);
-        window.EventBus.on('habit:updated', handleHabitUpdated);
-    }
+  // Goals and habits events
+  if (window.EventBus) {
+    window.EventBus.on('goal:created', handleGoalCreated);
+    window.EventBus.on('habit:updated', handleHabitUpdated);
+  }
 }
 
 // Event handlers
 function handleUserLogin(username) {
-    updateUIForLoggedInUser(username);
+  updateUIForLoggedInUser(username);
 }
 
 function handleUserLogout() {
-    updateUIForLoggedOutUser();
+  updateUIForLoggedOutUser();
 }
 
 function handleWorkoutStart(workoutData) {
-    updateWorkoutUI(workoutData);
+  updateWorkoutUI(workoutData);
 }
 
 function handleWorkoutComplete(workoutData) {
-    updateWorkoutCompletionUI(workoutData);
+  updateWorkoutCompletionUI(workoutData);
 }
 
 function handleGoalCreated(goalData) {
-    showSuccess('Goal created successfully!');
+  showSuccess('Goal created successfully!');
 }
 
 function handleHabitUpdated(habitData) {
-    updateHabitUI(habitData);
+  updateHabitUI(habitData);
 }
 
 // UI update functions
 function updateUIForLoggedInUser(username) {
-    const userElement = document.getElementById('userInfo');
-    if (userElement) {
-        userElement.textContent = `Welcome, ${username}!`;
-    }
+  const userElement = document.getElementById('userInfo');
+  if (userElement) {
+    userElement.textContent = `Welcome, ${username}!`;
+  }
 }
 
 function updateUIForLoggedOutUser() {
-    const userElement = document.getElementById('userInfo');
-    if (userElement) {
-        userElement.textContent = 'Please log in';
-    }
+  const userElement = document.getElementById('userInfo');
+  if (userElement) {
+    userElement.textContent = 'Please log in';
+  }
 }
 
 function updateWorkoutUI(workoutData) {
-    const workoutElement = document.getElementById('currentWorkout');
-    if (workoutElement) {
-        workoutElement.textContent = `Current workout: ${workoutData.name}`;
-    }
+  const workoutElement = document.getElementById('currentWorkout');
+  if (workoutElement) {
+    workoutElement.textContent = `Current workout: ${workoutData.name}`;
+  }
 }
 
 function updateWorkoutCompletionUI(workoutData) {
-    const completionElement = document.getElementById('workoutCompletion');
-    if (completionElement) {
-        completionElement.textContent = `Workout completed: ${workoutData.name}`;
-    }
+  const completionElement = document.getElementById('workoutCompletion');
+  if (completionElement) {
+    completionElement.textContent = `Workout completed: ${workoutData.name}`;
+  }
 }
 
 function updateHabitUI(habitData) {
-    const habitElement = document.getElementById('habitStatus');
-    if (habitElement) {
-        habitElement.textContent = `Habit status: ${habitData.status}`;
-    }
+  const habitElement = document.getElementById('habitStatus');
+  if (habitElement) {
+    habitElement.textContent = `Habit status: ${habitData.status}`;
+  }
 }
 
 // Safe content rendering functions
 function renderDashboard() {
-    const container = document.getElementById('dashboardContent');
-    if (!container) {return;}
+  const container = document.getElementById('dashboardContent');
+  if (!container) {
+    return;
+  }
 
-    const content = createHTMLTemplate`
+  const content = createHTMLTemplate`
         <div class="dashboard-grid">
             <div class="dashboard-card">
                 <h3>Recent Workouts</h3>
@@ -150,51 +152,61 @@ function renderDashboard() {
         </div>
     `;
 
-    setContentSafely(container, content);
+  setContentSafely(container, content);
 }
 
 function renderWorkoutPlan(workoutData) {
-    const container = document.getElementById('workoutPlan');
-    if (!container) {return;}
+  const container = document.getElementById('workoutPlan');
+  if (!container) {
+    return;
+  }
 
-    const content = createHTMLTemplate`
+  const content = createHTMLTemplate`
         <div class="workout-plan">
             <h3>${workoutData.name}</h3>
             <div class="exercises">
-                ${workoutData.exercises.map(exercise => `
+                ${workoutData.exercises
+                  .map(
+                    exercise => `
                     <div class="exercise">
                         <h4>${exercise.name}</h4>
                         <p>Sets: ${exercise.sets}, Reps: ${exercise.reps}</p>
                     </div>
-                `).join('')}
+                `
+                  )
+                  .join('')}
             </div>
         </div>
     `;
 
-    setContentSafely(container, content);
+  setContentSafely(container, content);
 }
 
 // Goals & Habits Functions (Secure Version)
 function showGoalsModal() {
-    const modal = document.getElementById('goalsModal');
-    if (modal) {
-        modal.classList.remove('hidden');
-        renderGoals();
-    }
+  const modal = document.getElementById('goalsModal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    renderGoals();
+  }
 }
 
 function renderGoals() {
-    const container = document.getElementById('goalsContainer');
-    if (!container) {return;}
+  const container = document.getElementById('goalsContainer');
+  if (!container) {
+    return;
+  }
 
-    const goalManager = window.GoalManager;
-    if (!goalManager) {return;}
+  const goalManager = window.GoalManager;
+  if (!goalManager) {
+    return;
+  }
 
-    const activeGoals = goalManager.getActiveGoals();
-    const completedGoals = goalManager.getCompletedGoals();
-    const progressSummary = goalManager.getGoalProgressSummary();
+  const activeGoals = goalManager.getActiveGoals();
+  const completedGoals = goalManager.getCompletedGoals();
+  const progressSummary = goalManager.getGoalProgressSummary();
 
-    const content = createHTMLTemplate`
+  const content = createHTMLTemplate`
         <div class="goals-summary">
             <h4>Goals Overview</h4>
             <div class="summary-stats">
@@ -218,21 +230,25 @@ function renderGoals() {
             ${activeGoals.length > 0 ? activeGoals.map(goal => renderGoalCard(goal)).join('') : '<p>No active goals. Set your first goal to get started!</p>'}
         </div>
 
-        ${completedGoals.length > 0 ? `
+        ${
+          completedGoals.length > 0
+            ? `
         <div class="completed-goals">
             <h4>Completed Goals (${completedGoals.length})</h4>
             ${completedGoals.map(goal => renderGoalCard(goal, true)).join('')}
         </div>
-        ` : ''}
+        `
+            : ''
+        }
     `;
 
-    setContentSafely(container, content);
+  setContentSafely(container, content);
 }
 
 function renderGoalCard(goal, isCompleted = false) {
-    const progressPercentage = Math.round(goal.progress_percentage);
+  const progressPercentage = Math.round(goal.progress_percentage);
 
-    return createHTMLTemplate`
+  return createHTMLTemplate`
         <div class="goal-card ${isCompleted ? 'completed' : ''}">
             <div class="goal-header">
                 <h3 class="goal-title">${goal.title}</h3>
@@ -249,17 +265,25 @@ function renderGoalCard(goal, isCompleted = false) {
                 </div>
             </div>
 
-            ${goal.milestones ? `
+            ${
+              goal.milestones
+                ? `
             <div class="goal-milestones">
-                ${goal.milestones.map(milestone => `
+                ${goal.milestones
+                  .map(
+                    milestone => `
                     <div class="milestone ${milestone.achieved ? 'achieved' : ''}">
                         <div class="milestone-percentage">${milestone.percentage}%</div>
                         <div class="milestone-value">${milestone.value} ${goal.unit}</div>
                         <div class="milestone-reward">${milestone.reward}</div>
                     </div>
-                `).join('')}
+                `
+                  )
+                  .join('')}
             </div>
-            ` : ''}
+            `
+                : ''
+            }
 
             ${goal.description ? `<p class="goal-description">${goal.description}</p>` : ''}
             
@@ -270,29 +294,33 @@ function renderGoalCard(goal, isCompleted = false) {
 
 // Load Management Functions (Secure Version)
 function showLoadManagementModal() {
-    const modal = document.getElementById('loadManagementModal');
-    if (modal) {
-        modal.classList.remove('hidden');
-        renderLoadManagement();
-    }
+  const modal = document.getElementById('loadManagementModal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    renderLoadManagement();
+  }
 }
 
 function renderLoadManagement() {
-    const container = document.getElementById('loadManagementContainer');
-    if (!container) {return;}
+  const container = document.getElementById('loadManagementContainer');
+  if (!container) {
+    return;
+  }
 
-    const loadCalculator = window.LoadCalculator;
-    if (!loadCalculator) {return;}
+  const loadCalculator = window.LoadCalculator;
+  if (!loadCalculator) {
+    return;
+  }
 
-    const dashboardData = loadCalculator.getLoadDashboard();
-    if (dashboardData.error) {
-        container.textContent = `Error loading load management data: ${dashboardData.error}`;
-        return;
-    }
+  const dashboardData = loadCalculator.getLoadDashboard();
+  if (dashboardData.error) {
+    container.textContent = `Error loading load management data: ${dashboardData.error}`;
+    return;
+  }
 
-    const { load, summary } = dashboardData;
+  const { load, summary } = dashboardData;
 
-    const content = createHTMLTemplate`
+  const content = createHTMLTemplate`
         <div class="load-summary">
             <div class="load-metric">
                 <div class="load-metric-value">${Math.round(summary.totalLoad)}</div>
@@ -330,22 +358,34 @@ function renderLoadManagement() {
             <h4>Overtraining Risk Assessment</h4>
             <p><strong>Risk Level:</strong> ${summary.riskLevel.toUpperCase()}</p>
             <p><strong>Recommendation:</strong> ${summary.recommendation.message}</p>
-            ${load.combined.riskAssessment.factors.length > 0 ? `
+            ${
+              load.combined.riskAssessment.factors.length > 0
+                ? `
             <div class="risk-factors">
                 <h5>Risk Factors:</h5>
-                ${load.combined.riskAssessment.factors.map(factor => `
+                ${load.combined.riskAssessment.factors
+                  .map(
+                    factor => `
                     <div class="risk-factor">
                         <div class="risk-factor-icon ${summary.riskLevel}">!</div>
                         <span>${factor}</span>
                     </div>
-                `).join('')}
+                `
+                  )
+                  .join('')}
             </div>
-            ` : ''}
+            `
+                : ''
+            }
         </div>
 
         <div class="activity-list">
             <h4>Recent Activities</h4>
-            ${load.external.activities ? load.external.activities.map(activity => `
+            ${
+              load.external.activities
+                ? load.external.activities
+                    .map(
+                      activity => `
                 <div class="activity-item">
                     <div class="activity-info">
                         <div class="activity-name">${activity.activity_type}</div>
@@ -365,136 +405,148 @@ function renderLoadManagement() {
                         </div>
                     </div>
                 </div>
-            `).join('') : '<p>No recent activities found.</p>'}
+            `
+                    )
+                    .join('')
+                : '<p>No recent activities found.</p>'
+            }
         </div>
     `;
 
-    setContentSafely(container, content);
+  setContentSafely(container, content);
 }
 
 // Utility functions
 function getLoadStatus(totalLoad) {
-    if (totalLoad < 200) {return 'low';}
-    if (totalLoad < 400) {return 'medium';}
-    return 'high';
+  if (totalLoad < 200) {
+    return 'low';
+  }
+  if (totalLoad < 400) {
+    return 'medium';
+  }
+  return 'high';
 }
 
 function getLoadStatusText(totalLoad) {
-    if (totalLoad < 200) {return 'Low Load';}
-    if (totalLoad < 400) {return 'Moderate Load';}
-    return 'High Load';
+  if (totalLoad < 200) {
+    return 'Low Load';
+  }
+  if (totalLoad < 400) {
+    return 'Moderate Load';
+  }
+  return 'High Load';
 }
 
 function getRiskStatusText(riskLevel) {
-    const statusTexts = {
-        low: 'Low Risk',
-        medium: 'Medium Risk',
-        high: 'High Risk'
-    };
-    return statusTexts[riskLevel] || 'Unknown';
+  const statusTexts = {
+    low: 'Low Risk',
+    medium: 'Medium Risk',
+    high: 'High Risk',
+  };
+  return statusTexts[riskLevel] || 'Unknown';
 }
 
 // Initialize modules
 function initializeAuth() {
-    if (window.AuthManager) {
-        // Auth module initialized
-    }
+  if (window.AuthManager) {
+    // Auth module initialized
+  }
 }
 
 function initializeWorkoutTracker() {
-    if (window.WorkoutTracker) {
-        // Workout tracker initialized
-    }
+  if (window.WorkoutTracker) {
+    // Workout tracker initialized
+  }
 }
 
 function initializeDashboard() {
-    if (window.DashboardRenderer) {
-        // Dashboard module initialized
-    }
+  if (window.DashboardRenderer) {
+    // Dashboard module initialized
+  }
 }
 
 function initializeGoalsAndHabits() {
-    if (window.GoalManager) {
-        window.GoalManager.initialize();
-    }
+  if (window.GoalManager) {
+    window.GoalManager.initialize();
+  }
 
-    if (window.HabitTracker) {
-        window.HabitTracker.initialize();
-    }
+  if (window.HabitTracker) {
+    window.HabitTracker.initialize();
+  }
 
-    // Listen for motivational messages
-    if (window.EventBus) {
-        window.EventBus.on('motivational:message', (data) => {
-            showMotivationalToast(data.message);
-        });
-    }
+  // Listen for motivational messages
+  if (window.EventBus) {
+    window.EventBus.on('motivational:message', data => {
+      showMotivationalToast(data.message);
+    });
+  }
 }
 
 function initializeLoadManagement() {
-    if (window.StravaProcessor) {
-        // Strava processor initialized
-    }
+  if (window.StravaProcessor) {
+    // Strava processor initialized
+  }
 
-    if (window.LoadCalculator) {
-        // Load calculator initialized
-    }
+  if (window.LoadCalculator) {
+    // Load calculator initialized
+  }
 }
 
 // Motivational toast functions
 function showMotivationalToast(message) {
-    const toast = document.getElementById('motivationalToast');
-    const messageElement = document.getElementById('motivationalMessage');
+  const toast = document.getElementById('motivationalToast');
+  const messageElement = document.getElementById('motivationalMessage');
 
-    if (toast && messageElement) {
-        messageElement.textContent = message;
-        toast.classList.remove('hidden');
+  if (toast && messageElement) {
+    messageElement.textContent = message;
+    toast.classList.remove('hidden');
 
-        // Auto-hide after 5 seconds
-        setTimeout(() => {
-            closeMotivationalToast();
-        }, 5000);
-    }
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+      closeMotivationalToast();
+    }, 5000);
+  }
 }
 
 function closeMotivationalToast() {
-    const toast = document.getElementById('motivationalToast');
-    if (toast) {
-        toast.classList.add('hidden');
-    }
+  const toast = document.getElementById('motivationalToast');
+  if (toast) {
+    toast.classList.add('hidden');
+  }
 }
 
 // Modal functions
 function closeGoalsModal() {
-    const modal = document.getElementById('goalsModal');
-    if (modal) {
-        modal.classList.add('hidden');
-    }
+  const modal = document.getElementById('goalsModal');
+  if (modal) {
+    modal.classList.add('hidden');
+  }
 }
 
 function closeLoadManagementModal() {
-    const modal = document.getElementById('loadManagementModal');
-    if (modal) {
-        modal.classList.add('hidden');
-    }
+  const modal = document.getElementById('loadManagementModal');
+  if (modal) {
+    modal.classList.add('hidden');
+  }
 }
 
 function refreshLoadData() {
-    renderLoadManagement();
-    showSuccess('Load data refreshed!');
+  renderLoadManagement();
+  showSuccess('Load data refreshed!');
 }
 
 // Success/Error message functions
 function showSuccess(message) {
-    // In a real app, this would show a success notification
+  // In a real app, this would show a success notification
 }
 
 function showError(element, message) {
-    // In a real app, this would show an error notification
+  // In a real app, this would show an error notification
 }
 
 // Initialize the app when DOM is ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeApp);
+  document.addEventListener('DOMContentLoaded', initializeApp);
 } else {
-    initializeApp();
+  initializeApp();
 }

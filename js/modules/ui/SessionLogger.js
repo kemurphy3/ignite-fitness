@@ -6,100 +6,100 @@
 import LoadCalculationEngine from '../load/LoadCalculationEngine.js';
 
 const RPE_MULTIPLIERS = {
-    1: 0.6,
-    2: 0.65,
-    3: 0.7,
-    4: 0.8,
-    5: 0.9,
-    6: 1.0,
-    7: 1.1,
-    8: 1.2,
-    9: 1.3,
-    10: 1.4
+  1: 0.6,
+  2: 0.65,
+  3: 0.7,
+  4: 0.8,
+  5: 0.9,
+  6: 1.0,
+  7: 1.1,
+  8: 1.2,
+  9: 1.3,
+  10: 1.4,
 };
 
 class SessionLogger {
-    constructor() {
-        this.logger = window.SafeLogger || console;
-        this.storageManager = window.StorageManager;
-        this.authManager = window.AuthManager;
-        this.eventBus = window.EventBus;
-        this.isLogging = false;
-        this.intensityManuallySet = false;
+  constructor() {
+    this.logger = window.SafeLogger || console;
+    this.storageManager = window.StorageManager;
+    this.authManager = window.AuthManager;
+    this.eventBus = window.EventBus;
+    this.isLogging = false;
+    this.intensityManuallySet = false;
 
-        Object.defineProperty(this, 'sessionData', {
-            configurable: true,
-            enumerable: true,
-            get: () => this._sessionData,
-            set: (value) => {
-                this._sessionData = this.mergeSessionData(value);
-            }
-        });
+    Object.defineProperty(this, 'sessionData', {
+      configurable: true,
+      enumerable: true,
+      get: () => this._sessionData,
+      set: value => {
+        this._sessionData = this.mergeSessionData(value);
+      },
+    });
 
-        this.sessionData = this.getDefaultSessionData();
-    }
+    this.sessionData = this.getDefaultSessionData();
+  }
 
-    /**
-     * Default session data template
-     * @returns {Object} Default session data
-     */
-    getDefaultSessionData() {
-        return {
-            date: new Date().toISOString().split('T')[0],
-            workout_name: '',
-            modality: '',
-            duration_minutes: '',
-            distance: '',
-            distance_unit: 'km',
-            rpe: '',
-            hr_data: {
-                avg_hr: '',
-                max_hr: ''
-            },
-            intensity: '',
-            notes: '',
-            sets: 0,
-            reps: 0,
-            weight: 0
-        };
-    }
+  /**
+   * Default session data template
+   * @returns {Object} Default session data
+   */
+  getDefaultSessionData() {
+    return {
+      date: new Date().toISOString().split('T')[0],
+      workout_name: '',
+      modality: '',
+      duration_minutes: '',
+      distance: '',
+      distance_unit: 'km',
+      rpe: '',
+      hr_data: {
+        avg_hr: '',
+        max_hr: '',
+      },
+      intensity: '',
+      notes: '',
+      sets: 0,
+      reps: 0,
+      weight: 0,
+    };
+  }
 
-    /**
-     * Merge incoming session data with defaults
-     * @param {Object} data - Incoming session data
-     * @returns {Object} Merged session data
-     */
-    mergeSessionData(data = {}) {
-        const defaults = this.getDefaultSessionData();
-        const incoming = data || {};
+  /**
+   * Merge incoming session data with defaults
+   * @param {Object} data - Incoming session data
+   * @returns {Object} Merged session data
+   */
+  mergeSessionData(data = {}) {
+    const defaults = this.getDefaultSessionData();
+    const incoming = data || {};
 
-        const merged = {
-            ...defaults,
-            ...incoming
-        };
+    const merged = {
+      ...defaults,
+      ...incoming,
+    };
 
-        merged.hr_data = {
-            ...defaults.hr_data,
-            ...(incoming.hr_data || {})
-        };
+    merged.hr_data = {
+      ...defaults.hr_data,
+      ...(incoming.hr_data || {}),
+    };
 
-        merged.sets = Number(incoming.sets ?? defaults.sets) || 0;
-        merged.reps = Number(incoming.reps ?? defaults.reps) || 0;
-        merged.weight = Number(incoming.weight ?? defaults.weight) || 0;
+    merged.sets = Number(incoming.sets ?? defaults.sets) || 0;
+    merged.reps = Number(incoming.reps ?? defaults.reps) || 0;
+    merged.weight = Number(incoming.weight ?? defaults.weight) || 0;
 
-        // Reset manual flag unless explicitly set through updateField
-        this.intensityManuallySet = false;
+    // Reset manual flag unless explicitly set through updateField
+    this.intensityManuallySet = false;
 
-        return merged;
-    }
+    return merged;
+  }
 
-    /**
-     * Initialize and render session logger
-     */
-    render() {
-        const container = this.getContainer();
+  /**
+   * Initialize and render session logger
+   */
+  render() {
+    const container = this.getContainer();
 
-        container.innerHTML = `
+    container.innerHTML = `
             <div class="session-logger">
                 <div class="logger-header">
                     <h2>Log Workout Session</h2>
@@ -232,138 +232,152 @@ class SessionLogger {
             </div>
         `;
 
-        // Store reference for onclick handlers
-        window.sessionLogger = this;
+    // Store reference for onclick handlers
+    window.sessionLogger = this;
+  }
+
+  /**
+   * Update form field
+   */
+  updateField(field, value) {
+    if (field === 'intensity') {
+      this.intensityManuallySet = Boolean(value);
+      this.sessionData.intensity = value;
+    } else if (field === 'rpe') {
+      const numericValue = value === '' ? '' : parseInt(value, 10);
+      this.sessionData.rpe = numericValue;
+      if (!this.intensityManuallySet) {
+        const estimated = this.estimateIntensityFromRPE(numericValue);
+        this.sessionData.intensity = estimated;
+        const intensitySelect = document.getElementById('intensity');
+        if (intensitySelect) {
+          intensitySelect.value = estimated;
+        }
+      }
+    } else if (field === 'sets' || field === 'reps' || field === 'weight') {
+      this.sessionData[field] = Number(value) || 0;
+    } else {
+      this.sessionData[field] = value;
     }
 
-    /**
-     * Update form field
-     */
-    updateField(field, value) {
-        if (field === 'intensity') {
-            this.intensityManuallySet = Boolean(value);
-            this.sessionData.intensity = value;
-        } else if (field === 'rpe') {
-            const numericValue = value === '' ? '' : parseInt(value, 10);
-            this.sessionData.rpe = numericValue;
-            if (!this.intensityManuallySet) {
-                const estimated = this.estimateIntensityFromRPE(numericValue);
-                this.sessionData.intensity = estimated;
-                const intensitySelect = document.getElementById('intensity');
-                if (intensitySelect) {
-                    intensitySelect.value = estimated;
-                }
-            }
-        } else if (field === 'sets' || field === 'reps' || field === 'weight') {
-            this.sessionData[field] = Number(value) || 0;
-        } else {
-            this.sessionData[field] = value;
-        }
+    // Update load preview if we can calculate it
+    if (this.canCalculateLoad()) {
+      this.updateLoadPreview();
+    }
+  }
 
-        // Update load preview if we can calculate it
-        if (this.canCalculateLoad()) {
-            this.updateLoadPreview();
-        }
+  /**
+   * Update HR field
+   */
+  updateHRField(field, value) {
+    if (!this.sessionData.hr_data) {
+      this.sessionData.hr_data = { avg_hr: '', max_hr: '' };
+    }
+    this.sessionData.hr_data[field] = value || '';
+
+    if (this.canCalculateLoad()) {
+      this.updateLoadPreview();
+    }
+  }
+
+  /**
+   * Update RPE and refresh display
+   */
+  updateRPE(value) {
+    const numericValue = parseInt(value, 10);
+    this.sessionData.rpe = isNaN(numericValue) ? '' : numericValue;
+
+    // Update display
+    const rpeValue = document.querySelector('.rpe-value');
+    const rpeLabel = document.querySelector('.rpe-label');
+
+    if (rpeValue) {
+      rpeValue.textContent = value;
+    }
+    if (rpeLabel) {
+      rpeLabel.textContent = this.getRPELabel(value);
     }
 
-    /**
-     * Update HR field
-     */
-    updateHRField(field, value) {
-        if (!this.sessionData.hr_data) {
-            this.sessionData.hr_data = { avg_hr: '', max_hr: '' };
-        }
-        this.sessionData.hr_data[field] = value || '';
-
-        if (this.canCalculateLoad()) {
-            this.updateLoadPreview();
-        }
+    // Auto-estimate intensity
+    if (!this.intensityManuallySet) {
+      const estimated = this.estimateIntensityFromRPE(numericValue);
+      this.sessionData.intensity = estimated;
+      const intensitySelect = document.getElementById('intensity');
+      if (intensitySelect) {
+        intensitySelect.value = estimated;
+      }
     }
 
-    /**
-     * Update RPE and refresh display
-     */
-    updateRPE(value) {
-        const numericValue = parseInt(value, 10);
-        this.sessionData.rpe = isNaN(numericValue) ? '' : numericValue;
+    if (this.canCalculateLoad()) {
+      this.updateLoadPreview();
+    }
+  }
 
-        // Update display
-        const rpeValue = document.querySelector('.rpe-value');
-        const rpeLabel = document.querySelector('.rpe-label');
+  /**
+   * Get RPE label description
+   */
+  getRPELabel(rpe) {
+    const labels = {
+      1: 'Very Easy',
+      2: 'Easy',
+      3: 'Easy',
+      4: 'Moderate',
+      5: 'Moderate',
+      6: 'Moderate Hard',
+      7: 'Hard',
+      8: 'Hard',
+      9: 'Very Hard',
+      10: 'Maximal',
+    };
+    return labels[parseInt(rpe)] || 'Moderate';
+  }
 
-        if (rpeValue) {rpeValue.textContent = value;}
-        if (rpeLabel) {rpeLabel.textContent = this.getRPELabel(value);}
+  /**
+   * Estimate training zone from RPE
+   */
+  estimateIntensityFromRPE(rpe) {
+    const rpeValue = parseInt(rpe, 10);
+    if (!Number.isFinite(rpeValue)) {
+      return '';
+    }
+    if (rpeValue <= 3) {
+      return 'Z1';
+    }
+    if (rpeValue <= 5) {
+      return 'Z2';
+    }
+    if (rpeValue <= 7) {
+      return 'Z3';
+    }
+    if (rpeValue <= 9) {
+      return 'Z4';
+    }
+    return 'Z5';
+  }
 
-        // Auto-estimate intensity
-        if (!this.intensityManuallySet) {
-            const estimated = this.estimateIntensityFromRPE(numericValue);
-            this.sessionData.intensity = estimated;
-            const intensitySelect = document.getElementById('intensity');
-            if (intensitySelect) {
-                intensitySelect.value = estimated;
-            }
-        }
+  /**
+   * Check if we can calculate load
+   */
+  canCalculateLoad() {
+    const duration = Number(this.sessionData.duration_minutes) || 0;
+    const hasRPE = Number(this.sessionData.rpe) > 0;
+    const hasHR = !!(this.sessionData.hr_data && this.sessionData.hr_data.avg_hr);
+    const hasIntensity = this.intensityManuallySet && !!this.sessionData.intensity;
+    return duration > 0 && (hasRPE || hasHR || hasIntensity);
+  }
 
-        if (this.canCalculateLoad()) {
-            this.updateLoadPreview();
-        }
+  /**
+   * Render load preview
+   */
+  renderLoadPreview() {
+    if (!this.canCalculateLoad()) {
+      return '<p>Enter duration and RPE/HR to see training load</p>';
     }
 
-    /**
-     * Get RPE label description
-     */
-    getRPELabel(rpe) {
-        const labels = {
-            1: 'Very Easy',
-            2: 'Easy',
-            3: 'Easy',
-            4: 'Moderate',
-            5: 'Moderate',
-            6: 'Moderate Hard',
-            7: 'Hard',
-            8: 'Hard',
-            9: 'Very Hard',
-            10: 'Maximal'
-        };
-        return labels[parseInt(rpe)] || 'Moderate';
-    }
+    try {
+      const loadResult = this.calculateCurrentLoad();
 
-    /**
-     * Estimate training zone from RPE
-     */
-    estimateIntensityFromRPE(rpe) {
-        const rpeValue = parseInt(rpe, 10);
-        if (!Number.isFinite(rpeValue)) {return '';}
-        if (rpeValue <= 3) {return 'Z1';}
-        if (rpeValue <= 5) {return 'Z2';}
-        if (rpeValue <= 7) {return 'Z3';}
-        if (rpeValue <= 9) {return 'Z4';}
-        return 'Z5';
-    }
-
-    /**
-     * Check if we can calculate load
-     */
-    canCalculateLoad() {
-        const duration = Number(this.sessionData.duration_minutes) || 0;
-        const hasRPE = Number(this.sessionData.rpe) > 0;
-        const hasHR = !!(this.sessionData.hr_data && this.sessionData.hr_data.avg_hr);
-        const hasIntensity = this.intensityManuallySet && !!this.sessionData.intensity;
-        return duration > 0 && (hasRPE || hasHR || hasIntensity);
-    }
-
-    /**
-     * Render load preview
-     */
-    renderLoadPreview() {
-        if (!this.canCalculateLoad()) {
-            return '<p>Enter duration and RPE/HR to see training load</p>';
-        }
-
-        try {
-            const loadResult = this.calculateCurrentLoad();
-
-            return `
+      return `
                 <div class="load-result">
                     <div class="load-score">
                         <span class="score-value">${loadResult.total_load}</span>
@@ -377,407 +391,422 @@ class SessionLogger {
                     </div>
                 </div>
             `;
-        } catch (error) {
-            return '<p class="error">Unable to calculate load</p>';
-        }
+    } catch (error) {
+      return '<p class="error">Unable to calculate load</p>';
+    }
+  }
+
+  /**
+   * Update load preview in real-time
+   */
+  updateLoadPreview() {
+    const loadPreview = document.querySelector('.load-calculation');
+    if (loadPreview) {
+      loadPreview.innerHTML = this.renderLoadPreview();
     }
 
-    /**
-     * Update load preview in real-time
-     */
-    updateLoadPreview() {
-        const loadPreview = document.querySelector('.load-calculation');
-        if (loadPreview) {
-            loadPreview.innerHTML = this.renderLoadPreview();
-        }
+    // Show/hide load preview section
+    const loadSection = document.querySelector('.load-preview');
+    if (loadSection) {
+      loadSection.style.display = this.canCalculateLoad() ? 'block' : 'none';
+    }
+  }
 
-        // Show/hide load preview section
-        const loadSection = document.querySelector('.load-preview');
-        if (loadSection) {
-            loadSection.style.display = this.canCalculateLoad() ? 'block' : 'none';
-        }
+  /**
+   * Calculate current load for preview
+   */
+  calculateCurrentLoad() {
+    const session = {
+      duration_minutes: this.sessionData.duration_minutes,
+      rpe: this.sessionData.rpe,
+      modality: this.sessionData.modality,
+      intensity: this.sessionData.intensity,
+      user_profile: this.getUserProfile(),
+    };
+
+    if (this.sessionData?.hr_data?.avg_hr) {
+      session.hr_data = {
+        avg_hr: this.sessionData.hr_data.avg_hr,
+      };
     }
 
-    /**
-     * Calculate current load for preview
-     */
-    calculateCurrentLoad() {
-        const session = {
-            duration_minutes: this.sessionData.duration_minutes,
-            rpe: this.sessionData.rpe,
-            modality: this.sessionData.modality,
-            intensity: this.sessionData.intensity,
-            user_profile: this.getUserProfile()
-        };
+    let loadResult = null;
 
-        if (this.sessionData?.hr_data?.avg_hr) {
-            session.hr_data = {
-                avg_hr: this.sessionData.hr_data.avg_hr
-            };
-        }
-
-        let loadResult = null;
-
-        if (LoadCalculationEngine?.compute_load) {
-            loadResult = LoadCalculationEngine.compute_load(session);
-        }
-
-        const strengthMetrics = this.calculateStrengthLoad(this.sessionData);
-        if (strengthMetrics && (!loadResult || !loadResult.total_load)) {
-            loadResult = {
-                total_load: strengthMetrics.total,
-                method_used: 'Strength_Volume',
-                confidence: 0.8,
-                breakdown: {
-                    volume: strengthMetrics.volume,
-                    multiplier: strengthMetrics.multiplier
-                }
-            };
-        }
-
-        if (!loadResult) {
-            throw new Error('Load calculation unavailable');
-        }
-
-        return loadResult;
+    if (LoadCalculationEngine?.compute_load) {
+      loadResult = LoadCalculationEngine.compute_load(session);
     }
 
-    /**
-     * Get user profile for load calculation
-     */
-    getUserProfile() {
-        // Get from storage or use defaults
-        const profile = this.storageManager?.getItem('user_profile') || {};
-
-        return {
-            age: profile.age || 35,
-            gender: profile.gender || 'male',
-            max_hr: profile.max_hr || LoadCalculationEngine.estimateMaxHR(profile.age, profile.gender),
-            rest_hr: profile.rest_hr || 60
-        };
+    const strengthMetrics = this.calculateStrengthLoad(this.sessionData);
+    if (strengthMetrics && (!loadResult || !loadResult.total_load)) {
+      loadResult = {
+        total_load: strengthMetrics.total,
+        method_used: 'Strength_Volume',
+        confidence: 0.8,
+        breakdown: {
+          volume: strengthMetrics.volume,
+          multiplier: strengthMetrics.multiplier,
+        },
+      };
     }
 
-    /**
-     * Get multiplier for strength session load based on RPE
-     * @param {number} rpe - RPE value
-     * @returns {number} Multiplier
-     */
-    getRpeMultiplier(rpe) {
-        const key = Number(rpe);
-        return RPE_MULTIPLIERS[key] || 1;
+    if (!loadResult) {
+      throw new Error('Load calculation unavailable');
     }
 
-    /**
-     * Calculate session volume (sets × reps × weight)
-     * @param {Object} data - Session data
-     * @returns {number} Session volume
-     */
-    calculateSessionVolume(data = this.sessionData) {
-        const sets = Number(data?.sets) || 0;
-        const reps = Number(data?.reps) || 0;
-        const weight = Number(data?.weight) || 0;
-        if (!sets || !reps || !weight) {
-            return 0;
-        }
-        return sets * reps * weight;
+    return loadResult;
+  }
+
+  /**
+   * Get user profile for load calculation
+   */
+  getUserProfile() {
+    // Get from storage or use defaults
+    const profile = this.storageManager?.getItem('user_profile') || {};
+
+    return {
+      age: profile.age || 35,
+      gender: profile.gender || 'male',
+      max_hr: profile.max_hr || LoadCalculationEngine.estimateMaxHR(profile.age, profile.gender),
+      rest_hr: profile.rest_hr || 60,
+    };
+  }
+
+  /**
+   * Get multiplier for strength session load based on RPE
+   * @param {number} rpe - RPE value
+   * @returns {number} Multiplier
+   */
+  getRpeMultiplier(rpe) {
+    const key = Number(rpe);
+    return RPE_MULTIPLIERS[key] || 1;
+  }
+
+  /**
+   * Calculate session volume (sets × reps × weight)
+   * @param {Object} data - Session data
+   * @returns {number} Session volume
+   */
+  calculateSessionVolume(data = this.sessionData) {
+    const sets = Number(data?.sets) || 0;
+    const reps = Number(data?.reps) || 0;
+    const weight = Number(data?.weight) || 0;
+    if (!sets || !reps || !weight) {
+      return 0;
+    }
+    return sets * reps * weight;
+  }
+
+  /**
+   * Calculate strength-based session load using volume and RPE multiplier
+   * @param {Object} data - Session data
+   * @returns {Object|null} Strength load metrics
+   */
+  calculateStrengthLoad(data = this.sessionData) {
+    const volume = this.calculateSessionVolume(data);
+    if (!volume) {
+      return null;
+    }
+    const multiplier = this.getRpeMultiplier(data?.rpe);
+    return {
+      total: Math.round(volume * multiplier),
+      volume,
+      multiplier,
+    };
+  }
+
+  /**
+   * Calculate weekly volume from sessions
+   * @param {Array} sessions - Array of session records
+   * @returns {number} Weekly volume
+   */
+  calculateWeeklyVolume(sessions = []) {
+    if (!Array.isArray(sessions) || sessions.length === 0) {
+      return 0;
+    }
+    return sessions.reduce((sum, session) => {
+      const volume = Number(session?.volume) || 0;
+      return sum + volume;
+    }, 0);
+  }
+
+  /**
+   * Calculate adherence/consistency score
+   * @param {Array} plannedSessions - Planned sessions
+   * @param {Array} completedSessions - Completed sessions
+   * @returns {number} Consistency percentage
+   */
+  calculateConsistency(plannedSessions = [], completedSessions = []) {
+    const planned = Array.isArray(plannedSessions) ? plannedSessions.length : 0;
+    const completed = Array.isArray(completedSessions) ? completedSessions.length : 0;
+    if (planned === 0) {
+      return completed > 0 ? 100 : 0;
+    }
+    return Math.round((completed / planned) * 100);
+  }
+
+  /**
+   * Get load category description
+   */
+  getLoadCategory(load) {
+    if (load < 50) {
+      return 'Light';
+    }
+    if (load < 100) {
+      return 'Moderate';
+    }
+    if (load < 200) {
+      return 'High';
+    }
+    return 'Very High';
+  }
+
+  /**
+   * Handle form submission
+   */
+  async handleSubmit(event) {
+    event.preventDefault();
+
+    if (this.isLogging) {
+      return;
     }
 
-    /**
-     * Calculate strength-based session load using volume and RPE multiplier
-     * @param {Object} data - Session data
-     * @returns {Object|null} Strength load metrics
-     */
-    calculateStrengthLoad(data = this.sessionData) {
-        const volume = this.calculateSessionVolume(data);
-        if (!volume) {
-            return null;
-        }
-        const multiplier = this.getRpeMultiplier(data?.rpe);
-        return {
-            total: Math.round(volume * multiplier),
-            volume,
-            multiplier
-        };
-    }
+    try {
+      this.isLogging = true;
+      this.updateSubmitButton();
 
-    /**
-     * Calculate weekly volume from sessions
-     * @param {Array} sessions - Array of session records
-     * @returns {number} Weekly volume
-     */
-    calculateWeeklyVolume(sessions = []) {
-        if (!Array.isArray(sessions) || sessions.length === 0) {return 0;}
-        return sessions.reduce((sum, session) => {
-            const volume = Number(session?.volume) || 0;
-            return sum + volume;
-        }, 0);
-    }
+      // Validate required fields
+      if (!this.validateSession()) {
+        return;
+      }
 
-    /**
-     * Calculate adherence/consistency score
-     * @param {Array} plannedSessions - Planned sessions
-     * @param {Array} completedSessions - Completed sessions
-     * @returns {number} Consistency percentage
-     */
-    calculateConsistency(plannedSessions = [], completedSessions = []) {
-        const planned = Array.isArray(plannedSessions) ? plannedSessions.length : 0;
-        const completed = Array.isArray(completedSessions) ? completedSessions.length : 0;
-        if (planned === 0) {
-            return completed > 0 ? 100 : 0;
-        }
-        return Math.round((completed / planned) * 100);
-    }
+      // Calculate final load
+      const loadResult = this.calculateCurrentLoad();
 
-    /**
-     * Get load category description
-     */
-    getLoadCategory(load) {
-        if (load < 50) {return 'Light';}
-        if (load < 100) {return 'Moderate';}
-        if (load < 200) {return 'High';}
-        return 'Very High';
-    }
+      const strengthMetrics = this.calculateStrengthLoad(this.sessionData);
+      const sessionVolume = strengthMetrics
+        ? strengthMetrics.volume
+        : this.calculateSessionVolume(this.sessionData);
 
-    /**
-     * Handle form submission
-     */
-    async handleSubmit(event) {
-        event.preventDefault();
-
-        if (this.isLogging) {return;}
-
-        try {
-            this.isLogging = true;
-            this.updateSubmitButton();
-
-            // Validate required fields
-            if (!this.validateSession()) {
-                return;
+      // Create session record
+      const sessionRecord = {
+        user_id:
+          this.authManager?.getCurrentUserId() ||
+          this.authManager?.getCurrentUsername() ||
+          'anonymous',
+        session_id: this.generateSessionId(),
+        date: this.sessionData.date,
+        workout_name: this.sessionData.workout_name || this.generateWorkoutName(),
+        modality: this.sessionData.modality,
+        duration: this.sessionData.duration_minutes,
+        distance: this.sessionData.distance || null,
+        distance_unit: this.sessionData.distance_unit,
+        rpe: this.sessionData.rpe,
+        intensity: this.sessionData.intensity,
+        hr_data: this.sessionData.hr_data.avg_hr
+          ? {
+              avg_hr: this.sessionData.hr_data.avg_hr,
+              max_hr: this.sessionData.hr_data.max_hr,
             }
+          : null,
+        calculated_load: loadResult.total_load,
+        load_method: loadResult.method_used,
+        load_confidence: loadResult.confidence,
+        notes: this.sessionData.notes,
+        logged_at: new Date().toISOString(),
+        volume: sessionVolume || null,
+        strength_load: strengthMetrics ? strengthMetrics.total : null,
+        rpe_multiplier: strengthMetrics ? strengthMetrics.multiplier : null,
+      };
 
-            // Calculate final load
-            const loadResult = this.calculateCurrentLoad();
+      // Save session
+      await this.saveSession(sessionRecord);
 
-            const strengthMetrics = this.calculateStrengthLoad(this.sessionData);
-            const sessionVolume = strengthMetrics ? strengthMetrics.volume : this.calculateSessionVolume(this.sessionData);
+      // Emit event
+      if (this.eventBus) {
+        this.eventBus.emit('session:logged', { session: sessionRecord });
+      }
 
-            // Create session record
-            const sessionRecord = {
-                user_id: this.authManager?.getCurrentUserId() || this.authManager?.getCurrentUsername() || 'anonymous',
-                session_id: this.generateSessionId(),
-                date: this.sessionData.date,
-                workout_name: this.sessionData.workout_name || this.generateWorkoutName(),
-                modality: this.sessionData.modality,
-                duration: this.sessionData.duration_minutes,
-                distance: this.sessionData.distance || null,
-                distance_unit: this.sessionData.distance_unit,
-                rpe: this.sessionData.rpe,
-                intensity: this.sessionData.intensity,
-                hr_data: this.sessionData.hr_data.avg_hr ? {
-                    avg_hr: this.sessionData.hr_data.avg_hr,
-                    max_hr: this.sessionData.hr_data.max_hr
-                } : null,
-                calculated_load: loadResult.total_load,
-                load_method: loadResult.method_used,
-                load_confidence: loadResult.confidence,
-                notes: this.sessionData.notes,
-                logged_at: new Date().toISOString(),
-                volume: sessionVolume || null,
-                strength_load: strengthMetrics ? strengthMetrics.total : null,
-                rpe_multiplier: strengthMetrics ? strengthMetrics.multiplier : null
-            };
+      // Show success and close
+      this.showSuccess('Session logged successfully!');
+      setTimeout(() => this.close(), 1500);
+    } catch (error) {
+      this.logger.error('Failed to save session:', error);
+      this.showError('Failed to save session. Please try again.');
+    } finally {
+      this.isLogging = false;
+      this.updateSubmitButton();
+    }
+  }
 
-            // Save session
-            await this.saveSession(sessionRecord);
-
-            // Emit event
-            if (this.eventBus) {
-                this.eventBus.emit('session:logged', { session: sessionRecord });
-            }
-
-            // Show success and close
-            this.showSuccess('Session logged successfully!');
-            setTimeout(() => this.close(), 1500);
-
-        } catch (error) {
-            this.logger.error('Failed to save session:', error);
-            this.showError('Failed to save session. Please try again.');
-        } finally {
-            this.isLogging = false;
-            this.updateSubmitButton();
-        }
+  /**
+   * Validate session data
+   */
+  validateSession() {
+    if (!this.sessionData.modality) {
+      this.showError('Please select an activity type');
+      return false;
     }
 
-    /**
-     * Validate session data
-     */
-    validateSession() {
-        if (!this.sessionData.modality) {
-            this.showError('Please select an activity type');
-            return false;
-        }
-
-        if (!this.sessionData.duration_minutes || this.sessionData.duration_minutes <= 0) {
-            this.showError('Please enter a valid duration');
-            return false;
-        }
-
-        if (!this.sessionData.rpe && !this.sessionData.hr_data.avg_hr) {
-            this.showError('Please enter either RPE or heart rate data');
-            return false;
-        }
-
-        return true;
+    if (!this.sessionData.duration_minutes || this.sessionData.duration_minutes <= 0) {
+      this.showError('Please enter a valid duration');
+      return false;
     }
 
-    /**
-     * Generate session ID
-     */
-    generateSessionId() {
-        const timestamp = Date.now();
-        const random = Math.random().toString(36).substr(2, 9);
-        return `session_${timestamp}_${random}`;
+    if (!this.sessionData.rpe && !this.sessionData.hr_data.avg_hr) {
+      this.showError('Please enter either RPE or heart rate data');
+      return false;
     }
 
-    /**
-     * Generate workout name if not provided
-     */
-    generateWorkoutName() {
-        const modalities = {
-            running: 'Run',
-            cycling: 'Bike',
-            swimming: 'Swim',
-            strength: 'Strength',
-            other: 'Workout'
-        };
+    return true;
+  }
 
-        const modalityName = modalities[this.sessionData.modality] || 'Workout';
-        const duration = this.sessionData.duration_minutes;
-        const {distance} = this.sessionData;
+  /**
+   * Generate session ID
+   */
+  generateSessionId() {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substr(2, 9);
+    return `session_${timestamp}_${random}`;
+  }
 
-        if (distance && ['running', 'cycling', 'swimming'].includes(this.sessionData.modality)) {
-            return `${distance}${this.sessionData.distance_unit} ${modalityName}`;
-        } else {
-            return `${duration}min ${modalityName}`;
-        }
+  /**
+   * Generate workout name if not provided
+   */
+  generateWorkoutName() {
+    const modalities = {
+      running: 'Run',
+      cycling: 'Bike',
+      swimming: 'Swim',
+      strength: 'Strength',
+      other: 'Workout',
+    };
+
+    const modalityName = modalities[this.sessionData.modality] || 'Workout';
+    const duration = this.sessionData.duration_minutes;
+    const { distance } = this.sessionData;
+
+    if (distance && ['running', 'cycling', 'swimming'].includes(this.sessionData.modality)) {
+      return `${distance}${this.sessionData.distance_unit} ${modalityName}`;
+    } else {
+      return `${duration}min ${modalityName}`;
+    }
+  }
+
+  /**
+   * Save session to storage and database
+   */
+  async saveSession(sessionRecord) {
+    // Save to local storage first
+    if (this.storageManager) {
+      const sessions = (await this.storageManager.getItem('logged_sessions')) || [];
+      sessions.push(sessionRecord);
+      await this.storageManager.setItem('logged_sessions', sessions);
     }
 
-    /**
-     * Save session to storage and database
-     */
-    async saveSession(sessionRecord) {
-        // Save to local storage first
-        if (this.storageManager) {
-            const sessions = await this.storageManager.getItem('logged_sessions') || [];
-            sessions.push(sessionRecord);
-            await this.storageManager.setItem('logged_sessions', sessions);
-        }
+    // Save to database
+    try {
+      const response = await fetch('/.netlify/functions/sessions-create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.authManager?.getToken() || ''}`,
+        },
+        body: JSON.stringify(sessionRecord),
+      });
 
-        // Save to database
-        try {
-            const response = await fetch('/.netlify/functions/sessions-create', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.authManager?.getToken() || ''}`
-                },
-                body: JSON.stringify(sessionRecord)
-            });
+      if (!response.ok) {
+        throw new Error('Database save failed');
+      }
 
-            if (!response.ok) {
-                throw new Error('Database save failed');
-            }
-
-            this.logger.info('Session saved to database successfully');
-        } catch (error) {
-            this.logger.warn('Database save failed, using local storage only:', error);
-            // Continue - local storage save was successful
-        }
+      this.logger.info('Session saved to database successfully');
+    } catch (error) {
+      this.logger.warn('Database save failed, using local storage only:', error);
+      // Continue - local storage save was successful
     }
+  }
 
-    /**
-     * Update submit button state
-     */
-    updateSubmitButton() {
-        const submitBtn = document.querySelector('button[type="submit"]');
-        if (submitBtn) {
-            submitBtn.disabled = this.isLogging;
-            submitBtn.textContent = this.isLogging ? 'Saving...' : 'Save Session';
-        }
+  /**
+   * Update submit button state
+   */
+  updateSubmitButton() {
+    const submitBtn = document.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = this.isLogging;
+      submitBtn.textContent = this.isLogging ? 'Saving...' : 'Save Session';
     }
+  }
 
-    /**
-     * Show success message
-     */
-    showSuccess(message) {
-        this.showMessage(message, 'success');
+  /**
+   * Show success message
+   */
+  showSuccess(message) {
+    this.showMessage(message, 'success');
+  }
+
+  /**
+   * Show error message
+   */
+  showError(message) {
+    this.showMessage(message, 'error');
+  }
+
+  /**
+   * Show message
+   */
+  showMessage(message, type) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `session-message session-${type}`;
+    messageDiv.textContent = message;
+
+    const form = document.querySelector('.session-form');
+    if (form) {
+      form.insertBefore(messageDiv, form.firstChild);
+      setTimeout(() => messageDiv.remove(), 5000);
     }
+  }
 
-    /**
-     * Show error message
-     */
-    showError(message) {
-        this.showMessage(message, 'error');
+  /**
+   * Close session logger
+   */
+  close() {
+    const container = this.getContainer();
+    container.style.display = 'none';
+
+    // Reset form data
+    this.resetForm();
+  }
+
+  /**
+   * Reset form data
+   */
+  resetForm() {
+    this.sessionData = this.getDefaultSessionData();
+    this.intensityManuallySet = false;
+    this.isLogging = false;
+  }
+
+  /**
+   * Show session logger
+   */
+  show() {
+    const container = this.getContainer();
+    container.style.display = 'flex';
+    this.render();
+  }
+
+  /**
+   * Get or create container
+   */
+  getContainer() {
+    let container = document.getElementById('session-logger-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'session-logger-container';
+      container.className = 'modal-overlay';
+      document.body.appendChild(container);
     }
-
-    /**
-     * Show message
-     */
-    showMessage(message, type) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `session-message session-${type}`;
-        messageDiv.textContent = message;
-
-        const form = document.querySelector('.session-form');
-        if (form) {
-            form.insertBefore(messageDiv, form.firstChild);
-            setTimeout(() => messageDiv.remove(), 5000);
-        }
-    }
-
-    /**
-     * Close session logger
-     */
-    close() {
-        const container = this.getContainer();
-        container.style.display = 'none';
-
-        // Reset form data
-        this.resetForm();
-    }
-
-    /**
-     * Reset form data
-     */
-    resetForm() {
-        this.sessionData = this.getDefaultSessionData();
-        this.intensityManuallySet = false;
-        this.isLogging = false;
-    }
-
-    /**
-     * Show session logger
-     */
-    show() {
-        const container = this.getContainer();
-        container.style.display = 'flex';
-        this.render();
-    }
-
-    /**
-     * Get or create container
-     */
-    getContainer() {
-        let container = document.getElementById('session-logger-container');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'session-logger-container';
-            container.className = 'modal-overlay';
-            document.body.appendChild(container);
-        }
-        return container;
-    }
+    return container;
+  }
 }
 
 export default SessionLogger;
-

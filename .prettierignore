@@ -1,0 +1,25 @@
+  # Documentation files
+  *.md
+  docs/
+  README.md
+
+  # Data files
+  data/
+  *.json
+
+  # Generated files
+  node_modules/
+  dist/
+  build/
+  coverage/
+
+  # Test artifacts
+  test-results.json
+
+  # Config files that should keep their format
+  .github/
+  netlify.toml
+  manifest.json
+
+  # Example files
+  examples/

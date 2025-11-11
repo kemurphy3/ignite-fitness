@@ -1,8 +1,10 @@
 # Cursor Implementation Prompts - IgniteFitness Critical Fixes
 
-Execute these prompts in order to achieve a fully functional, production-ready application.
+Execute these prompts in order to achieve a fully functional, production-ready
+application.
 
 ## PROMPT 1: CRITICAL DEPENDENCY FIX
+
 **Priority: CRITICAL - Must be completed first**
 
 ```
@@ -24,6 +26,7 @@ COMPLETE IMPLEMENTATION - NO PLACEHOLDERS
 ```
 
 ## PROMPT 2: SYNTAX ERROR RESOLUTION
+
 **Priority: HIGH - Blocking TypeScript checks**
 
 ```
@@ -48,6 +51,7 @@ COMPLETE IMPLEMENTATION - NO PLACEHOLDERS
 ```
 
 ## PROMPT 3: DUPLICATE FUNCTION ELIMINATION
+
 **Priority: HIGH - Critical code quality issue**
 
 ```
@@ -73,6 +77,7 @@ COMPLETE IMPLEMENTATION - NO PLACEHOLDERS
 ```
 
 ## PROMPT 4: UNUSED VARIABLE AND FUNCTION CLEANUP
+
 **Priority: HIGH - Code quality and maintainability**
 
 ```
@@ -101,6 +106,7 @@ COMPLETE IMPLEMENTATION - NO PLACEHOLDERS
 ```
 
 ## PROMPT 5: CONSOLE STATEMENT STANDARDIZATION
+
 **Priority: MEDIUM - Production readiness**
 
 ```
@@ -130,6 +136,7 @@ COMPLETE IMPLEMENTATION - NO PLACEHOLDERS
 ```
 
 ## PROMPT 6: EVENTBUS DEPENDENCY RESOLUTION
+
 **Priority: MEDIUM - Module integration**
 
 ```
@@ -159,6 +166,7 @@ COMPLETE IMPLEMENTATION - NO PLACEHOLDERS
 ```
 
 ## PROMPT 7: SECURITY VULNERABILITY PATCH
+
 **Priority: MEDIUM - Security**
 
 ```
@@ -183,6 +191,7 @@ COMPLETE IMPLEMENTATION - NO PLACEHOLDERS
 ```
 
 ## PROMPT 8: APP.JS PARSING ERROR FIX
+
 **Priority: MEDIUM - Core functionality**
 
 ```
@@ -208,6 +217,7 @@ COMPLETE IMPLEMENTATION - NO PLACEHOLDERS
 ```
 
 ## PROMPT 9: USELESS ESCAPE CHARACTER FIX
+
 **Priority: LOW - Code quality**
 
 ```
@@ -230,6 +240,7 @@ COMPLETE IMPLEMENTATION - NO PLACEHOLDERS
 ```
 
 ## PROMPT 10: PREFER-DESTRUCTURING WARNINGS
+
 **Priority: LOW - Code style**
 
 ```
@@ -250,6 +261,7 @@ COMPLETE IMPLEMENTATION - NO PLACEHOLDERS
 ```
 
 ## PROMPT 11: TEST STABILITY IMPROVEMENT
+
 **Priority: MEDIUM - Quality assurance**
 
 ```
@@ -279,7 +291,9 @@ COMPLETE IMPLEMENTATION - NO PLACEHOLDERS
 
 ## EXECUTION ORDER
 
-Execute these prompts in numerical order. Each prompt must be completed and validated before proceeding to the next. This will result in a fully functional, production-ready IgniteFitness application with:
+Execute these prompts in numerical order. Each prompt must be completed and
+validated before proceeding to the next. This will result in a fully functional,
+production-ready IgniteFitness application with:
 
 - ✅ All dependencies resolved
 - ✅ Clean code with no ESLint errors
@@ -292,6 +306,7 @@ Execute these prompts in numerical order. Each prompt must be completed and vali
 ## SUCCESS CRITERIA
 
 After all prompts are completed:
+
 1. `npm run quality:check` passes completely
 2. `npm test` shows >95% pass rate
 3. `npm audit` shows no moderate+ vulnerabilities

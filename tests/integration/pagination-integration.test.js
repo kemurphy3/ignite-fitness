@@ -6,14 +6,14 @@ import {
   getTestDatabase,
   createTestUser,
   createTestSession,
-  cleanupTestData
+  cleanupTestData,
 } from '../helpers/database.js';
 import {
   createPaginatedResponse,
   getCursorDataForItem,
   buildCursorCondition,
   encodeCursor,
-  decodeCursor
+  decodeCursor,
 } from '../../netlify/functions/utils/pagination.js';
 
 describe('Pagination Integration Tests', () => {
@@ -28,7 +28,7 @@ describe('Pagination Integration Tests', () => {
     // Create test user
     testUser = await createTestUser({
       external_id: 'pagination_test_user',
-      username: 'paginationuser'
+      username: 'paginationuser',
     });
 
     // Create test sessions for pagination testing
@@ -38,8 +38,8 @@ describe('Pagination Integration Tests', () => {
         type: 'workout',
         source: 'test',
         source_id: `pagination_session_${i}`,
-        start_at: new Date(Date.now() - (i * 60 * 60 * 1000)), // One per hour
-        duration: 3600
+        start_at: new Date(Date.now() - i * 60 * 60 * 1000), // One per hour
+        duration: 3600,
       });
       testSessions.push(session);
     }
@@ -90,7 +90,9 @@ describe('Pagination Integration Tests', () => {
       `;
 
       expect(secondPage).toHaveLength(3);
-      expect(secondPage[0].start_at.getTime()).toBeLessThanOrEqual(lastItem.start_at.getTime() + 1000); // Allow 1 second tolerance
+      expect(secondPage[0].start_at.getTime()).toBeLessThanOrEqual(
+        lastItem.start_at.getTime() + 1000
+      ); // Allow 1 second tolerance
     });
 
     it('should handle pagination with createPaginatedResponse', async () => {
@@ -106,7 +108,7 @@ describe('Pagination Integration Tests', () => {
       const paginatedResponse = createPaginatedResponse(
         allSessions,
         3, // limit
-        (item) => getCursorDataForItem(item, 'sessions'),
+        item => getCursorDataForItem(item, 'sessions'),
         { includeTotal: true, total: allSessions.length }
       );
 
@@ -131,7 +133,7 @@ describe('Pagination Integration Tests', () => {
       const paginatedResponse = createPaginatedResponse(
         sessions,
         15, // limit larger than available
-        (item) => getCursorDataForItem(item, 'sessions')
+        item => getCursorDataForItem(item, 'sessions')
       );
 
       expect(paginatedResponse.data).toHaveLength(sessions.length);
@@ -149,10 +151,8 @@ describe('Pagination Integration Tests', () => {
         ORDER BY start_at DESC, id ASC
       `;
 
-      const paginatedResponse = createPaginatedResponse(
-        emptySessions,
-        10,
-        (item) => getCursorDataForItem(item, 'sessions')
+      const paginatedResponse = createPaginatedResponse(emptySessions, 10, item =>
+        getCursorDataForItem(item, 'sessions')
       );
 
       expect(paginatedResponse.data).toHaveLength(0);
@@ -173,7 +173,7 @@ describe('Pagination Integration Tests', () => {
       const paginatedResponse = createPaginatedResponse(
         singleSession,
         5, // limit larger than available
-        (item) => getCursorDataForItem(item, 'sessions')
+        item => getCursorDataForItem(item, 'sessions')
       );
 
       expect(paginatedResponse.data).toHaveLength(1);

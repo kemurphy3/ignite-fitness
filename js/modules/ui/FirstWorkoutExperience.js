@@ -4,20 +4,20 @@
  */
 
 class FirstWorkoutExperience {
-    constructor() {
-        this.logger = window.SafeLogger || console;
-        this.workout = null;
-    }
+  constructor() {
+    this.logger = window.SafeLogger || console;
+    this.workout = null;
+  }
 
-    /**
-     * Show workout intro with celebration
-     * @param {Object} workout - Workout data
-     * @returns {string} Workout intro HTML
-     */
-    showWorkoutIntro(workout) {
-        this.workout = workout || this.generateDefaultWorkout();
+  /**
+   * Show workout intro with celebration
+   * @param {Object} workout - Workout data
+   * @returns {string} Workout intro HTML
+   */
+  showWorkoutIntro(workout) {
+    this.workout = workout || this.generateDefaultWorkout();
 
-        return `
+    return `
             <div data-component="FirstWorkoutExperience" class="workout-intro" style="
                 max-width: 600px;
                 margin: 2rem auto;
@@ -163,86 +163,90 @@ class FirstWorkoutExperience {
                 }
             </style>
         `;
-    }
+  }
 
-    /**
-     * Render exercise preview list
-     * @returns {string} Exercise list HTML
-     */
-    renderExercisePreview() {
-        if (!this.workout.exercises || this.workout.exercises.length === 0) {
-            return `
+  /**
+   * Render exercise preview list
+   * @returns {string} Exercise list HTML
+   */
+  renderExercisePreview() {
+    if (!this.workout.exercises || this.workout.exercises.length === 0) {
+      return `
                 <li style="padding: 0.5rem; background: #f7fafc; border-radius: 4px;">🏃 Warm-up routine - 5 min</li>
                 <li style="padding: 0.5rem; background: #f7fafc; border-radius: 4px;">💪 Main exercises - 30 min</li>
                 <li style="padding: 0.5rem; background: #f7fafc; border-radius: 4px;">🧘 Cool-down & stretch - 10 min</li>
             `;
-        }
+    }
 
-        const preview = this.workout.exercises.slice(0, 3).map(ex => {
-            const name = ex.name || ex.exercise || 'Exercise';
-            const sets = ex.sets || 3;
-            const reps = ex.reps || 10;
-            const weight = ex.weight ? ` @ ${ex.weight}` : '';
-            return `<li style="
+    const preview = this.workout.exercises
+      .slice(0, 3)
+      .map(ex => {
+        const name = ex.name || ex.exercise || 'Exercise';
+        const sets = ex.sets || 3;
+        const reps = ex.reps || 10;
+        const weight = ex.weight ? ` @ ${ex.weight}` : '';
+        return `<li style="
                 padding: 0.75rem;
                 background: #f7fafc;
                 border-radius: 6px;
                 color: #2d3748;
             ">💪 ${name} - ${sets}x${reps}${weight}</li>`;
-        }).join('');
+      })
+      .join('');
 
-        const moreCount = this.workout.exercises.length > 3
-            ? `<li style="
+    const moreCount =
+      this.workout.exercises.length > 3
+        ? `<li style="
                 padding: 0.75rem;
                 background: #edf2f7;
                 border-radius: 6px;
                 color: #4a5568;
                 font-style: italic;
             ">+ ${this.workout.exercises.length - 3} more exercises</li>`
-            : '';
+        : '';
 
-        return preview + moreCount;
-    }
+    return preview + moreCount;
+  }
 
-    /**
-     * Get encouragement message
-     * @returns {string} Encouragement message
-     */
-    getEncouragementMessage() {
-        const messages = [
-            'This workout is perfectly tailored to your fitness level. Take your time and focus on proper form!',
-            "Remember, consistency beats intensity. You're building a sustainable fitness habit!",
-            "Every expert was once a beginner. You're taking the first step toward your goals!",
-            'Listen to your body and adjust as needed. The AI will learn from your feedback!'
-        ];
-        return messages[Math.floor(Math.random() * messages.length)];
-    }
+  /**
+   * Get encouragement message
+   * @returns {string} Encouragement message
+   */
+  getEncouragementMessage() {
+    const messages = [
+      'This workout is perfectly tailored to your fitness level. Take your time and focus on proper form!',
+      "Remember, consistency beats intensity. You're building a sustainable fitness habit!",
+      "Every expert was once a beginner. You're taking the first step toward your goals!",
+      'Listen to your body and adjust as needed. The AI will learn from your feedback!',
+    ];
+    return messages[Math.floor(Math.random() * messages.length)];
+  }
 
-    /**
-     * Generate default workout if none provided
-     * @returns {Object} Default workout data
-     */
-    generateDefaultWorkout() {
-        return {
-            name: 'Welcome Workout',
-            duration: 30,
-            difficulty: 'Beginner Friendly',
-            exercises: [
-                { name: 'Warm-up', sets: 1, reps: '5 min' },
-                { name: 'Bodyweight Squats', sets: 3, reps: 10 },
-                { name: 'Push-ups', sets: 3, reps: 8 },
-                { name: 'Plank', sets: 3, reps: '30 sec' },
-                { name: 'Cool-down Stretch', sets: 1, reps: '5 min' }
-            ]
-        };
-    }
+  /**
+   * Generate default workout if none provided
+   * @returns {Object} Default workout data
+   */
+  generateDefaultWorkout() {
+    return {
+      name: 'Welcome Workout',
+      duration: 30,
+      difficulty: 'Beginner Friendly',
+      exercises: [
+        { name: 'Warm-up', sets: 1, reps: '5 min' },
+        { name: 'Bodyweight Squats', sets: 3, reps: 10 },
+        { name: 'Push-ups', sets: 3, reps: 8 },
+        { name: 'Plank', sets: 3, reps: '30 sec' },
+        { name: 'Cool-down Stretch', sets: 1, reps: '5 min' },
+      ],
+    };
+  }
 
-    /**
-     * Render celebration for workout completion
-     * @returns {string} Completion celebration HTML
-     */
-    renderCompletionCelebration() {
-        return `
+  /**
+   * Render celebration for workout completion
+   * @returns {string} Completion celebration HTML
+   */
+  renderCompletionCelebration() {
+    return `
             <div class="completion-celebration">
                 <div class="celebration-emoji">🏆</div>
                 <h1>Amazing! Your First Workout Complete!</h1>
@@ -263,39 +267,38 @@ class FirstWorkoutExperience {
                 </div>
             </div>
         `;
-    }
+  }
 }
 
 // Create global instance
 window.FirstWorkoutExperience = FirstWorkoutExperience;
 
 // Global helpers
-window.startFirstWorkout = function() {
-    if (window.Router) {
-        window.Router.navigate('#/workouts');
-    }
+window.startFirstWorkout = function () {
+  if (window.Router) {
+    window.Router.navigate('#/workouts');
+  }
 };
 
-window.viewFullPlan = function() {
-    if (window.Router) {
-        window.Router.navigate('#/training');
-    }
+window.viewFullPlan = function () {
+  if (window.Router) {
+    window.Router.navigate('#/training');
+  }
 };
 
-window.viewProgress = function() {
-    if (window.Router) {
-        window.Router.navigate('#/progress');
-    }
+window.viewProgress = function () {
+  if (window.Router) {
+    window.Router.navigate('#/progress');
+  }
 };
 
-window.viewNextWorkout = function() {
-    if (window.Router) {
-        window.Router.navigate('#/workouts');
-    }
+window.viewNextWorkout = function () {
+  if (window.Router) {
+    window.Router.navigate('#/workouts');
+  }
 };
 
 // Export for module systems
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = FirstWorkoutExperience;
+  module.exports = FirstWorkoutExperience;
 }
-

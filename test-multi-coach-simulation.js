@@ -7,67 +7,69 @@
 
 // Mock contexts for different user types
 const testContexts = {
-    strengthFocused: {
-        user: { sport: 'powerlifting', preferences: { primary_goal: 'strength' } },
-        readiness: 8,
-        schedule: { daysUntilGame: 99 },
-        history: { injuryFlags: [] }
-    },
-    
-    runnerEndurance: {
-        user: { sport: 'running', preferences: { primary_goal: 'endurance' } },
-        readiness: 6,
-        schedule: { daysUntilGame: 99 },
-        history: { lastSessions: [{ type: 'tempo_run', z4_min: 25 }] }
-    },
-    
-    soccerAthlete: {
-        user: { sport: 'soccer', preferences: { primary_goal: 'sport_performance' } },
-        readiness: 7,
-        schedule: { daysUntilGame: 2, upcomingGames: [{ date: '2024-11-01' }] },
-        history: { injuryFlags: [] }
-    },
-    
-    climberMobility: {
-        user: { sport: 'climbing', preferences: { primary_goal: 'mobility' } },
-        readiness: 5,
-        schedule: { daysUntilGame: 99 },
-        history: { injuryFlags: [{ location: 'shoulder', painLevel: 2, active: true }] }
-    },
-    
-    nutritionFocused: {
-        user: { sport: 'general_fitness', preferences: { primary_goal: 'weight_loss' } },
-        readiness: 6,
-        schedule: { isGameDay: false },
-        history: { injuryFlags: [] }
-    },
-    
-    mentalHabits: {
-        user: { sport: 'general_fitness', preferences: { primary_goal: 'consistency' } },
-        readiness: 4,
-        schedule: { isRestDay: false },
-        history: { workoutStreak: 12, missedWorkouts: 3 }
-    }
+  strengthFocused: {
+    user: { sport: 'powerlifting', preferences: { primary_goal: 'strength' } },
+    readiness: 8,
+    schedule: { daysUntilGame: 99 },
+    history: { injuryFlags: [] },
+  },
+
+  runnerEndurance: {
+    user: { sport: 'running', preferences: { primary_goal: 'endurance' } },
+    readiness: 6,
+    schedule: { daysUntilGame: 99 },
+    history: { lastSessions: [{ type: 'tempo_run', z4_min: 25 }] },
+  },
+
+  soccerAthlete: {
+    user: { sport: 'soccer', preferences: { primary_goal: 'sport_performance' } },
+    readiness: 7,
+    schedule: { daysUntilGame: 2, upcomingGames: [{ date: '2024-11-01' }] },
+    history: { injuryFlags: [] },
+  },
+
+  climberMobility: {
+    user: { sport: 'climbing', preferences: { primary_goal: 'mobility' } },
+    readiness: 5,
+    schedule: { daysUntilGame: 99 },
+    history: { injuryFlags: [{ location: 'shoulder', painLevel: 2, active: true }] },
+  },
+
+  nutritionFocused: {
+    user: { sport: 'general_fitness', preferences: { primary_goal: 'weight_loss' } },
+    readiness: 6,
+    schedule: { isGameDay: false },
+    history: { injuryFlags: [] },
+  },
+
+  mentalHabits: {
+    user: { sport: 'general_fitness', preferences: { primary_goal: 'consistency' } },
+    readiness: 4,
+    schedule: { isRestDay: false },
+    history: { workoutStreak: 12, missedWorkouts: 3 },
+  },
 };
 
 console.log('🧪 Multi-Disciplinary Coaching Framework Test\n');
 
 // Test each persona
 Object.entries(testContexts).forEach(([userType, context]) => {
-    console.log(`\n📊 Testing ${userType.toUpperCase()} Profile:`);
-    console.log(`   Sport: ${context.user.sport}`);
-    console.log(`   Goal: ${context.user.preferences.primary_goal}`);
-    console.log(`   Readiness: ${context.readiness}/10`);
-    
-    if (context.schedule.daysUntilGame < 10) {
-        console.log(`   Game in: ${context.schedule.daysUntilGame} days`);
-    }
-    
-    if (context.history.injuryFlags?.length > 0) {
-        console.log(`   Injuries: ${context.history.injuryFlags.map(i => `${i.location} (${i.painLevel}/10)`).join(', ')}`);
-    }
-    
-    console.log('   ✅ Context prepared for multi-coach coordination');
+  console.log(`\n📊 Testing ${userType.toUpperCase()} Profile:`);
+  console.log(`   Sport: ${context.user.sport}`);
+  console.log(`   Goal: ${context.user.preferences.primary_goal}`);
+  console.log(`   Readiness: ${context.readiness}/10`);
+
+  if (context.schedule.daysUntilGame < 10) {
+    console.log(`   Game in: ${context.schedule.daysUntilGame} days`);
+  }
+
+  if (context.history.injuryFlags?.length > 0) {
+    console.log(
+      `   Injuries: ${context.history.injuryFlags.map(i => `${i.location} (${i.painLevel}/10)`).join(', ')}`
+    );
+  }
+
+  console.log('   ✅ Context prepared for multi-coach coordination');
 });
 
 console.log('\n🎯 Integrated Coach Mode Evaluation:');

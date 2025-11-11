@@ -1,9 +1,12 @@
 # Cursor Execution Prompts for Ignite Fitness
-*Strategic fixes and improvements identified through comprehensive workflow analysis*
+
+_Strategic fixes and improvements identified through comprehensive workflow
+analysis_
 
 ## Priority 1: Critical Syntax Bug Fix
 
 ### PROMPT A1: Fix Function Redeclaration Error
+
 ```
 CRITICAL BUG FIX NEEDED:
 
@@ -25,6 +28,7 @@ VERIFICATION: Run `node -c js/core/auth.js` to ensure no syntax errors
 ## Priority 2: Boot Sequence Integration Issues
 
 ### PROMPT A2: Fix Boot Sequence Integration
+
 ```
 INTEGRATION ISSUE:
 
@@ -49,7 +53,8 @@ SPECIFIC FIXES NEEDED:
 
 ## Priority 3: Authentication Flow Optimization
 
-### PROMPT A3: Streamline Authentication Router Integration  
+### PROMPT A3: Streamline Authentication Router Integration
+
 ```
 ENHANCEMENT TASK:
 
@@ -63,13 +68,13 @@ ANALYSIS NEEDED:
 
 FILES TO REVIEW:
 - js/modules/auth/AuthManager.js
-- js/modules/ui/Router.js  
+- js/modules/ui/Router.js
 - js/modules/ui/SimpleModeManager.js
 - js/boot-sequence.js
 
 IMPROVEMENTS:
 1. Add error boundaries around auth state transitions
-2. Ensure auth events properly trigger router updates  
+2. Ensure auth events properly trigger router updates
 3. Add debug logging for auth state changes in development
 4. Validate that logout clears all relevant storage keys
 ```
@@ -77,6 +82,7 @@ IMPROVEMENTS:
 ## Priority 4: Simple Mode UX Enhancement
 
 ### PROMPT A4: Enhance Simple Mode User Experience
+
 ```
 UX IMPROVEMENT TASK:
 
@@ -96,7 +102,7 @@ IMPLEMENTATION:
 
 FEATURES TO HIDE IN SIMPLE MODE:
 - Advanced AI coaching panels
-- Complex analytics charts  
+- Complex analytics charts
 - Strava integration (initially)
 - Advanced workout customization
 - Technical metrics and data
@@ -111,6 +117,7 @@ FEATURES TO EMPHASIZE IN SIMPLE MODE:
 ## Priority 5: Workflow Enhancement
 
 ### PROMPT A5: Complete First-Time User Journey
+
 ```
 END-TO-END FLOW IMPLEMENTATION:
 
@@ -142,6 +149,7 @@ TECHNICAL REQUIREMENTS:
 ## Priority 6: Error Handling & Debug Tools
 
 ### PROMPT A6: Robust Error Handling and Debug Tools
+
 ```
 RELIABILITY IMPROVEMENT:
 
@@ -157,7 +165,7 @@ ERROR HANDLING NEEDED:
 DEBUG TOOLS TO ADD:
 1. Development mode debug panel (already partially exists)
 2. Auth state inspector
-3. Storage inspector  
+3. Storage inspector
 4. Network request monitor
 5. Performance metrics
 
@@ -178,6 +186,7 @@ USER-FACING IMPROVEMENTS:
 ## Priority 7: Performance & Mobile Optimization
 
 ### PROMPT A7: Mobile and Performance Optimization
+
 ```
 PERFORMANCE ENHANCEMENT:
 
@@ -192,7 +201,7 @@ CURRENT ISSUES IDENTIFIED:
 MOBILE OPTIMIZATIONS:
 1. Implement touch-friendly interactions
 2. Add haptic feedback for key actions
-3. Optimize layout for various screen sizes  
+3. Optimize layout for various screen sizes
 4. Implement pull-to-refresh for data updates
 5. Add gesture navigation where appropriate
 
@@ -213,6 +222,7 @@ METRICS TO TRACK:
 ## Priority 8: Testing & Quality Assurance
 
 ### PROMPT A8: Comprehensive Testing Strategy
+
 ```
 TESTING IMPLEMENTATION:
 
@@ -253,26 +263,32 @@ TOOLING:
 ## Execution Strategy for Cursor
 
 ### Phase 1: Critical Fixes (Do First)
+
 - A1: Fix function redeclaration bug
 - A2: Clean up boot sequence integration
 
-### Phase 2: Core Functionality  
+### Phase 2: Core Functionality
+
 - A3: Streamline authentication
 - A5: Complete first-time user journey
 
 ### Phase 3: User Experience
+
 - A4: Enhance Simple Mode UX
 - A7: Mobile optimization
 
 ### Phase 4: Reliability & Quality
+
 - A6: Error handling and debug tools
 - A8: Testing strategy
 
 ### Notes for Cursor Execution:
+
 1. **Test after each change** - Run the app in browser to verify
 2. **Preserve existing functionality** - Don't break working features
 3. **Mobile-first approach** - Test on mobile viewport sizes
 4. **Simple Mode priority** - Default to simpler experiences
 5. **Progressive enhancement** - Advanced features should be additive
 
-Each prompt is designed to be self-contained and can be executed independently while building on the previous improvements.
+Each prompt is designed to be self-contained and can be executed independently
+while building on the previous improvements.

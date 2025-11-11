@@ -6,13 +6,13 @@ const {
   auditLog,
   errorResponse,
   withTimeout,
-  successResponse
+  successResponse,
 } = require('./utils/admin-auth');
 
 const { getNeonClient } = require('./utils/connection-pool');
 const sql = getNeonClient();
 
-exports.handler = async (event) => {
+exports.handler = async event => {
   const startTime = Date.now();
   const requestId = crypto.randomUUID();
 
@@ -79,20 +79,25 @@ exports.handler = async (event) => {
     return successResponse(
       {
         ...metrics[0],
-        last_updated: new Date().toISOString()
+        last_updated: new Date().toISOString(),
       },
       {
         cache_hit: false,
         response_time_ms: Date.now() - startTime,
-        data_version: freshness[0] ? `mv_${freshness[0].row_version}` : 'live'
+        data_version: freshness[0] ? `mv_${freshness[0].row_version}` : 'live',
       },
       requestId
     );
-
   } catch (error) {
-    await auditLog(null, '/admin/overview', 'GET', {},
+    await auditLog(
+      null,
+      '/admin/overview',
+      'GET',
+      {},
       error.message.includes('Admin') ? 403 : 500,
-      Date.now() - startTime, requestId);
+      Date.now() - startTime,
+      requestId
+    );
 
     if (error.message.includes('Authentication failed')) {
       return errorResponse(401, 'UNAUTHORIZED', 'Invalid or expired token', requestId);

@@ -5,16 +5,16 @@ const crypto = require('crypto');
 
 // Import utilities
 const {
-    ImportError,
-    fetchWithTimeout,
-    mapStravaActivity,
-    validateAfterParam,
-    generateContinueToken,
-    parseContinueToken,
-    sanitizeForLog,
-    handleStravaRateLimit,
-    buildStravaUrl,
-    processActivitiesBatch
+  ImportError,
+  fetchWithTimeout,
+  mapStravaActivity,
+  validateAfterParam,
+  generateContinueToken,
+  parseContinueToken,
+  sanitizeForLog,
+  handleStravaRateLimit,
+  buildStravaUrl,
+  processActivitiesBatch,
 } = require('./utils/strava-import');
 
 // Import safe logging
@@ -26,67 +26,71 @@ const logger = createLogger('strava-import');
 // Import Feature 2's encryption
 const { TokenEncryption } = require('./utils/encryption');
 
-exports.handler = async (event) => {
-    const { getNeonClient } = require('./utils/connection-pool');
-const sql = getNeonClient();
-    const encryption = new TokenEncryption();
+exports.handler = async event => {
+  const { getNeonClient } = require('./utils/connection-pool');
+  const sql = getNeonClient();
+  const encryption = new TokenEncryption();
 
-    const headers = {
-        'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGINS || '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Content-Type': 'application/json'
-    };
+  const headers = {
+    'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGINS || '*',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Content-Type': 'application/json',
+  };
 
-    if (event.httpMethod === 'OPTIONS') {
-        return { statusCode: 204, headers };
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 204, headers };
+  }
+
+  const runId = crypto.randomUUID();
+  const importStartTime = Date.now();
+  const MAX_RUNTIME_MS = 9000; // 9s budget (1s buffer for Netlify's 10s limit)
+
+  try {
+    // Authenticate
+    const authHeader = event.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      throw new ImportError('AUTH_REQUIRED', 'Authorization required', 401);
     }
 
-    const runId = crypto.randomUUID();
-    const importStartTime = Date.now();
-    const MAX_RUNTIME_MS = 9000; // 9s budget (1s buffer for Netlify's 10s limit)
+    const token = authHeader.substring(7);
+    let userId;
 
     try {
-        // Authenticate
-        const authHeader = event.headers.authorization;
-        if (!authHeader?.startsWith('Bearer ')) {
-            throw new ImportError('AUTH_REQUIRED', 'Authorization required', 401);
-        }
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      userId = decoded.sub;
+    } catch (err) {
+      throw new ImportError('AUTH_INVALID', 'Invalid token', 401);
+    }
 
-        const token = authHeader.substring(7);
-        let userId;
+    // Parse parameters
+    const params = event.queryStringParameters || {};
+    const body = event.body ? JSON.parse(event.body) : {};
 
-        try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            userId = decoded.sub;
-        } catch (err) {
-            throw new ImportError('AUTH_INVALID', 'Invalid token', 401);
-        }
+    // Handle continue token for resume
+    const continueToken = body.continue_token || params.continue_token;
+    let resumeState = null;
 
-        // Parse parameters
-        const params = event.queryStringParameters || {};
-        const body = event.body ? JSON.parse(event.body) : {};
+    if (continueToken) {
+      resumeState = parseContinueToken(continueToken);
+    }
 
-        // Handle continue token for resume
-        const continueToken = body.continue_token || params.continue_token;
-        let resumeState = null;
+    // Validate after parameter
+    let after = resumeState?.after || params.after || null;
+    if (after !== null && after !== undefined) {
+      if (!validateAfterParam(after)) {
+        throw new ImportError(
+          'INVALID_PARAM',
+          'Invalid after parameter - must be unix timestamp',
+          400
+        );
+      }
+    }
 
-        if (continueToken) {
-            resumeState = parseContinueToken(continueToken);
-        }
+    const perPage = Math.min(Math.max(parseInt(params.per_page) || 30, 1), 100);
 
-        // Validate after parameter
-        let after = resumeState?.after || params.after || null;
-        if (after !== null && after !== undefined) {
-            if (!validateAfterParam(after)) {
-                throw new ImportError('INVALID_PARAM', 'Invalid after parameter - must be unix timestamp', 400);
-            }
-        }
-
-        const perPage = Math.min(Math.max(parseInt(params.per_page) || 30, 1), 100);
-
-        // Get user's Strava token
-        const tokenResult = await sql`
+    // Get user's Strava token
+    const tokenResult = await sql`
             SELECT 
                 encrypted_access_token,
                 encrypted_refresh_token,
@@ -96,121 +100,121 @@ const sql = getNeonClient();
             WHERE user_id = ${userId}
         `;
 
-        if (!tokenResult.length) {
-            throw new ImportError(
-                'STRAVA_NOT_CONNECTED',
-                'Strava account not connected. Please connect your account first.',
-                403,
-                { connect_url: '/settings/integrations/strava' }
-            );
-        }
+    if (!tokenResult.length) {
+      throw new ImportError(
+        'STRAVA_NOT_CONNECTED',
+        'Strava account not connected. Please connect your account first.',
+        403,
+        { connect_url: '/settings/integrations/strava' }
+      );
+    }
 
-        // Check and refresh token if needed
-        const tokenData = tokenResult[0];
-        let accessToken;
+    // Check and refresh token if needed
+    const tokenData = tokenResult[0];
+    let accessToken;
 
-        if (new Date(tokenData.expires_at) <= new Date()) {
-            // Call Feature 2's refresh endpoint
-            const refreshResponse = await fetchWithTimeout(
-                `${process.env.URL}/.netlify/functions/strava-refresh-token`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId })
-                },
-                10000
-            );
+    if (new Date(tokenData.expires_at) <= new Date()) {
+      // Call Feature 2's refresh endpoint
+      const refreshResponse = await fetchWithTimeout(
+        `${process.env.URL}/.netlify/functions/strava-refresh-token`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId }),
+        },
+        10000
+      );
 
-            if (!refreshResponse.ok) {
-                throw new ImportError('TOKEN_REFRESH_FAILED', 'Failed to refresh Strava token', 502);
-            }
+      if (!refreshResponse.ok) {
+        throw new ImportError('TOKEN_REFRESH_FAILED', 'Failed to refresh Strava token', 502);
+      }
 
-            // Get refreshed token
-            const newTokenResult = await sql`
+      // Get refreshed token
+      const newTokenResult = await sql`
                 SELECT encrypted_access_token
                 FROM strava_tokens
                 WHERE user_id = ${userId}
             `;
 
-            accessToken = await encryption.decrypt(newTokenResult[0].encrypted_access_token);
-        } else {
-            accessToken = await encryption.decrypt(tokenData.encrypted_access_token);
-        }
+      accessToken = await encryption.decrypt(newTokenResult[0].encrypted_access_token);
+    } else {
+      accessToken = await encryption.decrypt(tokenData.encrypted_access_token);
+    }
 
-        // Get or create sync state
-        let syncState = await sql`
+    // Get or create sync state
+    let syncState = await sql`
             SELECT * FROM integrations_strava
             WHERE user_id = ${userId}
         `;
 
-        if (!syncState.length) {
-            await sql`
+    if (!syncState.length) {
+      await sql`
                 INSERT INTO integrations_strava (user_id)
                 VALUES (${userId})
             `;
-            syncState = [{ last_import_after: null }];
-        }
+      syncState = [{ last_import_after: null }];
+    }
 
-        // Check if import already in progress
-        if (syncState[0].import_in_progress && !continueToken) {
-            const inProgressFor = Date.now() - new Date(syncState[0].import_started_at).getTime();
-            if (inProgressFor < 60000) { // Less than 1 minute
-                throw new ImportError(
-                    'IMPORT_IN_PROGRESS',
-                    'Import already in progress. Please wait or provide continue_token.',
-                    409
-                );
-            }
-        }
+    // Check if import already in progress
+    if (syncState[0].import_in_progress && !continueToken) {
+      const inProgressFor = Date.now() - new Date(syncState[0].import_started_at).getTime();
+      if (inProgressFor < 60000) {
+        // Less than 1 minute
+        throw new ImportError(
+          'IMPORT_IN_PROGRESS',
+          'Import already in progress. Please wait or provide continue_token.',
+          409
+        );
+      }
+    }
 
-        // Mark as in progress
-        await sql`
+    // Mark as in progress
+    await sql`
             UPDATE integrations_strava
             SET import_in_progress = true,
                 import_started_at = NOW()
             WHERE user_id = ${userId}
         `;
 
-        // Initialize state
-        let page = resumeState?.page || 1;
-        let lastActivityId = resumeState?.lastActivityId || null;
-        const maxActivityTime = resumeState?.maxActivityTime || after || syncState[0].last_import_after || '0';
+    // Initialize state
+    let page = resumeState?.page || 1;
+    let lastActivityId = resumeState?.lastActivityId || null;
+    const maxActivityTime =
+      resumeState?.maxActivityTime || after || syncState[0].last_import_after || '0';
 
-        if (!after && syncState[0].last_import_after) {
-            after = syncState[0].last_import_after;
-        }
+    if (!after && syncState[0].last_import_after) {
+      after = syncState[0].last_import_after;
+    }
 
-        // Import results
-        const results = {
-            imported: resumeState?.imported || 0,
-            duplicates: resumeState?.duplicates || 0,
-            updated: resumeState?.updated || 0,
-            failed: resumeState?.failed || 0,
-            deleted: 0,
-            pages_processed: resumeState?.pages_processed || 0,
-            errors: []
-        };
+    // Import results
+    const results = {
+      imported: resumeState?.imported || 0,
+      duplicates: resumeState?.duplicates || 0,
+      updated: resumeState?.updated || 0,
+      failed: resumeState?.failed || 0,
+      deleted: 0,
+      pages_processed: resumeState?.pages_processed || 0,
+      errors: [],
+    };
 
-        let hasMore = true;
-        const maxPages = 20;
-        const maxActivities = 1000;
+    let hasMore = true;
+    const maxPages = 20;
+    const maxActivities = 1000;
 
-        // Main import loop with time boxing
-        while (hasMore && page <= maxPages &&
-               results.imported + results.duplicates < maxActivities) {
+    // Main import loop with time boxing
+    while (hasMore && page <= maxPages && results.imported + results.duplicates < maxActivities) {
+      // Check time budget
+      if (Date.now() - importStartTime > MAX_RUNTIME_MS) {
+        // Save progress and return partial
+        const newContinueToken = generateContinueToken({
+          page,
+          after,
+          lastActivityId,
+          maxActivityTime,
+          ...results,
+        });
 
-            // Check time budget
-            if (Date.now() - importStartTime > MAX_RUNTIME_MS) {
-                // Save progress and return partial
-                const newContinueToken = generateContinueToken({
-                    page,
-                    after,
-                    lastActivityId,
-                    maxActivityTime,
-                    ...results
-                });
-
-                await sql`
+        await sql`
                     UPDATE integrations_strava
                     SET 
                         import_continue_token = ${newContinueToken},
@@ -218,67 +222,68 @@ const sql = getNeonClient();
                     WHERE user_id = ${userId}
                 `;
 
-                return {
-                    statusCode: 206, // Partial Content
-                    headers,
-                    body: JSON.stringify({
-                        status: 'partial',
-                        message: 'Import in progress. Call again with continue_token to resume.',
-                        continue_token: newContinueToken,
-                        ...results
-                    })
-                };
+        return {
+          statusCode: 206, // Partial Content
+          headers,
+          body: JSON.stringify({
+            status: 'partial',
+            message: 'Import in progress. Call again with continue_token to resume.',
+            continue_token: newContinueToken,
+            ...results,
+          }),
+        };
+      }
+
+      // Build Strava API URL
+      const stravaUrl = buildStravaUrl({
+        perPage,
+        page,
+        lastActivityId,
+        after,
+      });
+
+      // Fetch with retries
+      let stravaResponse;
+      let retries = 3;
+      let backoffMs = 1000;
+
+      while (retries > 0) {
+        try {
+          stravaResponse = await fetchWithTimeout(
+            stravaUrl,
+            { headers: { Authorization: `Bearer ${accessToken}` } },
+            5000
+          );
+
+          // Handle rate limiting
+          if (stravaResponse.status === 429) {
+            const rateLimitResponse = await handleStravaRateLimit(stravaResponse, 3 - retries);
+            if (rateLimitResponse === null) {
+              retries--;
+              continue;
             }
+            stravaResponse = rateLimitResponse;
+          }
 
-            // Build Strava API URL
-            const stravaUrl = buildStravaUrl({
-                perPage,
-                page,
-                lastActivityId,
-                after
-            });
+          break;
+        } catch (error) {
+          logger.error('Strava API error', {
+            error: error.message,
+            retries_remaining: retries - 1,
+            backoff_ms: backoffMs,
+          });
+          retries--;
+          if (retries === 0) {
+            throw error;
+          }
+          await new Promise(resolve => setTimeout(resolve, backoffMs));
+          backoffMs = Math.min(backoffMs * 2, 30000);
+        }
+      }
 
-            // Fetch with retries
-            let stravaResponse;
-            let retries = 3;
-            let backoffMs = 1000;
-
-            while (retries > 0) {
-                try {
-                    stravaResponse = await fetchWithTimeout(
-                        stravaUrl,
-                        { headers: { 'Authorization': `Bearer ${accessToken}` } },
-                        5000
-                    );
-
-                    // Handle rate limiting
-                    if (stravaResponse.status === 429) {
-                        const rateLimitResponse = await handleStravaRateLimit(stravaResponse, 3 - retries);
-                        if (rateLimitResponse === null) {
-                            retries--;
-                            continue;
-                        }
-                        stravaResponse = rateLimitResponse;
-                    }
-
-                    break;
-
-                } catch (error) {
-                    logger.error('Strava API error', {
-                        error: error.message,
-                        retries_remaining: retries - 1,
-                        backoff_ms: backoffMs
-                    });
-                    retries--;
-                    if (retries === 0) {throw error;}
-                    await new Promise(resolve => setTimeout(resolve, backoffMs));
-                    backoffMs = Math.min(backoffMs * 2, 30000);
-                }
-            }
-
-            // Handle Strava disconnection
-            if (stravaResponse.status === 401) {
-                await sql`
+      // Handle Strava disconnection
+      if (stravaResponse.status === 401) {
+        await sql`
                     DELETE FROM strava_tokens WHERE user_id = ${userId};
                     UPDATE integrations_strava 
                     SET last_error = 'Strava access revoked',
@@ -287,60 +292,58 @@ const sql = getNeonClient();
                     WHERE user_id = ${userId}
                 `;
 
-                throw new ImportError(
-                    'STRAVA_REVOKED',
-                    'Strava access was revoked. Please reconnect your account.',
-                    403
-                );
-            }
+        throw new ImportError(
+          'STRAVA_REVOKED',
+          'Strava access was revoked. Please reconnect your account.',
+          403
+        );
+      }
 
-            if (!stravaResponse.ok) {
-                throw new Error(`Strava API error: ${stravaResponse.status}`);
-            }
+      if (!stravaResponse.ok) {
+        throw new Error(`Strava API error: ${stravaResponse.status}`);
+      }
 
-            const activities = await stravaResponse.json();
+      const activities = await stravaResponse.json();
 
-            if (!Array.isArray(activities) || activities.length === 0) {
-                hasMore = false;
-                break;
-            }
+      if (!Array.isArray(activities) || activities.length === 0) {
+        hasMore = false;
+        break;
+      }
 
-            // Update cursor for next page
-            if (activities.length > 0) {
-                lastActivityId = activities[activities.length - 1].id;
-            }
+      // Update cursor for next page
+      if (activities.length > 0) {
+        lastActivityId = activities[activities.length - 1].id;
+      }
 
-            // Process activities in transaction
-            const pageResults = await sql.begin(async sql => {
-                return await processActivitiesBatch(
-                    sql, activities, userId, runId, page, after, perPage
-                );
-            });
+      // Process activities in transaction
+      const pageResults = await sql.begin(async sql => {
+        return await processActivitiesBatch(sql, activities, userId, runId, page, after, perPage);
+      });
 
-            // Accumulate results
-            results.imported += pageResults.imported;
-            results.duplicates += pageResults.duplicates;
-            results.updated += pageResults.updated;
-            results.failed += pageResults.failed;
-            if (pageResults.errors.length > 0) {
-                results.errors.push(...pageResults.errors.slice(0, 5)); // Limit errors
-            }
-            results.pages_processed++;
+      // Accumulate results
+      results.imported += pageResults.imported;
+      results.duplicates += pageResults.duplicates;
+      results.updated += pageResults.updated;
+      results.failed += pageResults.failed;
+      if (pageResults.errors.length > 0) {
+        results.errors.push(...pageResults.errors.slice(0, 5)); // Limit errors
+      }
+      results.pages_processed++;
 
-            page++;
-            hasMore = activities.length === perPage;
-        }
+      page++;
+      hasMore = activities.length === perPage;
+    }
 
-        // Clean up orphaned activities
-        const deletedCount = await sql`
+    // Clean up orphaned activities
+    const deletedCount = await sql`
             SELECT cleanup_orphaned_strava_activities(${userId}) as count
         `;
-        results.deleted = deletedCount[0].count;
+    results.deleted = deletedCount[0].count;
 
-        // Update sync state
-        const finalStatus = results.failed > 0 ? 'partial' : 'success';
+    // Update sync state
+    const finalStatus = results.failed > 0 ? 'partial' : 'success';
 
-        await sql`
+    await sql`
             UPDATE integrations_strava
             SET 
                 last_import_after = ${maxActivityTime},
@@ -358,39 +361,38 @@ const sql = getNeonClient();
             WHERE user_id = ${userId}
         `;
 
-        // Log import completion with safe metadata
-        logger.importProcess({
-            userId,
-            imported: results.imported,
-            failed: results.failed,
-            status: 'completed'
-        });
+    // Log import completion with safe metadata
+    logger.importProcess({
+      userId,
+      imported: results.imported,
+      failed: results.failed,
+      status: 'completed',
+    });
 
-        return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify({
-                status: 'complete',
-                imported: results.imported,
-                updated: results.updated,
-                duplicates: results.duplicates,
-                deleted: results.deleted,
-                skipped: results.failed,
-                pages_processed: results.pages_processed,
-                ...(results.errors.length > 0 && {
-                    partial_errors: results.errors
-                })
-            })
-        };
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        status: 'complete',
+        imported: results.imported,
+        updated: results.updated,
+        duplicates: results.duplicates,
+        deleted: results.deleted,
+        skipped: results.failed,
+        pages_processed: results.pages_processed,
+        ...(results.errors.length > 0 && {
+          partial_errors: results.errors,
+        }),
+      }),
+    };
+  } catch (error) {
+    logger.error('Import failed', {
+      error: error.message,
+      user_id: userId,
+    });
 
-    } catch (error) {
-        logger.error('Import failed', {
-            error: error.message,
-            user_id: userId
-        });
-
-        // Mark as failed
-        await sql`
+    // Mark as failed
+    await sql`
             UPDATE integrations_strava
             SET 
                 last_run_at = NOW(),
@@ -402,20 +404,20 @@ const sql = getNeonClient();
             WHERE user_id = ${userId}
         `.catch(err => logger.error('Failed to update import status', { error: err.message }));
 
-        if (error instanceof ImportError) {
-            return error.toResponse(headers);
-        }
-
-        return {
-            statusCode: 503,
-            headers,
-            body: JSON.stringify({
-                error: {
-                    code: 'IMPORT_FAILED',
-                    message: 'Import failed',
-                    details: error.message
-                }
-            })
-        };
+    if (error instanceof ImportError) {
+      return error.toResponse(headers);
     }
+
+    return {
+      statusCode: 503,
+      headers,
+      body: JSON.stringify({
+        error: {
+          code: 'IMPORT_FAILED',
+          message: 'Import failed',
+          details: error.message,
+        },
+      }),
+    };
+  }
 };

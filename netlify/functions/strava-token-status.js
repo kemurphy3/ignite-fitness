@@ -6,7 +6,7 @@ const { checkEndpointRateLimit, getRateLimitHeaders } = require('./utils/rate-li
 // Simple in-memory cache for development (use Redis in production)
 const statusCache = new Map();
 
-exports.handler = async (event) => {
+exports.handler = async event => {
   // Handle preflight requests
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -14,9 +14,9 @@ exports.handler = async (event) => {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type, X-API-Key',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS'
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
       },
-      body: ''
+      body: '',
     };
   }
 
@@ -24,7 +24,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 405,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Method not allowed' })
+      body: JSON.stringify({ error: 'Method not allowed' }),
     };
   }
 
@@ -37,7 +37,7 @@ exports.handler = async (event) => {
       return {
         statusCode: 400,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'User ID is required' })
+        body: JSON.stringify({ error: 'User ID is required' }),
       };
     }
 
@@ -48,31 +48,32 @@ exports.handler = async (event) => {
         statusCode: 429,
         headers: {
           'Content-Type': 'application/json',
-          ...getRateLimitHeaders(rateLimitResult)
+          ...getRateLimitHeaders(rateLimitResult),
         },
         body: JSON.stringify({
           error: 'Rate limit exceeded',
           reason: rateLimitResult.reason,
-          retryAfter: rateLimitResult.retryAfter
-        })
+          retryAfter: rateLimitResult.retryAfter,
+        }),
       };
     }
 
     // Check cache first
     const cached = statusCache.get(`status_${userId}`);
-    if (cached && Date.now() - cached.timestamp < 30000) { // 30 second cache
+    if (cached && Date.now() - cached.timestamp < 30000) {
+      // 30 second cache
       return {
         statusCode: 200,
         headers: {
           'Content-Type': 'application/json',
           'X-Cache': 'HIT',
-          'X-Cache-Age': Math.floor((Date.now() - cached.timestamp) / 1000)
+          'X-Cache-Age': Math.floor((Date.now() - cached.timestamp) / 1000),
         },
         body: JSON.stringify({
           ...cached.data,
           cached: true,
-          cache_age: Math.floor((Date.now() - cached.timestamp) / 1000)
-        })
+          cache_age: Math.floor((Date.now() - cached.timestamp) / 1000),
+        }),
       };
     }
 
@@ -101,8 +102,8 @@ exports.handler = async (event) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           error: 'No token found for user',
-          status: 'not_found'
-        })
+          status: 'not_found',
+        }),
       };
     }
 
@@ -120,13 +121,13 @@ exports.handler = async (event) => {
       scope: tokenData.scope,
       circuit_breaker_status: stravaCircuit.getStatus(),
       needs_refresh: tokenData.status === 'expiring_soon' || tokenData.status === 'expired',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     // Cache for 30 seconds
     statusCache.set(`status_${userId}`, {
       data: status,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     return {
@@ -134,11 +135,10 @@ exports.handler = async (event) => {
       headers: {
         'Content-Type': 'application/json',
         'X-Cache': 'MISS',
-        'X-Circuit-Breaker-State': stravaCircuit.getStatus().state
+        'X-Circuit-Breaker-State': stravaCircuit.getStatus().state,
       },
-      body: JSON.stringify(status)
+      body: JSON.stringify(status),
     };
-
   } catch (error) {
     console.error('Status check error:', error);
 
@@ -147,8 +147,8 @@ exports.handler = async (event) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         error: 'Status check failed',
-        circuit_state: stravaCircuit.getStatus().state
-      })
+        circuit_state: stravaCircuit.getStatus().state,
+      }),
     };
   }
 };

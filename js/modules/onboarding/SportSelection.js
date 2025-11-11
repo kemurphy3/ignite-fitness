@@ -3,63 +3,63 @@
  * Handles sport-specific onboarding flow
  */
 class SportSelection {
-    constructor() {
-        this.logger = window.SafeLogger || console;
-        this.selectedSport = null;
-        this.sports = this.initializeSports();
-    }
+  constructor() {
+    this.logger = window.SafeLogger || console;
+    this.selectedSport = null;
+    this.sports = this.initializeSports();
+  }
 
-    /**
-     * Initialize available sports
-     * @returns {Array} Sports configuration
-     */
-    initializeSports() {
-        return [
-            {
-                id: 'soccer',
-                name: 'Soccer/Football',
-                icon: '⚽',
-                description: 'Beautiful game training',
-                color: '#22c55e',
-                positions: ['Goalkeeper', 'Defender', 'Midfielder', 'Forward'],
-                disciplines: ['Field Player', 'Goalkeeper']
-            },
-            {
-                id: 'basketball',
-                name: 'Basketball',
-                icon: '🏀',
-                description: 'Court performance training',
-                color: '#f59e0b',
-                positions: ['Point Guard', 'Shooting Guard', 'Small Forward', 'Power Forward', 'Center'],
-                disciplines: ['Guard', 'Forward', 'Center']
-            },
-            {
-                id: 'running',
-                name: 'Running',
-                icon: '🏃‍♂️',
-                description: 'Endurance and speed training',
-                color: '#3b82f6',
-                positions: ['Sprint', 'Middle Distance', 'Long Distance', 'Marathon'],
-                disciplines: ['Track', 'Road', 'Trail', 'Ultra']
-            },
-            {
-                id: 'general',
-                name: 'General Fitness',
-                icon: '💪',
-                description: 'Overall health and strength',
-                color: '#8b5cf6',
-                positions: ['Strength', 'Cardio', 'Flexibility', 'Balance'],
-                disciplines: ['Weight Training', 'Cardio', 'Yoga', 'Pilates']
-            }
-        ];
-    }
+  /**
+   * Initialize available sports
+   * @returns {Array} Sports configuration
+   */
+  initializeSports() {
+    return [
+      {
+        id: 'soccer',
+        name: 'Soccer/Football',
+        icon: '⚽',
+        description: 'Beautiful game training',
+        color: '#22c55e',
+        positions: ['Goalkeeper', 'Defender', 'Midfielder', 'Forward'],
+        disciplines: ['Field Player', 'Goalkeeper'],
+      },
+      {
+        id: 'basketball',
+        name: 'Basketball',
+        icon: '🏀',
+        description: 'Court performance training',
+        color: '#f59e0b',
+        positions: ['Point Guard', 'Shooting Guard', 'Small Forward', 'Power Forward', 'Center'],
+        disciplines: ['Guard', 'Forward', 'Center'],
+      },
+      {
+        id: 'running',
+        name: 'Running',
+        icon: '🏃‍♂️',
+        description: 'Endurance and speed training',
+        color: '#3b82f6',
+        positions: ['Sprint', 'Middle Distance', 'Long Distance', 'Marathon'],
+        disciplines: ['Track', 'Road', 'Trail', 'Ultra'],
+      },
+      {
+        id: 'general',
+        name: 'General Fitness',
+        icon: '💪',
+        description: 'Overall health and strength',
+        color: '#8b5cf6',
+        positions: ['Strength', 'Cardio', 'Flexibility', 'Balance'],
+        disciplines: ['Weight Training', 'Cardio', 'Yoga', 'Pilates'],
+      },
+    ];
+  }
 
-    /**
-     * Render sport selection component
-     * @returns {string} HTML content
-     */
-    render() {
-        return `
+  /**
+   * Render sport selection component
+   * @returns {string} HTML content
+   */
+  render() {
+    return `
             <div class="onboarding-step sport-selection">
                 <div class="step-header">
                     <h1>What's Your Sport?</h1>
@@ -85,15 +85,15 @@ class SportSelection {
                 </div>
             </div>
         `;
-    }
+  }
 
-    /**
-     * Render individual sport card
-     * @param {Object} sport - Sport configuration
-     * @returns {string} Sport card HTML
-     */
-    renderSportCard(sport) {
-        return `
+  /**
+   * Render individual sport card
+   * @param {Object} sport - Sport configuration
+   * @returns {string} Sport card HTML
+   */
+  renderSportCard(sport) {
+    return `
             <div 
                 class="sport-card" 
                 data-sport="${sport.id}"
@@ -111,81 +111,83 @@ class SportSelection {
                 </div>
             </div>
         `;
+  }
+
+  /**
+   * Select sport
+   * @param {string} sportId - Sport ID
+   */
+  selectSport(sportId) {
+    this.selectedSport = sportId;
+
+    // Update visual state
+    document.querySelectorAll('.sport-card').forEach(card => {
+      card.classList.remove('selected');
+    });
+
+    const selectedCard = document.querySelector(`[data-sport="${sportId}"]`);
+    if (selectedCard) {
+      selectedCard.classList.add('selected');
     }
 
-    /**
-     * Select sport
-     * @param {string} sportId - Sport ID
-     */
-    selectSport(sportId) {
-        this.selectedSport = sportId;
+    // Enable continue button
+    const continueBtn = document.getElementById('continue-btn');
+    if (continueBtn) {
+      continueBtn.disabled = false;
+    }
 
-        // Update visual state
-        document.querySelectorAll('.sport-card').forEach(card => {
-            card.classList.remove('selected');
+    // Store selection
+    this.storeSelection();
+
+    this.logger.debug('Sport selected:', sportId);
+  }
+
+  /**
+   * Store sport selection
+   */
+  storeSelection() {
+    if (this.selectedSport) {
+      const sportData = this.sports.find(s => s.id === this.selectedSport);
+
+      // Store in onboarding data
+      if (window.OnboardingManager) {
+        window.OnboardingManager.setData('sport', {
+          id: this.selectedSport,
+          name: sportData.name,
+          icon: sportData.icon,
+          color: sportData.color,
+          positions: sportData.positions,
+          disciplines: sportData.disciplines,
         });
+      }
+    }
+  }
 
-        const selectedCard = document.querySelector(`[data-sport="${sportId}"]`);
-        if (selectedCard) {
-            selectedCard.classList.add('selected');
+  /**
+   * Get selected sport
+   * @returns {Object|null} Selected sport data
+   */
+  getSelectedSport() {
+    if (!this.selectedSport) {
+      return null;
+    }
+    return this.sports.find(s => s.id === this.selectedSport);
+  }
+
+  /**
+   * Initialize component
+   */
+  init() {
+    // Add event listeners for keyboard navigation
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && document.activeElement.classList.contains('sport-card')) {
+        const sportId = document.activeElement.dataset.sport;
+        if (sportId) {
+          this.selectSport(sportId);
         }
-
-        // Enable continue button
-        const continueBtn = document.getElementById('continue-btn');
-        if (continueBtn) {
-            continueBtn.disabled = false;
-        }
-
-        // Store selection
-        this.storeSelection();
-
-        this.logger.debug('Sport selected:', sportId);
-    }
-
-    /**
-     * Store sport selection
-     */
-    storeSelection() {
-        if (this.selectedSport) {
-            const sportData = this.sports.find(s => s.id === this.selectedSport);
-
-            // Store in onboarding data
-            if (window.OnboardingManager) {
-                window.OnboardingManager.setData('sport', {
-                    id: this.selectedSport,
-                    name: sportData.name,
-                    icon: sportData.icon,
-                    color: sportData.color,
-                    positions: sportData.positions,
-                    disciplines: sportData.disciplines
-                });
-            }
-        }
-    }
-
-    /**
-     * Get selected sport
-     * @returns {Object|null} Selected sport data
-     */
-    getSelectedSport() {
-        if (!this.selectedSport) {return null;}
-        return this.sports.find(s => s.id === this.selectedSport);
-    }
-
-    /**
-     * Initialize component
-     */
-    init() {
-        // Add event listeners for keyboard navigation
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && document.activeElement.classList.contains('sport-card')) {
-                const sportId = document.activeElement.dataset.sport;
-                if (sportId) {
-                    this.selectSport(sportId);
-                }
-            }
-        });
-    }
+      }
+    });
+  }
 }
 
 /**
@@ -193,23 +195,23 @@ class SportSelection {
  * Handles position-specific selection based on sport
  */
 class PositionSelection {
-    constructor() {
-        this.logger = window.SafeLogger || console;
-        this.selectedPosition = null;
-        this.selectedDiscipline = null;
+  constructor() {
+    this.logger = window.SafeLogger || console;
+    this.selectedPosition = null;
+    this.selectedDiscipline = null;
+  }
+
+  /**
+   * Render position selection component
+   * @returns {string} HTML content
+   */
+  render() {
+    const sportData = window.OnboardingManager?.getData('sport');
+    if (!sportData) {
+      return '<div class="error">No sport selected</div>';
     }
 
-    /**
-     * Render position selection component
-     * @returns {string} HTML content
-     */
-    render() {
-        const sportData = window.OnboardingManager?.getData('sport');
-        if (!sportData) {
-            return '<div class="error">No sport selected</div>';
-        }
-
-        return `
+    return `
             <div class="onboarding-step position-selection">
                 <div class="step-header">
                     <h1>What's Your Position/Focus?</h1>
@@ -223,14 +225,18 @@ class PositionSelection {
                     </div>
                 </div>
                 
-                ${sportData.disciplines ? `
+                ${
+                  sportData.disciplines
+                    ? `
                     <div class="discipline-section">
                         <h3>Training Discipline</h3>
                         <div class="disciplines-grid">
                             ${sportData.disciplines.map(discipline => this.renderDisciplineCard(discipline)).join('')}
                         </div>
                     </div>
-                ` : ''}
+                `
+                    : ''
+                }
                 
                 <div class="step-actions">
                     <button class="btn-secondary" onclick="onboardingManager.previousStep()">
@@ -247,15 +253,15 @@ class PositionSelection {
                 </div>
             </div>
         `;
-    }
+  }
 
-    /**
-     * Render position card
-     * @param {string} position - Position name
-     * @returns {string} Position card HTML
-     */
-    renderPositionCard(position) {
-        return `
+  /**
+   * Render position card
+   * @param {string} position - Position name
+   * @returns {string} Position card HTML
+   */
+  renderPositionCard(position) {
+    return `
             <div 
                 class="position-card" 
                 data-position="${position}"
@@ -267,15 +273,15 @@ class PositionSelection {
                 </div>
             </div>
         `;
-    }
+  }
 
-    /**
-     * Render discipline card
-     * @param {string} discipline - Discipline name
-     * @returns {string} Discipline card HTML
-     */
-    renderDisciplineCard(discipline) {
-        return `
+  /**
+   * Render discipline card
+   * @param {string} discipline - Discipline name
+   * @returns {string} Discipline card HTML
+   */
+  renderDisciplineCard(discipline) {
+    return `
             <div 
                 class="discipline-card" 
                 data-discipline="${discipline}"
@@ -287,92 +293,94 @@ class PositionSelection {
                 </div>
             </div>
         `;
+  }
+
+  /**
+   * Select position
+   * @param {string} position - Position name
+   */
+  selectPosition(position) {
+    this.selectedPosition = position;
+
+    // Update visual state
+    document.querySelectorAll('.position-card').forEach(card => {
+      card.classList.remove('selected');
+    });
+
+    const selectedCard = document.querySelector(`[data-position="${position}"]`);
+    if (selectedCard) {
+      selectedCard.classList.add('selected');
     }
 
-    /**
-     * Select position
-     * @param {string} position - Position name
-     */
-    selectPosition(position) {
-        this.selectedPosition = position;
+    this.checkCanContinue();
+    this.storeSelection();
 
-        // Update visual state
-        document.querySelectorAll('.position-card').forEach(card => {
-            card.classList.remove('selected');
-        });
+    this.logger.debug('Position selected:', position);
+  }
 
-        const selectedCard = document.querySelector(`[data-position="${position}"]`);
-        if (selectedCard) {
-            selectedCard.classList.add('selected');
-        }
+  /**
+   * Select discipline
+   * @param {string} discipline - Discipline name
+   */
+  selectDiscipline(discipline) {
+    this.selectedDiscipline = discipline;
 
-        this.checkCanContinue();
-        this.storeSelection();
+    // Update visual state
+    document.querySelectorAll('.discipline-card').forEach(card => {
+      card.classList.remove('selected');
+    });
 
-        this.logger.debug('Position selected:', position);
+    const selectedCard = document.querySelector(`[data-discipline="${discipline}"]`);
+    if (selectedCard) {
+      selectedCard.classList.add('selected');
     }
 
-    /**
-     * Select discipline
-     * @param {string} discipline - Discipline name
-     */
-    selectDiscipline(discipline) {
-        this.selectedDiscipline = discipline;
+    this.checkCanContinue();
+    this.storeSelection();
 
-        // Update visual state
-        document.querySelectorAll('.discipline-card').forEach(card => {
-            card.classList.remove('selected');
-        });
+    this.logger.debug('Discipline selected:', discipline);
+  }
 
-        const selectedCard = document.querySelector(`[data-discipline="${discipline}"]`);
-        if (selectedCard) {
-            selectedCard.classList.add('selected');
-        }
-
-        this.checkCanContinue();
-        this.storeSelection();
-
-        this.logger.debug('Discipline selected:', discipline);
+  /**
+   * Check if can continue
+   */
+  checkCanContinue() {
+    const continueBtn = document.getElementById('continue-btn');
+    if (!continueBtn) {
+      return;
     }
 
-    /**
-     * Check if can continue
-     */
-    checkCanContinue() {
-        const continueBtn = document.getElementById('continue-btn');
-        if (!continueBtn) {return;}
+    const sportData = window.OnboardingManager?.getData('sport');
+    const canContinue =
+      this.selectedPosition && (!sportData.disciplines || this.selectedDiscipline);
 
-        const sportData = window.OnboardingManager?.getData('sport');
-        const canContinue = this.selectedPosition &&
-                          (!sportData.disciplines || this.selectedDiscipline);
+    continueBtn.disabled = !canContinue;
+  }
 
-        continueBtn.disabled = !canContinue;
+  /**
+   * Store selection
+   */
+  storeSelection() {
+    if (window.OnboardingManager) {
+      window.OnboardingManager.setData('position', {
+        position: this.selectedPosition,
+        discipline: this.selectedDiscipline,
+      });
     }
+  }
 
-    /**
-     * Store selection
-     */
-    storeSelection() {
-        if (window.OnboardingManager) {
-            window.OnboardingManager.setData('position', {
-                position: this.selectedPosition,
-                discipline: this.selectedDiscipline
-            });
-        }
-    }
-
-    /**
-     * Initialize component
-     */
-    init() {
-        // Focus first position card for keyboard navigation
-        setTimeout(() => {
-            const firstCard = document.querySelector('.position-card');
-            if (firstCard) {
-                firstCard.focus();
-            }
-        }, 100);
-    }
+  /**
+   * Initialize component
+   */
+  init() {
+    // Focus first position card for keyboard navigation
+    setTimeout(() => {
+      const firstCard = document.querySelector('.position-card');
+      if (firstCard) {
+        firstCard.focus();
+      }
+    }, 100);
+  }
 }
 
 /**
@@ -380,17 +388,17 @@ class PositionSelection {
  * Handles user profile information collection
  */
 class ProfileSetup {
-    constructor() {
-        this.logger = window.SafeLogger || console;
-        this.formData = {};
-    }
+  constructor() {
+    this.logger = window.SafeLogger || console;
+    this.formData = {};
+  }
 
-    /**
-     * Render profile setup component
-     * @returns {string} HTML content
-     */
-    render() {
-        return `
+  /**
+   * Render profile setup component
+   * @returns {string} HTML content
+   */
+  render() {
+    return `
             <div class="onboarding-step profile-setup">
                 <div class="step-header">
                     <h1>Tell Us About Yourself</h1>
@@ -486,103 +494,103 @@ class ProfileSetup {
                 </div>
             </div>
         `;
+  }
+
+  /**
+   * Handle form submission
+   * @param {Event} event - Form event
+   */
+  handleSubmit(event) {
+    if (event) {
+      event.preventDefault();
     }
 
-    /**
-     * Handle form submission
-     * @param {Event} event - Form event
-     */
-    handleSubmit(event) {
-        if (event) {
-            event.preventDefault();
-        }
+    const formData = this.collectFormData();
 
-        const formData = this.collectFormData();
+    if (this.validateForm(formData)) {
+      this.storeProfileData(formData);
+      onboardingManager.completeOnboarding();
+    } else {
+      this.showValidationErrors();
+    }
+  }
 
-        if (this.validateForm(formData)) {
-            this.storeProfileData(formData);
-            onboardingManager.completeOnboarding();
-        } else {
-            this.showValidationErrors();
-        }
+  /**
+   * Collect form data
+   * @returns {Object} Form data
+   */
+  collectFormData() {
+    const form = document.querySelector('.profile-form');
+    const formData = new FormData(form);
+
+    const data = {
+      age: parseInt(formData.get('age')),
+      experience: formData.get('experience'),
+      goals: formData.getAll('goals'),
+      injuryHistory: formData.get('injury-history'),
+      trainingFrequency: formData.get('training-frequency'),
+    };
+
+    return data;
+  }
+
+  /**
+   * Validate form data
+   * @param {Object} data - Form data
+   * @returns {boolean} Validation result
+   */
+  validateForm(data) {
+    if (!data.age || data.age < 13 || data.age > 100) {
+      return false;
     }
 
-    /**
-     * Collect form data
-     * @returns {Object} Form data
-     */
-    collectFormData() {
-        const form = document.querySelector('.profile-form');
-        const formData = new FormData(form);
-
-        const data = {
-            age: parseInt(formData.get('age')),
-            experience: formData.get('experience'),
-            goals: formData.getAll('goals'),
-            injuryHistory: formData.get('injury-history'),
-            trainingFrequency: formData.get('training-frequency')
-        };
-
-        return data;
+    if (!data.experience) {
+      return false;
     }
 
-    /**
-     * Validate form data
-     * @param {Object} data - Form data
-     * @returns {boolean} Validation result
-     */
-    validateForm(data) {
-        if (!data.age || data.age < 13 || data.age > 100) {
-            return false;
-        }
-
-        if (!data.experience) {
-            return false;
-        }
-
-        if (!data.goals || data.goals.length === 0) {
-            return false;
-        }
-
-        if (!data.trainingFrequency) {
-            return false;
-        }
-
-        return true;
+    if (!data.goals || data.goals.length === 0) {
+      return false;
     }
 
-    /**
-     * Show validation errors
-     */
-    showValidationErrors() {
-        // Simple validation feedback
-        alert('Please fill in all required fields');
+    if (!data.trainingFrequency) {
+      return false;
     }
 
-    /**
-     * Store profile data
-     * @param {Object} data - Profile data
-     */
-    storeProfileData(data) {
-        if (window.OnboardingManager) {
-            window.OnboardingManager.setData('profile', data);
-        }
+    return true;
+  }
 
-        this.logger.debug('Profile data stored:', data);
+  /**
+   * Show validation errors
+   */
+  showValidationErrors() {
+    // Simple validation feedback
+    alert('Please fill in all required fields');
+  }
+
+  /**
+   * Store profile data
+   * @param {Object} data - Profile data
+   */
+  storeProfileData(data) {
+    if (window.OnboardingManager) {
+      window.OnboardingManager.setData('profile', data);
     }
 
-    /**
-     * Initialize component
-     */
-    init() {
-        // Focus first input
-        setTimeout(() => {
-            const firstInput = document.querySelector('#age');
-            if (firstInput) {
-                firstInput.focus();
-            }
-        }, 100);
-    }
+    this.logger.debug('Profile data stored:', data);
+  }
+
+  /**
+   * Initialize component
+   */
+  init() {
+    // Focus first input
+    setTimeout(() => {
+      const firstInput = document.querySelector('#age');
+      if (firstInput) {
+        firstInput.focus();
+      }
+    }, 100);
+  }
 }
 
 // Create global instances
@@ -592,5 +600,5 @@ window.ProfileSetup = new ProfileSetup();
 
 // Export for module systems
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { SportSelection, PositionSelection, ProfileSetup };
+  module.exports = { SportSelection, PositionSelection, ProfileSetup };
 }

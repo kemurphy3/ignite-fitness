@@ -4,27 +4,27 @@
  */
 
 class EquipmentAccess extends window.BaseComponent {
-    constructor() {
-        super();
-        this.availableEquipment = new Set();
-        this.timePreferences = {
-            typicalDuration: 60,
-            preferredTimes: [],
-            trainingDaysPerWeek: 4
-        };
-    }
+  constructor() {
+    super();
+    this.availableEquipment = new Set();
+    this.timePreferences = {
+      typicalDuration: 60,
+      preferredTimes: [],
+      trainingDaysPerWeek: 4,
+    };
+  }
 
-    /**
-     * Render equipment access step
-     * @param {Object} onboardingData - Current onboarding data
-     * @returns {string} HTML for step
-     */
-    render(onboardingData = {}) {
-        this.onboardingData = onboardingData;
-        this.availableEquipment = new Set(onboardingData.equipment || []);
-        this.timePreferences = onboardingData.timePreferences || this.timePreferences;
+  /**
+   * Render equipment access step
+   * @param {Object} onboardingData - Current onboarding data
+   * @returns {string} HTML for step
+   */
+  render(onboardingData = {}) {
+    this.onboardingData = onboardingData;
+    this.availableEquipment = new Set(onboardingData.equipment || []);
+    this.timePreferences = onboardingData.timePreferences || this.timePreferences;
 
-        return `
+    return `
             <div class="onboarding-step equipment-access-step">
                 <div class="step-header">
                     <h2>Equipment & Facility Access</h2>
@@ -108,14 +108,18 @@ class EquipmentAccess extends window.BaseComponent {
                         <div class="time-slot">
                             <label>Training days per week:</label>
                             <div class="days-selector">
-                                ${[3,4,5,6,7].map(days => `
+                                ${[3, 4, 5, 6, 7]
+                                  .map(
+                                    days => `
                                     <button type="button" 
                                             class="days-btn ${this.timePreferences.trainingDaysPerWeek === days ? 'selected' : ''}" 
                                             onclick="window.EquipmentAccess.selectTrainingDays(${days})"
                                             aria-label="${days} days per week">
                                         ${days} days
                                     </button>
-                                `).join('')}
+                                `
+                                  )
+                                  .join('')}
                             </div>
                         </div>
                     </div>
@@ -131,17 +135,17 @@ class EquipmentAccess extends window.BaseComponent {
                 </div>
             </div>
         `;
-    }
+  }
 
-    /**
-     * Render equipment checkbox
-     * @param {string} value - Equipment value
-     * @param {string} label - Label text
-     * @returns {string} HTML for checkbox
-     */
-    renderEquipmentCheckbox(value, label) {
-        const checked = this.availableEquipment.has(value) ? 'checked' : '';
-        return `
+  /**
+   * Render equipment checkbox
+   * @param {string} value - Equipment value
+   * @param {string} label - Label text
+   * @returns {string} HTML for checkbox
+   */
+  renderEquipmentCheckbox(value, label) {
+    const checked = this.availableEquipment.has(value) ? 'checked' : '';
+    return `
             <label class="equipment-checkbox">
                 <input type="checkbox" 
                        name="equipment" 
@@ -151,17 +155,17 @@ class EquipmentAccess extends window.BaseComponent {
                 ${label}
             </label>
         `;
-    }
+  }
 
-    /**
-     * Render time preference checkbox
-     * @param {string} value - Time value
-     * @param {string} label - Label text
-     * @returns {string} HTML for checkbox
-     */
-    renderTimeCheckbox(value, label) {
-        const checked = this.timePreferences.preferredTimes.includes(value) ? 'checked' : '';
-        return `
+  /**
+   * Render time preference checkbox
+   * @param {string} value - Time value
+   * @param {string} label - Label text
+   * @returns {string} HTML for checkbox
+   */
+  renderTimeCheckbox(value, label) {
+    const checked = this.timePreferences.preferredTimes.includes(value) ? 'checked' : '';
+    return `
             <label class="time-checkbox">
                 <input type="checkbox" 
                        name="time_preference" 
@@ -171,80 +175,82 @@ class EquipmentAccess extends window.BaseComponent {
                 ${label}
             </label>
         `;
+  }
+
+  /**
+   * Toggle equipment selection
+   * @param {string} equipment - Equipment key
+   * @param {boolean} selected - Whether selected
+   */
+  toggleEquipment(equipment, selected) {
+    if (selected) {
+      this.availableEquipment.add(equipment);
+    } else {
+      this.availableEquipment.delete(equipment);
     }
+  }
 
-    /**
-     * Toggle equipment selection
-     * @param {string} equipment - Equipment key
-     * @param {boolean} selected - Whether selected
-     */
-    toggleEquipment(equipment, selected) {
-        if (selected) {
-            this.availableEquipment.add(equipment);
-        } else {
-            this.availableEquipment.delete(equipment);
-        }
+  /**
+   * Update time preference
+   * @param {string} key - Preference key
+   * @param {*} value - Preference value
+   */
+  updateTimePreference(key, value) {
+    if (key === 'typicalDuration') {
+      this.timePreferences.typicalDuration = parseInt(value);
     }
+  }
 
-    /**
-     * Update time preference
-     * @param {string} key - Preference key
-     * @param {*} value - Preference value
-     */
-    updateTimePreference(key, value) {
-        if (key === 'typicalDuration') {
-            this.timePreferences.typicalDuration = parseInt(value);
-        }
+  /**
+   * Toggle time preference
+   * @param {string} time - Time value
+   * @param {boolean} selected - Whether selected
+   */
+  toggleTimePreference(time, selected) {
+    if (selected && !this.timePreferences.preferredTimes.includes(time)) {
+      this.timePreferences.preferredTimes.push(time);
+    } else if (!selected) {
+      this.timePreferences.preferredTimes = this.timePreferences.preferredTimes.filter(
+        t => t !== time
+      );
     }
+  }
 
-    /**
-     * Toggle time preference
-     * @param {string} time - Time value
-     * @param {boolean} selected - Whether selected
-     */
-    toggleTimePreference(time, selected) {
-        if (selected && !this.timePreferences.preferredTimes.includes(time)) {
-            this.timePreferences.preferredTimes.push(time);
-        } else if (!selected) {
-            this.timePreferences.preferredTimes = this.timePreferences.preferredTimes.filter(t => t !== time);
-        }
+  /**
+   * Select training days per week
+   * @param {number} days - Number of days
+   */
+  selectTrainingDays(days) {
+    this.timePreferences.trainingDaysPerWeek = days;
+
+    // Update UI
+    document.querySelectorAll('.days-btn').forEach(btn => {
+      btn.classList.remove('selected');
+    });
+    document.querySelectorAll('.days-btn').forEach((btn, index) => {
+      if (parseInt(btn.textContent) === days) {
+        btn.classList.add('selected');
+      }
+    });
+  }
+
+  /**
+   * Save data and continue
+   */
+  saveAndContinue() {
+    const onboardingManager = window.OnboardingManager;
+    if (onboardingManager) {
+      onboardingManager.onboardingData.equipment = Array.from(this.availableEquipment);
+      onboardingManager.onboardingData.timePreferences = this.timePreferences;
+
+      onboardingManager.saveStepData('equipment_access', {
+        equipment: Array.from(this.availableEquipment),
+        timePreferences: this.timePreferences,
+      });
+
+      onboardingManager.nextStep();
     }
-
-    /**
-     * Select training days per week
-     * @param {number} days - Number of days
-     */
-    selectTrainingDays(days) {
-        this.timePreferences.trainingDaysPerWeek = days;
-
-        // Update UI
-        document.querySelectorAll('.days-btn').forEach(btn => {
-            btn.classList.remove('selected');
-        });
-        document.querySelectorAll('.days-btn').forEach((btn, index) => {
-            if (parseInt(btn.textContent) === days) {
-                btn.classList.add('selected');
-            }
-        });
-    }
-
-    /**
-     * Save data and continue
-     */
-    saveAndContinue() {
-        const onboardingManager = window.OnboardingManager;
-        if (onboardingManager) {
-            onboardingManager.onboardingData.equipment = Array.from(this.availableEquipment);
-            onboardingManager.onboardingData.timePreferences = this.timePreferences;
-
-            onboardingManager.saveStepData('equipment_access', {
-                equipment: Array.from(this.availableEquipment),
-                timePreferences: this.timePreferences
-            });
-
-            onboardingManager.nextStep();
-        }
-    }
+  }
 }
 
 // Create global instance
@@ -252,6 +258,5 @@ window.EquipmentAccess = new EquipmentAccess();
 
 // Export for module systems
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = EquipmentAccess;
+  module.exports = EquipmentAccess;
 }
-

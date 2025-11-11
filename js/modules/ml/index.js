@@ -8,15 +8,12 @@ import AdaptationClassifier from './AdaptationClassifier.js';
 import ModelValidator from './ModelValidator.js';
 
 export {
-    TrendAnalyzer,
-    PerformancePredictor,
-    PlateauDetector,
-    ProgressProjector,
-    PredictionEngine,
-    FeatureExtractor,
-    AdaptationClassifier,
-    ModelValidator
+  TrendAnalyzer,
+  PerformancePredictor,
+  PlateauDetector,
+  ProgressProjector,
+  PredictionEngine,
+  FeatureExtractor,
+  AdaptationClassifier,
+  ModelValidator,
 };
-
-
-

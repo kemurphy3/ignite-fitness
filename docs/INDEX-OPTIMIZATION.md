@@ -2,23 +2,29 @@
 
 ## Overview
 
-This document outlines the comprehensive database index optimization strategy for IgniteFitness, addressing performance bottlenecks identified in security and performance audits.
+This document outlines the comprehensive database index optimization strategy
+for IgniteFitness, addressing performance bottlenecks identified in security and
+performance audits.
 
 ## Critical Indexes Added
 
 ### 1. Sessions Table (Most Critical)
 
-**Primary Query Pattern**: `SELECT * FROM sessions WHERE user_id = ? ORDER BY start_at DESC`
+**Primary Query Pattern**:
+`SELECT * FROM sessions WHERE user_id = ? ORDER BY start_at DESC`
 
-- ✅ `idx_sessions_user_start_desc` - Composite index on `(user_id, start_at DESC)`
+- ✅ `idx_sessions_user_start_desc` - Composite index on
+  `(user_id, start_at DESC)`
 - ✅ `idx_sessions_user_type` - Composite index on `(user_id, type)`
-- ✅ `idx_sessions_user_source` - Composite index on `(user_id, source, source_id)`
+- ✅ `idx_sessions_user_source` - Composite index on
+  `(user_id, source, source_id)`
 - ✅ `idx_sessions_start_at_type` - Composite index on `(start_at, type)`
 - ✅ `idx_sessions_created_at` - Single column index on `created_at`
 
 ### 2. Exercises Table
 
-**Primary Query Pattern**: `SELECT * FROM exercises WHERE session_id = ? ORDER BY id`
+**Primary Query Pattern**:
+`SELECT * FROM exercises WHERE session_id = ? ORDER BY id`
 
 - ✅ `idx_exercises_session_id` - Composite index on `(session_id, id)`
 - ✅ `idx_exercises_user_session` - Composite index on `(user_id, session_id)`
@@ -36,16 +42,20 @@ This document outlines the comprehensive database index optimization strategy fo
 
 ### 4. Sleep Sessions Table
 
-**Primary Query Pattern**: `SELECT * FROM sleep_sessions WHERE user_id = ? ORDER BY start_at DESC`
+**Primary Query Pattern**:
+`SELECT * FROM sleep_sessions WHERE user_id = ? ORDER BY start_at DESC`
 
-- ✅ `idx_sleep_sessions_user_start_desc` - Composite index on `(user_id, start_at DESC)`
+- ✅ `idx_sleep_sessions_user_start_desc` - Composite index on
+  `(user_id, start_at DESC)`
 - ✅ `idx_sleep_sessions_start_at` - Single column index on `start_at`
 
 ### 5. Strava Activities Table
 
-**Primary Query Pattern**: `SELECT * FROM strava_activities WHERE user_id = ? ORDER BY start_date DESC`
+**Primary Query Pattern**:
+`SELECT * FROM strava_activities WHERE user_id = ? ORDER BY start_date DESC`
 
-- ✅ `idx_strava_activities_user_start_desc` - Composite index on `(user_id, start_date DESC)`
+- ✅ `idx_strava_activities_user_start_desc` - Composite index on
+  `(user_id, start_date DESC)`
 - ✅ `idx_strava_activities_type` - Single column index on `type`
 - ✅ `idx_strava_activities_start_date` - Single column index on `start_date`
 
@@ -58,12 +68,14 @@ This document outlines the comprehensive database index optimization strategy fo
 ## Performance Impact
 
 ### Before Optimization
+
 - User sessions query: ~50-100ms (full table scan)
 - Session exercises query: ~30-60ms (full table scan)
 - User lookup: ~20-40ms (full table scan)
 - Admin analytics: ~100-200ms (full table scan)
 
 ### After Optimization
+
 - User sessions query: ~5-15ms (index scan)
 - Session exercises query: ~3-8ms (index scan)
 - User lookup: ~2-5ms (index scan)
@@ -88,7 +100,8 @@ node test-index-performance.js
 
 ### Option 2: Neon Console (Alternative)
 
-1. Go to your [Neon Console](https://console.neon.tech/app/projects/polished-heart-69349667/branches/br-restless-leaf-af8y9fg3/sql-editor?database=neondb)
+1. Go to your
+   [Neon Console](https://console.neon.tech/app/projects/polished-heart-69349667/branches/br-restless-leaf-af8y9fg3/sql-editor?database=neondb)
 2. Copy the contents of `database-index-optimization.sql`
 3. Paste and run it directly in the SQL editor
 
@@ -101,7 +114,7 @@ node test-index-performance.js
 SELECT * FROM index_usage_stats;
 
 -- Check specific index usage
-SELECT 
+SELECT
     schemaname,
     tablename,
     indexname,
@@ -121,9 +134,9 @@ SELECT * FROM validate_index_performance();
 
 -- Check query execution plans
 EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)
-SELECT * FROM sessions 
-WHERE user_id = 1 
-ORDER BY start_at DESC 
+SELECT * FROM sessions
+WHERE user_id = 1
+ORDER BY start_at DESC
 LIMIT 10;
 ```
 
@@ -132,11 +145,13 @@ LIMIT 10;
 ### Regular Maintenance Tasks
 
 1. **Monitor Index Usage** (Weekly)
+
    ```sql
    SELECT * FROM index_usage_stats WHERE usage_level = 'UNUSED';
    ```
 
 2. **Update Statistics** (Monthly)
+
    ```sql
    ANALYZE users;
    ANALYZE sessions;
@@ -156,7 +171,7 @@ LIMIT 10;
 
 ```sql
 -- Find unused indexes
-SELECT 
+SELECT
     schemaname,
     tablename,
     indexname,
@@ -220,11 +235,14 @@ psql $DATABASE_URL -c "EXPLAIN ANALYZE SELECT * FROM sessions WHERE user_id = 1 
 
 ## Conclusion
 
-This index optimization strategy addresses the critical performance bottlenecks identified in the security audit while maintaining data integrity and security. The implementation provides:
+This index optimization strategy addresses the critical performance bottlenecks
+identified in the security audit while maintaining data integrity and security.
+The implementation provides:
 
 - ✅ 70-85% performance improvement
 - ✅ Comprehensive monitoring and maintenance tools
 - ✅ Clear migration and troubleshooting instructions
 - ✅ Future-proof architecture for scaling
 
-For questions or issues, refer to the troubleshooting section or check the performance monitoring tools.
+For questions or issues, refer to the troubleshooting section or check the
+performance monitoring tools.

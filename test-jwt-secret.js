@@ -1,6 +1,6 @@
 /**
  * Test JWT Secret Match
- * 
+ *
  * This script tests if the JWT secret used in tests matches
  * what the endpoint expects.
  */
@@ -20,63 +20,63 @@ console.log('Prod secret length:', PROD_SECRET.length);
 
 // Test token generation and verification
 function testSecret(secret, name) {
-    console.log(`\nTesting ${name}:`);
-    
-    try {
-        const token = jwt.sign(
-            { 
-                sub: 'test-user', 
-                role: 'admin',
-                iat: Math.floor(Date.now() / 1000),
-                exp: Math.floor(Date.now() / 1000) + 3600
-            },
-            secret
-        );
-        
-        console.log('  ✅ Token generated successfully');
-        
-        // Try to verify with the same secret
-        const decoded = jwt.verify(token, secret);
-        console.log('  ✅ Token verified successfully');
-        console.log('  📋 Decoded payload:', { sub: decoded.sub, role: decoded.role });
-        
-        return true;
-    } catch (error) {
-        console.log('  ❌ Error:', error.message);
-        return false;
-    }
+  console.log(`\nTesting ${name}:`);
+
+  try {
+    const token = jwt.sign(
+      {
+        sub: 'test-user',
+        role: 'admin',
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 3600,
+      },
+      secret
+    );
+
+    console.log('  ✅ Token generated successfully');
+
+    // Try to verify with the same secret
+    const decoded = jwt.verify(token, secret);
+    console.log('  ✅ Token verified successfully');
+    console.log('  📋 Decoded payload:', { sub: decoded.sub, role: decoded.role });
+
+    return true;
+  } catch (error) {
+    console.log('  ❌ Error:', error.message);
+    return false;
+  }
 }
 
 // Test cross-verification
 function testCrossVerification() {
-    console.log('\n🔄 Cross-verification test:');
-    
-    try {
-        const token = jwt.sign(
-            { 
-                sub: 'test-user', 
-                role: 'admin',
-                iat: Math.floor(Date.now() / 1000),
-                exp: Math.floor(Date.now() / 1000) + 3600
-            },
-            TEST_SECRET
-        );
-        
-        // Try to verify with prod secret
-        const decoded = jwt.verify(token, PROD_SECRET);
-        console.log('  ✅ Cross-verification successful (unexpected!)');
-        return true;
-    } catch (error) {
-        console.log('  ✅ Cross-verification failed as expected:', error.message);
-        return false;
-    }
+  console.log('\n🔄 Cross-verification test:');
+
+  try {
+    const token = jwt.sign(
+      {
+        sub: 'test-user',
+        role: 'admin',
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 3600,
+      },
+      TEST_SECRET
+    );
+
+    // Try to verify with prod secret
+    const decoded = jwt.verify(token, PROD_SECRET);
+    console.log('  ✅ Cross-verification successful (unexpected!)');
+    return true;
+  } catch (error) {
+    console.log('  ✅ Cross-verification failed as expected:', error.message);
+    return false;
+  }
 }
 
 // Run tests
 testSecret(TEST_SECRET, 'Test Secret');
 testSecret(PROD_SECRET, 'Production Secret');
 if (ENV_SECRET) {
-    testSecret(ENV_SECRET, 'Environment Secret');
+  testSecret(ENV_SECRET, 'Environment Secret');
 }
 testCrossVerification();
 

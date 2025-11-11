@@ -5,11 +5,13 @@
 ### **Done Means Checklist**
 
 ✅ Exercise substitution rules respect goal and constraints  
-✅ Auto-suggest 2 alternatives with brief rationale when user dislikes or reports pain  
+✅ Auto-suggest 2 alternatives with brief rationale when user dislikes or
+reports pain  
 ✅ Weight display shows formatted loading instructions  
 ✅ Handle missing plates via preferences and suggest next best  
-✅ Swap from Bulgarian split squat to walking lunges updates plan and rest times  
-✅ Plate math passes metric and imperial tests  
+✅ Swap from Bulgarian split squat to walking lunges updates plan and rest
+times  
+✅ Plate math passes metric and imperial tests
 
 ---
 
@@ -18,18 +20,21 @@
 ### **Exercise Substitution System** ✅
 
 **Substitution Rules:**
+
 - `bulgarian split squat` → Walking Lunges, Reverse Lunges, Step-ups
 - `back squat` → Goblet Squat, Front Squat, Landmine Squat
 - `deadlift` → Romanian Deadlift, Trap Bar Deadlift, Single Leg RDL
 - `overhead press` → Seated DB Press, Landmine Press
 
 **Filtering Logic:**
+
 - Respects user dislikes (filters disliked exercises)
 - Pain-based modifications (knee pain → no squats, etc.)
 - Constraints (equipment, time limits)
 - Returns top 2 alternatives with rationale
 
 **Substitution Properties:**
+
 ```javascript
 {
     name: 'Walking Lunges',
@@ -44,11 +49,13 @@
 ### **Real Gym Math** ✅
 
 **Formatted Output:**
+
 ```
 "Load 45 lb bar + 35 + 10 + 2.5 per side → 135 lb total"
 ```
 
 **Missing Plate Fallback:**
+
 ```javascript
 {
     instruction: 'Missing 2.5 lb per side. Next best: 50 lb per side → 145 lb total. Add 2-3 reps to compensate.',
@@ -63,20 +70,24 @@
 ### **When to Suggest:**
 
 1. **User Reports Dislike:**
+
    ```javascript
-   adapter.suggestSubstitutions('Bulgarian Split Squat', ['bulgarian'])
+   adapter.suggestSubstitutions('Bulgarian Split Squat', ['bulgarian']);
    // Returns: Walking Lunges, Reverse Lunges (filtered)
    ```
 
 2. **User Reports Pain:**
+
    ```javascript
-   adapter.suggestSubstitutions('Bulgarian Split Squat', [], 'knee')
+   adapter.suggestSubstitutions('Bulgarian Split Squat', [], 'knee');
    // Returns: Exercises without knee stress
    ```
 
 3. **Equipment Missing:**
    ```javascript
-   adapter.suggestSubstitutions('Back Squat', [], null, { equipment: ['dumbbells'] })
+   adapter.suggestSubstitutions('Back Squat', [], null, {
+     equipment: ['dumbbells'],
+   });
    // Returns: Goblet Squat (DB-only alternatives)
    ```
 
@@ -85,6 +96,7 @@
 ## **Weight Loading Math** ✅
 
 ### **US System:**
+
 ```javascript
 Bar: 45 lb
 Plates: [45, 35, 25, 10, 5, 2.5] lb
@@ -97,6 +109,7 @@ Example: 135 lb total
 ```
 
 ### **Metric System:**
+
 ```javascript
 Bar: 20 kg
 Plates: [20, 15, 10, 5, 2.5, 1.25] kg
@@ -115,12 +128,14 @@ Example: 60 kg total
 **Scenario: Missing 2.5 lb Plates**
 
 User wants 150 lb total:
+
 - Target per side: 52.5 lb
 - Available: [45, 35, 25, 10, 5] (no 2.5s)
 - Best match: 45 + 5 = 50 lb per side
 - Actual total: 45 + (50 × 2) = 145 lb
 
 **Fallback Logic:**
+
 ```javascript
 {
     fallbackWeight: 145,
@@ -137,6 +152,7 @@ User wants 150 lb total:
 ### **Bulgarian Split Squat → Walking Lunges**
 
 **Original Plan:**
+
 ```javascript
 {
     exercise: 'Bulgarian Split Squat',
@@ -147,6 +163,7 @@ User wants 150 lb total:
 ```
 
 **After Substitution:**
+
 ```javascript
 {
     exercise: 'Walking Lunges',
@@ -158,6 +175,7 @@ User wants 150 lb total:
 ```
 
 **Rest Time Adjustments:**
+
 - Same movement pattern → same rest (0 seconds)
 - Easier movement → less rest (-15 seconds)
 - Harder movement → more rest (+15 seconds)
@@ -167,6 +185,7 @@ User wants 150 lb total:
 ## **Unit Tests** ✅
 
 ### **Exercise Substitution Tests** ✅
+
 ```javascript
 ✅ Basic substitution returns 2 alternatives
 ✅ Dislike filter removes disliked exercises
@@ -176,6 +195,7 @@ User wants 150 lb total:
 ```
 
 ### **Plate Math Tests** ✅
+
 ```javascript
 ✅ US 135 lb: 45 lb bar + 45 per side → 135 lb total
 ✅ US 185 lb: 45 lb bar + 45 + 25 + 10 per side → 185 lb total
@@ -184,6 +204,7 @@ User wants 150 lb total:
 ```
 
 ### **Missing Plate Tests** ✅
+
 ```javascript
 ✅ Suggests next best weight
 ✅ Calculates missing amount
@@ -196,28 +217,30 @@ User wants 150 lb total:
 ## **Usage** ✅
 
 ### **Suggest Substitutions**
+
 ```javascript
 const suggestions = ExerciseAdapter.suggestSubstitutions(
-    'Bulgarian Split Squat',
-    ['walking lunges'], // User dislikes
-    'knee',            // Pain location
-    { equipment: ['dumbbells'] } // Constraints
+  'Bulgarian Split Squat',
+  ['walking lunges'], // User dislikes
+  'knee', // Pain location
+  { equipment: ['dumbbells'] } // Constraints
 );
 
 // Returns:
 {
-    alternatives: [
-        {
-            name: 'Reverse Lunges',
-            rationale: 'Unilateral leg work with reduced forward knee stress',
-            restAdjustment: -15,
-            volumeAdjustment: 1.0
-        }
-    ]
+  alternatives: [
+    {
+      name: 'Reverse Lunges',
+      rationale: 'Unilateral leg work with reduced forward knee stress',
+      restAdjustment: -15,
+      volumeAdjustment: 1.0,
+    },
+  ];
 }
 ```
 
 ### **Format Weight Display**
+
 ```javascript
 const loading = WeightDisplay.calculateLoad(135);
 console.log(loading.instruction);
@@ -228,9 +251,11 @@ console.log(loading.instruction);
 
 ## ✅ **PROMPT 6: COMPLETE**
 
-**Summary**: Frictionless exercise substitutions with practical weight loading that respects goals, constraints, and available equipment.
+**Summary**: Frictionless exercise substitutions with practical weight loading
+that respects goals, constraints, and available equipment.
 
 **Key Features:**
+
 - ✅ 2 alternatives per substitution
 - ✅ Rationale for each alternative
 - ✅ Rest time adjustments
@@ -241,4 +266,5 @@ console.log(loading.instruction);
 - ✅ US and metric support
 - ✅ Plan updates automatically
 
-**Users can now swap exercises seamlessly while maintaining training goals and getting practical loading instructions.** 💪
+**Users can now swap exercises seamlessly while maintaining training goals and
+getting practical loading instructions.** 💪

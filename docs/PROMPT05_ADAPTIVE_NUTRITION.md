@@ -14,7 +14,7 @@
 ✅ Goal-specific protein targets (0.9-1.3 g/lb)  
 ✅ Adaptive macro distribution  
 ✅ Hydration targets  
-✅ Rationale generation in card footer  
+✅ Rationale generation in card footer
 
 ---
 
@@ -23,6 +23,7 @@
 ### **Enhanced Nutrition Calculator** ✅
 
 **Inputs Captured:**
+
 - sex (gender)
 - age
 - height
@@ -35,10 +36,11 @@
 **Calculations:**
 
 1. **BMR (Mifflin-St Jeor)**
+
    ```javascript
    // Without body fat %:
    BMR = (10 × weight) + (6.25 × height) - (5 × age) + gender factor
-   
+
    // With body fat % (Katch-McArdle):
    BMR = 370 + (21.6 × lean mass)
    ```
@@ -64,6 +66,7 @@
 ## **UI Card Features** ✅
 
 **Shows:**
+
 - ✅ Daily calorie target
 - ✅ Protein, carbs, fat (grams and %)
 - ✅ Hydration targets (ml/day)
@@ -72,6 +75,7 @@
 - ✅ **"Why" rationale in footer**
 
 **No Logging UI:**
+
 - ✅ No food entry forms
 - ✅ No meal logging
 - ✅ No calorie tracking interface
@@ -82,6 +86,7 @@
 ## **Deterministic Outputs** ✅
 
 **Fixed Mocks Test:**
+
 ```javascript
 // Male soccer player, muscle building, game day
 Input: { male, 25, 75kg, 180cm, muscle_building goal, game day }
@@ -107,15 +112,18 @@ Output: {
 ## **Body Fat Handling** ✅
 
 **Without Body Fat %:**
+
 - Uses Mifflin-St Jeor equation
 - Baseline BMR calculation
 
 **With Body Fat %:**
+
 - Switches to Katch-McArdle equation
 - Uses lean mass for precision
 - Lower BMR (more accurate for higher body fat)
 
 **Unit Tests:**
+
 ```javascript
 ✅ Male, no body fat → Mifflin-St Jeor: ~1800 cal
 ✅ Male, 15% body fat → Katch-McArdle: ~1700 cal
@@ -128,21 +136,25 @@ Output: {
 ## **Goal Presets** ✅
 
 **Muscle Building:**
+
 - Slight surplus
 - Protein 0.9-1.1 g/lb
 - Higher carbs on training days
 
 **Fat Loss:**
+
 - -300 to -500 kcal deficit
 - Protein 1.2-1.3 g/lb
 - Lower carbs on rest days
 
 **Toning/Maintenance:**
+
 - Maintenance ±100 kcal
 - Protein ~1.0 g/lb
 - Balanced macros
 
 **Athletic Performance:**
+
 - Higher intake on game days (+20%)
 - Protein 1.0 g/lb
 - Carb-focused game nutrition
@@ -183,27 +195,29 @@ Output: {
 ## **Usage** ✅
 
 ### **Calculate Nutrition**
+
 ```javascript
 const plan = await fetch('/.netlify/functions/nutrition-calculator', {
-    method: 'POST',
-    body: JSON.stringify({
-        gender: 'male',
-        age: 25,
-        weight: 75,
-        height: 180,
-        bodyFat: null, // Optional
-        goals: ['muscle_building'],
-        dayType: 'game',
-        sport: 'soccer',
-        activityLevel: 'moderate',
-        weeklyLoad: 5
-    })
+  method: 'POST',
+  body: JSON.stringify({
+    gender: 'male',
+    age: 25,
+    weight: 75,
+    height: 180,
+    bodyFat: null, // Optional
+    goals: ['muscle_building'],
+    dayType: 'game',
+    sport: 'soccer',
+    activityLevel: 'moderate',
+    weeklyLoad: 5,
+  }),
 });
 
 const nutrition = await plan.json();
 ```
 
 ### **Render Card**
+
 ```javascript
 const card = window.NutritionCard.render();
 document.body.appendChild(card);
@@ -213,9 +227,11 @@ document.body.appendChild(card);
 
 ## ✅ **PROMPT 5: COMPLETE**
 
-**Summary**: Adaptive nutrition guidance that adapts to body composition, goals, and training load without requiring food logging.
+**Summary**: Adaptive nutrition guidance that adapts to body composition, goals,
+and training load without requiring food logging.
 
 **Key Features:**
+
 - ✅ BMR with optional body fat adjustment
 - ✅ Goal-based calorie and macro adjustments
 - ✅ Day-type specific nutrition (game/training/rest)
@@ -225,4 +241,5 @@ document.body.appendChild(card);
 - ✅ Card shows targets, tips, and rationale
 - ✅ No logging UI (pure guidance)
 
-**Users now get personalized, adaptive nutrition guidance without the burden of tracking every meal.** 💪
+**Users now get personalized, adaptive nutrition guidance without the burden of
+tracking every meal.** 💪

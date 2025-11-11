@@ -1,16 +1,12 @@
 // GET /users/preferences - Get user preferences with atomic creation
 const { neon } = require('@neondatabase/serverless');
 const jwt = require('jsonwebtoken');
-const {
-  errorResponse,
-  successResponse,
-  sanitizeForLog
-} = require('./utils/user-preferences');
+const { errorResponse, successResponse, sanitizeForLog } = require('./utils/user-preferences');
 
 const { getNeonClient } = require('./utils/connection-pool');
 const sql = getNeonClient();
 
-exports.handler = async (event) => {
+exports.handler = async event => {
   try {
     // Handle CORS preflight
     if (event.httpMethod === 'OPTIONS') {
@@ -19,9 +15,9 @@ exports.handler = async (event) => {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          'Access-Control-Allow-Methods': 'GET, PATCH, OPTIONS'
+          'Access-Control-Allow-Methods': 'GET, PATCH, OPTIONS',
         },
-        body: ''
+        body: '',
       };
     }
 
@@ -71,7 +67,10 @@ exports.handler = async (event) => {
     `;
 
     if (!preferences.length) {
-      console.error('Failed to get/create preferences for user:', sanitizeForLog({ user_id: userId }));
+      console.error(
+        'Failed to get/create preferences for user:',
+        sanitizeForLog({ user_id: userId })
+      );
       return errorResponse(500, 'DB_ERROR', 'Failed to retrieve preferences');
     }
 
@@ -84,9 +83,8 @@ exports.handler = async (event) => {
       sleep_goal_hours: prefs.sleep_goal_hours,
       workout_goal_per_week: prefs.workout_goal_per_week,
       notifications_enabled: prefs.notifications_enabled,
-      theme: prefs.theme
+      theme: prefs.theme,
     });
-
   } catch (error) {
     console.error('GET preferences error:', sanitizeForLog({ error: error.message }));
     return errorResponse(500, 'DB_ERROR', 'Internal server error');

@@ -26,19 +26,23 @@ npm run test:ui
 ### Test: Game Tomorrow
 
 **Steps:**
+
 1. In browser console, run:
+
 ```javascript
 const coordinator = new ExpertCoordinator();
 const context = {
-    user: { sport: 'soccer', position: 'midfielder' },
-    season: 'in-season',
-    schedule: { 
-        upcomingGames: [{ date: new Date(Date.now() + 86400000).toISOString().split('T')[0] }], 
-        daysUntilGame: 1 
-    },
-    readiness: 8,
-    preferences: { trainingMode: 'simple' },
-    constraints: { timeLimit: 45, flags: ['game_safety'] }
+  user: { sport: 'soccer', position: 'midfielder' },
+  season: 'in-season',
+  schedule: {
+    upcomingGames: [
+      { date: new Date(Date.now() + 86400000).toISOString().split('T')[0] },
+    ],
+    daysUntilGame: 1,
+  },
+  readiness: 8,
+  preferences: { trainingMode: 'simple' },
+  constraints: { timeLimit: 45, flags: ['game_safety'] },
 };
 
 const plan = await coordinator.planToday(context);
@@ -46,6 +50,7 @@ console.log(plan);
 ```
 
 **Expected:**
+
 - ✅ No heavy lower body exercises (squats, deadlifts)
 - ✅ Rationale mentions "game tomorrow" or similar
 - ✅ Intensity or volume reduced
@@ -54,14 +59,15 @@ console.log(plan);
 ### Test: Low Readiness
 
 **Steps:**
+
 ```javascript
 const context = {
-    user: { sport: 'soccer', position: 'midfielder' },
-    season: 'in-season',
-    schedule: { upcomingGames: [] },
-    readiness: 3,  // Low readiness
-    preferences: { trainingMode: 'simple' },
-    constraints: { timeLimit: 45, flags: [] }
+  user: { sport: 'soccer', position: 'midfielder' },
+  season: 'in-season',
+  schedule: { upcomingGames: [] },
+  readiness: 3, // Low readiness
+  preferences: { trainingMode: 'simple' },
+  constraints: { timeLimit: 45, flags: [] },
 };
 
 const plan = await coordinator.planToday(context);
@@ -69,6 +75,7 @@ console.log(plan);
 ```
 
 **Expected:**
+
 - ✅ `intensityScale < 0.85` (reduced intensity)
 - ✅ Rationale mentions "readiness" or "recovery"
 - ✅ Warnings include "Low readiness" message
@@ -77,14 +84,15 @@ console.log(plan);
 ### Test: Time-Crunched (20 min)
 
 **Steps:**
+
 ```javascript
 const context = {
-    user: { sport: 'soccer', position: 'midfielder' },
-    season: 'in-season',
-    schedule: { upcomingGames: [] },
-    readiness: 8,
-    preferences: { trainingMode: 'simple', sessionLength: 20 },
-    constraints: { timeLimit: 20, flags: [] }
+  user: { sport: 'soccer', position: 'midfielder' },
+  season: 'in-season',
+  schedule: { upcomingGames: [] },
+  readiness: 8,
+  preferences: { trainingMode: 'simple', sessionLength: 20 },
+  constraints: { timeLimit: 20, flags: [] },
 };
 
 const plan = await coordinator.planToday(context);
@@ -92,6 +100,7 @@ console.log(plan);
 ```
 
 **Expected:**
+
 - ✅ Total duration ≤ 25 minutes
 - ✅ Superset mentioned in notes or rationale
 - ✅ Reduced accessories/finishers
@@ -100,14 +109,15 @@ console.log(plan);
 ### Test: Knee Pain
 
 **Steps:**
+
 ```javascript
 const context = {
-    user: { sport: 'soccer', position: 'midfielder' },
-    season: 'in-season',
-    schedule: { upcomingGames: [] },
-    readiness: 8,
-    preferences: { trainingMode: 'simple' },
-    constraints: { timeLimit: 45, flags: ['knee_pain'], painLocation: 'knee' }
+  user: { sport: 'soccer', position: 'midfielder' },
+  season: 'in-season',
+  schedule: { upcomingGames: [] },
+  readiness: 8,
+  preferences: { trainingMode: 'simple' },
+  constraints: { timeLimit: 45, flags: ['knee_pain'], painLocation: 'knee' },
 };
 
 const plan = await coordinator.planToday(context);
@@ -115,6 +125,7 @@ console.log(plan);
 ```
 
 **Expected:**
+
 - ✅ NO Bulgarian Split Squats in any block
 - ✅ Exercises include safe alternatives (Walking Lunges, etc.)
 - ✅ Rationale mentions "safe" or "knee"
@@ -123,14 +134,15 @@ console.log(plan);
 ### Test: Simple Mode
 
 **Steps:**
+
 ```javascript
 const context = {
-    user: { sport: 'soccer', position: 'midfielder' },
-    season: 'in-season',
-    schedule: { upcomingGames: [] },
-    readiness: 8,
-    preferences: { trainingMode: 'simple' },
-    constraints: { timeLimit: 45, flags: [] }
+  user: { sport: 'soccer', position: 'midfielder' },
+  season: 'in-season',
+  schedule: { upcomingGames: [] },
+  readiness: 8,
+  preferences: { trainingMode: 'simple' },
+  constraints: { timeLimit: 45, flags: [] },
 };
 
 const plan = await coordinator.planToday(context);
@@ -138,6 +150,7 @@ console.log(plan);
 ```
 
 **Expected:**
+
 - ✅ `plan.blocks.length <= 2`
 - ✅ Only Warm-up + Main (or just Main)
 - ✅ No complex accessories
@@ -146,14 +159,15 @@ console.log(plan);
 ### Test: Aesthetic Focus
 
 **Steps:**
+
 ```javascript
 const context = {
-    user: { sport: 'soccer', position: 'midfielder' },
-    season: 'in-season',
-    schedule: { upcomingGames: [] },
-    readiness: 8,
-    preferences: { trainingMode: 'advanced', aestheticFocus: 'v_taper' },
-    constraints: { timeLimit: 45, flags: [] }
+  user: { sport: 'soccer', position: 'midfielder' },
+  season: 'in-season',
+  schedule: { upcomingGames: [] },
+  readiness: 8,
+  preferences: { trainingMode: 'advanced', aestheticFocus: 'v_taper' },
+  constraints: { timeLimit: 45, flags: [] },
 };
 
 const plan = await coordinator.planToday(context);
@@ -161,6 +175,7 @@ console.log(plan);
 ```
 
 **Expected:**
+
 - ✅ Accessories block present
 - ✅ Exercises include V-taper work (lateral raises, lat pulldowns, etc.)
 - ✅ Rationale mentions aesthetic focus
@@ -171,8 +186,9 @@ console.log(plan);
 2. Open browser console (F12)
 3. The test script should be loaded automatically
 4. Run:
+
 ```javascript
-runExpertCoordinatorTests()
+runExpertCoordinatorTests();
 ```
 
 This will run all 5 tests automatically and report results.
@@ -180,11 +196,12 @@ This will run all 5 tests automatically and report results.
 ## Checking SafeLogger Output
 
 In browser console, you should see:
+
 ```
-SafeLogger.info('Coordinator decision', { 
-    readiness: 8, 
-    mode: 'simple', 
-    gameDay: false 
+SafeLogger.info('Coordinator decision', {
+    readiness: 8,
+    mode: 'simple',
+    gameDay: false
 })
 ```
 
@@ -200,14 +217,19 @@ SafeLogger.info('Coordinator decision', {
 ## Troubleshooting
 
 ### "ExpertCoordinator not loaded"
+
 **Solution:** Ensure `ExpertCoordinator.js` is included in `index.html`
 
 ### "ExerciseAdapter not loaded"
+
 **Solution:** Ensure `ExerciseAdapter.js` is included in `index.html`
 
 ### "TypeError: Cannot read property..."
-**Solution:** Check that context object has all required fields (user, schedule, readiness, preferences, constraints)
+
+**Solution:** Check that context object has all required fields (user, schedule,
+readiness, preferences, constraints)
 
 ### "Plan has empty blocks"
-**Solution:** Verify expert coaches (StrengthCoach, SportsCoach, etc.) are loaded and returning valid proposals
 
+**Solution:** Verify expert coaches (StrengthCoach, SportsCoach, etc.) are
+loaded and returning valid proposals

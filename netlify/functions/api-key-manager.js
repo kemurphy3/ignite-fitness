@@ -4,11 +4,11 @@ const {
   checkRateLimit,
   errorResponse,
   successResponse,
-  preflightResponse
+  preflightResponse,
 } = require('./_base');
 const crypto = require('crypto');
 
-exports.handler = async (event) => {
+exports.handler = async event => {
   // Handle preflight requests
   if (event.httpMethod === 'OPTIONS') {
     return preflightResponse();
@@ -40,9 +40,9 @@ exports.handler = async (event) => {
       const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex');
 
       // Calculate expiry
-      const expiresAt = expires_in_days ?
-        new Date(Date.now() + (expires_in_days * 24 * 60 * 60 * 1000)) :
-        null;
+      const expiresAt = expires_in_days
+        ? new Date(Date.now() + expires_in_days * 24 * 60 * 60 * 1000)
+        : null;
 
       // Insert API key
       const result = await sql`
@@ -51,15 +51,17 @@ exports.handler = async (event) => {
         RETURNING id, name, created_at, expires_at
       `;
 
-      return successResponse({
-        id: result[0].id,
-        api_key: apiKey, // Only returned once during creation
-        name: result[0].name,
-        user_id,
-        created_at: result[0].created_at,
-        expires_at: result[0].expires_at
-      }, 201);
-
+      return successResponse(
+        {
+          id: result[0].id,
+          api_key: apiKey, // Only returned once during creation
+          name: result[0].name,
+          user_id,
+          created_at: result[0].created_at,
+          expires_at: result[0].expires_at,
+        },
+        201
+      );
     } else if (event.httpMethod === 'GET') {
       // List API keys for a user
       const { user_id } = event.queryStringParameters || {};
@@ -83,10 +85,9 @@ exports.handler = async (event) => {
           last_used_at: key.last_used_at,
           created_at: key.created_at,
           expires_at: key.expires_at,
-          is_active: key.is_active
-        }))
+          is_active: key.is_active,
+        })),
       });
-
     } else if (event.httpMethod === 'PUT') {
       // Update API key (activate/deactivate)
       const { key_id, is_active } = body;
@@ -110,9 +111,8 @@ exports.handler = async (event) => {
         id: result[0].id,
         name: result[0].name,
         is_active: result[0].is_active,
-        updated_at: result[0].updated_at
+        updated_at: result[0].updated_at,
       });
-
     } else if (event.httpMethod === 'DELETE') {
       // Delete API key
       const { key_id } = body;
@@ -135,21 +135,21 @@ exports.handler = async (event) => {
         message: 'API key deleted successfully',
         deleted_key: {
           id: result[0].id,
-          name: result[0].name
-        }
+          name: result[0].name,
+        },
       });
-
     } else {
       return errorResponse(405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
     }
-
   } catch (error) {
     console.error('API Key Manager Error:', error);
 
     // Handle database connection errors
-    if (error.message.includes('DATABASE_URL not configured') ||
-        error.message.includes('connection') ||
-        error.message.includes('timeout')) {
+    if (
+      error.message.includes('DATABASE_URL not configured') ||
+      error.message.includes('connection') ||
+      error.message.includes('timeout')
+    ) {
       return errorResponse(503, 'SERVICE_UNAVAILABLE', 'Database service unavailable');
     }
 

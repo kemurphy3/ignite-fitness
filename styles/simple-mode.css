@@ -11,7 +11,7 @@
   --simple-text: #2d3748;
   --simple-border: #e2e8f0;
   --simple-secondary: #edf2f7;
-  
+
   /* Advanced mode colors */
   --advanced-primary: #805ad5;
   --advanced-bg: #1a202c;
@@ -191,7 +191,7 @@ body.advanced-mode-enabled {
   background: white;
   border-radius: 8px;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* Simple Mode Toggle */
@@ -281,7 +281,8 @@ body.advanced-mode-enabled {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
   }
   50% {
@@ -299,15 +300,15 @@ body.advanced-mode-enabled {
   .quick-actions {
     grid-template-columns: 1fr;
   }
-  
+
   .simple-stats {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .floating-help {
     bottom: 100px;
     right: 16px;
@@ -323,4 +324,3 @@ body.advanced-mode-enabled {
     background: linear-gradient(135deg, #3182ce 0%, #553c9a 100%);
   }
 }
-

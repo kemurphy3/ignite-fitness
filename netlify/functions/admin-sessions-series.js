@@ -8,18 +8,15 @@ const {
   validateDateRange,
   validateTimezone,
   withTimeout,
-  successResponse
+  successResponse,
 } = require('./utils/admin-auth');
 
-const {
-  safeQuery,
-  validateBucket
-} = require('./utils/safe-query');
+const { safeQuery, validateBucket } = require('./utils/safe-query');
 
 const { getNeonClient } = require('./utils/connection-pool');
 const sql = getNeonClient();
 
-exports.handler = async (event) => {
+exports.handler = async event => {
   const startTime = Date.now();
   const requestId = crypto.randomUUID();
 
@@ -112,24 +109,35 @@ exports.handler = async (event) => {
     });
 
     // Calculate summary with privacy
-    const summary = series.reduce((acc, row) => ({
-      total_sessions: acc.total_sessions + row.session_count,
-      total_users: Math.max(acc.total_users, row.unique_users_raw || 0),
-      completion_rate: null // Calculate after
-    }), { total_sessions: 0, total_users: 0 });
+    const summary = series.reduce(
+      (acc, row) => ({
+        total_sessions: acc.total_sessions + row.session_count,
+        total_users: Math.max(acc.total_users, row.unique_users_raw || 0),
+        completion_rate: null, // Calculate after
+      }),
+      { total_sessions: 0, total_users: 0 }
+    );
 
     const totalCompleted = series.reduce((sum, row) => sum + row.completed_count, 0);
-    summary.completion_rate = summary.total_sessions > 0
-      ? Math.round((totalCompleted / summary.total_sessions) * 100) / 100
-      : null;
+    summary.completion_rate =
+      summary.total_sessions > 0
+        ? Math.round((totalCompleted / summary.total_sessions) * 100) / 100
+        : null;
 
     // Apply privacy threshold to summary
     if (summary.total_users < 5) {
       summary.total_users = null;
     }
 
-    await auditLog(adminId, '/admin/sessions/series', 'GET',
-      { from, to, bucket, timezone }, 200, Date.now() - startTime, requestId);
+    await auditLog(
+      adminId,
+      '/admin/sessions/series',
+      'GET',
+      { from, to, bucket, timezone },
+      200,
+      Date.now() - startTime,
+      requestId
+    );
 
     return successResponse(
       {
@@ -138,28 +146,39 @@ exports.handler = async (event) => {
           session_count: row.session_count,
           unique_users: row.unique_users,
           completed_count: row.meets_privacy_threshold ? row.completed_count : null,
-          privacy_applied: !row.meets_privacy_threshold
+          privacy_applied: !row.meets_privacy_threshold,
         })),
-        summary
+        summary,
       },
       {
         timezone: validatedTimezone,
         bucket,
         privacy_threshold: 5,
-        response_time_ms: Date.now() - startTime
+        response_time_ms: Date.now() - startTime,
       },
       requestId,
       'private, max-age=300'
     );
-
   } catch (error) {
-    const statusCode = error.message.includes('Authentication') ? 401 :
-                      error.message.includes('Admin') ? 403 :
-                      error.message.includes('Invalid date') || error.message.includes('Invalid timezone') ? 400 :
-                      error.message.includes('Query timeout') ? 500 : 500;
+    const statusCode = error.message.includes('Authentication')
+      ? 401
+      : error.message.includes('Admin')
+        ? 403
+        : error.message.includes('Invalid date') || error.message.includes('Invalid timezone')
+          ? 400
+          : error.message.includes('Query timeout')
+            ? 500
+            : 500;
 
-    await auditLog(null, '/admin/sessions/series', 'GET',
-      event.queryStringParameters, statusCode, Date.now() - startTime, requestId);
+    await auditLog(
+      null,
+      '/admin/sessions/series',
+      'GET',
+      event.queryStringParameters,
+      statusCode,
+      Date.now() - startTime,
+      requestId
+    );
 
     if (error.message.includes('Authentication failed')) {
       return errorResponse(401, 'UNAUTHORIZED', 'Invalid or expired token', requestId);

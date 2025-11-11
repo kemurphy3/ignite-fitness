@@ -9,7 +9,7 @@ const { createLogger } = require('./utils/safe-logging');
 // Create safe logger for this context
 const logger = createLogger('strava-oauth-exchange');
 
-exports.handler = async (event) => {
+exports.handler = async event => {
   // Handle preflight requests
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -17,9 +17,9 @@ exports.handler = async (event) => {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type, X-API-Key',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS'
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
       },
-      body: ''
+      body: '',
     };
   }
 
@@ -27,7 +27,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 405,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Method not allowed' })
+      body: JSON.stringify({ error: 'Method not allowed' }),
     };
   }
 
@@ -44,8 +44,8 @@ exports.handler = async (event) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           error: 'Missing required parameters',
-          details: { code: !!code, userId: !!userId }
-        })
+          details: { code: !!code, userId: !!userId },
+        }),
       };
     }
 
@@ -56,13 +56,13 @@ exports.handler = async (event) => {
         statusCode: 429,
         headers: {
           'Content-Type': 'application/json',
-          ...getRateLimitHeaders(rateLimitResult)
+          ...getRateLimitHeaders(rateLimitResult),
         },
         body: JSON.stringify({
           error: 'Rate limit exceeded',
           reason: rateLimitResult.reason,
-          retryAfter: rateLimitResult.retryAfter
-        })
+          retryAfter: rateLimitResult.retryAfter,
+        }),
       };
     }
 
@@ -75,8 +75,8 @@ exports.handler = async (event) => {
           client_id: process.env.STRAVA_CLIENT_ID,
           client_secret: process.env.STRAVA_CLIENT_SECRET,
           code,
-          grant_type: 'authorization_code'
-        })
+          grant_type: 'authorization_code',
+        }),
       });
 
       if (!response.ok) {
@@ -98,11 +98,16 @@ exports.handler = async (event) => {
     }
 
     // Encrypt tokens
-    const { encrypted: encryptedAccess, keyVersion } = await encryption.encrypt(tokens.access_token);
-    const { encrypted: encryptedRefresh } = await encryption.encrypt(tokens.refresh_token, keyVersion);
+    const { encrypted: encryptedAccess, keyVersion } = await encryption.encrypt(
+      tokens.access_token
+    );
+    const { encrypted: encryptedRefresh } = await encryption.encrypt(
+      tokens.refresh_token,
+      keyVersion
+    );
 
     // Store with transaction
-    await withTransaction(sql, async (tx) => {
+    await withTransaction(sql, async tx => {
       await tx`
         INSERT INTO strava_tokens (
           user_id, encrypted_access_token, encrypted_refresh_token,
@@ -135,7 +140,9 @@ exports.handler = async (event) => {
           WHERE id = ${userId}
         `;
       } catch (updateError) {
-        logger.warn('Failed to persist Strava connection status on users table', { error: updateError.message });
+        logger.warn('Failed to persist Strava connection status on users table', {
+          error: updateError.message,
+        });
       }
 
       await auditLog(tx, {
@@ -147,8 +154,8 @@ exports.handler = async (event) => {
         metadata: {
           athlete_id: tokens.athlete?.id,
           scope: tokens.scope,
-          expires_in: tokens.expires_in
-        }
+          expires_in: tokens.expires_in,
+        },
       });
     });
 
@@ -156,7 +163,7 @@ exports.handler = async (event) => {
     logger.oauthExchange({
       userId,
       athleteId: tokens.athlete?.id,
-      scope: tokens.scope
+      scope: tokens.scope,
     });
 
     return {
@@ -164,22 +171,21 @@ exports.handler = async (event) => {
       headers: {
         'Content-Type': 'application/json',
         'X-Circuit-Breaker-State': stravaOAuthCircuit.getStatus().state,
-        ...getRateLimitHeaders(rateLimitResult)
+        ...getRateLimitHeaders(rateLimitResult),
       },
       body: JSON.stringify({
         success: true,
         expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
         athlete_id: tokens.athlete?.id,
-        scope: tokens.scope
-      })
+        scope: tokens.scope,
+      }),
     };
-
   } catch (error) {
     // Log error with sanitized data
     logger.error('OAuth exchange failed', {
       error_type: error.constructor.name,
       error_message: error.message,
-      circuit_breaker_state: stravaOAuthCircuit.getStatus().state
+      circuit_breaker_state: stravaOAuthCircuit.getStatus().state,
     });
 
     // Log the error
@@ -194,8 +200,8 @@ exports.handler = async (event) => {
         user_agent: event.headers['user-agent'],
         metadata: {
           circuit_breaker_state: stravaOAuthCircuit.getStatus().state,
-          error_type: error.constructor.name
-        }
+          error_type: error.constructor.name,
+        },
       });
     } catch (auditError) {
       logger.error('Failed to log audit', { error: auditError.message });
@@ -207,8 +213,8 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         error: 'Token exchange failed',
         retry: stravaOAuthCircuit.getStatus().state !== 'OPEN',
-        circuit_state: stravaOAuthCircuit.getStatus().state
-      })
+        circuit_state: stravaOAuthCircuit.getStatus().state,
+      }),
     };
   }
 };
@@ -216,7 +222,7 @@ exports.handler = async (event) => {
 async function validateStravaToken(accessToken) {
   try {
     const response = await fetch('https://www.strava.com/api/v3/athlete', {
-      headers: { 'Authorization': `Bearer ${accessToken}` }
+      headers: { Authorization: `Bearer ${accessToken}` },
     });
     return response.ok;
   } catch (error) {

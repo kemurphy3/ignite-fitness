@@ -1,7 +1,10 @@
 # Special Phase Configuration Example
 
 ## Overview
-The seasonal system supports custom date-based phases for playoffs, tournaments, and other special periods. This allows fine-tuned periodization even within the main season.
+
+The seasonal system supports custom date-based phases for playoffs, tournaments,
+and other special periods. This allows fine-tuned periodization even within the
+main season.
 
 ## Configuration Example
 
@@ -9,38 +12,40 @@ The seasonal system supports custom date-based phases for playoffs, tournaments,
 
 ```javascript
 const userProfile = {
-    seasonPhase: 'in', // Main phase: In-Season
-    
-    seasonCalendar: {
-        // Define special sub-phases
-        specialPhases: [
-            {
-                name: 'Playoff Run',
-                start: '2025-04-01',
-                end: '2025-04-30',
-                peakPerformance: true,
-                tapering: false
-            },
-            {
-                name: 'Championship Tournament',
-                start: '2025-05-15',
-                end: '2025-05-21',
-                peakPerformance: true,
-                tapering: true // Peak taper
-            }
-        ]
-    }
+  seasonPhase: 'in', // Main phase: In-Season
+
+  seasonCalendar: {
+    // Define special sub-phases
+    specialPhases: [
+      {
+        name: 'Playoff Run',
+        start: '2025-04-01',
+        end: '2025-04-30',
+        peakPerformance: true,
+        tapering: false,
+      },
+      {
+        name: 'Championship Tournament',
+        start: '2025-05-15',
+        end: '2025-05-21',
+        peakPerformance: true,
+        tapering: true, // Peak taper
+      },
+    ],
+  },
 };
 ```
 
 ## How It Works
 
 ### During Regular In-Season
+
 - Normal game proximity rules apply
 - Weekly deload on week 4
 - Standard maintenance focus
 
 ### During Playoff Run (April 1-30)
+
 - System detects custom phase
 - Peak performance mode activated
 - Volume modifier: 0.85 (slightly reduced)
@@ -48,6 +53,7 @@ const userProfile = {
 - Rationale: "Playoff Run: Peak performance focus"
 
 ### During Championship Tournament (May 15-21)
+
 - System detects custom phase
 - Peak performance + tapering
 - Volume modifier: 0.7 (more aggressive taper)
@@ -66,7 +72,11 @@ const userProfile = {
 
 ```javascript
 // In ExpertCoordinator
-const context = await seasonalPrograms.getSeasonContext(today, userProfile, calendar);
+const context = await seasonalPrograms.getSeasonContext(
+  today,
+  userProfile,
+  calendar
+);
 
 // Returns:
 // {
@@ -95,11 +105,6 @@ const context = await seasonalPrograms.getSeasonContext(today, userProfile, cale
 
 ## Implementation Status
 
-✅ Special phase detection
-✅ Peak performance mode
-✅ Tapering protocol  
-✅ Volume modifier adjustment
-✅ Rationale generation
-✅ Skips regular deload in special phase
-✅ Works within any base phase (off/pre/in/post)
-
+✅ Special phase detection ✅ Peak performance mode ✅ Tapering protocol  
+✅ Volume modifier adjustment ✅ Rationale generation ✅ Skips regular deload in
+special phase ✅ Works within any base phase (off/pre/in/post)

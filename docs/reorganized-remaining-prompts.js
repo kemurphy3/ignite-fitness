@@ -15,7 +15,9 @@ console.log('   🎯 Goal: Clear implementation order for remaining work\n');
 
 console.log('🔍 IMPLEMENTATION STATUS REVIEW:\n');
 console.log('   ✅ COMPLETED:');
-console.log('   • Critical Fixes 1,2,3,4: Compound scaling, null checks, safety priority, empty workouts');
+console.log(
+  '   • Critical Fixes 1,2,3,4: Compound scaling, null checks, safety priority, empty workouts'
+);
 console.log('   • T2-1: Unit Tests (comprehensive test suite)');
 console.log('   • T2-2: Loading States (ChartManager + accessibility)');
 console.log('   • T2-3: Data Sync (StorageManager progressive sync)');
@@ -28,52 +30,52 @@ console.log('=' * 80);
 console.log('Issues that could block beta success or cause safety concerns\n');
 
 const tier2B = [
-    {
-        id: 'T2B-1',
-        original: 'Prompt 19',
-        title: 'Load Calculation Bounds Checking',
-        priority: 'HIGH',
-        betaRisk: 'HIGH - Could cause app crashes',
-        description: 'Add bounds checking for ATL/CTL calculations to prevent crashes',
-        scope: 'js/modules/load/LoadCalculator.js'
-    },
-    {
-        id: 'T2B-2', 
-        original: 'Prompt 20',
-        title: 'Exercise Alternative Fallbacks',
-        priority: 'HIGH',
-        betaRisk: 'HIGH - Users get unsafe exercises when injured',
-        description: 'Add fallback system when no specific alternatives exist for injured body part',
-        scope: 'js/modules/data/ExerciseAdapter.js'
-    },
-    {
-        id: 'T2B-3',
-        original: 'Prompt 3',
-        title: 'Mandatory Context Validation',
-        priority: 'MEDIUM-HIGH',
-        betaRisk: 'MEDIUM - System instability from invalid data',
-        description: 'Remove dataValidator bypass, make context validation mandatory',
-        scope: 'js/modules/ai/ExpertCoordinator.js:108-115'
-    },
-    {
-        id: 'T2B-4',
-        original: 'Prompt 17',
-        title: 'Recovery Day Collision Fix', 
-        priority: 'MEDIUM',
-        betaRisk: 'MEDIUM - User confusion in Simple Mode',
-        description: 'Fix Simple Mode + Recovery Day interaction with user notification',
-        scope: 'js/modules/ai/ExpertCoordinator.js:585-617'
-    }
+  {
+    id: 'T2B-1',
+    original: 'Prompt 19',
+    title: 'Load Calculation Bounds Checking',
+    priority: 'HIGH',
+    betaRisk: 'HIGH - Could cause app crashes',
+    description: 'Add bounds checking for ATL/CTL calculations to prevent crashes',
+    scope: 'js/modules/load/LoadCalculator.js',
+  },
+  {
+    id: 'T2B-2',
+    original: 'Prompt 20',
+    title: 'Exercise Alternative Fallbacks',
+    priority: 'HIGH',
+    betaRisk: 'HIGH - Users get unsafe exercises when injured',
+    description: 'Add fallback system when no specific alternatives exist for injured body part',
+    scope: 'js/modules/data/ExerciseAdapter.js',
+  },
+  {
+    id: 'T2B-3',
+    original: 'Prompt 3',
+    title: 'Mandatory Context Validation',
+    priority: 'MEDIUM-HIGH',
+    betaRisk: 'MEDIUM - System instability from invalid data',
+    description: 'Remove dataValidator bypass, make context validation mandatory',
+    scope: 'js/modules/ai/ExpertCoordinator.js:108-115',
+  },
+  {
+    id: 'T2B-4',
+    original: 'Prompt 17',
+    title: 'Recovery Day Collision Fix',
+    priority: 'MEDIUM',
+    betaRisk: 'MEDIUM - User confusion in Simple Mode',
+    description: 'Fix Simple Mode + Recovery Day interaction with user notification',
+    scope: 'js/modules/ai/ExpertCoordinator.js:585-617',
+  },
 ];
 
 console.log('📋 TIER 2B PROMPTS:\n');
 
 tier2B.forEach((prompt, index) => {
-    console.log(`${index + 1}. 🚨 ${prompt.title} (${prompt.original})`);
-    console.log(`   ID: ${prompt.id} | Priority: ${prompt.priority}`);
-    console.log(`   Beta Risk: ${prompt.betaRisk}`);
-    console.log(`   Description: ${prompt.description}`);
-    console.log(`   Scope: ${prompt.scope}\n`);
+  console.log(`${index + 1}. 🚨 ${prompt.title} (${prompt.original})`);
+  console.log(`   ID: ${prompt.id} | Priority: ${prompt.priority}`);
+  console.log(`   Beta Risk: ${prompt.betaRisk}`);
+  console.log(`   Description: ${prompt.description}`);
+  console.log(`   Scope: ${prompt.scope}\n`);
 });
 
 console.log('🎯 DETAILED TIER 2B CURSOR PROMPTS:\n');
@@ -88,7 +90,9 @@ console.log('2. Cap extreme ratios: Math.min(Math.max(ratio, 0.1), 10.0)');
 console.log('3. Prevent division by zero in TSB calculations');
 console.log('4. Add logging for bound violations with context');
 console.log('5. Implement graceful fallback to conservative load estimates');
-console.log('This prevents crashes from negative values and infinite loops in load-based adjustments.');
+console.log(
+  'This prevents crashes from negative values and infinite loops in load-based adjustments.'
+);
 console.log('```\n');
 
 console.log('=' * 70);
@@ -96,8 +100,12 @@ console.log('🏃 PROMPT T2B-2: EXERCISE ALTERNATIVE FALLBACKS');
 console.log('=' * 70);
 console.log('```');
 console.log('Add exercise alternative fallback system in js/modules/data/ExerciseAdapter.js:');
-console.log('1. When no specific alternatives exist for injured body part, provide generic alternatives');
-console.log('2. Create fallback mapping: knee injury → seated exercises, shoulder injury → lower body focus');
+console.log(
+  '1. When no specific alternatives exist for injured body part, provide generic alternatives'
+);
+console.log(
+  '2. Create fallback mapping: knee injury → seated exercises, shoulder injury → lower body focus'
+);
 console.log('3. Add bodyweight alternative database for common exercises');
 console.log('4. Implement progressive fallback: specific → body-part → generic → bodyweight');
 console.log('5. Log fallback decisions for transparency');
@@ -121,7 +129,9 @@ console.log('=' * 70);
 console.log('🛌 PROMPT T2B-4: RECOVERY DAY COLLISION FIX');
 console.log('=' * 70);
 console.log('```');
-console.log('Fix Simple Mode + Recovery Day interaction in js/modules/ai/ExpertCoordinator.js:585-617:');
+console.log(
+  'Fix Simple Mode + Recovery Day interaction in js/modules/ai/ExpertCoordinator.js:585-617:'
+);
 console.log('1. Detect when recovery day creates minimal workout in Simple Mode');
 console.log('2. Add user notification: "Recovery day recommended - light activity planned"');
 console.log('3. Provide option to override with normal workout if user prefers');
@@ -136,47 +146,47 @@ console.log('=' * 80);
 console.log('Essential UX improvements for professional app experience\n');
 
 const tier3A = [
-    {
-        id: 'T3A-1',
-        original: 'Prompt 18',
-        title: 'Readiness Inference Transparency',
-        priority: 'MEDIUM',
-        description: 'Show users when readiness is estimated vs explicitly provided',
-        scope: 'js/modules/ai/ExpertCoordinator.js:129-144'
-    },
-    {
-        id: 'T3A-2',
-        original: 'Prompt 13', 
-        title: 'Simple Mode UI Indicators',
-        priority: 'MEDIUM',
-        description: 'Add visible Simple Mode toggle and explanation in dashboard',
-        scope: 'js/modules/ui/SimpleModeManager.js'
-    },
-    {
-        id: 'T3A-3',
-        original: 'Prompt 5',
-        title: 'Progress Chart Rendering',
-        priority: 'MEDIUM',
-        description: 'Implement basic progress visualization for strength and consistency',
-        scope: 'js/modules/progress/ProgressRenderer.js'
-    },
-    {
-        id: 'T3A-4',
-        original: 'Prompt 9',
-        title: 'Onboarding Goal Selection',
-        priority: 'MEDIUM',
-        description: 'Complete goal selection wizard with follow-up questions',
-        scope: 'js/modules/onboarding/OnboardingManager.js'
-    }
+  {
+    id: 'T3A-1',
+    original: 'Prompt 18',
+    title: 'Readiness Inference Transparency',
+    priority: 'MEDIUM',
+    description: 'Show users when readiness is estimated vs explicitly provided',
+    scope: 'js/modules/ai/ExpertCoordinator.js:129-144',
+  },
+  {
+    id: 'T3A-2',
+    original: 'Prompt 13',
+    title: 'Simple Mode UI Indicators',
+    priority: 'MEDIUM',
+    description: 'Add visible Simple Mode toggle and explanation in dashboard',
+    scope: 'js/modules/ui/SimpleModeManager.js',
+  },
+  {
+    id: 'T3A-3',
+    original: 'Prompt 5',
+    title: 'Progress Chart Rendering',
+    priority: 'MEDIUM',
+    description: 'Implement basic progress visualization for strength and consistency',
+    scope: 'js/modules/progress/ProgressRenderer.js',
+  },
+  {
+    id: 'T3A-4',
+    original: 'Prompt 9',
+    title: 'Onboarding Goal Selection',
+    priority: 'MEDIUM',
+    description: 'Complete goal selection wizard with follow-up questions',
+    scope: 'js/modules/onboarding/OnboardingManager.js',
+  },
 ];
 
 console.log('📋 TIER 3A PROMPTS:\n');
 
 tier3A.forEach((prompt, index) => {
-    console.log(`${index + 1}. 🎨 ${prompt.title} (${prompt.original})`);
-    console.log(`   ID: ${prompt.id} | Priority: ${prompt.priority}`);
-    console.log(`   Description: ${prompt.description}`);
-    console.log(`   Scope: ${prompt.scope}\n`);
+  console.log(`${index + 1}. 🎨 ${prompt.title} (${prompt.original})`);
+  console.log(`   ID: ${prompt.id} | Priority: ${prompt.priority}`);
+  console.log(`   Description: ${prompt.description}`);
+  console.log(`   Scope: ${prompt.scope}\n`);
 });
 
 console.log('🎯 DETAILED TIER 3A CURSOR PROMPTS:\n');
@@ -185,10 +195,14 @@ console.log('=' * 70);
 console.log('📊 PROMPT T3A-1: READINESS INFERENCE TRANSPARENCY');
 console.log('=' * 70);
 console.log('```');
-console.log('Add transparency for inferred readiness in js/modules/ai/ExpertCoordinator.js:129-144:');
+console.log(
+  'Add transparency for inferred readiness in js/modules/ai/ExpertCoordinator.js:129-144:'
+);
 console.log('1. Add readiness confidence score (0.0-1.0) based on data recency and completeness');
 console.log('2. Display UI indicator: "Estimated" vs "Measured" readiness with confidence level');
-console.log('3. Add tooltip explaining: "Based on sleep/HRV data" vs "Estimated from training load"');
+console.log(
+  '3. Add tooltip explaining: "Based on sleep/HRV data" vs "Estimated from training load"'
+);
 console.log('4. Provide option for user to override estimated readiness');
 console.log('5. Store user overrides to improve future estimation accuracy');
 console.log('Builds user trust by explaining how readiness recommendations are generated.');
@@ -226,7 +240,9 @@ console.log('🎯 PROMPT T3A-4: ONBOARDING GOAL SELECTION');
 console.log('=' * 70);
 console.log('```');
 console.log('Complete goal selection wizard in js/modules/onboarding/OnboardingManager.js:');
-console.log('1. Add goal options: weight loss, muscle gain, endurance, sport-specific, general fitness');
+console.log(
+  '1. Add goal options: weight loss, muscle gain, endurance, sport-specific, general fitness'
+);
 console.log('2. Implement follow-up questions based on goal (target weight, sport type, timeline)');
 console.log('3. Create goal-specific workout plan templates and coaching emphasis');
 console.log('4. Add progress tracking metrics aligned with selected goals');
@@ -241,39 +257,39 @@ console.log('=' * 80);
 console.log('Code quality and system improvements for professional deployment\n');
 
 const tier3B = [
-    {
-        id: 'T3B-1',
-        original: 'Prompt 10',
-        title: 'Unified Game Day Detection Service',
-        priority: 'MEDIUM',
-        description: 'Standardize game detection across multiple coaching modules',
-        scope: 'Create js/modules/schedule/GameDayService.js'
-    },
-    {
-        id: 'T3B-2',
-        original: 'Prompt 14',
-        title: 'Data Export Implementation',
-        priority: 'LOW-MEDIUM',
-        description: 'Add CSV/JSON export for workout history and progress metrics',
-        scope: 'js/modules/storage/StorageManager.js'
-    },
-    {
-        id: 'T3B-3',
-        original: 'Prompt 15',
-        title: 'Rest Timer Enhancement',
-        priority: 'LOW-MEDIUM',
-        description: 'Enhance rest timer with audio alerts and configurable periods',
-        scope: 'js/modules/ui/WorkoutTimer.js'
-    }
+  {
+    id: 'T3B-1',
+    original: 'Prompt 10',
+    title: 'Unified Game Day Detection Service',
+    priority: 'MEDIUM',
+    description: 'Standardize game detection across multiple coaching modules',
+    scope: 'Create js/modules/schedule/GameDayService.js',
+  },
+  {
+    id: 'T3B-2',
+    original: 'Prompt 14',
+    title: 'Data Export Implementation',
+    priority: 'LOW-MEDIUM',
+    description: 'Add CSV/JSON export for workout history and progress metrics',
+    scope: 'js/modules/storage/StorageManager.js',
+  },
+  {
+    id: 'T3B-3',
+    original: 'Prompt 15',
+    title: 'Rest Timer Enhancement',
+    priority: 'LOW-MEDIUM',
+    description: 'Enhance rest timer with audio alerts and configurable periods',
+    scope: 'js/modules/ui/WorkoutTimer.js',
+  },
 ];
 
 console.log('📋 TIER 3B PROMPTS:\n');
 
 tier3B.forEach((prompt, index) => {
-    console.log(`${index + 1}. 🔧 ${prompt.title} (${prompt.original})`);
-    console.log(`   ID: ${prompt.id} | Priority: ${prompt.priority}`);
-    console.log(`   Description: ${prompt.description}`);
-    console.log(`   Scope: ${prompt.scope}\n`);
+  console.log(`${index + 1}. 🔧 ${prompt.title} (${prompt.original})`);
+  console.log(`   ID: ${prompt.id} | Priority: ${prompt.priority}`);
+  console.log(`   Description: ${prompt.description}`);
+  console.log(`   Scope: ${prompt.scope}\n`);
 });
 
 console.log('🎯 DETAILED TIER 3B CURSOR PROMPTS:\n');
@@ -283,7 +299,9 @@ console.log('🗓️  PROMPT T3B-1: UNIFIED GAME DAY DETECTION SERVICE');
 console.log('=' * 70);
 console.log('```');
 console.log('Create unified game scheduling service in js/modules/schedule/GameDayService.js:');
-console.log('1. Standardize game detection across SportsCoach, SeasonalPrograms, and ExpertCoordinator');
+console.log(
+  '1. Standardize game detection across SportsCoach, SeasonalPrograms, and ExpertCoordinator'
+);
 console.log('2. Create single data structure for game/competition scheduling');
 console.log('3. Implement recurring game patterns (weekly league, tournament schedules)');
 console.log('4. Add manual game entry with date/time and importance level');
@@ -311,7 +329,9 @@ console.log('⏰ PROMPT T3B-3: REST TIMER ENHANCEMENT');
 console.log('=' * 70);
 console.log('```');
 console.log('Enhance rest timer in js/modules/ui/WorkoutTimer.js:');
-console.log('1. Add configurable rest periods based on exercise type (strength: 2-3min, endurance: 30-60s)');
+console.log(
+  '1. Add configurable rest periods based on exercise type (strength: 2-3min, endurance: 30-60s)'
+);
 console.log('2. Implement audio alerts with customizable sounds (beep, chime, voice)');
 console.log('3. Add visual countdown with progress ring and time remaining');
 console.log('4. Create background timer that works when app is minimized');
@@ -326,47 +346,47 @@ console.log('=' * 80);
 console.log('Advanced AI features for competitive differentiation\n');
 
 const tier4A = [
-    {
-        id: 'T4A-1',
-        original: 'Prompt 6',
-        title: 'Coach Chat Memory System',
-        priority: 'MEDIUM',
-        description: 'Add conversation context tracking for contextual responses',
-        scope: 'js/modules/ai/CoachChat.js'
-    },
-    {
-        id: 'T4A-2',
-        original: 'Prompt 12',
-        title: 'Mental Coaching Triggers',
-        priority: 'MEDIUM',
-        description: 'Add behavioral triggers and motivation algorithms',
-        scope: 'js/modules/ai/PersonalizedCoaching.js:536-539'
-    },
-    {
-        id: 'T4A-3',
-        original: 'Prompt 7',
-        title: 'VO₂ Max Zone Training',
-        priority: 'LOW-MEDIUM',
-        description: 'Add heart rate zone training based on estimated VO₂ max',
-        scope: 'js/modules/ai/experts/SportsCoach.js:106-121'
-    },
-    {
-        id: 'T4A-4',
-        original: 'Prompt 8',
-        title: 'Climbing Movement Patterns',
-        priority: 'LOW',
-        description: 'Implement climbing-specific exercise recommendations',
-        scope: 'Create js/modules/ai/experts/ClimbingCoach.js'
-    }
+  {
+    id: 'T4A-1',
+    original: 'Prompt 6',
+    title: 'Coach Chat Memory System',
+    priority: 'MEDIUM',
+    description: 'Add conversation context tracking for contextual responses',
+    scope: 'js/modules/ai/CoachChat.js',
+  },
+  {
+    id: 'T4A-2',
+    original: 'Prompt 12',
+    title: 'Mental Coaching Triggers',
+    priority: 'MEDIUM',
+    description: 'Add behavioral triggers and motivation algorithms',
+    scope: 'js/modules/ai/PersonalizedCoaching.js:536-539',
+  },
+  {
+    id: 'T4A-3',
+    original: 'Prompt 7',
+    title: 'VO₂ Max Zone Training',
+    priority: 'LOW-MEDIUM',
+    description: 'Add heart rate zone training based on estimated VO₂ max',
+    scope: 'js/modules/ai/experts/SportsCoach.js:106-121',
+  },
+  {
+    id: 'T4A-4',
+    original: 'Prompt 8',
+    title: 'Climbing Movement Patterns',
+    priority: 'LOW',
+    description: 'Implement climbing-specific exercise recommendations',
+    scope: 'Create js/modules/ai/experts/ClimbingCoach.js',
+  },
 ];
 
 console.log('📋 TIER 4A PROMPTS:\n');
 
 tier4A.forEach((prompt, index) => {
-    console.log(`${index + 1}. 🚀 ${prompt.title} (${prompt.original})`);
-    console.log(`   ID: ${prompt.id} | Priority: ${prompt.priority}`);
-    console.log(`   Description: ${prompt.description}`);
-    console.log(`   Scope: ${prompt.scope}\n`);
+  console.log(`${index + 1}. 🚀 ${prompt.title} (${prompt.original})`);
+  console.log(`   ID: ${prompt.id} | Priority: ${prompt.priority}`);
+  console.log(`   Description: ${prompt.description}`);
+  console.log(`   Scope: ${prompt.scope}\n`);
 });
 
 console.log('=' * 80);
@@ -375,23 +395,23 @@ console.log('=' * 80);
 console.log('Advanced features for market expansion and user engagement\n');
 
 const tier4B = [
-    {
-        id: 'T4B-1',
-        original: 'Prompt 11',
-        title: 'Nutrition Macro Tracking',
-        priority: 'MEDIUM',
-        description: 'Add macro tracking with coach recommendation comparison',
-        scope: 'js/modules/nutrition/NutritionCard.js'
-    }
+  {
+    id: 'T4B-1',
+    original: 'Prompt 11',
+    title: 'Nutrition Macro Tracking',
+    priority: 'MEDIUM',
+    description: 'Add macro tracking with coach recommendation comparison',
+    scope: 'js/modules/nutrition/NutritionCard.js',
+  },
 ];
 
 console.log('📋 TIER 4B PROMPTS:\n');
 
 tier4B.forEach((prompt, index) => {
-    console.log(`${index + 1}. 🍃 ${prompt.title} (${prompt.original})`);
-    console.log(`   ID: ${prompt.id} | Priority: ${prompt.priority}`);
-    console.log(`   Description: ${prompt.description}`);
-    console.log(`   Scope: ${prompt.scope}\n`);
+  console.log(`${index + 1}. 🍃 ${prompt.title} (${prompt.original})`);
+  console.log(`   ID: ${prompt.id} | Priority: ${prompt.priority}`);
+  console.log(`   Description: ${prompt.description}`);
+  console.log(`   Scope: ${prompt.scope}\n`);
 });
 
 console.log('🎯 IMPLEMENTATION ROADMAP:\n');

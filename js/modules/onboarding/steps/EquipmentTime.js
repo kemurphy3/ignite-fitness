@@ -3,22 +3,22 @@
  * Available days, session length, equipment availability, dislike list
  */
 class EquipmentTimeStep {
-    constructor() {
-        this.logger = window.SafeLogger || console;
-    }
+  constructor() {
+    this.logger = window.SafeLogger || console;
+  }
 
-    /**
-     * Render equipment/time selection step
-     * @param {Object} existingData - Existing onboarding data
-     * @returns {string} HTML for equipment/time step
-     */
-    render(existingData = {}) {
-        const availableDays = existingData.available_days || ['monday', 'wednesday', 'friday'];
-        const sessionLength = existingData.session_length || '45';
-        const equipment = existingData.equipment || 'commercial_gym';
-        const dislikes = existingData.exercise_dislikes || [];
+  /**
+   * Render equipment/time selection step
+   * @param {Object} existingData - Existing onboarding data
+   * @returns {string} HTML for equipment/time step
+   */
+  render(existingData = {}) {
+    const availableDays = existingData.available_days || ['monday', 'wednesday', 'friday'];
+    const sessionLength = existingData.session_length || '45';
+    const equipment = existingData.equipment || 'commercial_gym';
+    const dislikes = existingData.exercise_dislikes || [];
 
-        return `
+    return `
             <div class="onboarding-step equipment-time-step">
                 <h2>Training Constraints</h2>
                 <p class="step-description">Tell us about your schedule and preferences.</p>
@@ -109,39 +109,45 @@ class EquipmentTimeStep {
                 </div>
             </div>
         `;
-    }
+  }
 
-    /**
-     * Get selected values
-     * @returns {Object} Selected constraints
-     */
-    getSelectedValues() {
-        const availableDays = Array.from(document.querySelectorAll('.day-checkbox input:checked'))
-            .map(cb => cb.value);
+  /**
+   * Get selected values
+   * @returns {Object} Selected constraints
+   */
+  getSelectedValues() {
+    const availableDays = Array.from(document.querySelectorAll('.day-checkbox input:checked')).map(
+      cb => cb.value
+    );
 
-        const sessionLength = document.querySelector('input[name="session_length"]:checked')?.value || '45';
-        const equipment = document.getElementById('equipment-available')?.value || 'commercial_gym';
-        const exerciseDislikes = document.getElementById('exercise-dislikes')?.value
-            .split(',')
-            .map(s => s.trim())
-            .filter(s => s.length > 0) || [];
+    const sessionLength =
+      document.querySelector('input[name="session_length"]:checked')?.value || '45';
+    const equipment = document.getElementById('equipment-available')?.value || 'commercial_gym';
+    const exerciseDislikes =
+      document
+        .getElementById('exercise-dislikes')
+        ?.value.split(',')
+        .map(s => s.trim())
+        .filter(s => s.length > 0) || [];
 
-        return {
-            available_days: availableDays,
-            session_length: parseInt(sessionLength),
-            equipment,
-            exercise_dislikes: exerciseDislikes
-        };
-    }
+    return {
+      available_days: availableDays,
+      session_length: parseInt(sessionLength),
+      equipment,
+      exercise_dislikes: exerciseDislikes,
+    };
+  }
 
-    /**
-     * Validate step
-     * @returns {boolean} Is valid
-     */
-    validate() {
-        const availableDays = Array.from(document.querySelectorAll('.day-checkbox input:checked')).length;
-        return availableDays > 0 || document.getElementById('exercise-dislikes')?.value; // At least one day or skip
-    }
+  /**
+   * Validate step
+   * @returns {boolean} Is valid
+   */
+  validate() {
+    const availableDays = Array.from(
+      document.querySelectorAll('.day-checkbox input:checked')
+    ).length;
+    return availableDays > 0 || document.getElementById('exercise-dislikes')?.value; // At least one day or skip
+  }
 }
 
 window.EquipmentTimeStep = EquipmentTimeStep;

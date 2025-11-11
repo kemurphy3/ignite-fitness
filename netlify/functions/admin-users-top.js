@@ -8,18 +8,15 @@ const {
   decodeCursor,
   encodeCursor,
   withTimeout,
-  successResponse
+  successResponse,
 } = require('./utils/admin-auth');
 
-const {
-  safeQuery,
-  validateMetric
-} = require('./utils/safe-query');
+const { safeQuery, validateMetric } = require('./utils/safe-query');
 
 const { getNeonClient } = require('./utils/connection-pool');
 const sql = getNeonClient();
 
-exports.handler = async (event) => {
+exports.handler = async event => {
   const startTime = Date.now();
   const requestId = crypto.randomUUID();
 
@@ -67,9 +64,13 @@ exports.handler = async (event) => {
                 MAX(created_at) as last_active
               FROM sessions
               WHERE deleted_at IS NULL
-                ${lastValue !== null ? sql`
+                ${
+                  lastValue !== null
+                    ? sql`
                   AND (COUNT(*), user_id) < (${lastValue}, ${lastId})
-                ` : sql``}
+                `
+                    : sql``
+                }
               GROUP BY user_id
               HAVING COUNT(DISTINCT user_id) >= 5 OR user_id = ${adminId}
               ORDER BY COUNT(*) DESC, user_id DESC
@@ -87,9 +88,13 @@ exports.handler = async (event) => {
                 MAX(created_at) as last_active
               FROM sessions
               WHERE deleted_at IS NULL
-                ${lastValue !== null ? sql`
+                ${
+                  lastValue !== null
+                    ? sql`
                   AND (SUM(duration_minutes), user_id) < (${lastValue}, ${lastId})
-                ` : sql``}
+                `
+                    : sql``
+                }
               GROUP BY user_id
               HAVING COUNT(DISTINCT user_id) >= 5 OR user_id = ${adminId}
               ORDER BY SUM(duration_minutes) DESC, user_id DESC
@@ -115,41 +120,54 @@ exports.handler = async (event) => {
       user_alias: user.user_alias,
       metric_value: parseInt(user.metric_value),
       rank: cursor ? null : index + 1,
-      last_active: user.last_active
+      last_active: user.last_active,
     }));
 
-    await auditLog(adminId, '/admin/users/top', 'GET',
-      { metric, limit: parsedLimit, cursor }, 200, Date.now() - startTime, requestId);
+    await auditLog(
+      adminId,
+      '/admin/users/top',
+      'GET',
+      { metric, limit: parsedLimit, cursor },
+      200,
+      Date.now() - startTime,
+      requestId
+    );
 
     return successResponse(
       {
         users: rankedResults,
-        next_cursor: nextCursor
+        next_cursor: nextCursor,
       },
       {
         metric,
         privacy_applied: false,
         total_filtered: 0,
-        response_time_ms: Date.now() - startTime
+        response_time_ms: Date.now() - startTime,
       },
       requestId,
       'private, no-cache'
     );
-
   } catch (error) {
     const { handleError } = require('./utils/error-handler');
 
     // Log audit with error
-    await auditLog(null, '/admin/users/top', 'GET',
-      event.queryStringParameters, 500, Date.now() - startTime, requestId);
+    await auditLog(
+      null,
+      '/admin/users/top',
+      'GET',
+      event.queryStringParameters,
+      500,
+      Date.now() - startTime,
+      requestId
+    );
 
     return handleError(error, {
       statusCode: 500,
       context: {
         requestId,
         functionName: 'admin-users-top',
-        endpoint: '/admin/users/top'
-      }
+        endpoint: '/admin/users/top',
+      },
     });
   }
 };

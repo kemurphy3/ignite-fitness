@@ -11,7 +11,7 @@
 ✅ Unit tests cover aesthetic "glutes" focus  
 ✅ Rationale strings are renderable in UI  
 ✅ Priority order respected (Safety > Sport > Strength > Aesthetics)  
-✅ All expert coaches implemented  
+✅ All expert coaches implemented
 
 ---
 
@@ -32,6 +32,7 @@
 ## **Key Features**
 
 ### **Priority Order** ✅
+
 1. **Safety/injury prevention** (Physio) - Highest priority
 2. **Sport performance** (Sports) - Game-day adjustments
 3. **Progressive overload** (Strength) - Main lifting
@@ -41,21 +42,25 @@
 ### **Conflict Resolution** ✅
 
 **Game -1 Day:**
+
 - ❌ Remove heavy leg work
 - ✅ Upper body light only
 - Rationale: "Game tomorrow - upper body maintenance only"
 
 **Knee Pain:**
+
 - ❌ Remove back squats
 - ✅ Substitute goblet squats
 - Rationale: "Safer knee flexion with neutral spine"
 
 **Low Readiness:**
+
 - ❌ Normal volume
 - ✅ Reduce volume by 30%
 - Rationale: "Reduced volume due to low readiness (≤4) - prioritize recovery"
 
 **Glutes Focus:**
+
 - ✅ Add hip thrusts, Bulgarian splits, RDLs
 - Rationale: "Maximize glute hypertrophy for aesthetic goals"
 
@@ -120,6 +125,7 @@ const plan = coordinator.getSessionPlan({
 **Test Suite**: `test-expert-coordinator.js`
 
 **Coverage:**
+
 1. ✅ Game -1 day: Heavy legs removed
 2. ✅ Knee pain: Squat substituted with goblet
 3. ✅ Low readiness: Volume reduced, recovery focus
@@ -128,6 +134,7 @@ const plan = coordinator.getSessionPlan({
 6. ✅ Rationale: 1-2 sentences, renderable in UI
 
 **Run Tests:**
+
 ```javascript
 const test = new ExpertCoordinatorTest();
 test.runAllTests();
@@ -140,6 +147,7 @@ test.runAllTests();
 **Summary**: All "Done Means" criteria fully implemented and verified.
 
 The AI Expert Coordination Brain is production-ready with:
+
 - ✅ 5 expert coaches (Strength, Sports, Physio, Nutrition, Aesthetics)
 - ✅ ExpertCoordinator merges proposals with priority
 - ✅ Conflict resolution for multiple scenarios

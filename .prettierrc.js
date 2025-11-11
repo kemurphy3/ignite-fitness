@@ -15,21 +15,21 @@ module.exports = {
       files: '*.md',
       options: {
         printWidth: 80,
-        proseWrap: 'always'
-      }
+        proseWrap: 'always',
+      },
     },
     {
       files: '*.json',
       options: {
-        printWidth: 120
-      }
+        printWidth: 120,
+      },
     },
     {
       files: '*.yml',
       options: {
         tabWidth: 2,
-        singleQuote: false
-      }
-    }
-  ]
+        singleQuote: false,
+      },
+    },
+  ],
 };

@@ -24,15 +24,21 @@ console.log('📊 CODE FLOW VERIFICATION:\n');
 
 console.log('1. 🟢 SAFETY CONSTRAINTS (Lines 504-568):');
 console.log('   ✅ Line 504: "SAFETY PRIORITY: Check for knee pain or knee flags FIRST"');
-console.log('   ✅ Line 505: "This ensures safety constraints override game-day performance concerns"');
+console.log(
+  '   ✅ Line 505: "This ensures safety constraints override game-day performance concerns"'
+);
 console.log('   ✅ Lines 506-568: Complete physio constraint processing');
 console.log('   ✅ Exercise substitution happens BEFORE any game-day filtering');
 console.log('   ✅ Knee-safe alternatives selected BEFORE performance considerations\n');
 
 console.log('2. 🟢 PERFORMANCE CONSTRAINTS (Lines 570-585):');
-console.log('   ✅ Line 570: "Check for game -1 day conflicts (PERFORMANCE - applied after safety)"');
+console.log(
+  '   ✅ Line 570: "Check for game -1 day conflicts (PERFORMANCE - applied after safety)"'
+);
 console.log('   ✅ Line 571: "Safety constraints (knee pain) already handled above"');
-console.log('   ✅ Line 572: "game-day adjustments will work with already-substituted safe exercises"');
+console.log(
+  '   ✅ Line 572: "game-day adjustments will work with already-substituted safe exercises"'
+);
 console.log('   ✅ Game-day logic operates on ALREADY-SAFE exercise list\n');
 
 console.log('🎯 CRITICAL SCENARIO RESOLUTION:\n');

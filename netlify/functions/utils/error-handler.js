@@ -12,44 +12,44 @@ const crypto = require('crypto');
 
 // Sensitive patterns to remove from error messages
 const SENSITIVE_PATTERNS = [
-    /JWT_SECRET/gi,
-    /password/gi,
-    /secret/gi,
-    /token/gi,
-    /key/gi,
-    /credential/gi,
-    /auth/gi,
-    /database/gi,
-    /connection/gi,
-    /url/gi,
-    /host/gi,
-    /port/gi,
-    /user/gi,
-    /pass/gi,
-    /pwd/gi,
-    /api_key/gi,
-    /access_token/gi,
-    /refresh_token/gi,
-    /client_secret/gi,
-    /client_id/gi,
-    /private/gi,
-    /internal/gi,
-    /system/gi,
-    /server/gi,
-    /config/gi,
-    /env/gi,
-    /process\.env/gi
+  /JWT_SECRET/gi,
+  /password/gi,
+  /secret/gi,
+  /token/gi,
+  /key/gi,
+  /credential/gi,
+  /auth/gi,
+  /database/gi,
+  /connection/gi,
+  /url/gi,
+  /host/gi,
+  /port/gi,
+  /user/gi,
+  /pass/gi,
+  /pwd/gi,
+  /api_key/gi,
+  /access_token/gi,
+  /refresh_token/gi,
+  /client_secret/gi,
+  /client_id/gi,
+  /private/gi,
+  /internal/gi,
+  /system/gi,
+  /server/gi,
+  /config/gi,
+  /env/gi,
+  /process\.env/gi,
 ];
 
 // Error types that should be sanitized
 const SANITIZE_ERROR_TYPES = [
-    'Error',
-    'TypeError',
-    'ReferenceError',
-    'SyntaxError',
-    'EvalError',
-    'RangeError',
-    'URIError'
+  'Error',
+  'TypeError',
+  'ReferenceError',
+  'SyntaxError',
+  'EvalError',
+  'RangeError',
+  'URIError',
 ];
 
 /**
@@ -57,7 +57,7 @@ const SANITIZE_ERROR_TYPES = [
  * @returns {string} Unique error ID
  */
 function generateErrorId() {
-    return crypto.randomBytes(8).toString('hex').toUpperCase();
+  return crypto.randomBytes(8).toString('hex').toUpperCase();
 }
 
 /**
@@ -66,32 +66,32 @@ function generateErrorId() {
  * @returns {string} Sanitized error message
  */
 function sanitizeErrorMessage(message) {
-    if (!message || typeof message !== 'string') {
-        return 'An error occurred';
-    }
+  if (!message || typeof message !== 'string') {
+    return 'An error occurred';
+  }
 
-    let sanitized = message;
+  let sanitized = message;
 
-    // Remove sensitive patterns
-    SENSITIVE_PATTERNS.forEach(pattern => {
-        sanitized = sanitized.replace(pattern, '[REDACTED]');
-    });
+  // Remove sensitive patterns
+  SENSITIVE_PATTERNS.forEach(pattern => {
+    sanitized = sanitized.replace(pattern, '[REDACTED]');
+  });
 
-    // Remove stack traces
-    sanitized = sanitized.replace(/\s+at\s+.*$/gm, '');
+  // Remove stack traces
+  sanitized = sanitized.replace(/\s+at\s+.*$/gm, '');
 
-    // Remove file paths
-    sanitized = sanitized.replace(/\/[^\s]+/g, '[PATH]');
+  // Remove file paths
+  sanitized = sanitized.replace(/\/[^\s]+/g, '[PATH]');
 
-    // Remove line numbers
-    sanitized = sanitized.replace(/:\d+:\d+/g, ':[LINE]');
+  // Remove line numbers
+  sanitized = sanitized.replace(/:\d+:\d+/g, ':[LINE]');
 
-    // Truncate if too long
-    if (sanitized.length > 200) {
-        sanitized = `${sanitized.substring(0, 200) }...`;
-    }
+  // Truncate if too long
+  if (sanitized.length > 200) {
+    sanitized = `${sanitized.substring(0, 200)}...`;
+  }
 
-    return sanitized || 'An error occurred';
+  return sanitized || 'An error occurred';
 }
 
 /**
@@ -100,21 +100,21 @@ function sanitizeErrorMessage(message) {
  * @returns {boolean} Whether to sanitize
  */
 function shouldSanitizeError(error) {
-    if (!error || typeof error !== 'object') {
-        return true;
-    }
-
-    // Always sanitize generic errors
-    if (SANITIZE_ERROR_TYPES.includes(error.constructor.name)) {
-        return true;
-    }
-
-    // Sanitize if message contains sensitive patterns
-    if (error.message) {
-        return SENSITIVE_PATTERNS.some(pattern => pattern.test(error.message));
-    }
-
+  if (!error || typeof error !== 'object') {
     return true;
+  }
+
+  // Always sanitize generic errors
+  if (SANITIZE_ERROR_TYPES.includes(error.constructor.name)) {
+    return true;
+  }
+
+  // Sanitize if message contains sensitive patterns
+  if (error.message) {
+    return SENSITIVE_PATTERNS.some(pattern => pattern.test(error.message));
+  }
+
+  return true;
 }
 
 /**
@@ -126,21 +126,21 @@ function shouldSanitizeError(error) {
  * @returns {Object} Safe error response
  */
 function createSafeErrorResponse(error, errorId, statusCode = 500, customMessage = null) {
-    const safeMessage = customMessage || sanitizeErrorMessage(error.message);
+  const safeMessage = customMessage || sanitizeErrorMessage(error.message);
 
-    return {
-        statusCode,
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Error-ID': errorId
-        },
-        body: JSON.stringify({
-            error: 'Internal server error',
-            message: safeMessage,
-            id: errorId,
-            timestamp: new Date().toISOString()
-        })
-    };
+  return {
+    statusCode,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Error-ID': errorId,
+    },
+    body: JSON.stringify({
+      error: 'Internal server error',
+      message: safeMessage,
+      id: errorId,
+      timestamp: new Date().toISOString(),
+    }),
+  };
 }
 
 /**
@@ -150,21 +150,21 @@ function createSafeErrorResponse(error, errorId, statusCode = 500, customMessage
  * @param {Object} context - Additional context information
  */
 function logDetailedError(error, errorId, context = {}) {
-    const logData = {
-        errorId,
-        timestamp: new Date().toISOString(),
-        type: error.constructor.name,
-        message: error.message,
-        stack: error.stack,
-        context: {
-            ...context,
-            // Add environment info (but not sensitive values)
-            nodeEnv: process.env.NODE_ENV,
-            functionName: context.functionName || 'unknown'
-        }
-    };
+  const logData = {
+    errorId,
+    timestamp: new Date().toISOString(),
+    type: error.constructor.name,
+    message: error.message,
+    stack: error.stack,
+    context: {
+      ...context,
+      // Add environment info (but not sensitive values)
+      nodeEnv: process.env.NODE_ENV,
+      functionName: context.functionName || 'unknown',
+    },
+  };
 
-    console.error('Detailed Error Log:', JSON.stringify(logData, null, 2));
+  console.error('Detailed Error Log:', JSON.stringify(logData, null, 2));
 }
 
 /**
@@ -174,24 +174,24 @@ function logDetailedError(error, errorId, context = {}) {
  * @returns {Object} Safe error response
  */
 function handleError(error, options = {}) {
-    const {
-        statusCode = 500,
-        customMessage = null,
-        context = {},
-        functionName = 'unknown'
-    } = options;
+  const {
+    statusCode = 500,
+    customMessage = null,
+    context = {},
+    functionName = 'unknown',
+  } = options;
 
-    // Generate unique error ID
-    const errorId = generateErrorId();
+  // Generate unique error ID
+  const errorId = generateErrorId();
 
-    // Log detailed error server-side
-    logDetailedError(error, errorId, {
-        ...context,
-        functionName
-    });
+  // Log detailed error server-side
+  logDetailedError(error, errorId, {
+    ...context,
+    functionName,
+  });
 
-    // Create safe response for client
-    return createSafeErrorResponse(error, errorId, statusCode, customMessage);
+  // Create safe response for client
+  return createSafeErrorResponse(error, errorId, statusCode, customMessage);
 }
 
 /**
@@ -201,69 +201,50 @@ function handleError(error, options = {}) {
  * @returns {Function} Wrapped function
  */
 function withErrorHandling(fn, options = {}) {
-    return async (event, context) => {
-        try {
-            return await fn(event, context);
-        } catch (error) {
-            return handleError(error, {
-                ...options,
-                functionName: fn.name || 'anonymous',
-                context: {
-                    httpMethod: event.httpMethod,
-                    path: event.path,
-                    queryStringParameters: event.queryStringParameters
-                }
-            });
-        }
-    };
+  return async (event, context) => {
+    try {
+      return await fn(event, context);
+    } catch (error) {
+      return handleError(error, {
+        ...options,
+        functionName: fn.name || 'anonymous',
+        context: {
+          httpMethod: event.httpMethod,
+          path: event.path,
+          queryStringParameters: event.queryStringParameters,
+        },
+      });
+    }
+  };
 }
 
 /**
  * Create specific error responses for common scenarios
  */
 const ErrorResponses = {
-    // Authentication errors
-    unauthorized: (errorId) => createSafeErrorResponse(
-        new Error('Unauthorized'),
-        errorId,
-        401,
-        'Authentication required'
+  // Authentication errors
+  unauthorized: errorId =>
+    createSafeErrorResponse(new Error('Unauthorized'), errorId, 401, 'Authentication required'),
+
+  forbidden: errorId =>
+    createSafeErrorResponse(new Error('Forbidden'), errorId, 403, 'Access denied'),
+
+  notFound: errorId =>
+    createSafeErrorResponse(new Error('Not Found'), errorId, 404, 'Resource not found'),
+
+  validationError: (errorId, message = 'Invalid input') =>
+    createSafeErrorResponse(new Error('Validation Error'), errorId, 400, message),
+
+  serviceUnavailable: errorId =>
+    createSafeErrorResponse(
+      new Error('Service Unavailable'),
+      errorId,
+      503,
+      'Service temporarily unavailable'
     ),
 
-    forbidden: (errorId) => createSafeErrorResponse(
-        new Error('Forbidden'),
-        errorId,
-        403,
-        'Access denied'
-    ),
-
-    notFound: (errorId) => createSafeErrorResponse(
-        new Error('Not Found'),
-        errorId,
-        404,
-        'Resource not found'
-    ),
-
-    validationError: (errorId, message = 'Invalid input') => createSafeErrorResponse(
-        new Error('Validation Error'),
-        errorId,
-        400,
-        message
-    ),
-
-    serviceUnavailable: (errorId) => createSafeErrorResponse(
-        new Error('Service Unavailable'),
-        errorId,
-        503,
-        'Service temporarily unavailable'
-    ),
-
-    rateLimited: (errorId) => createSafeErrorResponse(
-        new Error('Rate Limited'),
-        errorId,
-        429,
-        'Too many requests'
-    )
+  rateLimited: errorId =>
+    createSafeErrorResponse(new Error('Rate Limited'), errorId, 429, 'Too many requests'),
 };
 
 /**
@@ -272,33 +253,33 @@ const ErrorResponses = {
  * @returns {Object} Validated response
  */
 function validateErrorResponse(response) {
-    // Ensure no sensitive data in response
-    const body = typeof response.body === 'string' ? JSON.parse(response.body) : response.body;
+  // Ensure no sensitive data in response
+  const body = typeof response.body === 'string' ? JSON.parse(response.body) : response.body;
 
-    // Check for sensitive patterns in response
-    const bodyStr = JSON.stringify(body);
-    const hasSensitiveData = SENSITIVE_PATTERNS.some(pattern => pattern.test(bodyStr));
+  // Check for sensitive patterns in response
+  const bodyStr = JSON.stringify(body);
+  const hasSensitiveData = SENSITIVE_PATTERNS.some(pattern => pattern.test(bodyStr));
 
-    if (hasSensitiveData) {
-        console.warn('Sensitive data detected in error response, sanitizing...');
-        return createSafeErrorResponse(
-            new Error('Internal server error'),
-            generateErrorId(),
-            response.statusCode || 500
-        );
-    }
+  if (hasSensitiveData) {
+    console.warn('Sensitive data detected in error response, sanitizing...');
+    return createSafeErrorResponse(
+      new Error('Internal server error'),
+      generateErrorId(),
+      response.statusCode || 500
+    );
+  }
 
-    return response;
+  return response;
 }
 
 module.exports = {
-    generateErrorId,
-    sanitizeErrorMessage,
-    shouldSanitizeError,
-    createSafeErrorResponse,
-    logDetailedError,
-    handleError,
-    withErrorHandling,
-    ErrorResponses,
-    validateErrorResponse
+  generateErrorId,
+  sanitizeErrorMessage,
+  shouldSanitizeError,
+  createSafeErrorResponse,
+  logDetailedError,
+  handleError,
+  withErrorHandling,
+  ErrorResponses,
+  validateErrorResponse,
 };

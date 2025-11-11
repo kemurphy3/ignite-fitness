@@ -4,21 +4,22 @@
  */
 
 class TimeWindows extends window.BaseComponent {
-    constructor() {
-        super();
-        this.timeWindows = {
-            typicalDuration: 60,
-            preferredTimes: [],
-            trainingDaysPerWeek: 4,
-            flexibleSchedule: false
-        };
-    }
+  constructor() {
+    super();
+    this.timeWindows = {
+      typicalDuration: 60,
+      preferredTimes: [],
+      trainingDaysPerWeek: 4,
+      flexibleSchedule: false,
+    };
+  }
 
-    render(onboardingData = {}) {
-        this.onboardingData = onboardingData;
-        this.timeWindows = onboardingData.timeWindows || onboardingData.timePreferences || this.timeWindows;
+  render(onboardingData = {}) {
+    this.onboardingData = onboardingData;
+    this.timeWindows =
+      onboardingData.timeWindows || onboardingData.timePreferences || this.timeWindows;
 
-        return `
+    return `
             <div class="onboarding-step time-windows-step">
                 <div class="step-header">
                     <h2>Schedule Preferences</h2>
@@ -40,11 +41,15 @@ class TimeWindows extends window.BaseComponent {
                     <div class="input-group">
                         <label>Training days per week:</label>
                         <div class="days-buttons">
-                            ${[3,4,5,6,7].map(d => `
+                            ${[3, 4, 5, 6, 7]
+                              .map(
+                                d => `
                                 <button type="button" 
                                         class="day-btn ${this.timeWindows.trainingDaysPerWeek === d ? 'selected' : ''}"
                                         onclick="window.TimeWindows.selectDays(${d})">${d}</button>
-                            `).join('')}
+                            `
+                              )
+                              .join('')}
                         </div>
                     </div>
                 </div>
@@ -55,28 +60,27 @@ class TimeWindows extends window.BaseComponent {
                 </div>
             </div>
         `;
-    }
+  }
 
-    update(key, value) {
-        this.timeWindows[key] = parseInt(value);
-    }
+  update(key, value) {
+    this.timeWindows[key] = parseInt(value);
+  }
 
-    selectDays(days) {
-        this.timeWindows.trainingDaysPerWeek = days;
-        document.querySelectorAll('.day-btn').forEach((btn, i) => {
-            btn.classList.toggle('selected', parseInt(btn.textContent) === days);
-        });
-    }
+  selectDays(days) {
+    this.timeWindows.trainingDaysPerWeek = days;
+    document.querySelectorAll('.day-btn').forEach((btn, i) => {
+      btn.classList.toggle('selected', parseInt(btn.textContent) === days);
+    });
+  }
 
-    saveAndContinue() {
-        const om = window.OnboardingManager;
-        if (om) {
-            om.onboardingData.timeWindows = this.timeWindows;
-            om.saveStepData('time_windows', { timeWindows: this.timeWindows });
-            om.nextStep();
-        }
+  saveAndContinue() {
+    const om = window.OnboardingManager;
+    if (om) {
+      om.onboardingData.timeWindows = this.timeWindows;
+      om.saveStepData('time_windows', { timeWindows: this.timeWindows });
+      om.nextStep();
     }
+  }
 }
 
 window.TimeWindows = new TimeWindows();
-

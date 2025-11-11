@@ -10,7 +10,9 @@ console.log('🧪 IgniteFitness Test Runner\n');
 // Check if DATABASE_URL is set
 if (!process.env.DATABASE_URL) {
   console.log('❌ DATABASE_URL not set. Please set it first:');
-  console.log('   $env:DATABASE_URL = "postgresql://username:password@ep-xxx.us-east-1.aws.neon.tech/neondb?sslmode=require"');
+  console.log(
+    '   $env:DATABASE_URL = "postgresql://username:password@ep-xxx.us-east-1.aws.neon.tech/neondb?sslmode=require"'
+  );
   process.exit(1);
 }
 
@@ -48,7 +50,6 @@ try {
   console.log('✅ Coverage report generated\n');
 
   console.log('🎉 All tests completed successfully!');
-
 } catch (error) {
   console.error('❌ Test run failed:', error.message);
   process.exit(1);

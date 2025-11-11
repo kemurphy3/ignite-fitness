@@ -3,1286 +3,1419 @@
  * Implements 70/30 split (performance/aesthetic) and readiness-based volume adjustment
  */
 class ExerciseAdapter {
-    constructor() {
-        this.logger = window.SafeLogger || console;
-        this.eventBus = window.EventBus;
-        this.storageManager = window.StorageManager;
+  constructor() {
+    this.logger = window.SafeLogger || console;
+    this.eventBus = window.EventBus;
+    this.storageManager = window.StorageManager;
 
-        this.aestheticFocus = null;
-        this.readinessLevel = 8;
+    this.aestheticFocus = null;
+    this.readinessLevel = 8;
 
-        this.loadUserPreferences();
-    }
+    this.loadUserPreferences();
+  }
 
-    /**
-     * Load user aesthetic preferences
-     */
-    async loadUserPreferences() {
-        try {
-            const authManager = window.AuthManager;
-            const userId = authManager?.getCurrentUsername();
+  /**
+   * Load user aesthetic preferences
+   */
+  async loadUserPreferences() {
+    try {
+      const authManager = window.AuthManager;
+      const userId = authManager?.getCurrentUsername();
 
-            if (userId) {
-                const prefs = await this.storageManager.getPreferences(userId);
-                if (prefs) {
-                    this.aestheticFocus = prefs.aestheticFocus || 'functional';
-                    this.readinessLevel = prefs.lastReadinessScore || 8;
-                }
-            }
-
-            // Listen for readiness updates
-            this.eventBus.on(this.eventBus.TOPICS.READINESS_UPDATED, (data) => {
-                this.readinessLevel = data.readiness?.readinessScore || 8;
-            });
-        } catch (error) {
-            this.logger.error('Failed to load user preferences', error);
+      if (userId) {
+        const prefs = await this.storageManager.getPreferences(userId);
+        if (prefs) {
+          this.aestheticFocus = prefs.aestheticFocus || 'functional';
+          this.readinessLevel = prefs.lastReadinessScore || 8;
         }
+      }
+
+      // Listen for readiness updates
+      this.eventBus.on(this.eventBus.TOPICS.READINESS_UPDATED, data => {
+        this.readinessLevel = data.readiness?.readinessScore || 8;
+      });
+    } catch (error) {
+      this.logger.error('Failed to load user preferences', error);
+    }
+  }
+
+  /**
+   * Adapt workout with aesthetic accessories
+   * @param {Object} workout - Base workout
+   * @param {number} readinessScore - Current readiness (1-10)
+   * @returns {Object} Adapted workout
+   */
+  adaptWorkout(workout, readinessScore = this.readinessLevel) {
+    try {
+      const adaptedWorkout = { ...workout };
+
+      // Calculate performance vs aesthetic split
+      const { performanceExercises, aestheticExercises } = this.calculateSplit(workout);
+
+      // Add accessories based on aesthetic focus
+      if (this.aestheticFocus && this.aestheticFocus !== 'functional') {
+        const accessories = this.getAccessoriesForFocus(this.aestheticFocus, readinessScore);
+        aestheticExercises.push(...accessories);
+      }
+
+      // Apply readiness-based volume reduction to accessories
+      if (readinessScore <= 6) {
+        this.reduceAccessoryVolume(aestheticExercises, readinessScore);
+      }
+
+      adaptedWorkout.exercises = [...performanceExercises, ...aestheticExercises];
+
+      adaptedWorkout.adaptations = {
+        performancePercentage: '70%',
+        aestheticPercentage: '30%',
+        volumeReduced: readinessScore <= 6,
+        readinessLevel: readinessScore,
+      };
+
+      return adaptedWorkout;
+    } catch (error) {
+      this.logger.error('Failed to adapt workout', error);
+      return workout;
+    }
+  }
+
+  /**
+   * Substitute exercise based on dislikes or pain
+   * @param {string} exerciseName - Current exercise
+   * @param {Array} dislikes - User's disliked exercises
+   * @param {string} painLocation - Pain location if any
+   * @param {Object} constraints - Additional constraints (e.g., equipment, time)
+   * @returns {Object} Substitution suggestions with rationale
+   */
+  suggestSubstitutions(exerciseName, dislikes = [], painLocation = null, constraints = {}) {
+    try {
+      const substitutionRules = this.getSubstitutionRules();
+      const exerciseRules = substitutionRules[exerciseName.toLowerCase()];
+
+      if (!exerciseRules) {
+        // Fallback: Provide generic alternatives when specific ones don't exist
+        return this.getFallbackAlternatives(exerciseName, painLocation, constraints);
+      }
+
+      // Filter by dislikes
+      let alternatives = exerciseRules.alternatives.filter(
+        alt => !dislikes.some(dislike => alt.name.toLowerCase().includes(dislike.toLowerCase()))
+      );
+
+      // Apply pain-based modifications
+      if (painLocation) {
+        alternatives = this.applyPainModifications(alternatives, painLocation);
+      }
+
+      // Apply constraints
+      if (constraints.equipment || constraints.time) {
+        alternatives = this.applyConstraints(alternatives, constraints);
+      }
+
+      // If no alternatives after filtering, use fallback system
+      if (alternatives.length === 0) {
+        return this.getFallbackAlternatives(exerciseName, painLocation, constraints);
+      }
+
+      // Return top 2 alternatives
+      const suggestions = alternatives.slice(0, 2).map(alt => ({
+        name: alt.name,
+        rationale: alt.rationale,
+        restAdjustment: alt.restAdjustment || 0,
+        volumeAdjustment: alt.volumeAdjustment || 1.0,
+      }));
+
+      return {
+        alternatives: suggestions,
+        message:
+          suggestions.length > 0
+            ? `Suggested alternatives for ${exerciseName}`
+            : `No suitable alternatives found for ${exerciseName}`,
+      };
+    } catch (error) {
+      this.logger.error('Failed to suggest substitutions', error);
+      return {
+        alternatives: [],
+        message: 'Unable to suggest alternatives',
+      };
+    }
+  }
+
+  /**
+   * Get substitution rules database for exercises and soccer-shape workouts
+   * @returns {Object} Substitution rules
+   */
+  getSubstitutionRules() {
+    return {
+      // Soccer-shape workout substitutions
+      track_200m_intervals: {
+        alternatives: [
+          {
+            name: 'Bike 30/30s Intervals',
+            rationale: 'Similar VO2 max stimulus, cycling modality',
+            modality: 'cycling',
+            loadEquivalence: 0.95,
+            timeFactor: 1.2,
+          },
+          {
+            name: 'Swim 50m Intervals',
+            rationale: 'Similar anaerobic capacity, aquatic modality',
+            modality: 'swimming',
+            loadEquivalence: 0.9,
+            timeFactor: 1.5,
+          },
+          {
+            name: 'Rowing 250m Intervals',
+            rationale: 'Full-body anaerobic power, indoor alternative',
+            modality: 'rowing',
+            loadEquivalence: 0.92,
+            timeFactor: 1.3,
+          },
+        ],
+      },
+      field_shuttles: {
+        alternatives: [
+          {
+            name: 'Agility Ladder Drills',
+            rationale: 'Similar change of direction, neuromotor coordination',
+            modality: 'running',
+            loadEquivalence: 0.85,
+            timeFactor: 0.9,
+          },
+          {
+            name: 'Cone Drills',
+            rationale: 'COD work, similar agility stimulus',
+            modality: 'running',
+            loadEquivalence: 0.88,
+            timeFactor: 1.0,
+          },
+          {
+            name: 'Lateral Shuttle Runs',
+            rationale: 'Similar movement pattern, lateral emphasis',
+            modality: 'running',
+            loadEquivalence: 0.9,
+            timeFactor: 1.0,
+          },
+        ],
+      },
+      hill_sprints: {
+        alternatives: [
+          {
+            name: 'Bike Hill Intervals',
+            rationale: 'Similar power development, cycling modality',
+            modality: 'cycling',
+            loadEquivalence: 0.93,
+            timeFactor: 1.2,
+          },
+          {
+            name: 'Rowing Sprints',
+            rationale: 'Full-body power, indoor alternative',
+            modality: 'rowing',
+            loadEquivalence: 0.9,
+            timeFactor: 1.1,
+          },
+          {
+            name: 'Stadium Steps',
+            rationale: 'Similar power stimulus, vertical emphasis',
+            modality: 'running',
+            loadEquivalence: 0.95,
+            timeFactor: 1.0,
+          },
+        ],
+      },
+      // Existing exercise substitutions
+      'bulgarian split squat': {
+        alternatives: [
+          {
+            name: 'Walking Lunges',
+            rationale: 'Same unilateral leg training, better balance, less knee stress',
+            restAdjustment: 0, // Same rest time
+            volumeAdjustment: 1.0,
+          },
+          {
+            name: 'Reverse Lunges',
+            rationale: 'Unilateral leg work with reduced forward knee stress',
+            restAdjustment: -15, // Slightly less rest needed
+            volumeAdjustment: 1.0,
+          },
+          {
+            name: 'Step-ups',
+            rationale: 'Similar single-leg stimulus, less dynamic loading on knee',
+            restAdjustment: 0,
+            volumeAdjustment: 1.1,
+          },
+        ],
+      },
+      'back squat': {
+        alternatives: [
+          {
+            name: 'Goblet Squat',
+            rationale: 'Maintains squat pattern with less spinal loading',
+            restAdjustment: -30,
+            volumeAdjustment: 0.9,
+          },
+          {
+            name: 'Front Squat',
+            rationale: 'Same movement pattern, different load placement',
+            restAdjustment: 0,
+            volumeAdjustment: 0.85,
+          },
+          {
+            name: 'Landmine Squat',
+            rationale: 'Unique loading vector, less spinal compression',
+            restAdjustment: 0,
+            volumeAdjustment: 1.0,
+          },
+        ],
+      },
+      deadlift: {
+        alternatives: [
+          {
+            name: 'Romanian Deadlift',
+            rationale: 'Reduces lower back stress, similar hinge pattern',
+            restAdjustment: -15,
+            volumeAdjustment: 1.0,
+          },
+          {
+            name: 'Trap Bar Deadlift',
+            rationale: 'More upright torso, less shear stress',
+            restAdjustment: 0,
+            volumeAdjustment: 1.1,
+          },
+          {
+            name: 'Single Leg RDL',
+            rationale: 'Same hinge, less load, unilateral',
+            restAdjustment: -30,
+            volumeAdjustment: 1.2,
+          },
+        ],
+      },
+      'overhead press': {
+        alternatives: [
+          {
+            name: 'Seated DB Press',
+            rationale: 'Same shoulder stimulus, removes core/lower back',
+            restAdjustment: -15,
+            volumeAdjustment: 1.0,
+          },
+          {
+            name: 'Landmine Press',
+            rationale: 'Unique angle reduces shoulder impingement risk',
+            restAdjustment: 0,
+            volumeAdjustment: 1.0,
+          },
+        ],
+      },
+    };
+  }
+
+  /**
+   * Apply pain-based modifications
+   * @param {Array} alternatives - Alternative exercises
+   * @param {string} painLocation - Pain location
+   * @returns {Array} Filtered alternatives
+   */
+  applyPainModifications(alternatives, painLocation) {
+    const painModifications = {
+      knee: alt =>
+        (!alt.name.toLowerCase().includes('squat') &&
+          !alt.name.toLowerCase().includes('lunge') &&
+          alt.name.toLowerCase().includes('hinge')) ||
+        alt.name.toLowerCase().includes('press'),
+      'lower back': alt =>
+        (!alt.name.toLowerCase().includes('deadlift') &&
+          !alt.name.toLowerCase().includes('row') &&
+          alt.name.toLowerCase().includes('supported')) ||
+        alt.name.toLowerCase().includes('bodyweight'),
+      shoulder: alt =>
+        (!alt.name.toLowerCase().includes('press') &&
+          !alt.name.toLowerCase().includes('lateral') &&
+          alt.name.toLowerCase().includes('pull')) ||
+        alt.name.toLowerCase().includes('supported'),
+    };
+
+    const filter = painModifications[painLocation.toLowerCase()];
+    if (filter) {
+      return alternatives.filter(alt => filter(alt));
     }
 
-    /**
-     * Adapt workout with aesthetic accessories
-     * @param {Object} workout - Base workout
-     * @param {number} readinessScore - Current readiness (1-10)
-     * @returns {Object} Adapted workout
-     */
-    adaptWorkout(workout, readinessScore = this.readinessLevel) {
-        try {
-            const adaptedWorkout = { ...workout };
+    return alternatives;
+  }
 
-            // Calculate performance vs aesthetic split
-            const { performanceExercises, aestheticExercises } = this.calculateSplit(workout);
+  /**
+   * Apply additional constraints
+   * @param {Array} alternatives - Alternative exercises
+   * @param {Object} constraints - Constraints
+   * @returns {Array} Filtered alternatives
+   */
+  applyConstraints(alternatives, constraints) {
+    return alternatives.filter(alt => this.matchesConstraints(alt, constraints));
+  }
 
-            // Add accessories based on aesthetic focus
-            if (this.aestheticFocus && this.aestheticFocus !== 'functional') {
-                const accessories = this.getAccessoriesForFocus(this.aestheticFocus, readinessScore);
-                aestheticExercises.push(...accessories);
-            }
+  /**
+   * Get soccer-shape substitution rules
+   * @returns {Object} Soccer-shape substitution rules
+   */
+  getSoccerShapeSubstitutions() {
+    return {
+      // Acceleration substitutions
+      acceleration: {
+        track: ['10x20m sprints', '6x30m builds', '8x15m accelerations'],
+        field: ['5-10-5 shuttles', '20m sprint touches', 'reactive starts'],
+        indoor: ['resistance band starts', 'wall drives', 'A-skips'],
+      },
 
-            // Apply readiness-based volume reduction to accessories
-            if (readinessScore <= 6) {
-                this.reduceAccessoryVolume(aestheticExercises, readinessScore);
-            }
+      // COD substitutions
+      COD: {
+        track: ['lane weaving', 'cone zigzags', 'curve sprints'],
+        field: ['box drills', 'T-test repeats', '3-cone drills'],
+        indoor: ['agility ladder', 'mirror drills', 'reaction balls'],
+      },
 
-            adaptedWorkout.exercises = [
-                ...performanceExercises,
-                ...aestheticExercises
-            ];
+      // Cross-modal equivalents
+      cross_modal: {
+        track_200m_intervals: {
+          bike: '30/30s power intervals x12',
+          swim: '50m intervals on 10s rest x12',
+          rowing: '250m intervals x10',
+        },
+        field_shuttles: {
+          bike: 'standing sprint intervals',
+          indoor: 'agility ladder patterns',
+          bodyweight: 'burpee lateral hops',
+        },
+      },
+    };
+  }
 
-            adaptedWorkout.adaptations = {
-                performancePercentage: '70%',
-                aestheticPercentage: '30%',
-                volumeReduced: readinessScore <= 6,
-                readinessLevel: readinessScore
-            };
+  /**
+   * Get alternate exercises for a given exercise
+   * @param {string} exerciseName - Exercise name
+   * @returns {Array} Alternate exercises
+   */
+  getAlternates(exerciseName) {
+    const rules = this.getSubstitutionRules();
+    const exerciseRules = rules[exerciseName.toLowerCase()];
 
-            return adaptedWorkout;
-        } catch (error) {
-            this.logger.error('Failed to adapt workout', error);
-            return workout;
+    if (!exerciseRules) {
+      return [];
+    }
+
+    return exerciseRules.alternatives.map(alt => ({
+      name: alt.name,
+      rationale: alt.rationale,
+      restAdjustment: alt.restAdjustment || 0,
+      volumeAdjustment: alt.volumeAdjustment || 1.0,
+    }));
+  }
+
+  /**
+   * Calculate 70/30 split between performance and aesthetic
+   * @param {Object} workout - Workout to split
+   * @returns {Object} Split exercises
+   */
+  calculateSplit(workout) {
+    const performanceExercises = [];
+    const aestheticExercises = [];
+
+    if (!workout.exercises || !Array.isArray(workout.exercises)) {
+      return { performanceExercises, aestheticExercises };
+    }
+
+    // Performance movements take 70% of training focus
+    const performanceCount = Math.ceil(workout.exercises.length * 0.7);
+
+    for (let i = 0; i < workout.exercises.length; i++) {
+      const exercise = workout.exercises[i];
+
+      if (this.isPerformanceMovement(exercise.name)) {
+        performanceExercises.push(exercise);
+      } else if (i < performanceCount) {
+        performanceExercises.push(exercise);
+      } else {
+        aestheticExercises.push(exercise);
+      }
+    }
+
+    return { performanceExercises, aestheticExercises };
+  }
+
+  /**
+   * Check if exercise is a performance movement
+   * @param {string} exerciseName - Exercise name
+   * @returns {boolean} Is performance movement
+   */
+  isPerformanceMovement(exerciseName) {
+    const performanceMovements = [
+      'squat',
+      'deadlift',
+      'bench',
+      'overhead press',
+      'pull',
+      'dip',
+      'clean',
+      'snatch',
+      'power clean',
+      'overhead squat',
+    ];
+
+    const name = exerciseName.toLowerCase();
+    return performanceMovements.some(movement => name.includes(movement));
+  }
+
+  /**
+   * Get accessories for aesthetic focus
+   * @param {string} focus - Aesthetic focus
+   * @param {number} readinessScore - Current readiness
+   * @returns {Array} Accessory exercises
+   */
+  getAccessoriesForFocus(focus, readinessScore) {
+    const accessories = this.getAccessoryMatrix()[focus] || [];
+
+    return accessories.map(acc => ({
+      ...acc,
+      sets: this.adjustSetsForReadiness(acc.sets, readinessScore),
+      tooltip: acc.rationale || `Building ${focus}...`,
+      category: 'accessory',
+      aesthetic: true,
+    }));
+  }
+
+  /**
+   * Get accessory matrix
+   * @returns {Object} Accessory matrix
+   */
+  getAccessoryMatrix() {
+    return {
+      v_taper: [
+        {
+          name: 'Overhead Press',
+          category: 'shoulders',
+          sets: 3,
+          reps: '8-10',
+          rationale: 'Building V-taper: Wide shoulders',
+        },
+        {
+          name: 'Lat Pulldowns',
+          category: 'back',
+          sets: 4,
+          reps: '10-12',
+          rationale: 'Building V-taper: Wide lats',
+        },
+        {
+          name: 'Lateral Raises',
+          category: 'shoulders',
+          sets: 3,
+          reps: '15-20',
+          rationale: 'Building V-taper: Shoulder width',
+        },
+        {
+          name: 'Face Pulls',
+          category: 'rear_delts',
+          sets: 3,
+          reps: '12-15',
+          rationale: 'Building V-taper: Balanced shoulders',
+        },
+      ],
+      glutes: [
+        {
+          name: 'Hip Thrusts',
+          category: 'glutes',
+          sets: 4,
+          reps: '12-15',
+          rationale: 'Maximizing glutes: Hip thrust strength',
+        },
+        {
+          name: 'Bulgarian Split Squats',
+          category: 'glutes_quads',
+          sets: 3,
+          reps: '10-12',
+          rationale: 'Maximizing glutes: Unilateral strength',
+        },
+        {
+          name: 'Romanian Deadlift',
+          category: 'glutes_hams',
+          sets: 3,
+          reps: '10-12',
+          rationale: 'Maximizing glutes: Posterior chain',
+        },
+        {
+          name: 'Cable Kickbacks',
+          category: 'glutes',
+          sets: 3,
+          reps: '15-20',
+          rationale: 'Maximizing glutes: Glute isolation',
+        },
+      ],
+      toned: [
+        {
+          name: 'High Rep Lateral Raises',
+          category: 'shoulders',
+          sets: 3,
+          reps: '20-25',
+          rationale: 'Staying lean: Shoulder definition',
+        },
+        {
+          name: 'Cable Flies',
+          category: 'chest',
+          sets: 3,
+          reps: '15-20',
+          rationale: 'Staying lean: Chest definition',
+        },
+        {
+          name: 'Tricep Extensions',
+          category: 'arms',
+          sets: 3,
+          reps: '15-20',
+          rationale: 'Staying lean: Arm definition',
+        },
+        {
+          name: 'Dumbbell Curls',
+          category: 'arms',
+          sets: 3,
+          reps: '15-20',
+          rationale: 'Staying lean: Arm definition',
+        },
+      ],
+      functional: [],
+    };
+  }
+
+  /**
+   * Adjust sets based on readiness
+   * @param {number} sets - Original sets
+   * @param {number} readinessScore - Current readiness
+   * @returns {number} Adjusted sets
+   */
+  adjustSetsForReadiness(sets, readinessScore) {
+    if (readinessScore <= 6) {
+      return Math.max(1, Math.floor(sets * 0.7)); // 30% reduction
+    }
+    return sets;
+  }
+
+  /**
+   * Reduce accessory volume based on readiness
+   * @param {Array} exercises - Exercises to adjust
+   * @param {number} readinessScore - Current readiness
+   */
+  reduceAccessoryVolume(exercises, readinessScore) {
+    const reductionFactor = readinessScore <= 6 ? 0.7 : 1.0;
+
+    exercises.forEach(exercise => {
+      if (exercise.aesthetic) {
+        exercise.sets = Math.max(1, Math.floor(exercise.sets * reductionFactor));
+        if (!exercise.modifications) {
+          exercise.modifications = [];
         }
+        exercise.modifications.push(`Reduced volume (readiness: ${readinessScore}/10)`);
+      }
+    });
+  }
+
+  /**
+   * Generate tooltip for exercise
+   * @param {Object} exercise - Exercise object
+   * @returns {string} Tooltip text
+   */
+  generateTooltip(exercise) {
+    if (exercise.tooltip) {
+      return exercise.tooltip;
     }
 
-    /**
-     * Substitute exercise based on dislikes or pain
-     * @param {string} exerciseName - Current exercise
-     * @param {Array} dislikes - User's disliked exercises
-     * @param {string} painLocation - Pain location if any
-     * @param {Object} constraints - Additional constraints (e.g., equipment, time)
-     * @returns {Object} Substitution suggestions with rationale
-     */
-    suggestSubstitutions(exerciseName, dislikes = [], painLocation = null, constraints = {}) {
-        try {
-            const substitutionRules = this.getSubstitutionRules();
-            const exerciseRules = substitutionRules[exerciseName.toLowerCase()];
+    if (exercise.aesthetic) {
+      const focusDescription = {
+        v_taper: 'Building V-taper',
+        glutes: 'Maximizing glutes',
+        toned: 'Staying lean',
+        functional: 'Functional movement',
+      };
 
-            if (!exerciseRules) {
-                // Fallback: Provide generic alternatives when specific ones don't exist
-                return this.getFallbackAlternatives(exerciseName, painLocation, constraints);
-            }
-
-            // Filter by dislikes
-            let alternatives = exerciseRules.alternatives
-                .filter(alt => !dislikes.some(dislike =>
-                    alt.name.toLowerCase().includes(dislike.toLowerCase())
-                ));
-
-            // Apply pain-based modifications
-            if (painLocation) {
-                alternatives = this.applyPainModifications(alternatives, painLocation);
-            }
-
-            // Apply constraints
-            if (constraints.equipment || constraints.time) {
-                alternatives = this.applyConstraints(alternatives, constraints);
-            }
-
-            // If no alternatives after filtering, use fallback system
-            if (alternatives.length === 0) {
-                return this.getFallbackAlternatives(exerciseName, painLocation, constraints);
-            }
-
-            // Return top 2 alternatives
-            const suggestions = alternatives.slice(0, 2).map(alt => ({
-                name: alt.name,
-                rationale: alt.rationale,
-                restAdjustment: alt.restAdjustment || 0,
-                volumeAdjustment: alt.volumeAdjustment || 1.0
-            }));
-
-            return {
-                alternatives: suggestions,
-                message: suggestions.length > 0
-                    ? `Suggested alternatives for ${exerciseName}`
-                    : `No suitable alternatives found for ${exerciseName}`
-            };
-        } catch (error) {
-            this.logger.error('Failed to suggest substitutions', error);
-            return {
-                alternatives: [],
-                message: 'Unable to suggest alternatives'
-            };
-        }
+      return `${focusDescription[this.aestheticFocus] || 'Building physique'}: ${exercise.rationale || exercise.name}`;
     }
 
-    /**
-     * Get substitution rules database for exercises and soccer-shape workouts
-     * @returns {Object} Substitution rules
-     */
-    getSubstitutionRules() {
+    return exercise.rationale || exercise.name;
+  }
+
+  /**
+   * Update aesthetic focus
+   * @param {string} focus - New focus
+   */
+  async updateAestheticFocus(focus) {
+    try {
+      const authManager = window.AuthManager;
+      const userId = authManager?.getCurrentUsername();
+
+      if (!userId) {
+        throw new Error('User not logged in');
+      }
+
+      const prefs = await this.storageManager.getPreferences(userId);
+      await this.storageManager.savePreferences(userId, {
+        ...prefs,
+        aestheticFocus: focus,
+      });
+
+      this.aestheticFocus = focus;
+
+      this.logger.debug('Aesthetic focus updated', { focus });
+    } catch (error) {
+      this.logger.error('Failed to update aesthetic focus', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Select exercise for user based on progression data
+   * @param {Array} availableExercises - Available exercises to choose from
+   * @param {Object} userProfile - User profile with progression data
+   * @param {string} targetMuscleGroup - Target muscle group (optional)
+   * @returns {Object} Selected exercise with rationale
+   */
+  selectExerciseForUser(availableExercises, userProfile, targetMuscleGroup = null) {
+    try {
+      if (!availableExercises || availableExercises.length === 0) {
         return {
-            // Soccer-shape workout substitutions
-            'track_200m_intervals': {
-                alternatives: [
-                    {
-                        name: 'Bike 30/30s Intervals',
-                        rationale: 'Similar VO2 max stimulus, cycling modality',
-                        modality: 'cycling',
-                        loadEquivalence: 0.95,
-                        timeFactor: 1.2
-                    },
-                    {
-                        name: 'Swim 50m Intervals',
-                        rationale: 'Similar anaerobic capacity, aquatic modality',
-                        modality: 'swimming',
-                        loadEquivalence: 0.90,
-                        timeFactor: 1.5
-                    },
-                    {
-                        name: 'Rowing 250m Intervals',
-                        rationale: 'Full-body anaerobic power, indoor alternative',
-                        modality: 'rowing',
-                        loadEquivalence: 0.92,
-                        timeFactor: 1.3
-                    }
-                ]
-            },
-            'field_shuttles': {
-                alternatives: [
-                    {
-                        name: 'Agility Ladder Drills',
-                        rationale: 'Similar change of direction, neuromotor coordination',
-                        modality: 'running',
-                        loadEquivalence: 0.85,
-                        timeFactor: 0.9
-                    },
-                    {
-                        name: 'Cone Drills',
-                        rationale: 'COD work, similar agility stimulus',
-                        modality: 'running',
-                        loadEquivalence: 0.88,
-                        timeFactor: 1.0
-                    },
-                    {
-                        name: 'Lateral Shuttle Runs',
-                        rationale: 'Similar movement pattern, lateral emphasis',
-                        modality: 'running',
-                        loadEquivalence: 0.90,
-                        timeFactor: 1.0
-                    }
-                ]
-            },
-            'hill_sprints': {
-                alternatives: [
-                    {
-                        name: 'Bike Hill Intervals',
-                        rationale: 'Similar power development, cycling modality',
-                        modality: 'cycling',
-                        loadEquivalence: 0.93,
-                        timeFactor: 1.2
-                    },
-                    {
-                        name: 'Rowing Sprints',
-                        rationale: 'Full-body power, indoor alternative',
-                        modality: 'rowing',
-                        loadEquivalence: 0.90,
-                        timeFactor: 1.1
-                    },
-                    {
-                        name: 'Stadium Steps',
-                        rationale: 'Similar power stimulus, vertical emphasis',
-                        modality: 'running',
-                        loadEquivalence: 0.95,
-                        timeFactor: 1.0
-                    }
-                ]
-            },
-            // Existing exercise substitutions
-            'bulgarian split squat': {
-                alternatives: [
-                    {
-                        name: 'Walking Lunges',
-                        rationale: 'Same unilateral leg training, better balance, less knee stress',
-                        restAdjustment: 0, // Same rest time
-                        volumeAdjustment: 1.0
-                    },
-                    {
-                        name: 'Reverse Lunges',
-                        rationale: 'Unilateral leg work with reduced forward knee stress',
-                        restAdjustment: -15, // Slightly less rest needed
-                        volumeAdjustment: 1.0
-                    },
-                    {
-                        name: 'Step-ups',
-                        rationale: 'Similar single-leg stimulus, less dynamic loading on knee',
-                        restAdjustment: 0,
-                        volumeAdjustment: 1.1
-                    }
-                ]
-            },
-            'back squat': {
-                alternatives: [
-                    {
-                        name: 'Goblet Squat',
-                        rationale: 'Maintains squat pattern with less spinal loading',
-                        restAdjustment: -30,
-                        volumeAdjustment: 0.9
-                    },
-                    {
-                        name: 'Front Squat',
-                        rationale: 'Same movement pattern, different load placement',
-                        restAdjustment: 0,
-                        volumeAdjustment: 0.85
-                    },
-                    {
-                        name: 'Landmine Squat',
-                        rationale: 'Unique loading vector, less spinal compression',
-                        restAdjustment: 0,
-                        volumeAdjustment: 1.0
-                    }
-                ]
-            },
-            'deadlift': {
-                alternatives: [
-                    {
-                        name: 'Romanian Deadlift',
-                        rationale: 'Reduces lower back stress, similar hinge pattern',
-                        restAdjustment: -15,
-                        volumeAdjustment: 1.0
-                    },
-                    {
-                        name: 'Trap Bar Deadlift',
-                        rationale: 'More upright torso, less shear stress',
-                        restAdjustment: 0,
-                        volumeAdjustment: 1.1
-                    },
-                    {
-                        name: 'Single Leg RDL',
-                        rationale: 'Same hinge, less load, unilateral',
-                        restAdjustment: -30,
-                        volumeAdjustment: 1.2
-                    }
-                ]
-            },
-            'overhead press': {
-                alternatives: [
-                    {
-                        name: 'Seated DB Press',
-                        rationale: 'Same shoulder stimulus, removes core/lower back',
-                        restAdjustment: -15,
-                        volumeAdjustment: 1.0
-                    },
-                    {
-                        name: 'Landmine Press',
-                        rationale: 'Unique angle reduces shoulder impingement risk',
-                        restAdjustment: 0,
-                        volumeAdjustment: 1.0
-                    }
-                ]
-            }
+          exercise: null,
+          rationale: 'No exercises available for selection',
         };
-    }
+      }
 
-    /**
-     * Apply pain-based modifications
-     * @param {Array} alternatives - Alternative exercises
-     * @param {string} painLocation - Pain location
-     * @returns {Array} Filtered alternatives
-     */
-    applyPainModifications(alternatives, painLocation) {
-        const painModifications = {
-            'knee': (alt) =>
-                !alt.name.toLowerCase().includes('squat') &&
-                !alt.name.toLowerCase().includes('lunge') &&
-                alt.name.toLowerCase().includes('hinge') ||
-                alt.name.toLowerCase().includes('press'),
-            'lower back': (alt) =>
-                !alt.name.toLowerCase().includes('deadlift') &&
-                !alt.name.toLowerCase().includes('row') &&
-                alt.name.toLowerCase().includes('supported') ||
-                alt.name.toLowerCase().includes('bodyweight'),
-            'shoulder': (alt) =>
-                !alt.name.toLowerCase().includes('press') &&
-                !alt.name.toLowerCase().includes('lateral') &&
-                alt.name.toLowerCase().includes('pull') ||
-                alt.name.toLowerCase().includes('supported')
-        };
+      // Get user's progression data
+      const progressionData = this.getUserProgressionData(userProfile);
 
-        const filter = painModifications[painLocation.toLowerCase()];
-        if (filter) {
-            return alternatives.filter(alt => filter(alt));
-        }
-
-        return alternatives;
-    }
-
-    /**
-     * Apply additional constraints
-     * @param {Array} alternatives - Alternative exercises
-     * @param {Object} constraints - Constraints
-     * @returns {Array} Filtered alternatives
-     */
-    applyConstraints(alternatives, constraints) {
-        return alternatives.filter(alt => this.matchesConstraints(alt, constraints));
-    }
-
-    /**
-     * Get soccer-shape substitution rules
-     * @returns {Object} Soccer-shape substitution rules
-     */
-    getSoccerShapeSubstitutions() {
-        return {
-            // Acceleration substitutions
-            acceleration: {
-                track: ['10x20m sprints', '6x30m builds', '8x15m accelerations'],
-                field: ['5-10-5 shuttles', '20m sprint touches', 'reactive starts'],
-                indoor: ['resistance band starts', 'wall drives', 'A-skips']
-            },
-
-            // COD substitutions
-            COD: {
-                track: ['lane weaving', 'cone zigzags', 'curve sprints'],
-                field: ['box drills', 'T-test repeats', '3-cone drills'],
-                indoor: ['agility ladder', 'mirror drills', 'reaction balls']
-            },
-
-            // Cross-modal equivalents
-            cross_modal: {
-                'track_200m_intervals': {
-                    bike: '30/30s power intervals x12',
-                    swim: '50m intervals on 10s rest x12',
-                    rowing: '250m intervals x10'
-                },
-                'field_shuttles': {
-                    bike: 'standing sprint intervals',
-                    indoor: 'agility ladder patterns',
-                    bodyweight: 'burpee lateral hops'
-                }
-            }
-        };
-    }
-
-    /**
-     * Get alternate exercises for a given exercise
-     * @param {string} exerciseName - Exercise name
-     * @returns {Array} Alternate exercises
-     */
-    getAlternates(exerciseName) {
-        const rules = this.getSubstitutionRules();
-        const exerciseRules = rules[exerciseName.toLowerCase()];
-
-        if (!exerciseRules) {
-            return [];
-        }
-
-        return exerciseRules.alternatives.map(alt => ({
-            name: alt.name,
-            rationale: alt.rationale,
-            restAdjustment: alt.restAdjustment || 0,
-            volumeAdjustment: alt.volumeAdjustment || 1.0
-            }));
-    }
-
-    /**
-     * Calculate 70/30 split between performance and aesthetic
-     * @param {Object} workout - Workout to split
-     * @returns {Object} Split exercises
-     */
-    calculateSplit(workout) {
-        const performanceExercises = [];
-        const aestheticExercises = [];
-
-        if (!workout.exercises || !Array.isArray(workout.exercises)) {
-            return { performanceExercises, aestheticExercises };
-        }
-
-        // Performance movements take 70% of training focus
-        const performanceCount = Math.ceil(workout.exercises.length * 0.7);
-
-        for (let i = 0; i < workout.exercises.length; i++) {
-            const exercise = workout.exercises[i];
-
-            if (this.isPerformanceMovement(exercise.name)) {
-                performanceExercises.push(exercise);
-            } else if (i < performanceCount) {
-                performanceExercises.push(exercise);
-            } else {
-                aestheticExercises.push(exercise);
-            }
-        }
-
-        return { performanceExercises, aestheticExercises };
-    }
-
-    /**
-     * Check if exercise is a performance movement
-     * @param {string} exerciseName - Exercise name
-     * @returns {boolean} Is performance movement
-     */
-    isPerformanceMovement(exerciseName) {
-        const performanceMovements = [
-            'squat', 'deadlift', 'bench', 'overhead press', 'pull', 'dip',
-            'clean', 'snatch', 'power clean', 'overhead squat'
-        ];
-
-        const name = exerciseName.toLowerCase();
-        return performanceMovements.some(movement => name.includes(movement));
-    }
-
-    /**
-     * Get accessories for aesthetic focus
-     * @param {string} focus - Aesthetic focus
-     * @param {number} readinessScore - Current readiness
-     * @returns {Array} Accessory exercises
-     */
-    getAccessoriesForFocus(focus, readinessScore) {
-        const accessories = this.getAccessoryMatrix()[focus] || [];
-
-        return accessories.map(acc => ({
-            ...acc,
-            sets: this.adjustSetsForReadiness(acc.sets, readinessScore),
-            tooltip: acc.rationale || `Building ${focus}...`,
-            category: 'accessory',
-            aesthetic: true
-        }));
-    }
-
-    /**
-     * Get accessory matrix
-     * @returns {Object} Accessory matrix
-     */
-    getAccessoryMatrix() {
-        return {
-            v_taper: [
-                { name: 'Overhead Press', category: 'shoulders', sets: 3, reps: '8-10', rationale: 'Building V-taper: Wide shoulders' },
-                { name: 'Lat Pulldowns', category: 'back', sets: 4, reps: '10-12', rationale: 'Building V-taper: Wide lats' },
-                { name: 'Lateral Raises', category: 'shoulders', sets: 3, reps: '15-20', rationale: 'Building V-taper: Shoulder width' },
-                { name: 'Face Pulls', category: 'rear_delts', sets: 3, reps: '12-15', rationale: 'Building V-taper: Balanced shoulders' }
-            ],
-            glutes: [
-                { name: 'Hip Thrusts', category: 'glutes', sets: 4, reps: '12-15', rationale: 'Maximizing glutes: Hip thrust strength' },
-                { name: 'Bulgarian Split Squats', category: 'glutes_quads', sets: 3, reps: '10-12', rationale: 'Maximizing glutes: Unilateral strength' },
-                { name: 'Romanian Deadlift', category: 'glutes_hams', sets: 3, reps: '10-12', rationale: 'Maximizing glutes: Posterior chain' },
-                { name: 'Cable Kickbacks', category: 'glutes', sets: 3, reps: '15-20', rationale: 'Maximizing glutes: Glute isolation' }
-            ],
-            toned: [
-                { name: 'High Rep Lateral Raises', category: 'shoulders', sets: 3, reps: '20-25', rationale: 'Staying lean: Shoulder definition' },
-                { name: 'Cable Flies', category: 'chest', sets: 3, reps: '15-20', rationale: 'Staying lean: Chest definition' },
-                { name: 'Tricep Extensions', category: 'arms', sets: 3, reps: '15-20', rationale: 'Staying lean: Arm definition' },
-                { name: 'Dumbbell Curls', category: 'arms', sets: 3, reps: '15-20', rationale: 'Staying lean: Arm definition' }
-            ],
-            functional: []
-        };
-    }
-
-    /**
-     * Adjust sets based on readiness
-     * @param {number} sets - Original sets
-     * @param {number} readinessScore - Current readiness
-     * @returns {number} Adjusted sets
-     */
-    adjustSetsForReadiness(sets, readinessScore) {
-        if (readinessScore <= 6) {
-            return Math.max(1, Math.floor(sets * 0.7)); // 30% reduction
-        }
-        return sets;
-    }
-
-    /**
-     * Reduce accessory volume based on readiness
-     * @param {Array} exercises - Exercises to adjust
-     * @param {number} readinessScore - Current readiness
-     */
-    reduceAccessoryVolume(exercises, readinessScore) {
-        const reductionFactor = readinessScore <= 6 ? 0.7 : 1.0;
-
-        exercises.forEach(exercise => {
-            if (exercise.aesthetic) {
-                exercise.sets = Math.max(1, Math.floor(exercise.sets * reductionFactor));
-                if (!exercise.modifications) {
-                    exercise.modifications = [];
-                }
-                exercise.modifications.push(`Reduced volume (readiness: ${readinessScore}/10)`);
-            }
-        });
-    }
-
-    /**
-     * Generate tooltip for exercise
-     * @param {Object} exercise - Exercise object
-     * @returns {string} Tooltip text
-     */
-    generateTooltip(exercise) {
-        if (exercise.tooltip) {
-            return exercise.tooltip;
-        }
-
-        if (exercise.aesthetic) {
-            const focusDescription = {
-                v_taper: 'Building V-taper',
-                glutes: 'Maximizing glutes',
-                toned: 'Staying lean',
-                functional: 'Functional movement'
-            };
-
-            return `${focusDescription[this.aestheticFocus] || 'Building physique'}: ${exercise.rationale || exercise.name}`;
-        }
-
-        return exercise.rationale || exercise.name;
-    }
-
-    /**
-     * Update aesthetic focus
-     * @param {string} focus - New focus
-     */
-    async updateAestheticFocus(focus) {
-        try {
-            const authManager = window.AuthManager;
-            const userId = authManager?.getCurrentUsername();
-
-            if (!userId) {
-                throw new Error('User not logged in');
-            }
-
-            const prefs = await this.storageManager.getPreferences(userId);
-            await this.storageManager.savePreferences(userId, {
-                ...prefs,
-                aestheticFocus: focus
-            });
-
-            this.aestheticFocus = focus;
-
-            this.logger.debug('Aesthetic focus updated', { focus });
-        } catch (error) {
-            this.logger.error('Failed to update aesthetic focus', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Select exercise for user based on progression data
-     * @param {Array} availableExercises - Available exercises to choose from
-     * @param {Object} userProfile - User profile with progression data
-     * @param {string} targetMuscleGroup - Target muscle group (optional)
-     * @returns {Object} Selected exercise with rationale
-     */
-    selectExerciseForUser(availableExercises, userProfile, targetMuscleGroup = null) {
-        try {
-            if (!availableExercises || availableExercises.length === 0) {
-                return {
-                    exercise: null,
-                    rationale: 'No exercises available for selection'
-                };
-            }
-
-            // Get user's progression data
-            const progressionData = this.getUserProgressionData(userProfile);
-
-            // Filter exercises by target muscle group if specified
-            let candidateExercises = availableExercises;
-            if (targetMuscleGroup) {
-                candidateExercises = availableExercises.filter(exercise =>
-                    this.exerciseTargetsMuscleGroup(exercise, targetMuscleGroup)
-                );
-            }
-
-            // If no exercises match target muscle group, use all available
-            if (candidateExercises.length === 0) {
-                candidateExercises = availableExercises;
-            }
-
-            // Score exercises based on progression criteria
-            const scoredExercises = candidateExercises.map(exercise => {
-                const score = this.calculateProgressionScore(exercise, progressionData, userProfile);
-                return {
-                    exercise,
-                    score,
-                    rationale: this.generateSelectionRationale(exercise, score, progressionData)
-                };
-            });
-
-            // Sort by score (highest first) and select top exercise
-            scoredExercises.sort((a, b) => b.score - a.score);
-            const selected = scoredExercises[0];
-
-            return {
-                exercise: selected.exercise,
-                rationale: selected.rationale,
-                selectionMetadata: {
-                    totalCandidates: candidateExercises.length,
-                    selectedScore: selected.score,
-                    scoreRange: {
-                        min: Math.min(...scoredExercises.map(s => s.score)),
-                        max: Math.max(...scoredExercises.map(s => s.score))
-                    },
-                    progressionFactors: this.getProgressionFactors(selected.exercise, progressionData)
-                }
-            };
-        } catch (error) {
-            this.logger.error('Failed to select exercise for user', error);
-            return {
-                exercise: availableExercises[0] || null,
-                rationale: 'Fallback selection due to error'
-            };
-        }
-    }
-
-    /**
-     * Get user's progression data from profile
-     * @param {Object} userProfile - User profile
-     * @returns {Object} Progression data
-     */
-    getUserProgressionData(userProfile) {
-        const sessions = userProfile.data?.sessions || [];
-        const progressionData = {
-            exerciseProgress: {},
-            plateauExercises: [],
-            progressingExercises: [],
-            recentPRs: [],
-            averageRPE: 0,
-            trainingFrequency: 0
-        };
-
-        // Analyze last 30 days of training
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-        const recentSessions = sessions.filter(session =>
-            new Date(session.start_at) >= thirtyDaysAgo
+      // Filter exercises by target muscle group if specified
+      let candidateExercises = availableExercises;
+      if (targetMuscleGroup) {
+        candidateExercises = availableExercises.filter(exercise =>
+          this.exerciseTargetsMuscleGroup(exercise, targetMuscleGroup)
         );
+      }
 
-        progressionData.trainingFrequency = recentSessions.length / 4; // weeks
+      // If no exercises match target muscle group, use all available
+      if (candidateExercises.length === 0) {
+        candidateExercises = availableExercises;
+      }
 
-        // Analyze exercise progression
-        recentSessions.forEach(session => {
-            if (session.exercises) {
-                session.exercises.forEach(exercise => {
-                    const exerciseName = exercise.name.toLowerCase();
+      // Score exercises based on progression criteria
+      const scoredExercises = candidateExercises.map(exercise => {
+        const score = this.calculateProgressionScore(exercise, progressionData, userProfile);
+        return {
+          exercise,
+          score,
+          rationale: this.generateSelectionRationale(exercise, score, progressionData),
+        };
+      });
 
-                    if (!progressionData.exerciseProgress[exerciseName]) {
-                        progressionData.exerciseProgress[exerciseName] = {
-                            weights: [],
-                            reps: [],
-                            rpe: [],
-                            dates: []
-                        };
-                    }
+      // Sort by score (highest first) and select top exercise
+      scoredExercises.sort((a, b) => b.score - a.score);
+      const selected = scoredExercises[0];
 
-                    progressionData.exerciseProgress[exerciseName].weights.push(exercise.weight || 0);
-                    progressionData.exerciseProgress[exerciseName].reps.push(exercise.reps || 0);
-                    progressionData.exerciseProgress[exerciseName].rpe.push(exercise.rpe || 0);
-                    progressionData.exerciseProgress[exerciseName].dates.push(session.start_at);
-                });
-            }
+      return {
+        exercise: selected.exercise,
+        rationale: selected.rationale,
+        selectionMetadata: {
+          totalCandidates: candidateExercises.length,
+          selectedScore: selected.score,
+          scoreRange: {
+            min: Math.min(...scoredExercises.map(s => s.score)),
+            max: Math.max(...scoredExercises.map(s => s.score)),
+          },
+          progressionFactors: this.getProgressionFactors(selected.exercise, progressionData),
+        },
+      };
+    } catch (error) {
+      this.logger.error('Failed to select exercise for user', error);
+      return {
+        exercise: availableExercises[0] || null,
+        rationale: 'Fallback selection due to error',
+      };
+    }
+  }
+
+  /**
+   * Get user's progression data from profile
+   * @param {Object} userProfile - User profile
+   * @returns {Object} Progression data
+   */
+  getUserProgressionData(userProfile) {
+    const sessions = userProfile.data?.sessions || [];
+    const progressionData = {
+      exerciseProgress: {},
+      plateauExercises: [],
+      progressingExercises: [],
+      recentPRs: [],
+      averageRPE: 0,
+      trainingFrequency: 0,
+    };
+
+    // Analyze last 30 days of training
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const recentSessions = sessions.filter(session => new Date(session.start_at) >= thirtyDaysAgo);
+
+    progressionData.trainingFrequency = recentSessions.length / 4; // weeks
+
+    // Analyze exercise progression
+    recentSessions.forEach(session => {
+      if (session.exercises) {
+        session.exercises.forEach(exercise => {
+          const exerciseName = exercise.name.toLowerCase();
+
+          if (!progressionData.exerciseProgress[exerciseName]) {
+            progressionData.exerciseProgress[exerciseName] = {
+              weights: [],
+              reps: [],
+              rpe: [],
+              dates: [],
+            };
+          }
+
+          progressionData.exerciseProgress[exerciseName].weights.push(exercise.weight || 0);
+          progressionData.exerciseProgress[exerciseName].reps.push(exercise.reps || 0);
+          progressionData.exerciseProgress[exerciseName].rpe.push(exercise.rpe || 0);
+          progressionData.exerciseProgress[exerciseName].dates.push(session.start_at);
         });
+      }
+    });
 
-        // Calculate progression trends
-        Object.keys(progressionData.exerciseProgress).forEach(exerciseName => {
-            const data = progressionData.exerciseProgress[exerciseName];
-            const trend = this.calculateProgressionTrend(data);
+    // Calculate progression trends
+    Object.keys(progressionData.exerciseProgress).forEach(exerciseName => {
+      const data = progressionData.exerciseProgress[exerciseName];
+      const trend = this.calculateProgressionTrend(data);
 
-            if (trend.status === 'plateau') {
-                progressionData.plateauExercises.push(exerciseName);
-            } else if (trend.status === 'progressing') {
-                progressionData.progressingExercises.push(exerciseName);
-            }
-        });
+      if (trend.status === 'plateau') {
+        progressionData.plateauExercises.push(exerciseName);
+      } else if (trend.status === 'progressing') {
+        progressionData.progressingExercises.push(exerciseName);
+      }
+    });
 
-        // Calculate average RPE
-        const allRPEs = recentSessions.flatMap(session =>
-            session.exercises?.map(ex => ex.rpe).filter(rpe => rpe > 0) || []
-        );
-        progressionData.averageRPE = allRPEs.length > 0
-            ? allRPEs.reduce((sum, rpe) => sum + rpe, 0) / allRPEs.length
-            : 7;
+    // Calculate average RPE
+    const allRPEs = recentSessions.flatMap(
+      session => session.exercises?.map(ex => ex.rpe).filter(rpe => rpe > 0) || []
+    );
+    progressionData.averageRPE =
+      allRPEs.length > 0 ? allRPEs.reduce((sum, rpe) => sum + rpe, 0) / allRPEs.length : 7;
 
-        return progressionData;
+    return progressionData;
+  }
+
+  /**
+   * Calculate progression trend for an exercise
+   * @param {Object} exerciseData - Exercise performance data
+   * @returns {Object} Progression trend
+   */
+  calculateProgressionTrend(exerciseData) {
+    const { weights, dates } = exerciseData;
+
+    if (weights.length < 3) {
+      return { status: 'insufficient_data', trend: 0 };
     }
 
-    /**
-     * Calculate progression trend for an exercise
-     * @param {Object} exerciseData - Exercise performance data
-     * @returns {Object} Progression trend
-     */
-    calculateProgressionTrend(exerciseData) {
-        const { weights, dates } = exerciseData;
+    // Calculate weight progression over time
+    const recentWeights = weights.slice(-5); // Last 5 sessions
+    const olderWeights = weights.slice(-10, -5); // Previous 5 sessions
 
-        if (weights.length < 3) {
-            return { status: 'insufficient_data', trend: 0 };
-        }
-
-        // Calculate weight progression over time
-        const recentWeights = weights.slice(-5); // Last 5 sessions
-        const olderWeights = weights.slice(-10, -5); // Previous 5 sessions
-
-        if (recentWeights.length < 3 || olderWeights.length < 3) {
-            return { status: 'insufficient_data', trend: 0 };
-        }
-
-        const recentAvg = recentWeights.reduce((sum, w) => sum + w, 0) / recentWeights.length;
-        const olderAvg = olderWeights.reduce((sum, w) => sum + w, 0) / olderWeights.length;
-
-        const trend = (recentAvg - olderAvg) / olderAvg;
-
-        if (trend > 0.05) { // 5% improvement
-            return { status: 'progressing', trend };
-        } else if (trend < -0.05) { // 5% decline
-            return { status: 'regressing', trend };
-        } else {
-            return { status: 'plateau', trend };
-        }
+    if (recentWeights.length < 3 || olderWeights.length < 3) {
+      return { status: 'insufficient_data', trend: 0 };
     }
 
-    /**
-     * Calculate progression score for an exercise
-     * @param {Object} exercise - Exercise to score
-     * @param {Object} progressionData - User's progression data
-     * @param {Object} userProfile - User profile
-     * @returns {number} Progression score (0-100)
-     */
-    calculateProgressionScore(exercise, progressionData, userProfile) {
-        let score = 50; // Base score
-        const exerciseName = exercise.name.toLowerCase();
+    const recentAvg = recentWeights.reduce((sum, w) => sum + w, 0) / recentWeights.length;
+    const olderAvg = olderWeights.reduce((sum, w) => sum + w, 0) / olderWeights.length;
 
-        // Factor 1: Progression status (40% weight)
-        const progressionStatus = progressionData.exerciseProgress[exerciseName];
-        if (progressionStatus) {
-            const trend = this.calculateProgressionTrend(progressionStatus);
-            if (trend.status === 'progressing') {
-                score += 20; // Prioritize progressing exercises
-            } else if (trend.status === 'plateau') {
-                score -= 10; // Slightly penalize plateau exercises
-            } else if (trend.status === 'regressing') {
-                score -= 15; // More penalty for regressing exercises
-            }
-        } else {
-            score += 10; // Bonus for new exercises
-        }
+    const trend = (recentAvg - olderAvg) / olderAvg;
 
-        // Factor 2: Plateau assistance (30% weight)
-        const plateauAssistance = this.getPlateauAssistance(exerciseName, progressionData.plateauExercises);
-        if (plateauAssistance > 0) {
-            score += plateauAssistance * 15; // Up to 15 points for assistance
-        }
+    if (trend > 0.05) {
+      // 5% improvement
+      return { status: 'progressing', trend };
+    } else if (trend < -0.05) {
+      // 5% decline
+      return { status: 'regressing', trend };
+    } else {
+      return { status: 'plateau', trend };
+    }
+  }
 
-        // Factor 3: User experience level (20% weight)
-        const experienceLevel = userProfile.personalData?.experience || 'intermediate';
-        const complexityScore = this.getExerciseComplexityScore(exercise);
+  /**
+   * Calculate progression score for an exercise
+   * @param {Object} exercise - Exercise to score
+   * @param {Object} progressionData - User's progression data
+   * @param {Object} userProfile - User profile
+   * @returns {number} Progression score (0-100)
+   */
+  calculateProgressionScore(exercise, progressionData, userProfile) {
+    let score = 50; // Base score
+    const exerciseName = exercise.name.toLowerCase();
 
-        if (experienceLevel === 'beginner' && complexityScore > 7) {
-            score -= 15; // Penalize complex exercises for beginners
-        } else if (experienceLevel === 'advanced' && complexityScore < 4) {
-            score -= 10; // Penalize simple exercises for advanced users
-        }
-
-        // Factor 4: Recent performance (10% weight)
-        if (progressionStatus && progressionStatus.rpe.length > 0) {
-            const recentRPE = progressionStatus.rpe.slice(-3);
-            const avgRPE = recentRPE.reduce((sum, rpe) => sum + rpe, 0) / recentRPE.length;
-
-            if (avgRPE > 8) {
-                score -= 5; // Slightly penalize if recently very hard
-            } else if (avgRPE < 6) {
-                score += 5; // Bonus if recently easy
-            }
-        }
-
-        return Math.max(0, Math.min(100, score));
+    // Factor 1: Progression status (40% weight)
+    const progressionStatus = progressionData.exerciseProgress[exerciseName];
+    if (progressionStatus) {
+      const trend = this.calculateProgressionTrend(progressionStatus);
+      if (trend.status === 'progressing') {
+        score += 20; // Prioritize progressing exercises
+      } else if (trend.status === 'plateau') {
+        score -= 10; // Slightly penalize plateau exercises
+      } else if (trend.status === 'regressing') {
+        score -= 15; // More penalty for regressing exercises
+      }
+    } else {
+      score += 10; // Bonus for new exercises
     }
 
-    /**
-     * Get plateau assistance score for an exercise
-     * @param {string} exerciseName - Exercise name
-     * @param {Array} plateauExercises - List of plateau exercises
-     * @returns {number} Assistance score (0-1)
-     */
-    getPlateauAssistance(exerciseName, plateauExercises) {
-        const assistanceMap = {
-            'bench press': ['dumbbell press', 'incline press', 'close grip press', 'dips'],
-            'squat': ['front squat', 'bulgarian split squat', 'paused squat', 'box squat'],
-            'deadlift': ['romanian deadlift', 'trap bar deadlift', 'sumo deadlift', 'rack pull'],
-            'overhead press': ['dumbbell press', 'landmine press', 'arnold press', 'push press']
-        };
+    // Factor 2: Plateau assistance (30% weight)
+    const plateauAssistance = this.getPlateauAssistance(
+      exerciseName,
+      progressionData.plateauExercises
+    );
+    if (plateauAssistance > 0) {
+      score += plateauAssistance * 15; // Up to 15 points for assistance
+    }
 
-        const exerciseNameLower = exerciseName.toLowerCase();
+    // Factor 3: User experience level (20% weight)
+    const experienceLevel = userProfile.personalData?.experience || 'intermediate';
+    const complexityScore = this.getExerciseComplexityScore(exercise);
 
-        // Check if this exercise can assist with any plateaued exercise
-        for (const [plateauExercise, assistanceExercises] of Object.entries(assistanceMap)) {
-            if (plateauExercises.includes(plateauExercise)) {
-                if (assistanceExercises.some(assist => exerciseNameLower.includes(assist))) {
-                    return 1.0; // Full assistance score
-                }
-            }
+    if (experienceLevel === 'beginner' && complexityScore > 7) {
+      score -= 15; // Penalize complex exercises for beginners
+    } else if (experienceLevel === 'advanced' && complexityScore < 4) {
+      score -= 10; // Penalize simple exercises for advanced users
+    }
+
+    // Factor 4: Recent performance (10% weight)
+    if (progressionStatus && progressionStatus.rpe.length > 0) {
+      const recentRPE = progressionStatus.rpe.slice(-3);
+      const avgRPE = recentRPE.reduce((sum, rpe) => sum + rpe, 0) / recentRPE.length;
+
+      if (avgRPE > 8) {
+        score -= 5; // Slightly penalize if recently very hard
+      } else if (avgRPE < 6) {
+        score += 5; // Bonus if recently easy
+      }
+    }
+
+    return Math.max(0, Math.min(100, score));
+  }
+
+  /**
+   * Get plateau assistance score for an exercise
+   * @param {string} exerciseName - Exercise name
+   * @param {Array} plateauExercises - List of plateau exercises
+   * @returns {number} Assistance score (0-1)
+   */
+  getPlateauAssistance(exerciseName, plateauExercises) {
+    const assistanceMap = {
+      'bench press': ['dumbbell press', 'incline press', 'close grip press', 'dips'],
+      squat: ['front squat', 'bulgarian split squat', 'paused squat', 'box squat'],
+      deadlift: ['romanian deadlift', 'trap bar deadlift', 'sumo deadlift', 'rack pull'],
+      'overhead press': ['dumbbell press', 'landmine press', 'arnold press', 'push press'],
+    };
+
+    const exerciseNameLower = exerciseName.toLowerCase();
+
+    // Check if this exercise can assist with any plateaued exercise
+    for (const [plateauExercise, assistanceExercises] of Object.entries(assistanceMap)) {
+      if (plateauExercises.includes(plateauExercise)) {
+        if (assistanceExercises.some(assist => exerciseNameLower.includes(assist))) {
+          return 1.0; // Full assistance score
         }
-
-        return 0;
+      }
     }
 
-    /**
-     * Get exercise complexity score
-     * @param {Object} exercise - Exercise object
-     * @returns {number} Complexity score (1-10)
-     */
-    getExerciseComplexityScore(exercise) {
-        const complexityMap = {
-            'squat': 8,
-            'deadlift': 9,
-            'bench press': 7,
-            'overhead press': 6,
-            'clean': 10,
-            'snatch': 10,
-            'dumbbell': 4,
-            'machine': 3,
-            'cable': 4,
-            'bodyweight': 5
-        };
+    return 0;
+  }
 
-        const exerciseName = exercise.name.toLowerCase();
-        let complexity = 5; // Default
+  /**
+   * Get exercise complexity score
+   * @param {Object} exercise - Exercise object
+   * @returns {number} Complexity score (1-10)
+   */
+  getExerciseComplexityScore(exercise) {
+    const complexityMap = {
+      squat: 8,
+      deadlift: 9,
+      'bench press': 7,
+      'overhead press': 6,
+      clean: 10,
+      snatch: 10,
+      dumbbell: 4,
+      machine: 3,
+      cable: 4,
+      bodyweight: 5,
+    };
 
-        for (const [pattern, score] of Object.entries(complexityMap)) {
-            if (exerciseName.includes(pattern)) {
-                complexity = Math.max(complexity, score);
-            }
-        }
+    const exerciseName = exercise.name.toLowerCase();
+    let complexity = 5; // Default
 
-        return complexity;
+    for (const [pattern, score] of Object.entries(complexityMap)) {
+      if (exerciseName.includes(pattern)) {
+        complexity = Math.max(complexity, score);
+      }
     }
 
-    /**
-     * Check if exercise targets specific muscle group
-     * @param {Object} exercise - Exercise object
-     * @param {string} muscleGroup - Target muscle group
-     * @returns {boolean} Whether exercise targets muscle group
-     */
-    exerciseTargetsMuscleGroup(exercise, muscleGroup) {
-        const muscleGroupMap = {
-            'chest': ['bench', 'press', 'fly', 'push-up', 'dip'],
-            'back': ['row', 'pull', 'lat', 'deadlift', 'pull-up'],
-            'shoulders': ['press', 'raise', 'lateral', 'rear delt'],
-            'legs': ['squat', 'lunge', 'leg press', 'deadlift', 'hip thrust'],
-            'arms': ['curl', 'extension', 'tricep', 'bicep'],
-            'core': ['plank', 'crunch', 'sit-up', 'ab', 'core']
-        };
+    return complexity;
+  }
 
-        const targetPatterns = muscleGroupMap[muscleGroup.toLowerCase()] || [];
-        const exerciseName = exercise.name.toLowerCase();
+  /**
+   * Check if exercise targets specific muscle group
+   * @param {Object} exercise - Exercise object
+   * @param {string} muscleGroup - Target muscle group
+   * @returns {boolean} Whether exercise targets muscle group
+   */
+  exerciseTargetsMuscleGroup(exercise, muscleGroup) {
+    const muscleGroupMap = {
+      chest: ['bench', 'press', 'fly', 'push-up', 'dip'],
+      back: ['row', 'pull', 'lat', 'deadlift', 'pull-up'],
+      shoulders: ['press', 'raise', 'lateral', 'rear delt'],
+      legs: ['squat', 'lunge', 'leg press', 'deadlift', 'hip thrust'],
+      arms: ['curl', 'extension', 'tricep', 'bicep'],
+      core: ['plank', 'crunch', 'sit-up', 'ab', 'core'],
+    };
 
-        return targetPatterns.some(pattern => exerciseName.includes(pattern));
+    const targetPatterns = muscleGroupMap[muscleGroup.toLowerCase()] || [];
+    const exerciseName = exercise.name.toLowerCase();
+
+    return targetPatterns.some(pattern => exerciseName.includes(pattern));
+  }
+
+  /**
+   * Generate selection rationale
+   * @param {Object} exercise - Selected exercise
+   * @param {number} score - Selection score
+   * @param {Object} progressionData - Progression data
+   * @returns {string} Selection rationale
+   */
+  generateSelectionRationale(exercise, score, progressionData) {
+    const exerciseName = exercise.name.toLowerCase();
+
+    if (score >= 80) {
+      return 'Prioritized due to recent progress and optimal difficulty level';
+    } else if (score >= 70) {
+      return 'Selected based on progression data and user experience level';
+    } else if (progressionData.plateauExercises.includes(exerciseName)) {
+      return 'Recommended as assistance exercise for plateaued movement pattern';
+    } else if (progressionData.exerciseProgress[exerciseName]) {
+      return 'Selected based on training history and progression trends';
+    } else {
+      return 'New exercise introduction based on user goals and experience';
+    }
+  }
+
+  /**
+   * Get progression factors for selected exercise
+   * @param {Object} exercise - Selected exercise
+   * @param {Object} progressionData - Progression data
+   * @returns {Object} Progression factors
+   */
+  getProgressionFactors(exercise, progressionData) {
+    const exerciseName = exercise.name.toLowerCase();
+    const progressionStatus = progressionData.exerciseProgress[exerciseName];
+
+    return {
+      isNewExercise: !progressionStatus,
+      isProgressing: progressionData.progressingExercises.includes(exerciseName),
+      isPlateaued: progressionData.plateauExercises.includes(exerciseName),
+      recentSessions: progressionStatus ? progressionStatus.dates.length : 0,
+      averageRPE:
+        progressionStatus && progressionStatus.rpe.length > 0
+          ? progressionStatus.rpe.reduce((sum, rpe) => sum + rpe, 0) / progressionStatus.rpe.length
+          : null,
+    };
+  }
+
+  /**
+   * Get fallback alternatives when no specific alternatives exist
+   * @param {string} exerciseName - Original exercise name
+   * @param {string} painLocation - Pain location if any
+   * @param {Object} constraints - Additional constraints
+   * @returns {Object} Fallback alternatives with rationale
+   */
+  getFallbackAlternatives(exerciseName, painLocation = null, constraints = {}) {
+    try {
+      // Progressive fallback chain: specific → body-part → generic → bodyweight
+      const fallbackChain = this.getFallbackChain(exerciseName, painLocation, constraints);
+
+      // Log fallback decision for transparency
+      this.logger.info('EXERCISE_FALLBACK', {
+        original: exerciseName,
+        painLocation,
+        fallbackUsed: fallbackChain.level,
+        replacements: fallbackChain.alternatives.map(a => a.name),
+      });
+
+      const alternatives = this.applyConstraintFilters(fallbackChain.alternatives, constraints);
+
+      const finalAlternatives =
+        alternatives.length > 0
+          ? alternatives
+          : this.applyConstraintFilters(this.getGenericBodyweightAlternatives(), constraints);
+
+      return {
+        alternatives: finalAlternatives,
+        message: fallbackChain.message,
+        fallbackReason: fallbackChain.reason,
+        fallbackLevel: fallbackChain.level,
+      };
+    } catch (error) {
+      this.logger.error('Failed to get fallback alternatives', error);
+      // Ultimate fallback: bodyweight generic exercises
+      return {
+        alternatives: this.getGenericBodyweightAlternatives(),
+        message: 'Using generic bodyweight alternatives for safety',
+        fallbackReason: 'Error in fallback system',
+        fallbackLevel: 'generic_bodyweight',
+      };
+    }
+  }
+
+  /**
+   * Get progressive fallback chain for exercise alternatives
+   * @param {string} exerciseName - Original exercise name
+   * @param {string} painLocation - Pain location if any
+   * @param {Object} constraints - Additional constraints
+   * @returns {Object} Fallback chain with alternatives
+   */
+  getFallbackChain(exerciseName, painLocation, constraints) {
+    // Level 0: Attempt to fetch catalog-based specific matches (equipment friendly)
+    const specificAlternatives = this.getCatalogAlternatives(exerciseName, constraints);
+    if (specificAlternatives.length > 0) {
+      return {
+        alternatives: specificAlternatives,
+        message: `Alternatives matched to ${exerciseName}`,
+        reason: 'Applying catalog-specific replacements',
+        level: 'specific_match',
+      };
     }
 
-    /**
-     * Generate selection rationale
-     * @param {Object} exercise - Selected exercise
-     * @param {number} score - Selection score
-     * @param {Object} progressionData - Progression data
-     * @returns {string} Selection rationale
-     */
-    generateSelectionRationale(exercise, score, progressionData) {
-        const exerciseName = exercise.name.toLowerCase();
-
-        if (score >= 80) {
-            return 'Prioritized due to recent progress and optimal difficulty level';
-        } else if (score >= 70) {
-            return 'Selected based on progression data and user experience level';
-        } else if (progressionData.plateauExercises.includes(exerciseName)) {
-            return 'Recommended as assistance exercise for plateaued movement pattern';
-        } else if (progressionData.exerciseProgress[exerciseName]) {
-            return 'Selected based on training history and progression trends';
-        } else {
-            return 'New exercise introduction based on user goals and experience';
-        }
-    }
-
-    /**
-     * Get progression factors for selected exercise
-     * @param {Object} exercise - Selected exercise
-     * @param {Object} progressionData - Progression data
-     * @returns {Object} Progression factors
-     */
-    getProgressionFactors(exercise, progressionData) {
-        const exerciseName = exercise.name.toLowerCase();
-        const progressionStatus = progressionData.exerciseProgress[exerciseName];
-
+    // Level 1: Body-part-specific fallback
+    if (painLocation) {
+      const bodyPartFallbacks = this.applyConstraintFilters(
+        this.getBodyPartFallback(painLocation),
+        constraints
+      );
+      if (bodyPartFallbacks.length > 0) {
         return {
-            isNewExercise: !progressionStatus,
-            isProgressing: progressionData.progressingExercises.includes(exerciseName),
-            isPlateaued: progressionData.plateauExercises.includes(exerciseName),
-            recentSessions: progressionStatus ? progressionStatus.dates.length : 0,
-            averageRPE: progressionStatus && progressionStatus.rpe.length > 0
-                ? progressionStatus.rpe.reduce((sum, rpe) => sum + rpe, 0) / progressionStatus.rpe.length
-                : null
+          alternatives: bodyPartFallbacks,
+          message: `Safe alternatives for ${painLocation} injury`,
+          reason: `Using ${painLocation}-friendly exercise pool`,
+          level: 'body_part_specific',
         };
+      }
     }
 
-    /**
-     * Get fallback alternatives when no specific alternatives exist
-     * @param {string} exerciseName - Original exercise name
-     * @param {string} painLocation - Pain location if any
-     * @param {Object} constraints - Additional constraints
-     * @returns {Object} Fallback alternatives with rationale
-     */
-    getFallbackAlternatives(exerciseName, painLocation = null, constraints = {}) {
-        try {
-            // Progressive fallback chain: specific → body-part → generic → bodyweight
-            const fallbackChain = this.getFallbackChain(exerciseName, painLocation, constraints);
-
-            // Log fallback decision for transparency
-            this.logger.info('EXERCISE_FALLBACK', {
-                original: exerciseName,
-                painLocation,
-                fallbackUsed: fallbackChain.level,
-                replacements: fallbackChain.alternatives.map(a => a.name)
-            });
-
-        const alternatives = this.applyConstraintFilters(fallbackChain.alternatives, constraints);
-
-        const finalAlternatives = alternatives.length > 0
-            ? alternatives
-            : this.applyConstraintFilters(this.getGenericBodyweightAlternatives(), constraints);
-
-        return {
-            alternatives: finalAlternatives,
-                message: fallbackChain.message,
-                fallbackReason: fallbackChain.reason,
-                fallbackLevel: fallbackChain.level
-            };
-        } catch (error) {
-            this.logger.error('Failed to get fallback alternatives', error);
-            // Ultimate fallback: bodyweight generic exercises
-            return {
-                alternatives: this.getGenericBodyweightAlternatives(),
-                message: 'Using generic bodyweight alternatives for safety',
-                fallbackReason: 'Error in fallback system',
-                fallbackLevel: 'generic_bodyweight'
-            };
-        }
+    // Level 2: Generic injury-safe exercises
+    const genericSafe = this.applyConstraintFilters(this.getGenericSafeAlternatives(), constraints);
+    if (genericSafe.length > 0) {
+      return {
+        alternatives: genericSafe,
+        message: 'Generic low-impact alternatives provided',
+        reason: 'Using low-impact exercise database',
+        level: 'generic_safe',
+      };
     }
 
-    /**
-     * Get progressive fallback chain for exercise alternatives
-     * @param {string} exerciseName - Original exercise name
-     * @param {string} painLocation - Pain location if any
-     * @param {Object} constraints - Additional constraints
-     * @returns {Object} Fallback chain with alternatives
-     */
-    getFallbackChain(exerciseName, painLocation, constraints) {
-        // Level 0: Attempt to fetch catalog-based specific matches (equipment friendly)
-        const specificAlternatives = this.getCatalogAlternatives(exerciseName, constraints);
-        if (specificAlternatives.length > 0) {
-            return {
-                alternatives: specificAlternatives,
-                message: `Alternatives matched to ${exerciseName}`,
-                reason: 'Applying catalog-specific replacements',
-                level: 'specific_match'
-            };
-        }
+    // Level 3: Bodyweight alternatives
+    const bodyweightAlternatives = this.applyConstraintFilters(
+      this.getGenericBodyweightAlternatives(),
+      constraints
+    );
+    return {
+      alternatives: bodyweightAlternatives,
+      message: 'Bodyweight alternatives provided',
+      reason: 'Using bodyweight exercise database for maximum safety',
+      level: 'bodyweight',
+    };
+  }
 
-        // Level 1: Body-part-specific fallback
-        if (painLocation) {
-            const bodyPartFallbacks = this.applyConstraintFilters(this.getBodyPartFallback(painLocation), constraints);
-            if (bodyPartFallbacks.length > 0) {
-                return {
-                    alternatives: bodyPartFallbacks,
-                    message: `Safe alternatives for ${painLocation} injury`,
-                    reason: `Using ${painLocation}-friendly exercise pool`,
-                    level: 'body_part_specific'
-                };
-            }
-        }
+  /**
+   * Get body-part-specific fallback exercises
+   * @param {string} bodyPart - Injured body part
+   * @returns {Array} Safe alternatives for that body part
+   */
+  getBodyPartFallback(bodyPart) {
+    const fallbackMap = {
+      knee: [
+        {
+          name: 'Goblet Squat',
+          rationale: 'Front-loaded squat reduces knee shear and keeps torso upright',
+          restAdjustment: 0,
+          volumeAdjustment: 0.8,
+          equipment: 'dumbbell',
+        },
+        {
+          name: 'Box Squat',
+          rationale: 'Box provides depth control and reduces knee travel',
+          restAdjustment: 0,
+          volumeAdjustment: 0.85,
+          equipment: 'barbell',
+        },
+        {
+          name: 'Leg Press',
+          rationale: 'Guided machine supports hips and limits knee stress',
+          restAdjustment: 0,
+          volumeAdjustment: 0.75,
+          equipment: 'machine',
+        },
+      ],
+      shoulder: [
+        {
+          name: 'Goblet Squat Hold',
+          rationale: 'Lower body strength focus without shoulder elevation',
+          restAdjustment: 0,
+          volumeAdjustment: 1.0,
+          equipment: 'dumbbell',
+        },
+        {
+          name: 'Reverse Sled Drag',
+          rationale: 'Leg drive with straps keeps shoulders neutral',
+          restAdjustment: -15,
+          volumeAdjustment: 1.0,
+          equipment: 'sled',
+        },
+        {
+          name: 'Roman Chair Core Series',
+          rationale: 'Core work avoiding overhead shoulder stress',
+          restAdjustment: -15,
+          volumeAdjustment: 0.9,
+          equipment: 'bodyweight',
+        },
+      ],
+      back: [
+        {
+          name: 'Supported Chest Press (machine)',
+          rationale: 'Back supported pressing minimises spinal loading',
+          restAdjustment: 0,
+          volumeAdjustment: 0.8,
+          equipment: 'machine',
+        },
+        {
+          name: 'Seated Cable Row (neutral grip)',
+          rationale: 'Seated chest supported row reduces lumbar strain',
+          restAdjustment: 0,
+          volumeAdjustment: 0.8,
+          equipment: 'cable',
+        },
+        {
+          name: 'Cat-Camel Mobility',
+          rationale: 'Spine-friendly mobility sequence to maintain movement',
+          restAdjustment: -30,
+          volumeAdjustment: 0.6,
+          equipment: 'bodyweight',
+        },
+      ],
+      elbow: [
+        {
+          name: 'Lower Body Focus Session',
+          rationale: 'Avoiding upper body movements while maintaining lower body training',
+          restAdjustment: 0,
+          volumeAdjustment: 1.0,
+        },
+        {
+          name: 'Core and Leg Exercises',
+          rationale: "Exercises that don't stress elbow",
+          restAdjustment: 0,
+          volumeAdjustment: 1.0,
+        },
+      ],
+      wrist: [
+        {
+          name: 'Lower Body and Core Focus',
+          rationale: 'Avoiding gripping and wrist stress',
+          restAdjustment: 0,
+          volumeAdjustment: 1.0,
+        },
+        {
+          name: 'Machine-based Leg Exercises',
+          rationale: 'No gripping required',
+          restAdjustment: 0,
+          volumeAdjustment: 1.0,
+        },
+      ],
+    };
 
-        // Level 2: Generic injury-safe exercises
-        const genericSafe = this.applyConstraintFilters(this.getGenericSafeAlternatives(), constraints);
-        if (genericSafe.length > 0) {
-            return {
-                alternatives: genericSafe,
-                message: 'Generic low-impact alternatives provided',
-                reason: 'Using low-impact exercise database',
-                level: 'generic_safe'
-            };
-        }
+    const bodyPartLower = (bodyPart || '').toLowerCase();
+    return fallbackMap[bodyPartLower] || [];
+  }
 
-        // Level 3: Bodyweight alternatives
-        const bodyweightAlternatives = this.applyConstraintFilters(this.getGenericBodyweightAlternatives(), constraints);
-        return {
-            alternatives: bodyweightAlternatives,
-            message: 'Bodyweight alternatives provided',
-            reason: 'Using bodyweight exercise database for maximum safety',
-            level: 'bodyweight'
-        };
+  getCatalogAlternatives(exerciseName, constraints = {}) {
+    const library = this.getExerciseLibrary();
+    const normalized = exerciseName ? exerciseName.toLowerCase() : '';
+    const catalogMatch = library[normalized];
+    if (!catalogMatch || !Array.isArray(catalogMatch.alternatives)) {
+      return [];
     }
+    return this.applyConstraintFilters(
+      catalogMatch.alternatives.map(alt => ({ ...alt })),
+      constraints
+    );
+  }
 
-    /**
-     * Get body-part-specific fallback exercises
-     * @param {string} bodyPart - Injured body part
-     * @returns {Array} Safe alternatives for that body part
-     */
-    getBodyPartFallback(bodyPart) {
-        const fallbackMap = {
-            'knee': [
-                {
-                    name: 'Goblet Squat',
-                    rationale: 'Front-loaded squat reduces knee shear and keeps torso upright',
-                    restAdjustment: 0,
-                    volumeAdjustment: 0.8,
-                    equipment: 'dumbbell'
-                },
-                {
-                    name: 'Box Squat',
-                    rationale: 'Box provides depth control and reduces knee travel',
-                    restAdjustment: 0,
-                    volumeAdjustment: 0.85,
-                    equipment: 'barbell'
-                },
-                {
-                    name: 'Leg Press',
-                    rationale: 'Guided machine supports hips and limits knee stress',
-                    restAdjustment: 0,
-                    volumeAdjustment: 0.75,
-                    equipment: 'machine'
-                }
-            ],
-            'shoulder': [
-                {
-                    name: 'Goblet Squat Hold',
-                    rationale: 'Lower body strength focus without shoulder elevation',
-                    restAdjustment: 0,
-                    volumeAdjustment: 1.0,
-                    equipment: 'dumbbell'
-                },
-                {
-                    name: 'Reverse Sled Drag',
-                    rationale: 'Leg drive with straps keeps shoulders neutral',
-                    restAdjustment: -15,
-                    volumeAdjustment: 1.0,
-                    equipment: 'sled'
-                },
-                {
-                    name: 'Roman Chair Core Series',
-                    rationale: 'Core work avoiding overhead shoulder stress',
-                    restAdjustment: -15,
-                    volumeAdjustment: 0.9,
-                    equipment: 'bodyweight'
-                }
-            ],
-            'back': [
-                {
-                    name: 'Supported Chest Press (machine)',
-                    rationale: 'Back supported pressing minimises spinal loading',
-                    restAdjustment: 0,
-                    volumeAdjustment: 0.8,
-                    equipment: 'machine'
-                },
-                {
-                    name: 'Seated Cable Row (neutral grip)',
-                    rationale: 'Seated chest supported row reduces lumbar strain',
-                    restAdjustment: 0,
-                    volumeAdjustment: 0.8,
-                    equipment: 'cable'
-                },
-                {
-                    name: 'Cat-Camel Mobility',
-                    rationale: 'Spine-friendly mobility sequence to maintain movement',
-                    restAdjustment: -30,
-                    volumeAdjustment: 0.6,
-                    equipment: 'bodyweight'
-                }
-            ],
-            'elbow': [
-                {
-                    name: 'Lower Body Focus Session',
-                    rationale: 'Avoiding upper body movements while maintaining lower body training',
-                    restAdjustment: 0,
-                    volumeAdjustment: 1.0
-                },
-                {
-                    name: 'Core and Leg Exercises',
-                    rationale: 'Exercises that don\'t stress elbow',
-                    restAdjustment: 0,
-                    volumeAdjustment: 1.0
-                }
-            ],
-            'wrist': [
-                {
-                    name: 'Lower Body and Core Focus',
-                    rationale: 'Avoiding gripping and wrist stress',
-                    restAdjustment: 0,
-                    volumeAdjustment: 1.0
-                },
-                {
-                    name: 'Machine-based Leg Exercises',
-                    rationale: 'No gripping required',
-                    restAdjustment: 0,
-                    volumeAdjustment: 1.0
-                }
-            ]
-        };
+  getExerciseLibrary() {
+    return {
+      'back squat': {
+        muscleGroup: 'legs',
+        alternatives: [
+          {
+            name: 'Goblet Squat',
+            rationale: 'Front-loaded squat decreases spinal compression',
+            equipment: 'dumbbell',
+            restAdjustment: -15,
+            volumeAdjustment: 0.85,
+          },
+          {
+            name: 'Trap Bar Deadlift (light)',
+            rationale: 'Neutral spine hinge with reduced knee travel',
+            equipment: 'trap bar',
+            restAdjustment: 0,
+            volumeAdjustment: 0.9,
+          },
+          {
+            name: 'Split Squat (bodyweight)',
+            rationale: 'Unloaded split squat keeps loading manageable',
+            equipment: 'bodyweight',
+            restAdjustment: -20,
+            volumeAdjustment: 0.8,
+          },
+        ],
+      },
+      'bench press': {
+        muscleGroup: 'chest',
+        alternatives: [
+          {
+            name: 'Floor Press',
+            rationale: 'Shortens pressing range to protect shoulders',
+            equipment: 'barbell',
+            restAdjustment: 0,
+            volumeAdjustment: 0.8,
+          },
+          {
+            name: 'Push-Up on Handles',
+            rationale: 'Neutral wrist and scapular movement keep shoulders friendly',
+            equipment: 'bodyweight',
+            restAdjustment: -15,
+            volumeAdjustment: 0.9,
+          },
+          {
+            name: 'Seated Machine Press',
+            rationale: 'Back support reduces shoulder stress',
+            equipment: 'machine',
+            restAdjustment: 0,
+            volumeAdjustment: 0.75,
+          },
+        ],
+      },
+    };
+  }
 
-        const bodyPartLower = (bodyPart || '').toLowerCase();
-        return fallbackMap[bodyPartLower] || [];
+  applyConstraintFilters(alternatives = [], constraints = {}) {
+    if (!Array.isArray(alternatives)) {
+      return [];
     }
+    return alternatives.filter(alt => this.matchesConstraints(alt, constraints));
+  }
 
-    getCatalogAlternatives(exerciseName, constraints = {}) {
-        const library = this.getExerciseLibrary();
-        const normalized = exerciseName ? exerciseName.toLowerCase() : '';
-        const catalogMatch = library[normalized];
-        if (!catalogMatch || !Array.isArray(catalogMatch.alternatives)) {
-            return [];
-        }
-        return this.applyConstraintFilters(
-            catalogMatch.alternatives.map(alt => ({ ...alt })),
-            constraints
-        );
+  matchesConstraints(alternative, constraints = {}) {
+    if (!alternative) {
+      return false;
     }
+    const equipmentRequired = alternative.equipment;
+    if (Array.isArray(constraints.equipment) && equipmentRequired) {
+      const available = constraints.equipment.map(e => e.toLowerCase());
+      if (
+        equipmentRequired !== 'bodyweight' &&
+        !available.includes(equipmentRequired.toLowerCase())
+      ) {
+        return false;
+      }
+    }
+    if (
+      constraints.time &&
+      alternative.estimatedTime &&
+      alternative.estimatedTime > constraints.time
+    ) {
+      return false;
+    }
+    return true;
+  }
 
-    getExerciseLibrary() {
-        return {
-            'back squat': {
-                muscleGroup: 'legs',
-                alternatives: [
-                    { name: 'Goblet Squat', rationale: 'Front-loaded squat decreases spinal compression', equipment: 'dumbbell', restAdjustment: -15, volumeAdjustment: 0.85 },
-                    { name: 'Trap Bar Deadlift (light)', rationale: 'Neutral spine hinge with reduced knee travel', equipment: 'trap bar', restAdjustment: 0, volumeAdjustment: 0.9 },
-                    { name: 'Split Squat (bodyweight)', rationale: 'Unloaded split squat keeps loading manageable', equipment: 'bodyweight', restAdjustment: -20, volumeAdjustment: 0.8 }
-                ]
-            },
-            'bench press': {
-                muscleGroup: 'chest',
-                alternatives: [
-                    { name: 'Floor Press', rationale: 'Shortens pressing range to protect shoulders', equipment: 'barbell', restAdjustment: 0, volumeAdjustment: 0.8 },
-                    { name: 'Push-Up on Handles', rationale: 'Neutral wrist and scapular movement keep shoulders friendly', equipment: 'bodyweight', restAdjustment: -15, volumeAdjustment: 0.9 },
-                    { name: 'Seated Machine Press', rationale: 'Back support reduces shoulder stress', equipment: 'machine', restAdjustment: 0, volumeAdjustment: 0.75 }
-                ]
-            }
-        };
-    }
+  /**
+   * Get generic safe alternatives when no body-part-specific ones exist
+   * @returns {Array} Generic safe alternatives
+   */
+  getGenericSafeAlternatives() {
+    return [
+      {
+        name: 'Walking or Light Cardio',
+        rationale: 'Low-impact cardiovascular activity suitable for most injuries',
+        restAdjustment: -30,
+        volumeAdjustment: 0.6,
+        equipment: 'bodyweight',
+      },
+      {
+        name: 'Gentle Mobility Work',
+        rationale: 'Movement without loading, promotes recovery',
+        restAdjustment: -30,
+        volumeAdjustment: 0.5,
+        equipment: 'bodyweight',
+      },
+      {
+        name: 'Bodyweight Core Exercises',
+        rationale: 'Core training with minimal joint stress',
+        restAdjustment: -15,
+        volumeAdjustment: 0.7,
+        equipment: 'bodyweight',
+      },
+    ];
+  }
 
-    applyConstraintFilters(alternatives = [], constraints = {}) {
-        if (!Array.isArray(alternatives)) {return [];}
-        return alternatives.filter(alt => this.matchesConstraints(alt, constraints));
-    }
+  /**
+   * Get generic bodyweight alternatives (ultimate fallback)
+   * @returns {Array} Bodyweight alternatives
+   */
+  getGenericBodyweightAlternatives() {
+    return [
+      {
+        name: 'Bodyweight Squats (if knee allows)',
+        rationale: 'Basic bodyweight movement, modify depth as needed',
+        restAdjustment: 0,
+        volumeAdjustment: 0.8,
+        equipment: 'bodyweight',
+      },
+      {
+        name: 'Plank Variations',
+        rationale: 'Core stability without loading',
+        restAdjustment: -15,
+        volumeAdjustment: 0.7,
+        equipment: 'bodyweight',
+      },
+      {
+        name: 'Gentle Stretching Routine',
+        rationale: 'Maintains mobility without stress',
+        restAdjustment: -30,
+        volumeAdjustment: 0.5,
+        equipment: 'bodyweight',
+      },
+    ];
+  }
 
-    matchesConstraints(alternative, constraints = {}) {
-        if (!alternative) {return false;}
-        const equipmentRequired = alternative.equipment;
-        if (Array.isArray(constraints.equipment) && equipmentRequired) {
-            const available = constraints.equipment.map(e => e.toLowerCase());
-            if (equipmentRequired !== 'bodyweight' && !available.includes(equipmentRequired.toLowerCase())) {
-                return false;
-            }
-        }
-        if (constraints.time && alternative.estimatedTime && alternative.estimatedTime > constraints.time) {
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * Get generic safe alternatives when no body-part-specific ones exist
-     * @returns {Array} Generic safe alternatives
-     */
-    getGenericSafeAlternatives() {
-        return [
-            {
-                name: 'Walking or Light Cardio',
-                rationale: 'Low-impact cardiovascular activity suitable for most injuries',
-                restAdjustment: -30,
-                volumeAdjustment: 0.6,
-                equipment: 'bodyweight'
-            },
-            {
-                name: 'Gentle Mobility Work',
-                rationale: 'Movement without loading, promotes recovery',
-                restAdjustment: -30,
-                volumeAdjustment: 0.5,
-                equipment: 'bodyweight'
-            },
-            {
-                name: 'Bodyweight Core Exercises',
-                rationale: 'Core training with minimal joint stress',
-                restAdjustment: -15,
-                volumeAdjustment: 0.7,
-                equipment: 'bodyweight'
-            }
-        ];
-    }
-
-    /**
-     * Get generic bodyweight alternatives (ultimate fallback)
-     * @returns {Array} Bodyweight alternatives
-     */
-    getGenericBodyweightAlternatives() {
-        return [
-            {
-                name: 'Bodyweight Squats (if knee allows)',
-                rationale: 'Basic bodyweight movement, modify depth as needed',
-                restAdjustment: 0,
-                volumeAdjustment: 0.8,
-                equipment: 'bodyweight'
-            },
-            {
-                name: 'Plank Variations',
-                rationale: 'Core stability without loading',
-                restAdjustment: -15,
-                volumeAdjustment: 0.7,
-                equipment: 'bodyweight'
-            },
-            {
-                name: 'Gentle Stretching Routine',
-                rationale: 'Maintains mobility without stress',
-                restAdjustment: -30,
-                volumeAdjustment: 0.5,
-                equipment: 'bodyweight'
-            }
-        ];
-    }
-
-    /**
-     * Get current split information
-     * @returns {Object} Split info
-     */
-    getSplitInfo() {
-        return {
-            aestheticFocus: this.aestheticFocus,
-            performancePercentage: '70%',
-            aestheticPercentage: '30%',
-            readinessLevel: this.readinessLevel,
-            accessoriesReduced: this.readinessLevel <= 6
-        };
-    }
+  /**
+   * Get current split information
+   * @returns {Object} Split info
+   */
+  getSplitInfo() {
+    return {
+      aestheticFocus: this.aestheticFocus,
+      performancePercentage: '70%',
+      aestheticPercentage: '30%',
+      readinessLevel: this.readinessLevel,
+      accessoriesReduced: this.readinessLevel <= 6,
+    };
+  }
 }
 
 if (typeof window !== 'undefined') {
-    window.ExerciseAdapter = ExerciseAdapter;
+  window.ExerciseAdapter = ExerciseAdapter;
 }
 
 export default ExerciseAdapter;
-

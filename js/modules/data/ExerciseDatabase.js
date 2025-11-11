@@ -4,557 +4,548 @@
  * Enhanced with sport-specific exercise integration
  */
 class ExerciseDatabase {
-    constructor() {
-        this.exercises = [];
-        this.categories = [];
-        this.muscleGroups = [];
-        this.equipment = [];
-        this.logger = window.SafeLogger || console;
-        this.eventBus = window.EventBus;
+  constructor() {
+    this.exercises = [];
+    this.categories = [];
+    this.muscleGroups = [];
+    this.equipment = [];
+    this.logger = window.SafeLogger || console;
+    this.eventBus = window.EventBus;
 
-        // Sport-specific exercise libraries
-        this.sportLibraries = {
-            soccer: window.SoccerExercises,
-            basketball: null, // Would be implemented
-            running: null, // Would be implemented
-            general: null // Would be implemented
-        };
+    // Sport-specific exercise libraries
+    this.sportLibraries = {
+      soccer: window.SoccerExercises,
+      basketball: null, // Would be implemented
+      running: null, // Would be implemented
+      general: null, // Would be implemented
+    };
 
-        this.initializeDatabase();
+    this.initializeDatabase();
+  }
+
+  /**
+   * Initialize exercise database
+   */
+  async initializeDatabase() {
+    try {
+      // Load from localStorage first
+      this.loadFromStorage();
+
+      // Try to load from server
+      await this.loadFromServer();
+
+      this.logger.info('Exercise database initialized', {
+        exercises: this.exercises.length,
+        categories: this.categories.length,
+      });
+    } catch (error) {
+      this.logger.error('Failed to initialize exercise database', error);
     }
+  }
 
-    /**
-     * Initialize exercise database
-     */
-    async initializeDatabase() {
-        try {
-            // Load from localStorage first
-            this.loadFromStorage();
+  /**
+   * Load exercises from localStorage
+   */
+  loadFromStorage() {
+    try {
+      const stored = localStorage.getItem('ignitefitness_exercises');
+      if (stored) {
+        const data = JSON.parse(stored);
+        this.exercises = data.exercises || [];
+        this.categories = data.categories || [];
+        this.muscleGroups = data.muscleGroups || [];
+        this.equipment = data.equipment || [];
+      }
+    } catch (error) {
+      this.logger.error('Failed to load exercises from storage', error);
+    }
+  }
 
-            // Try to load from server
-            await this.loadFromServer();
+  /**
+   * Load exercises from server
+   */
+  async loadFromServer() {
+    try {
+      if (window.ApiClient) {
+        const response = await window.ApiClient.get('/exercises');
+        if (response.success && response.data) {
+          this.exercises = response.data.exercises || [];
+          this.categories = response.data.categories || [];
+          this.muscleGroups = response.data.muscleGroups || [];
+          this.equipment = response.data.equipment || [];
 
-            this.logger.info('Exercise database initialized', {
-                exercises: this.exercises.length,
-                categories: this.categories.length
-            });
-        } catch (error) {
-            this.logger.error('Failed to initialize exercise database', error);
+          // Save to localStorage
+          this.saveToStorage();
         }
+      }
+    } catch (error) {
+      this.logger.warn('Failed to load exercises from server', error);
+    }
+  }
+
+  /**
+   * Save exercises to localStorage
+   */
+  saveToStorage() {
+    try {
+      const data = {
+        exercises: this.exercises,
+        categories: this.categories,
+        muscleGroups: this.muscleGroups,
+        equipment: this.equipment,
+        lastUpdated: Date.now(),
+      };
+      localStorage.setItem('ignitefitness_exercises', JSON.stringify(data));
+    } catch (error) {
+      this.logger.error('Failed to save exercises to storage', error);
+    }
+  }
+
+  /**
+   * Get all exercises
+   * @returns {Array} Exercises
+   */
+  getAllExercises() {
+    return this.exercises;
+  }
+
+  /**
+   * Get exercise by ID
+   * @param {string} id - Exercise ID
+   * @returns {Object|null} Exercise
+   */
+  getExerciseById(id) {
+    return this.exercises.find(exercise => exercise.id === id) || null;
+  }
+
+  /**
+   * Get soccer-shape tag definitions
+   * @returns {Object} Soccer-shape tag definitions
+   */
+  getSoccerShapeTags() {
+    return {
+      acceleration: {
+        name: 'Acceleration',
+        description: 'First 20m sprint speed and explosive starts',
+        color: '#ff6b35',
+        adaptations: ['rate_of_force_development', 'neural_drive', 'stride_frequency'],
+      },
+      COD: {
+        name: 'Change of Direction',
+        description: 'Cutting, pivoting, and multi-directional speed',
+        color: '#f7931e',
+        adaptations: ['reactive_strength', 'proprioception', 'eccentric_strength'],
+      },
+      VO2: {
+        name: 'Aerobic Power',
+        description: 'Maximal oxygen uptake and aerobic capacity',
+        color: '#1e88e5',
+        adaptations: ['cardiac_output', 'mitochondrial_density', 'oxygen_extraction'],
+      },
+      anaerobic_capacity: {
+        name: 'Anaerobic Capacity',
+        description: 'Lactate tolerance and high-intensity repeat ability',
+        color: '#e53935',
+        adaptations: ['lactate_buffering', 'glycolytic_power', 'fatigue_resistance'],
+      },
+      neuromotor: {
+        name: 'Neuromotor',
+        description: 'Coordination, timing, and movement efficiency',
+        color: '#8e24aa',
+        adaptations: ['motor_learning', 'coordination', 'movement_economy'],
+      },
+    };
+  }
+
+  /**
+   * Enhanced tag filtering
+   * @param {Array} exercises - Exercises to filter
+   * @param {Array} requiredTags - Tags that must be present
+   * @param {Array} excludedTags - Tags that must not be present
+   * @returns {Array} Filtered exercises
+   */
+  filterExercisesByTags(exercises, requiredTags = [], excludedTags = []) {
+    return exercises.filter(exercise => {
+      const exerciseTags = exercise.tags || [];
+
+      // Must have all required tags
+      const hasRequired =
+        requiredTags.length === 0 || requiredTags.every(tag => exerciseTags.includes(tag));
+
+      // Must not have any excluded tags
+      const hasExcluded =
+        excludedTags.length > 0 && excludedTags.some(tag => exerciseTags.includes(tag));
+
+      return hasRequired && !hasExcluded;
+    });
+  }
+
+  /**
+   * Search exercises
+   * @param {string} query - Search query
+   * @param {Object} filters - Search filters
+   * @returns {Array} Matching exercises
+   */
+  searchExercises(query, filters = {}) {
+    let results = this.exercises;
+
+    // Apply text search
+    if (query && query.trim()) {
+      const searchTerm = query.toLowerCase();
+      results = results.filter(
+        exercise =>
+          exercise.name.toLowerCase().includes(searchTerm) ||
+          exercise.description?.toLowerCase().includes(searchTerm) ||
+          exercise.instructions?.toLowerCase().includes(searchTerm)
+      );
     }
 
-    /**
-     * Load exercises from localStorage
-     */
-    loadFromStorage() {
-        try {
-            const stored = localStorage.getItem('ignitefitness_exercises');
-            if (stored) {
-                const data = JSON.parse(stored);
-                this.exercises = data.exercises || [];
-                this.categories = data.categories || [];
-                this.muscleGroups = data.muscleGroups || [];
-                this.equipment = data.equipment || [];
-            }
-        } catch (error) {
-            this.logger.error('Failed to load exercises from storage', error);
-        }
+    // Apply filters
+    if (filters.category) {
+      results = results.filter(exercise => exercise.category === filters.category);
     }
 
-    /**
-     * Load exercises from server
-     */
-    async loadFromServer() {
-        try {
-            if (window.ApiClient) {
-                const response = await window.ApiClient.get('/exercises');
-                if (response.success && response.data) {
-                    this.exercises = response.data.exercises || [];
-                    this.categories = response.data.categories || [];
-                    this.muscleGroups = response.data.muscleGroups || [];
-                    this.equipment = response.data.equipment || [];
-
-                    // Save to localStorage
-                    this.saveToStorage();
-                }
-            }
-        } catch (error) {
-            this.logger.warn('Failed to load exercises from server', error);
-        }
+    if (filters.muscleGroup) {
+      results = results.filter(exercise => exercise.muscleGroups?.includes(filters.muscleGroup));
     }
 
-    /**
-     * Save exercises to localStorage
-     */
-    saveToStorage() {
-        try {
-            const data = {
-                exercises: this.exercises,
-                categories: this.categories,
-                muscleGroups: this.muscleGroups,
-                equipment: this.equipment,
-                lastUpdated: Date.now()
-            };
-            localStorage.setItem('ignitefitness_exercises', JSON.stringify(data));
-        } catch (error) {
-            this.logger.error('Failed to save exercises to storage', error);
-        }
+    if (filters.equipment) {
+      results = results.filter(exercise => exercise.equipment === filters.equipment);
     }
 
-    /**
-     * Get all exercises
-     * @returns {Array} Exercises
-     */
-    getAllExercises() {
-        return this.exercises;
+    if (filters.difficulty) {
+      results = results.filter(exercise => exercise.difficulty === filters.difficulty);
     }
 
-    /**
-     * Get exercise by ID
-     * @param {string} id - Exercise ID
-     * @returns {Object|null} Exercise
-     */
-    getExerciseById(id) {
-        return this.exercises.find(exercise => exercise.id === id) || null;
+    // Apply tag filtering if provided
+    if (filters.requiredTags || filters.excludedTags) {
+      results = this.filterExercisesByTags(
+        results,
+        filters.requiredTags || [],
+        filters.excludedTags || []
+      );
     }
 
-    /**
-     * Get soccer-shape tag definitions
-     * @returns {Object} Soccer-shape tag definitions
-     */
-    getSoccerShapeTags() {
-        return {
-            acceleration: {
-                name: 'Acceleration',
-                description: 'First 20m sprint speed and explosive starts',
-                color: '#ff6b35',
-                adaptations: ['rate_of_force_development', 'neural_drive', 'stride_frequency']
-            },
-            COD: {
-                name: 'Change of Direction',
-                description: 'Cutting, pivoting, and multi-directional speed',
-                color: '#f7931e',
-                adaptations: ['reactive_strength', 'proprioception', 'eccentric_strength']
-            },
-            VO2: {
-                name: 'Aerobic Power',
-                description: 'Maximal oxygen uptake and aerobic capacity',
-                color: '#1e88e5',
-                adaptations: ['cardiac_output', 'mitochondrial_density', 'oxygen_extraction']
-            },
-            anaerobic_capacity: {
-                name: 'Anaerobic Capacity',
-                description: 'Lactate tolerance and high-intensity repeat ability',
-                color: '#e53935',
-                adaptations: ['lactate_buffering', 'glycolytic_power', 'fatigue_resistance']
-            },
-            neuromotor: {
-                name: 'Neuromotor',
-                description: 'Coordination, timing, and movement efficiency',
-                color: '#8e24aa',
-                adaptations: ['motor_learning', 'coordination', 'movement_economy']
-            }
-        };
+    return results;
+  }
+
+  /**
+   * Get exercises by category
+   * @param {string} category - Category name
+   * @returns {Array} Exercises
+   */
+  getExercisesByCategory(category) {
+    return this.exercises.filter(exercise => exercise.category === category);
+  }
+
+  /**
+   * Get exercises by muscle group
+   * @param {string} muscleGroup - Muscle group name
+   * @returns {Array} Exercises
+   */
+  getExercisesByMuscleGroup(muscleGroup) {
+    return this.exercises.filter(exercise => exercise.muscleGroups?.includes(muscleGroup));
+  }
+
+  /**
+   * Get exercises by equipment
+   * @param {string} equipment - Equipment name
+   * @returns {Array} Exercises
+   */
+  getExercisesByEquipment(equipment) {
+    return this.exercises.filter(exercise => exercise.equipment === equipment);
+  }
+
+  /**
+   * Get all categories
+   * @returns {Array} Categories
+   */
+  getCategories() {
+    return this.categories;
+  }
+
+  /**
+   * Get all muscle groups
+   * @returns {Array} Muscle groups
+   */
+  getMuscleGroups() {
+    return this.muscleGroups;
+  }
+
+  /**
+   * Get all equipment
+   * @returns {Array} Equipment
+   */
+  getEquipment() {
+    return this.equipment;
+  }
+
+  /**
+   * Add custom exercise
+   * @param {Object} exercise - Exercise data
+   * @returns {Object} Add result
+   */
+  addCustomExercise(exercise) {
+    try {
+      const customExercise = {
+        id: `custom_${Date.now()}`,
+        name: exercise.name,
+        description: exercise.description || '',
+        instructions: exercise.instructions || '',
+        category: exercise.category || 'Custom',
+        muscleGroups: exercise.muscleGroups || [],
+        equipment: exercise.equipment || 'Bodyweight',
+        difficulty: exercise.difficulty || 'Beginner',
+        isCustom: true,
+        createdAt: Date.now(),
+      };
+
+      this.exercises.push(customExercise);
+      this.saveToStorage();
+
+      this.logger.audit('CUSTOM_EXERCISE_ADDED', { name: exercise.name });
+      this.eventBus?.emit('exercise:added', customExercise);
+
+      return { success: true, exercise: customExercise };
+    } catch (error) {
+      this.logger.error('Failed to add custom exercise', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Update custom exercise
+   * @param {string} id - Exercise ID
+   * @param {Object} updates - Updates to apply
+   * @returns {Object} Update result
+   */
+  updateCustomExercise(id, updates) {
+    try {
+      const exerciseIndex = this.exercises.findIndex(ex => ex.id === id);
+      if (exerciseIndex === -1) {
+        return { success: false, error: 'Exercise not found' };
+      }
+
+      const exercise = this.exercises[exerciseIndex];
+      if (!exercise.isCustom) {
+        return { success: false, error: 'Cannot update built-in exercise.' };
+      }
+
+      this.exercises[exerciseIndex] = {
+        ...exercise,
+        ...updates,
+        updatedAt: Date.now(),
+      };
+
+      this.saveToStorage();
+
+      this.logger.audit('CUSTOM_EXERCISE_UPDATED', { id, name: exercise.name });
+      this.eventBus?.emit('exercise:updated', this.exercises[exerciseIndex]);
+
+      return { success: true, exercise: this.exercises[exerciseIndex] };
+    } catch (error) {
+      this.logger.error('Failed to update custom exercise', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Delete custom exercise
+   * @param {string} id - Exercise ID
+   * @returns {Object} Delete result
+   */
+  deleteCustomExercise(id) {
+    try {
+      const exerciseIndex = this.exercises.findIndex(ex => ex.id === id);
+      if (exerciseIndex === -1) {
+        return { success: false, error: 'Exercise not found' };
+      }
+
+      const exercise = this.exercises[exerciseIndex];
+      if (!exercise.isCustom) {
+        return { success: false, error: 'Cannot delete built-in exercise.' };
+      }
+
+      this.exercises.splice(exerciseIndex, 1);
+      this.saveToStorage();
+
+      this.logger.audit('CUSTOM_EXERCISE_DELETED', { id, name: exercise.name });
+      this.eventBus?.emit('exercise:deleted', { id, name: exercise.name });
+
+      return { success: true };
+    } catch (error) {
+      this.logger.error('Failed to delete custom exercise', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Get exercise suggestions based on workout type
+   * @param {string} workoutType - Type of workout
+   * @param {number} count - Number of suggestions
+   * @returns {Array} Exercise suggestions
+   */
+  getExerciseSuggestions(workoutType, count = 5) {
+    const suggestions = {
+      'Upper Body': ['Push-ups', 'Pull-ups', 'Bench Press', 'Shoulder Press', 'Rows'],
+      'Lower Body': ['Squats', 'Lunges', 'Deadlifts', 'Leg Press', 'Calf Raises'],
+      'Full Body': ['Burpees', 'Mountain Climbers', 'Jumping Jacks', 'Plank', 'Kettlebell Swings'],
+      Cardio: ['Running', 'Cycling', 'Rowing', 'Elliptical', 'Jump Rope'],
+      Core: ['Plank', 'Crunches', 'Russian Twists', 'Leg Raises', 'Bicycle Crunches'],
+    };
+
+    const suggestedNames = suggestions[workoutType] || [];
+    return this.exercises
+      .filter(exercise => suggestedNames.includes(exercise.name))
+      .slice(0, count);
+  }
+
+  /**
+   * Get random exercises
+   * @param {number} count - Number of exercises
+   * @param {Object} filters - Filters to apply
+   * @returns {Array} Random exercises
+   */
+  getRandomExercises(count = 5, filters = {}) {
+    let { exercises } = this;
+
+    // Apply filters
+    if (filters.category) {
+      exercises = exercises.filter(ex => ex.category === filters.category);
+    }
+    if (filters.muscleGroup) {
+      exercises = exercises.filter(ex => ex.muscleGroups?.includes(filters.muscleGroup));
+    }
+    if (filters.equipment) {
+      exercises = exercises.filter(ex => ex.equipment === filters.equipment);
     }
 
-    /**
-     * Enhanced tag filtering
-     * @param {Array} exercises - Exercises to filter
-     * @param {Array} requiredTags - Tags that must be present
-     * @param {Array} excludedTags - Tags that must not be present
-     * @returns {Array} Filtered exercises
-     */
-    filterExercisesByTags(exercises, requiredTags = [], excludedTags = []) {
-        return exercises.filter(exercise => {
-            const exerciseTags = exercise.tags || [];
+    // Shuffle and return requested count
+    const shuffled = exercises.sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+  }
 
-            // Must have all required tags
-            const hasRequired = requiredTags.length === 0 ||
-                requiredTags.every(tag => exerciseTags.includes(tag));
+  /**
+   * Get exercise statistics
+   * @returns {Object} Statistics
+   */
+  getStatistics() {
+    return {
+      totalExercises: this.exercises.length,
+      customExercises: this.exercises.filter(ex => ex.isCustom).length,
+      categories: this.categories.length,
+      muscleGroups: this.muscleGroups.length,
+      equipment: this.equipment.length,
+    };
+  }
 
-            // Must not have any excluded tags
-            const hasExcluded = excludedTags.length > 0 &&
-                excludedTags.some(tag => exerciseTags.includes(tag));
+  /**
+   * Get exercises for specific sport and position
+   * @param {string} sportId - Sport ID
+   * @param {string} positionId - Position ID (optional)
+   * @returns {Array} Sport-specific exercises
+   */
+  getSportExercises(sportId, positionId = null) {
+    const sportLibrary = this.sportLibraries[sportId];
+    if (!sportLibrary) {
+      this.logger.warn(`No sport library found for ${sportId}`);
+      return [];
+    }
 
-            return hasRequired && !hasExcluded;
+    if (positionId) {
+      return sportLibrary.getExercisesForPosition(positionId);
+    }
+
+    // Get all exercises for sport
+    const allExercises = [];
+    Object.keys(sportLibrary.exercises).forEach(category => {
+      if (category === 'position_specific') {
+        Object.values(sportLibrary.exercises[category]).forEach(positionGroup => {
+          allExercises.push(...positionGroup);
         });
+      } else {
+        allExercises.push(...sportLibrary.exercises[category]);
+      }
+    });
+
+    return allExercises;
+  }
+
+  /**
+   * Get exercise with sport-specific details
+   * @param {string} exerciseId - Exercise ID
+   * @param {string} sportId - Sport ID
+   * @returns {Object|null} Exercise with sport details
+   */
+  getSportExercise(exerciseId, sportId) {
+    const sportLibrary = this.sportLibraries[sportId];
+    if (!sportLibrary) {
+      return null;
     }
 
-    /**
-     * Search exercises
-     * @param {string} query - Search query
-     * @param {Object} filters - Search filters
-     * @returns {Array} Matching exercises
-     */
-    searchExercises(query, filters = {}) {
-        let results = this.exercises;
+    return sportLibrary.getExercise(exerciseId);
+  }
 
-        // Apply text search
-        if (query && query.trim()) {
-            const searchTerm = query.toLowerCase();
-            results = results.filter(exercise =>
-                exercise.name.toLowerCase().includes(searchTerm) ||
-                exercise.description?.toLowerCase().includes(searchTerm) ||
-                exercise.instructions?.toLowerCase().includes(searchTerm)
-            );
+  /**
+   * Search exercises across all sports
+   * @param {string} query - Search query
+   * @param {string} sportId - Sport ID (optional)
+   * @returns {Array} Matching exercises
+   */
+  searchSportExercises(query, sportId = null) {
+    const results = [];
+
+    if (sportId) {
+      const sportLibrary = this.sportLibraries[sportId];
+      if (sportLibrary && sportLibrary.searchExercises) {
+        return sportLibrary.searchExercises(query);
+      }
+    } else {
+      // Search across all sport libraries
+      Object.values(this.sportLibraries).forEach(sportLibrary => {
+        if (sportLibrary && sportLibrary.searchExercises) {
+          results.push(...sportLibrary.searchExercises(query));
         }
-
-        // Apply filters
-        if (filters.category) {
-            results = results.filter(exercise =>
-                exercise.category === filters.category
-            );
-        }
-
-        if (filters.muscleGroup) {
-            results = results.filter(exercise =>
-                exercise.muscleGroups?.includes(filters.muscleGroup)
-            );
-        }
-
-        if (filters.equipment) {
-            results = results.filter(exercise =>
-                exercise.equipment === filters.equipment
-            );
-        }
-
-        if (filters.difficulty) {
-            results = results.filter(exercise =>
-                exercise.difficulty === filters.difficulty
-            );
-        }
-
-        // Apply tag filtering if provided
-        if (filters.requiredTags || filters.excludedTags) {
-            results = this.filterExercisesByTags(
-                results,
-                filters.requiredTags || [],
-                filters.excludedTags || []
-            );
-        }
-
-        return results;
+      });
     }
 
-    /**
-     * Get exercises by category
-     * @param {string} category - Category name
-     * @returns {Array} Exercises
-     */
-    getExercisesByCategory(category) {
-        return this.exercises.filter(exercise => exercise.category === category);
+    return results;
+  }
+
+  /**
+   * Integrate sport exercises with general database
+   * @param {string} sportId - Sport ID
+   */
+  integrateSportExercises(sportId) {
+    const sportLibrary = this.sportLibraries[sportId];
+    if (!sportLibrary) {
+      return;
     }
 
-    /**
-     * Get exercises by muscle group
-     * @param {string} muscleGroup - Muscle group name
-     * @returns {Array} Exercises
-     */
-    getExercisesByMuscleGroup(muscleGroup) {
-        return this.exercises.filter(exercise =>
-            exercise.muscleGroups?.includes(muscleGroup)
-        );
-    }
+    const sportExercises = this.getSportExercises(sportId);
 
-    /**
-     * Get exercises by equipment
-     * @param {string} equipment - Equipment name
-     * @returns {Array} Exercises
-     */
-    getExercisesByEquipment(equipment) {
-        return this.exercises.filter(exercise => exercise.equipment === equipment);
-    }
-
-    /**
-     * Get all categories
-     * @returns {Array} Categories
-     */
-    getCategories() {
-        return this.categories;
-    }
-
-    /**
-     * Get all muscle groups
-     * @returns {Array} Muscle groups
-     */
-    getMuscleGroups() {
-        return this.muscleGroups;
-    }
-
-    /**
-     * Get all equipment
-     * @returns {Array} Equipment
-     */
-    getEquipment() {
-        return this.equipment;
-    }
-
-    /**
-     * Add custom exercise
-     * @param {Object} exercise - Exercise data
-     * @returns {Object} Add result
-     */
-    addCustomExercise(exercise) {
-        try {
-            const customExercise = {
-                id: `custom_${Date.now()}`,
-                name: exercise.name,
-                description: exercise.description || '',
-                instructions: exercise.instructions || '',
-                category: exercise.category || 'Custom',
-                muscleGroups: exercise.muscleGroups || [],
-                equipment: exercise.equipment || 'Bodyweight',
-                difficulty: exercise.difficulty || 'Beginner',
-                isCustom: true,
-                createdAt: Date.now()
-            };
-
-            this.exercises.push(customExercise);
-            this.saveToStorage();
-
-            this.logger.audit('CUSTOM_EXERCISE_ADDED', { name: exercise.name });
-            this.eventBus?.emit('exercise:added', customExercise);
-
-            return { success: true, exercise: customExercise };
-        } catch (error) {
-            this.logger.error('Failed to add custom exercise', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    /**
-     * Update custom exercise
-     * @param {string} id - Exercise ID
-     * @param {Object} updates - Updates to apply
-     * @returns {Object} Update result
-     */
-    updateCustomExercise(id, updates) {
-        try {
-            const exerciseIndex = this.exercises.findIndex(ex => ex.id === id);
-            if (exerciseIndex === -1) {
-                return { success: false, error: 'Exercise not found' };
-            }
-
-            const exercise = this.exercises[exerciseIndex];
-            if (!exercise.isCustom) {
-                return { success: false, error: 'Cannot update built-in exercise.' };
-            }
-
-            this.exercises[exerciseIndex] = {
-                ...exercise,
-                ...updates,
-                updatedAt: Date.now()
-            };
-
-            this.saveToStorage();
-
-            this.logger.audit('CUSTOM_EXERCISE_UPDATED', { id, name: exercise.name });
-            this.eventBus?.emit('exercise:updated', this.exercises[exerciseIndex]);
-
-            return { success: true, exercise: this.exercises[exerciseIndex] };
-        } catch (error) {
-            this.logger.error('Failed to update custom exercise', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    /**
-     * Delete custom exercise
-     * @param {string} id - Exercise ID
-     * @returns {Object} Delete result
-     */
-    deleteCustomExercise(id) {
-        try {
-            const exerciseIndex = this.exercises.findIndex(ex => ex.id === id);
-            if (exerciseIndex === -1) {
-                return { success: false, error: 'Exercise not found' };
-            }
-
-            const exercise = this.exercises[exerciseIndex];
-            if (!exercise.isCustom) {
-                return { success: false, error: 'Cannot delete built-in exercise.' };
-            }
-
-            this.exercises.splice(exerciseIndex, 1);
-            this.saveToStorage();
-
-            this.logger.audit('CUSTOM_EXERCISE_DELETED', { id, name: exercise.name });
-            this.eventBus?.emit('exercise:deleted', { id, name: exercise.name });
-
-            return { success: true };
-        } catch (error) {
-            this.logger.error('Failed to delete custom exercise', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    /**
-     * Get exercise suggestions based on workout type
-     * @param {string} workoutType - Type of workout
-     * @param {number} count - Number of suggestions
-     * @returns {Array} Exercise suggestions
-     */
-    getExerciseSuggestions(workoutType, count = 5) {
-        const suggestions = {
-            'Upper Body': ['Push-ups', 'Pull-ups', 'Bench Press', 'Shoulder Press', 'Rows'],
-            'Lower Body': ['Squats', 'Lunges', 'Deadlifts', 'Leg Press', 'Calf Raises'],
-            'Full Body': ['Burpees', 'Mountain Climbers', 'Jumping Jacks', 'Plank', 'Kettlebell Swings'],
-            'Cardio': ['Running', 'Cycling', 'Rowing', 'Elliptical', 'Jump Rope'],
-            'Core': ['Plank', 'Crunches', 'Russian Twists', 'Leg Raises', 'Bicycle Crunches']
-        };
-
-        const suggestedNames = suggestions[workoutType] || [];
-        return this.exercises.filter(exercise =>
-            suggestedNames.includes(exercise.name)
-        ).slice(0, count);
-    }
-
-    /**
-     * Get random exercises
-     * @param {number} count - Number of exercises
-     * @param {Object} filters - Filters to apply
-     * @returns {Array} Random exercises
-     */
-    getRandomExercises(count = 5, filters = {}) {
-        let {exercises} = this;
-
-        // Apply filters
-        if (filters.category) {
-            exercises = exercises.filter(ex => ex.category === filters.category);
-        }
-        if (filters.muscleGroup) {
-            exercises = exercises.filter(ex => ex.muscleGroups?.includes(filters.muscleGroup));
-        }
-        if (filters.equipment) {
-            exercises = exercises.filter(ex => ex.equipment === filters.equipment);
-        }
-
-        // Shuffle and return requested count
-        const shuffled = exercises.sort(() => 0.5 - Math.random());
-        return shuffled.slice(0, count);
-    }
-
-    /**
-     * Get exercise statistics
-     * @returns {Object} Statistics
-     */
-    getStatistics() {
-        return {
-            totalExercises: this.exercises.length,
-            customExercises: this.exercises.filter(ex => ex.isCustom).length,
-            categories: this.categories.length,
-            muscleGroups: this.muscleGroups.length,
-            equipment: this.equipment.length
-        };
-    }
-
-    /**
-     * Get exercises for specific sport and position
-     * @param {string} sportId - Sport ID
-     * @param {string} positionId - Position ID (optional)
-     * @returns {Array} Sport-specific exercises
-     */
-    getSportExercises(sportId, positionId = null) {
-        const sportLibrary = this.sportLibraries[sportId];
-        if (!sportLibrary) {
-            this.logger.warn(`No sport library found for ${sportId}`);
-            return [];
-        }
-
-        if (positionId) {
-            return sportLibrary.getExercisesForPosition(positionId);
-        }
-
-        // Get all exercises for sport
-        const allExercises = [];
-        Object.keys(sportLibrary.exercises).forEach(category => {
-            if (category === 'position_specific') {
-                Object.values(sportLibrary.exercises[category]).forEach(positionGroup => {
-                    allExercises.push(...positionGroup);
-                });
-            } else {
-                allExercises.push(...sportLibrary.exercises[category]);
-            }
+    // Add sport exercises to general database
+    sportExercises.forEach(exercise => {
+      const existingIndex = this.exercises.findIndex(ex => ex.id === exercise.id);
+      if (existingIndex === -1) {
+        this.exercises.push({
+          ...exercise,
+          sport: sportId,
+          source: 'sport_specific',
         });
+      } else {
+        // Update existing exercise with sport-specific details
+        this.exercises[existingIndex] = {
+          ...this.exercises[existingIndex],
+          ...exercise,
+          sport: sportId,
+          source: 'integrated',
+        };
+      }
+    });
 
-        return allExercises;
-    }
-
-    /**
-     * Get exercise with sport-specific details
-     * @param {string} exerciseId - Exercise ID
-     * @param {string} sportId - Sport ID
-     * @returns {Object|null} Exercise with sport details
-     */
-    getSportExercise(exerciseId, sportId) {
-        const sportLibrary = this.sportLibraries[sportId];
-        if (!sportLibrary) {
-            return null;
-        }
-
-        return sportLibrary.getExercise(exerciseId);
-    }
-
-    /**
-     * Search exercises across all sports
-     * @param {string} query - Search query
-     * @param {string} sportId - Sport ID (optional)
-     * @returns {Array} Matching exercises
-     */
-    searchSportExercises(query, sportId = null) {
-        const results = [];
-
-        if (sportId) {
-            const sportLibrary = this.sportLibraries[sportId];
-            if (sportLibrary && sportLibrary.searchExercises) {
-                return sportLibrary.searchExercises(query);
-            }
-        } else {
-            // Search across all sport libraries
-            Object.values(this.sportLibraries).forEach(sportLibrary => {
-                if (sportLibrary && sportLibrary.searchExercises) {
-                    results.push(...sportLibrary.searchExercises(query));
-                }
-            });
-        }
-
-        return results;
-    }
-
-    /**
-     * Integrate sport exercises with general database
-     * @param {string} sportId - Sport ID
-     */
-    integrateSportExercises(sportId) {
-        const sportLibrary = this.sportLibraries[sportId];
-        if (!sportLibrary) {
-            return;
-        }
-
-        const sportExercises = this.getSportExercises(sportId);
-
-        // Add sport exercises to general database
-        sportExercises.forEach(exercise => {
-            const existingIndex = this.exercises.findIndex(ex => ex.id === exercise.id);
-            if (existingIndex === -1) {
-                this.exercises.push({
-                    ...exercise,
-                    sport: sportId,
-                    source: 'sport_specific'
-                });
-            } else {
-                // Update existing exercise with sport-specific details
-                this.exercises[existingIndex] = {
-                    ...this.exercises[existingIndex],
-                    ...exercise,
-                    sport: sportId,
-                    source: 'integrated'
-                };
-            }
-        });
-
-        this.logger.info(`Integrated ${sportExercises.length} exercises for ${sportId}`);
-    }
+    this.logger.info(`Integrated ${sportExercises.length} exercises for ${sportId}`);
+  }
 }
 
 // Create global instance
@@ -562,5 +553,5 @@ window.ExerciseDatabase = new ExerciseDatabase();
 
 // Export for module systems
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = ExerciseDatabase;
+  module.exports = ExerciseDatabase;
 }

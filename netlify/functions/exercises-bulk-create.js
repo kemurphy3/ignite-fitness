@@ -5,10 +5,10 @@ const {
   errorResponse,
   successResponse,
   preflightResponse,
-  withTransaction
+  withTransaction,
 } = require('./_base');
 
-exports.handler = async (event) => {
+exports.handler = async event => {
   // Handle preflight requests
   if (event.httpMethod === 'OPTIONS') {
     return preflightResponse();
@@ -58,15 +58,37 @@ exports.handler = async (event) => {
       const exercise = body.exercises[i];
 
       if (!exercise.name || typeof exercise.name !== 'string') {
-        return errorResponse(400, 'VALIDATION_ERROR', `Exercise ${i + 1}: name is required and must be a string`);
+        return errorResponse(
+          400,
+          'VALIDATION_ERROR',
+          `Exercise ${i + 1}: name is required and must be a string`
+        );
       }
 
-      if (!exercise.sets || !Number.isInteger(exercise.sets) || exercise.sets < 1 || exercise.sets > 20) {
-        return errorResponse(400, 'VALIDATION_ERROR', `Exercise ${i + 1}: sets must be an integer between 1 and 20`);
+      if (
+        !exercise.sets ||
+        !Number.isInteger(exercise.sets) ||
+        exercise.sets < 1 ||
+        exercise.sets > 20
+      ) {
+        return errorResponse(
+          400,
+          'VALIDATION_ERROR',
+          `Exercise ${i + 1}: sets must be an integer between 1 and 20`
+        );
       }
 
-      if (!exercise.reps || !Number.isInteger(exercise.reps) || exercise.reps < 1 || exercise.reps > 100) {
-        return errorResponse(400, 'VALIDATION_ERROR', `Exercise ${i + 1}: reps must be an integer between 1 and 100`);
+      if (
+        !exercise.reps ||
+        !Number.isInteger(exercise.reps) ||
+        exercise.reps < 1 ||
+        exercise.reps > 100
+      ) {
+        return errorResponse(
+          400,
+          'VALIDATION_ERROR',
+          `Exercise ${i + 1}: reps must be an integer between 1 and 100`
+        );
       }
 
       const validatedExercise = {
@@ -75,7 +97,7 @@ exports.handler = async (event) => {
         reps: exercise.reps,
         weight: exercise.weight ? Math.max(0, Math.min(500, Number(exercise.weight))) : null,
         rpe: exercise.rpe ? Math.max(1, Math.min(10, Number(exercise.rpe))) : null,
-        notes: exercise.notes ? exercise.notes.trim().substring(0, 500) : null // Trim and limit to 500 chars
+        notes: exercise.notes ? exercise.notes.trim().substring(0, 500) : null, // Trim and limit to 500 chars
       };
 
       validatedExercises.push(validatedExercise);
@@ -84,7 +106,7 @@ exports.handler = async (event) => {
     const sql = getDB();
 
     // Use transaction to ensure all-or-nothing insert
-    const result = await withTransaction(sql, async (tx) => {
+    const result = await withTransaction(sql, async tx => {
       // Verify session ownership
       const session = await tx`
         SELECT id FROM sessions 
@@ -106,7 +128,7 @@ exports.handler = async (event) => {
         rpe: exercise.rpe,
         notes: exercise.notes,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       }));
 
       // Bulk insert exercises
@@ -119,22 +141,24 @@ exports.handler = async (event) => {
       return insertedExercises;
     });
 
-    return successResponse({
-      session_id: sessionId,
-      exercises: result.map(exercise => ({
-        id: exercise.id,
-        name: exercise.name,
-        sets: exercise.sets,
-        reps: exercise.reps,
-        weight: exercise.weight,
-        rpe: exercise.rpe,
-        notes: exercise.notes,
-        created_at: exercise.created_at,
-        updated_at: exercise.updated_at
-      })),
-      count: result.length
-    }, 201);
-
+    return successResponse(
+      {
+        session_id: sessionId,
+        exercises: result.map(exercise => ({
+          id: exercise.id,
+          name: exercise.name,
+          sets: exercise.sets,
+          reps: exercise.reps,
+          weight: exercise.weight,
+          rpe: exercise.rpe,
+          notes: exercise.notes,
+          created_at: exercise.created_at,
+          updated_at: exercise.updated_at,
+        })),
+        count: result.length,
+      },
+      201
+    );
   } catch (error) {
     console.error('Exercises Bulk Create API Error:', error);
 
@@ -144,13 +168,19 @@ exports.handler = async (event) => {
     }
 
     if (error.message.includes('access denied')) {
-      return errorResponse(403, 'ACCESS_DENIED', 'You do not have permission to add exercises to this session');
+      return errorResponse(
+        403,
+        'ACCESS_DENIED',
+        'You do not have permission to add exercises to this session'
+      );
     }
 
     // Handle database connection errors
-    if (error.message.includes('DATABASE_URL not configured') ||
-        error.message.includes('connection') ||
-        error.message.includes('timeout')) {
+    if (
+      error.message.includes('DATABASE_URL not configured') ||
+      error.message.includes('connection') ||
+      error.message.includes('timeout')
+    ) {
       return errorResponse(503, 'SERVICE_UNAVAILABLE', 'Database service unavailable');
     }
 

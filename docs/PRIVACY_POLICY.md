@@ -2,9 +2,11 @@
 
 ## Data Collection and Usage
 
-Ignite Fitness collects and processes personal data to provide personalized fitness coaching services. This includes:
+Ignite Fitness collects and processes personal data to provide personalized
+fitness coaching services. This includes:
 
-- **Activity Data**: Workout sessions, exercise performance, and progress tracking
+- **Activity Data**: Workout sessions, exercise performance, and progress
+  tracking
 - **Health Metrics**: Heart rate, readiness scores, and recovery indicators
 - **User Preferences**: Training goals, preferences, and settings
 - **External Data**: Strava activity imports (with user consent)
@@ -14,8 +16,10 @@ Ignite Fitness collects and processes personal data to provide personalized fitn
 ### Automatic Data Retention
 
 - **Default Retention Period**: 365 days (1 year)
-- **User Control**: Users can modify retention settings in their account preferences
-- **Automatic Deletion**: Old data is automatically deleted based on user-specified retention periods
+- **User Control**: Users can modify retention settings in their account
+  preferences
+- **Automatic Deletion**: Old data is automatically deleted based on
+  user-specified retention periods
 
 ### Data Deletion Options
 
@@ -25,14 +29,14 @@ Ignite Fitness collects and processes personal data to provide personalized fitn
 
 ### Retention Categories
 
-| Data Type | Default Retention | User Control |
-|-----------|------------------|--------------|
-| Activity Records | 365 days | Yes |
-| Activity Streams | 365 days | Yes |
-| Daily Aggregates | 365 days | Yes |
-| Workout Plans | 365 days | Yes |
-| Check-in Data | 365 days | Yes |
-| User Preferences | Until account deletion | Yes |
+| Data Type        | Default Retention      | User Control |
+| ---------------- | ---------------------- | ------------ |
+| Activity Records | 365 days               | Yes          |
+| Activity Streams | 365 days               | Yes          |
+| Daily Aggregates | 365 days               | Yes          |
+| Workout Plans    | 365 days               | Yes          |
+| Check-in Data    | 365 days               | Yes          |
+| User Preferences | Until account deletion | Yes          |
 
 ## GDPR Compliance
 
@@ -109,6 +113,7 @@ Users can control their data through:
 ### Data Protection Officer
 
 For privacy-related inquiries:
+
 - **Email**: privacy@ignitefitness.com
 - **Address**: [Company Address]
 - **Phone**: [Contact Number]
@@ -116,13 +121,16 @@ For privacy-related inquiries:
 ### Data Retention Requests
 
 To request data deletion or modification:
+
 1. Use the in-app data retention settings
 2. Contact support with specific requests
 3. Submit formal GDPR requests via email
 
 ## Policy Updates
 
-This privacy policy may be updated periodically. Users will be notified of significant changes via:
+This privacy policy may be updated periodically. Users will be notified of
+significant changes via:
+
 - **Email Notification**: Direct email to registered users
 - **In-App Notification**: Prominent notification in the application
 - **Website Update**: Updated policy posted on the website
@@ -137,7 +145,8 @@ This privacy policy may be updated periodically. Users will be notified of signi
 
 ### Regulatory Compliance
 
-- **GDPR Compliance**: Full compliance with EU General Data Protection Regulation
+- **GDPR Compliance**: Full compliance with EU General Data Protection
+  Regulation
 - **CCPA Compliance**: Compliance with California Consumer Privacy Act
 - **Industry Standards**: Adherence to fitness and health data standards
 
@@ -155,6 +164,7 @@ This privacy policy may be updated periodically. Users will be notified of signi
 ### User Notification
 
 Users will be notified of data breaches affecting their personal data via:
+
 - **Email**: Direct notification to registered email
 - **In-App Alert**: Prominent notification in the application
 - **Public Disclosure**: Public statement if required by law
@@ -170,7 +180,8 @@ Users will be notified of data breaches affecting their personal data via:
 
 ## Children's Privacy
 
-Ignite Fitness does not knowingly collect personal data from children under 16. If such data is discovered, it will be immediately deleted.
+Ignite Fitness does not knowingly collect personal data from children under 16.
+If such data is discovered, it will be immediately deleted.
 
 ## Data Minimization
 
@@ -195,8 +206,10 @@ Ignite Fitness does not knowingly collect personal data from children under 16. 
 ### Privacy Complaints
 
 Users can file privacy complaints through:
+
 1. **Internal Process**: Contact our Data Protection Officer
-2. **Regulatory Authority**: File complaints with relevant data protection authority
+2. **Regulatory Authority**: File complaints with relevant data protection
+   authority
 3. **Legal Recourse**: Pursue legal remedies as available
 
 ### Response Timeline
@@ -207,5 +220,4 @@ Users can file privacy complaints through:
 
 ---
 
-*Last Updated: [Current Date]*
-*Version: 1.0*
+_Last Updated: [Current Date]_ _Version: 1.0_

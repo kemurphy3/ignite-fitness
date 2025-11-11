@@ -4,210 +4,210 @@
  */
 
 .nutrition-card {
-    background: var(--theme-background);
-    border-radius: var(--border-radius-lg);
-    padding: var(--space-4);
-    margin-bottom: var(--space-4);
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--theme-border);
+  background: var(--theme-background);
+  border-radius: var(--border-radius-lg);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--theme-border);
 }
 
 .nutrition-card .card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
 }
 
 .nutrition-card .card-header h3 {
-    margin: 0;
-    font-size: var(--text-lg);
-    color: var(--theme-text);
+  margin: 0;
+  font-size: var(--text-lg);
+  color: var(--theme-text);
 }
 
 .nutrition-card .day-type-badge {
-    padding: var(--space-1) var(--space-3);
-    border-radius: var(--border-radius-full);
-    font-size: var(--text-xs);
-    font-weight: 600;
-    text-transform: uppercase;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--border-radius-full);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
 }
 
 .nutrition-card .day-type-badge.game {
-    background: var(--sport-soccer-accent);
-    color: var(--theme-secondary);
+  background: var(--sport-soccer-accent);
+  color: var(--theme-secondary);
 }
 
 .nutrition-card .day-type-badge.training {
-    background: var(--sport-soccer-primary);
-    color: var(--theme-secondary);
+  background: var(--sport-soccer-primary);
+  color: var(--theme-secondary);
 }
 
 .nutrition-card .day-type-badge.rest {
-    background: var(--theme-muted);
-    color: var(--theme-text);
+  background: var(--theme-muted);
+  color: var(--theme-text);
 }
 
 /* Macro Summary */
 .macros-summary {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-    margin-bottom: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
 .macro-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: var(--space-2);
-    border-radius: var(--border-radius-sm);
-    background: var(--theme-surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2);
+  border-radius: var(--border-radius-sm);
+  background: var(--theme-surface);
 }
 
 .macro-item.target {
-    background: var(--gradient-soccer);
-    color: var(--theme-secondary);
-    font-weight: 700;
+  background: var(--gradient-soccer);
+  color: var(--theme-secondary);
+  font-weight: 700;
 }
 
 .macro-label {
-    font-size: var(--text-sm);
-    color: var(--theme-text-secondary);
+  font-size: var(--text-sm);
+  color: var(--theme-text-secondary);
 }
 
 .macro-value {
-    font-size: var(--text-lg);
-    font-weight: 600;
-    color: var(--theme-text);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--theme-text);
 }
 
 .macro-item .macro-value {
-    margin-left: auto;
+  margin-left: auto;
 }
 
 /* Macro Progress Bars */
 .macro-progress {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
 }
 
 .macro-bar-container {
-    flex: 1;
-    height: 8px;
-    background: var(--theme-surface);
-    border-radius: var(--border-radius-full);
-    overflow: hidden;
+  flex: 1;
+  height: 8px;
+  background: var(--theme-surface);
+  border-radius: var(--border-radius-full);
+  overflow: hidden;
 }
 
 .macro-bar-fill {
-    height: 100%;
-    transition: width 0.3s ease;
+  height: 100%;
+  transition: width 0.3s ease;
 }
 
 .macro-bar-fill.protein {
-    background: var(--gradient-soccer-primary);
+  background: var(--gradient-soccer-primary);
 }
 
 .macro-bar-fill.carbs {
-    background: var(--sport-soccer-primary);
+  background: var(--sport-soccer-primary);
 }
 
 .macro-bar-fill.fat {
-    background: var(--sport-soccer-accent);
+  background: var(--sport-soccer-accent);
 }
 
 /* Hydration Section */
 .hydration-section {
-    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-    border-radius: var(--border-radius-md);
-    padding: var(--space-3);
-    margin-bottom: var(--space-4);
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border-radius: var(--border-radius-md);
+  padding: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
 .hydration-target {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    margin-bottom: var(--space-2);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
 }
 
 .hydration-icon {
-    font-size: var(--text-2xl);
+  font-size: var(--text-2xl);
 }
 
 .hydration-label {
-    flex: 1;
-    font-size: var(--text-sm);
-    color: var(--theme-text-secondary);
+  flex: 1;
+  font-size: var(--text-sm);
+  color: var(--theme-text-secondary);
 }
 
 .hydration-value {
-    font-size: var(--text-lg);
-    font-weight: 700;
-    color: var(--theme-text);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--theme-text);
 }
 
 .hydration-tip {
-    font-size: var(--text-xs);
-    color: var(--theme-text-secondary);
-    font-style: italic;
+  font-size: var(--text-xs);
+  color: var(--theme-text-secondary);
+  font-style: italic;
 }
 
 /* Meal Examples */
 .meal-examples {
-    margin-bottom: var(--space-4);
+  margin-bottom: var(--space-4);
 }
 
 .meal-examples h4 {
-    font-size: var(--text-sm);
-    color: var(--theme-text-secondary);
-    margin-bottom: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--theme-text-secondary);
+  margin-bottom: var(--space-2);
 }
 
 .meal-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-2);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
 }
 
 .meal-item {
-    padding: var(--space-2);
-    background: var(--theme-surface);
-    border-radius: var(--border-radius-sm);
-    font-size: var(--text-sm);
+  padding: var(--space-2);
+  background: var(--theme-surface);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--text-sm);
 }
 
 /* Card Footer */
 .card-footer {
-    margin-top: var(--space-4);
-    padding-top: var(--space-3);
-    border-top: 1px solid var(--theme-border);
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--theme-border);
 }
 
 .rationale-text {
-    font-size: var(--text-sm);
-    color: var(--theme-text-secondary);
-    line-height: var(--line-height-relaxed);
-    font-style: italic;
+  font-size: var(--text-sm);
+  color: var(--theme-text-secondary);
+  line-height: var(--line-height-relaxed);
+  font-style: italic;
 }
 
 /* Responsive */
 @media (min-width: 768px) {
-    .meal-grid {
-        grid-template-columns: 1fr 1fr 1fr;
-    }
+  .meal-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
 }
 
 @media (max-width: 400px) {
-    .nutrition-card {
-        padding: var(--space-3);
-    }
-    
-    .macro-progress {
-        flex-direction: column;
-        align-items: flex-start;
-    }
+  .nutrition-card {
+    padding: var(--space-3);
+  }
+
+  .macro-progress {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }

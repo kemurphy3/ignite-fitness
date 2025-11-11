@@ -20,13 +20,13 @@ async function checkDatabaseHealth() {
     return {
       healthy: true,
       timestamp: result[0].current_time,
-      connection: 'active'
+      connection: 'active',
     };
   } catch (error) {
     return {
       healthy: false,
       error: error.message,
-      connection: 'failed'
+      connection: 'failed',
     };
   }
 }
@@ -76,7 +76,7 @@ async function getDatabaseStats() {
       sql`SELECT COUNT(*) as count FROM strava_tokens`,
       sql`SELECT COUNT(*) as count FROM strava_token_audit WHERE created_at > NOW() - INTERVAL '24 hours'`,
       sql`SELECT COUNT(*) as count FROM api_rate_limits WHERE request_timestamp > NOW() - INTERVAL '1 hour'`,
-      sql`SELECT COUNT(*) as count FROM circuit_breaker_state`
+      sql`SELECT COUNT(*) as count FROM circuit_breaker_state`,
     ]);
 
     return {
@@ -84,13 +84,13 @@ async function getDatabaseStats() {
       auditLogs24h: parseInt(audit[0].count),
       rateLimits1h: parseInt(rateLimits[0].count),
       circuitBreakers: parseInt(circuitBreakers[0].count),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   } catch (error) {
     console.error('Database stats failed:', error);
     return {
       error: error.message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 }
@@ -102,5 +102,5 @@ module.exports = {
   withTransaction,
   cleanupRateLimits,
   cleanupExpiredLocks,
-  getDatabaseStats
+  getDatabaseStats,
 };

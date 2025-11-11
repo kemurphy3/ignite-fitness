@@ -1,11 +1,14 @@
 # Prompt D — Manual/App-Logged ↔ External Linking UX Implementation Summary
 
 ## ✅ **Objective Completed**
-Prevent double counting and keep user agency when manual sessions merge with external activities.
+
+Prevent double counting and keep user agency when manual sessions merge with
+external activities.
 
 ## 📊 **Implementation Results**
 
 ### **🔗 LinkBanner UI Component**
+
 - Occurrence: Shows when manual session is merged with an external activity
 - Status: `js/modules/ui/activities/LinkBanner.js`
 - Banner actions:
@@ -14,6 +17,7 @@ Prevent double counting and keep user agency when manual sessions merge with ext
   - Use secondary only (e.g., Manual only): Soft ignore primary
 
 ### **⚙️ LinkingActions Module**
+
 - **File**: `js/modules/integrations/linking/linkingActions.js`
 - **Capabilities**:
   - Handle user link decisions
@@ -25,6 +29,7 @@ Prevent double counting and keep user agency when manual sessions merge with ext
 ### **🎨 UX Features**
 
 #### **Link Banner Display**
+
 - Detects multi-source activities (source_set with 2+ entries)
 - Sorts by richness
 - Action buttons:
@@ -35,11 +40,13 @@ Prevent double counting and keep user agency when manual sessions merge with ext
 - Auto-hide after "Keep both" selection
 
 #### **Preference Persistence**
+
 - Persisted per activity
 - Survives refreshes
 - Per-activity control
 
 #### **Aggregate Impact**
+
 - Exclusions affect training load on next recompute
 - Triggers recalculation for the activity date
 - Emits `activity:exclusion:changed`
@@ -47,6 +54,7 @@ Prevent double counting and keep user agency when manual sessions merge with ext
 ## 🎯 **Linking Actions Explained**
 
 ### **Action 1: Keep Both (Default)**
+
 ```javascript
 {
   action: 'keep-both',
@@ -55,11 +63,13 @@ Prevent double counting and keep user agency when manual sessions merge with ext
   message: 'Keeping both sources active'
 }
 ```
+
 - Both sources stay active
 - Canonical remains richest
 - No aggregate recalculation
 
 ### **Action 2: Use Primary Only (e.g., Strava)**
+
 ```javascript
 {
   action: 'use-primary',
@@ -68,11 +78,13 @@ Prevent double counting and keep user agency when manual sessions merge with ext
   message: 'Using Strava only'
 }
 ```
+
 - Primary is canonical
 - Secondary marked excluded
 - Triggers aggregate recalculation
 
 ### **Action 3: Use Secondary Only (e.g., Manual)**
+
 ```javascript
 {
   action: 'use-secondary',
@@ -81,6 +93,7 @@ Prevent double counting and keep user agency when manual sessions merge with ext
   message: 'Using Manual only'
 }
 ```
+
 - Secondary becomes canonical
 - Primary soft ignored (external source)
 - Triggers aggregate recalculation
@@ -88,6 +101,7 @@ Prevent double counting and keep user agency when manual sessions merge with ext
 ## 🧪 **Unit Tests**
 
 ### **Test Coverage** (`tests/integrations/activity-linking.test.js`)
+
 - **16/16 tests passing**
 - **LinkingActions** (9 tests):
   - `handleLinkDecision` (4 tests)
@@ -100,6 +114,7 @@ Prevent double counting and keep user agency when manual sessions merge with ext
 ## 🔄 **User Flow**
 
 ### **1. Activity Merge Detection**
+
 ```
 Activity imported with multiple sources
 → source_set: { manual: {...}, strava: {...} }
@@ -107,6 +122,7 @@ Activity imported with multiple sources
 ```
 
 ### **2. User Makes Decision**
+
 ```
 User clicks "Use Strava only"
 → LinkingActions.handleLinkDecision()
@@ -115,6 +131,7 @@ User clicks "Use Strava only"
 ```
 
 ### **3. Impact**
+
 ```
 Exclusion stored in storage
 → Triggers aggregate recalculation
@@ -123,6 +140,7 @@ Exclusion stored in storage
 ```
 
 ### **4. Persistence**
+
 ```
 Preference persists on refresh
 → LinkBanner checks preference
@@ -133,16 +151,19 @@ Preference persists on refresh
 ## 📋 **Definition of Done - ACHIEVED**
 
 ### ✅ **Toggle Affects Training Load and Plan**
+
 - Excluding a linked record triggers aggregate recalculation
 - Changes propagate to the next plan recompute
 - `activity:exclusion:changed` emitted
 
 ### ✅ **State Persists on Refresh**
+
 - Preferences saved to storage
 - Excluded sources tracked
 - Per-activity preferences
 
 ### ✅ **Unit Test: Excluding Linked Record Changes Aggregates**
+
 - 16 tests covering exclusions, preferences, persistence
 - Simulates aggregate recalculation triggers
 - Independent tracking across activities
@@ -150,21 +171,25 @@ Preference persists on refresh
 ## 🚀 **Technical Features**
 
 ### **Smart Source Sorting**
+
 - Sources sorted by richness
 - Primary (richest) vs secondary
 - Action wording adapts
 
 ### **Soft Ignore for External Sources**
+
 - External sources are soft ignored, not deleted
 - User can revert
 - Manual sources can be excluded
 
 ### **Event-Driven Architecture**
+
 - `activity:exclusion:changed` signal
 - Other modules can listen and react
 - Enables updates across components
 
 ### **Banner UX**
+
 - Inline feedback
 - Auto-hide after "Keep both"
 - Error handling
@@ -172,11 +197,13 @@ Preference persists on refresh
 ## 📁 **Files Created**
 
 ### **New Files**
+
 - `js/modules/ui/activities/LinkBanner.js` - Banner UI
 - `js/modules/integrations/linking/linkingActions.js` - Actions
 - `tests/integrations/activity-linking.test.js` - Tests
 
 ### **Integration Points**
+
 - Uses existing modules:
   - `StorageManager` for preference storage
   - `EventBus` for event emission

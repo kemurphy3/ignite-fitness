@@ -7,6 +7,5 @@ export { GuardrailManager } from './GuardrailManager.js';
 
 // Also make available globally
 if (typeof window !== 'undefined') {
-    window.GuardrailManager = window.GuardrailManager || require('./GuardrailManager.js').default;
+  window.GuardrailManager = window.GuardrailManager || require('./GuardrailManager.js').default;
 }
-

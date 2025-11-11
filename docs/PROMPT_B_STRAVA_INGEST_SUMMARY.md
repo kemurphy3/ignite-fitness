@@ -1,29 +1,40 @@
 # Prompt B — Strava Ingest Function + Idempotent Dedup/Merge Implementation Summary
 
 ## ✅ **Objective Completed**
-Accept Strava payload or token-pull later; normalize → dedup → merge; trigger aggregates.
+
+Accept Strava payload or token-pull later; normalize → dedup → merge; trigger
+aggregates.
 
 ## 📊 **Implementation Results**
 
 ### **🔧 Ingest Handler**
+
 - ✅ **Handler**: `netlify/functions/ingest-strava.js`
 - ✅ **Input**: `{ userId, payload: { activities: [rawActivity...], streams } }`
 - ✅ **Processing**: Normalize → dedup → merge → aggregate trigger
 - ✅ **Edge Cases**: Duplicate imports, richer updates, manual+Strava merges
 
 ### **🧹 Deduplication Logic**
-- ✅ **Hash-Based Dedup**: SHA256 hash on (userId, startTs, durationMinutes, type)
+
+- ✅ **Hash-Based Dedup**: SHA256 hash on (userId, startTs, durationMinutes,
+  type)
 - ✅ **Likely Duplicates**: Time tolerance ±6min, duration tolerance ±10%
-- ✅ **Richness Comparison**: Prioritize activities with more data (HR, GPS, power, device)
-- ✅ **Status Tracking**: `imported`, `updated`, `merged`, `skipped_dup`, `error`
+- ✅ **Richness Comparison**: Prioritize activities with more data (HR, GPS,
+  power, device)
+- ✅ **Status Tracking**: `imported`, `updated`, `merged`, `skipped_dup`,
+  `error`
 
 ### **🔄 Merging System**
-- ✅ **Richness-Based Priority**: Automatically select primary activity by data quality
-- ✅ **Manual Preservation**: Preserve manual notes and RPE when merging with Strava
+
+- ✅ **Richness-Based Priority**: Automatically select primary activity by data
+  quality
+- ✅ **Manual Preservation**: Preserve manual notes and RPE when merging with
+  Strava
 - ✅ **Source Tracking**: Maintain audit trail in `source_set` and `merged_from`
 - ✅ **Multi-Source Support**: Handle manual, Strava, and other sources
 
 ### **📊 Aggregate Recalculation**
+
 - ✅ **Affected Date Tracking**: Collect dates for recalculation
 - ✅ **Trigger Mechanism**: Recompute daily aggregates for affected dates
 - ✅ **No Double Counting**: Duplicate imports don't trigger recalculation
@@ -32,6 +43,7 @@ Accept Strava payload or token-pull later; normalize → dedup → merge; trigge
 ## 🔍 **Key Features Implemented**
 
 ### **Processing Flow**
+
 1. **Normalize**: Convert Strava activity to internal format
 2. **Dedup Hash**: Generate SHA256 hash for exact duplicate detection
 3. **Existing Check**: Query by dedup hash for exact matches
@@ -42,6 +54,7 @@ Accept Strava payload or token-pull later; normalize → dedup → merge; trigge
 8. **Trigger Aggregates**: Recompute daily aggregates for affected dates
 
 ### **Richness Scoring**
+
 - **Heart Rate Data**: +0.4 (highest value)
 - **GPS Data**: +0.2
 - **Power Data**: +0.2
@@ -50,6 +63,7 @@ Accept Strava payload or token-pull later; normalize → dedup → merge; trigge
 - **Cap**: 1.0 maximum
 
 ### **Deduplication Rules**
+
 - **Exact Match**: Same dedup hash → `skipped_dup`
 - **Richer Version**: Same hash, higher richness → `updated`
 - **Likely Duplicate**: ±6min, ±10% duration → `merged`
@@ -58,6 +72,7 @@ Accept Strava payload or token-pull later; normalize → dedup → merge; trigge
 ### **Edge Case Handling**
 
 #### **1. Second Import of Same File**
+
 ```javascript
 // First import
 { id: 1, externalId: '12345', status: 'imported' }
@@ -65,11 +80,13 @@ Accept Strava payload or token-pull later; normalize → dedup → merge; trigge
 // Second import (same hash)
 { id: 1, externalId: '12345', status: 'skipped_dup' }
 ```
+
 - ✅ No double counting of activities
 - ✅ Status reflects deduplication
 - ✅ No aggregate recalculation
 
 #### **2. Late Richer Version**
+
 ```javascript
 // Original (richness: 0.5)
 { avg_hr: 140, max_hr: 160, has_hr: true }
@@ -78,11 +95,13 @@ Accept Strava payload or token-pull later; normalize → dedup → merge; trigge
 { avg_hr: 150, max_hr: 170, has_hr: true, has_gps: true, has_power: true }
 // Status: 'updated'
 ```
+
 - ✅ Updates activity with richer data
 - ✅ Triggers aggregate recalculation
 - ✅ Preserves original timestamp
 
 #### **3. Manual + Strava Same Window**
+
 ```javascript
 // Manual activity
 { canonical_source: 'manual', name: 'Morning Run - Felt Great' }
@@ -104,6 +123,7 @@ Accept Strava payload or token-pull later; normalize → dedup → merge; trigge
 }
 // Status: 'merged'
 ```
+
 - ✅ Preserves manual notes and RPE
 - ✅ Adds Strava data where richer
 - ✅ Maintains full audit trail
@@ -111,6 +131,7 @@ Accept Strava payload or token-pull later; normalize → dedup → merge; trigge
 ## 🧪 **Unit Tests**
 
 ### **Test Coverage** (`tests/netlify/functions/ingest-strava.test.js`)
+
 - ✅ **Duplicate Detection** (3 tests)
   - Exact duplicates by hash
   - Likely duplicates within tolerance
@@ -136,6 +157,7 @@ Accept Strava payload or token-pull later; normalize → dedup → merge; trigge
 ## 📈 **API Specification**
 
 ### **Request**
+
 ```javascript
 POST /.netlify/functions/ingest-strava
 Content-Type: application/json
@@ -169,6 +191,7 @@ Content-Type: application/json
 ```
 
 ### **Response**
+
 ```javascript
 {
   "results": [
@@ -185,21 +208,25 @@ Content-Type: application/json
 ## 🎯 **Definition of Done - ACHIEVED**
 
 ### ✅ **New endpoint returns 200 for sample Strava JSON**
+
 - Handler created with proper error handling
 - CORS headers for cross-origin requests
 - 200 status code with results array
 
 ### ✅ **Manual QA: import same feed twice → activity count stable**
+
 - Deduplication by hash prevents double counting
 - Status reflects `skipped_dup` for duplicates
 - No aggregate recalculation for duplicates
 
 ### ✅ **Aggregates for the day update when a richer re-import arrives**
+
 - Richness comparison triggers updates
 - Affected dates tracked and recalculated
 - Status reflects `updated` for richer versions
 
 ### ✅ **Unit tests for duplicate detection, richness promotion, stream attach, aggregates recalculation**
+
 - **16 tests** covering all critical functionality
 - Edge cases covered for malformed data
 - Mock Supabase client for isolated testing
@@ -207,6 +234,7 @@ Content-Type: application/json
 ## 🚀 **Next Steps**
 
 The foundation is now in place for:
+
 1. **Real Strava API Integration**: Token-based authentication and API calls
 2. **Stream Processing**: Full time-series data handling
 3. **Aggregate Calculation**: TRIMP, TSS, rolling metrics computation
@@ -216,10 +244,12 @@ The foundation is now in place for:
 ## 📁 **Files Created**
 
 ### **New Files**
+
 - `netlify/functions/ingest-strava.js` - Main ingest handler
 - `tests/netlify/functions/ingest-strava.test.js` - Unit tests
 
 ### **Integration**
+
 - Uses existing modules from Prompt A:
   - `js/modules/integrations/utils/hash.js`
   - `js/modules/integrations/dedup/dedupRules.js`
@@ -229,6 +259,7 @@ The foundation is now in place for:
 ## 🎉 **Summary**
 
 Prompt B has been successfully implemented with:
+
 - **Complete ingest handler** for Strava activities
 - **Idempotent deduplication** preventing double counting
 - **Richness-based merging** for data quality
@@ -236,4 +267,5 @@ Prompt B has been successfully implemented with:
 - **Comprehensive unit tests** covering all edge cases
 - **Production-ready code** with proper error handling
 
-The system is now ready for Strava API integration and real-world data ingestion!
+The system is now ready for Strava API integration and real-world data
+ingestion!

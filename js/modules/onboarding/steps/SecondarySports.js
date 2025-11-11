@@ -4,18 +4,27 @@
  */
 
 class SecondarySports extends window.BaseComponent {
-    constructor() {
-        super();
-        this.secondarySports = new Set();
-    }
+  constructor() {
+    super();
+    this.secondarySports = new Set();
+  }
 
-    render(onboardingData = {}) {
-        this.onboardingData = onboardingData;
-        this.secondarySports = new Set(onboardingData.secondarySports || []);
+  render(onboardingData = {}) {
+    this.onboardingData = onboardingData;
+    this.secondarySports = new Set(onboardingData.secondarySports || []);
 
-        const allSports = ['running', 'cycling', 'swimming', 'soccer', 'strength', 'yoga', 'pilates', 'crossfit'];
+    const allSports = [
+      'running',
+      'cycling',
+      'swimming',
+      'soccer',
+      'strength',
+      'yoga',
+      'pilates',
+      'crossfit',
+    ];
 
-        return `
+    return `
             <div class="onboarding-step secondary-sports-step">
                 <div class="step-header">
                     <h2>Secondary Activities</h2>
@@ -23,7 +32,9 @@ class SecondarySports extends window.BaseComponent {
                 </div>
 
                 <div class="sports-grid">
-                    ${allSports.map(sport => `
+                    ${allSports
+                      .map(
+                        sport => `
                         <label class="sport-checkbox ${this.secondarySports.has(sport) ? 'selected' : ''}">
                             <input type="checkbox" 
                                    value="${sport}" 
@@ -31,7 +42,9 @@ class SecondarySports extends window.BaseComponent {
                                    onchange="window.SecondarySports.toggleSport('${sport}', this.checked)">
                             <span class="sport-label">${sport.charAt(0).toUpperCase() + sport.slice(1)}</span>
                         </label>
-                    `).join('')}
+                    `
+                      )
+                      .join('')}
                 </div>
 
                 <div class="step-actions">
@@ -41,22 +54,24 @@ class SecondarySports extends window.BaseComponent {
                 </div>
             </div>
         `;
-    }
+  }
 
-    toggleSport(sport, selected) {
-        if (selected) {this.secondarySports.add(sport);}
-        else {this.secondarySports.delete(sport);}
+  toggleSport(sport, selected) {
+    if (selected) {
+      this.secondarySports.add(sport);
+    } else {
+      this.secondarySports.delete(sport);
     }
+  }
 
-    saveAndContinue() {
-        const om = window.OnboardingManager;
-        if (om) {
-            om.onboardingData.secondarySports = Array.from(this.secondarySports);
-            om.saveStepData('secondary_sports', { secondarySports: Array.from(this.secondarySports) });
-            om.nextStep();
-        }
+  saveAndContinue() {
+    const om = window.OnboardingManager;
+    if (om) {
+      om.onboardingData.secondarySports = Array.from(this.secondarySports);
+      om.saveStepData('secondary_sports', { secondarySports: Array.from(this.secondarySports) });
+      om.nextStep();
     }
+  }
 }
 
 window.SecondarySports = new SecondarySports();
-

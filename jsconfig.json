@@ -28,18 +28,8 @@
     "emitDecoratorMetadata": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"]
   },
-  "include": [
-    "js/**/*",
-    "scripts/**/*",
-    "tests/**/*",
-    "netlify/functions/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "coverage",
-    "**/*.d.ts"
-  ],
+  "include": ["js/**/*", "scripts/**/*", "tests/**/*", "netlify/functions/**/*"],
+  "exclude": ["node_modules", "dist", "coverage", "**/*.d.ts"],
   "typeAcquisition": {
     "enable": true,
     "include": ["chart.js", "vitest"]

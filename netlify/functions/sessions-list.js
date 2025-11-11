@@ -5,7 +5,7 @@ const {
   errorResponse,
   successResponse,
   preflightResponse,
-  validateSessionType
+  validateSessionType,
 } = require('./_base');
 const {
   validatePaginationParams,
@@ -13,7 +13,7 @@ const {
   getCursorDataForItem,
   buildCursorCondition,
   buildTimestampCondition,
-  validatePaginationInput
+  validatePaginationInput,
 } = require('./utils/pagination');
 
 // Helper function to get total count
@@ -32,7 +32,7 @@ async function getTotalCount(sql, whereClause, params) {
   }
 }
 
-exports.handler = async (event) => {
+exports.handler = async event => {
   // Handle preflight requests
   if (event.httpMethod === 'OPTIONS') {
     return preflightResponse();
@@ -65,7 +65,7 @@ exports.handler = async (event) => {
     }
 
     // Parse and validate query parameters
-    const {type} = requestParams;
+    const { type } = requestParams;
     const startDate = requestParams.start_date;
     const endDate = requestParams.end_date;
     const pagination = validatePaginationParams(requestParams);
@@ -81,8 +81,8 @@ exports.handler = async (event) => {
           customMessage: 'Invalid session type',
           context: {
             functionName: 'sessions-list',
-            validationField: 'type'
-          }
+            validationField: 'type',
+          },
         });
       }
     }
@@ -125,11 +125,14 @@ exports.handler = async (event) => {
     }
 
     // Add tag filtering
-    const {tags} = requestParams;
-    const {exclude_tags} = requestParams;
+    const { tags } = requestParams;
+    const { exclude_tags } = requestParams;
 
     if (tags) {
-      const requiredTags = tags.split(',').map(t => t.trim()).filter(t => t);
+      const requiredTags = tags
+        .split(',')
+        .map(t => t.trim())
+        .filter(t => t);
       if (requiredTags.length > 0) {
         // Check if payload contains tags array that includes all required tags
         whereConditions.push(`payload->'tags' @> $${queryParams.length + 1}::jsonb`);
@@ -138,7 +141,10 @@ exports.handler = async (event) => {
     }
 
     if (exclude_tags) {
-      const excludedTags = exclude_tags.split(',').map(t => t.trim()).filter(t => t);
+      const excludedTags = exclude_tags
+        .split(',')
+        .map(t => t.trim())
+        .filter(t => t);
       if (excludedTags.length > 0) {
         // Check if payload does NOT contain any excluded tags
         whereConditions.push(`NOT (payload->'tags' ?| $${queryParams.length + 1})`);
@@ -154,7 +160,11 @@ exports.handler = async (event) => {
     }
 
     // Add timestamp-based pagination condition
-    const timestampCondition = buildTimestampCondition(pagination.before, pagination.after, 'start_at');
+    const timestampCondition = buildTimestampCondition(
+      pagination.before,
+      pagination.after,
+      'start_at'
+    );
     if (timestampCondition.condition) {
       whereConditions.push(timestampCondition.condition.replace('AND ', ''));
       queryParams.push(...timestampCondition.values);
@@ -180,10 +190,13 @@ exports.handler = async (event) => {
     const paginatedResponse = createPaginatedResponse(
       sessions,
       pagination.limit,
-      (item) => getCursorDataForItem(item, 'sessions'),
+      item => getCursorDataForItem(item, 'sessions'),
       {
         includeTotal: sessions.length < 1000,
-        total: sessions.length < 1000 ? await getTotalCount(sql, whereClause, queryParams.slice(0, -1)) : undefined
+        total:
+          sessions.length < 1000
+            ? await getTotalCount(sql, whereClause, queryParams.slice(0, -1))
+            : undefined,
       }
     );
 
@@ -199,25 +212,26 @@ exports.handler = async (event) => {
         payload: session.payload,
         session_hash: session.session_hash,
         created_at: session.created_at,
-        updated_at: session.updated_at
+        updated_at: session.updated_at,
       })),
-      pagination: paginatedResponse.pagination
+      pagination: paginatedResponse.pagination,
     });
-
   } catch (error) {
     const { handleError } = require('./utils/error-handler');
 
     // Handle database connection errors with specific status codes
-    if (error.message.includes('DATABASE_URL not configured') ||
-        error.message.includes('connection') ||
-        error.message.includes('timeout')) {
+    if (
+      error.message.includes('DATABASE_URL not configured') ||
+      error.message.includes('connection') ||
+      error.message.includes('timeout')
+    ) {
       return handleError(error, {
         statusCode: 503,
         customMessage: 'Database service unavailable',
         context: {
           functionName: 'sessions-list',
-          errorType: 'database_connection'
-        }
+          errorType: 'database_connection',
+        },
       });
     }
 
@@ -225,8 +239,8 @@ exports.handler = async (event) => {
       statusCode: 500,
       customMessage: 'Internal server error',
       context: {
-        functionName: 'sessions-list'
-      }
+        functionName: 'sessions-list',
+      },
     });
   }
 };

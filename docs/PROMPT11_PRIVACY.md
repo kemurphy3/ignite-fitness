@@ -10,7 +10,7 @@
 ✅ Clear "Delete my data" local purge  
 ✅ Consent toggles for integrations  
 ✅ Export produces valid CSV/JSON in browser  
-✅ Local purge resets app to onboarding  
+✅ Local purge resets app to onboarding
 
 ---
 
@@ -33,7 +33,8 @@
    - Indexes: userId, date
 
 4. **`progression_events`**
-   - Columns: userId, date, exercise, previous_level, new_level, reason, eventType
+   - Columns: userId, date, exercise, previous_level, new_level, reason,
+     eventType
    - Indexes: userId, date, exercise
 
 5. **`injury_flags`**
@@ -41,7 +42,8 @@
    - Indexes: userId, date
 
 6. **`external_activities`**
-   - Columns: userId, source, type, duration, distance, averageIntensity, timestamp
+   - Columns: userId, source, type, duration, distance, averageIntensity,
+     timestamp
    - Indexes: userId, timestamp, source
 
 7. **`nutrition_profiles`**
@@ -53,6 +55,7 @@
 ### **Privacy Panel** ✅
 
 **Export JSON:**
+
 ```javascript
 async exportJSON() {
     const data = await collectAllData(userId);
@@ -66,6 +69,7 @@ async exportJSON() {
 ```
 
 **Export CSV:**
+
 ```javascript
 async exportCSV() {
     const data = await collectAllData(userId);
@@ -76,22 +80,24 @@ async exportCSV() {
 ```
 
 **Delete All Data:**
+
 ```javascript
 async deleteAllData() {
     // Delete from all tables
     for (const table of tables) {
         await storageManager.deleteAllData(userId, table);
     }
-    
+
     // Clear LocalStorage
     localStorage.clear();
-    
+
     // Reset app to onboarding
     window.location.hash = '#/onboarding';
 }
 ```
 
 **Consent Toggles:**
+
 ```javascript
 consent-toggles:
   - Strava Integration
@@ -104,34 +110,36 @@ consent-toggles:
 ## **Export Examples** ✅
 
 ### **JSON Export:**
+
 ```json
 {
-    "user_profiles": [
-        {
-            "userId": "user123",
-            "username": "TestUser",
-            "sport": "soccer",
-            "position": "midfielder"
-        }
-    ],
-    "session_logs": [
-        {
-            "userId": "user123",
-            "date": "2024-01-15",
-            "workout_id": "w1",
-            "duration": 45,
-            "volume": 5000,
-            "averageRPE": 7
-        }
-    ],
-    "metadata": {
-        "exportedAt": "2024-01-15T10:00:00Z",
-        "version": "1.0"
+  "user_profiles": [
+    {
+      "userId": "user123",
+      "username": "TestUser",
+      "sport": "soccer",
+      "position": "midfielder"
     }
+  ],
+  "session_logs": [
+    {
+      "userId": "user123",
+      "date": "2024-01-15",
+      "workout_id": "w1",
+      "duration": 45,
+      "volume": 5000,
+      "averageRPE": 7
+    }
+  ],
+  "metadata": {
+    "exportedAt": "2024-01-15T10:00:00Z",
+    "version": "1.0"
+  }
 }
 ```
 
 ### **CSV Export:**
+
 ```csv
 userId,username,sport,position
 user123,TestUser,soccer,midfielder
@@ -144,6 +152,7 @@ user123,TestUser,soccer,midfielder
 ### **Delete All Data:**
 
 **Warning Steps:**
+
 1. First confirmation: "Are you sure?"
 2. Second confirmation: "FINAL WARNING"
 3. Delete all tables
@@ -151,6 +160,7 @@ user123,TestUser,soccer,midfielder
 5. Redirect to onboarding
 
 **What Gets Deleted:**
+
 - All workout data
 - All progress data
 - All preferences
@@ -159,6 +169,7 @@ user123,TestUser,soccer,midfielder
 - All nutrition profiles
 
 **What Happens:**
+
 - App resets to onboarding
 - User must complete setup again
 - No data recovery possible
@@ -168,11 +179,13 @@ user123,TestUser,soccer,midfielder
 ## **Consent Management** ✅
 
 **Consent Types:**
+
 - **Strava Integration** - Allows Strava data sync
 - **Google Fit Integration** - Allows Google Fit data sync
 - **Anonymous Analytics** - Allows usage analytics
 
 **Storage:**
+
 ```javascript
 {
     strava: true,
@@ -182,6 +195,7 @@ user123,TestUser,soccer,midfielder
 ```
 
 **Audit:**
+
 ```javascript
 {
     eventType: 'CONSENT_UPDATED',
@@ -196,21 +210,23 @@ user123,TestUser,soccer,midfielder
 ## **Storage Info** ✅
 
 **Display:**
+
 ```
 Storage used: 2.5 MB
 Tables: 7
 ```
 
 **Calculation:**
+
 ```javascript
 function getStorageSize() {
-    let total = 0;
-    for (const key in localStorage) {
-        if (key.startsWith('ignitefitness_')) {
-            total += localStorage[key].length;
-        }
+  let total = 0;
+  for (const key in localStorage) {
+    if (key.startsWith('ignitefitness_')) {
+      total += localStorage[key].length;
     }
-    return total;
+  }
+  return total;
 }
 ```
 
@@ -218,9 +234,11 @@ function getStorageSize() {
 
 ## ✅ **PROMPT 11: COMPLETE**
 
-**Summary**: Reliable data storage with full user control over privacy and exports.
+**Summary**: Reliable data storage with full user control over privacy and
+exports.
 
 **Key Features:**
+
 - ✅ 7 table schema with proper indexing
 - ✅ Export JSON (valid, downloadable)
 - ✅ Export CSV (valid, downloadable)
@@ -230,4 +248,5 @@ function getStorageSize() {
 - ✅ Storage info display
 - ✅ Audit logging for all actions
 
-**Users now have complete control over their data with reliable storage and easy export.** 🔒
+**Users now have complete control over their data with reliable storage and easy
+export.** 🔒

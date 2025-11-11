@@ -5,15 +5,18 @@
 ### ✅ **All Requirements Implemented**
 
 #### **1. BMR Calculation (Mifflin-St Jeor)** ✅
+
 **File**: `netlify/functions/nutrition-calculator.js`
 
 **Equation**:
+
 ```
 BMR (Male) = (10 × weight) + (6.25 × height) - (5 × age) + 5
 BMR (Female) = (10 × weight) + (6.25 × height) - (5 × age) - 161
 ```
 
 **Example**: Male, 25 years, 75kg, 180cm
+
 ```
 BMR = (10 × 75) + (6.25 × 180) - (5 × 25) + 5
     = 750 + 1125 - 125 + 5
@@ -23,6 +26,7 @@ BMR = (10 × 75) + (6.25 × 180) - (5 × 25) + 5
 #### **2. Activity Multiplier** ✅
 
 **Multipliers**:
+
 - Sedentary: 1.2x
 - Light (1-3 days/week): 1.375x
 - Moderate (3-5 days/week): 1.55x
@@ -30,6 +34,7 @@ BMR = (10 × 75) + (6.25 × 180) - (5 × 25) + 5
 - Very Active (2x/day): 1.9x
 
 **Example**: BMR 1,755, Moderate activity
+
 ```
 TDEE = 1,755 × 1.55 = 2,720 calories
 ```
@@ -37,11 +42,13 @@ TDEE = 1,755 × 1.55 = 2,720 calories
 #### **3. ±20% Cal Adjustment by Day Type** ✅
 
 **Adjustments**:
+
 - **Game Day**: +20% calories
 - **Training Day**: +10% calories
 - **Rest Day**: -10% calories
 
 **Example**: TDEE 2,720 calories
+
 ```
 Game Day: 2,720 × 1.2 = 3,264 calories
 Training: 2,720 × 1.1 = 2,992 calories
@@ -51,25 +58,31 @@ Rest Day: 2,720 × 0.9 = 2,448 calories
 #### **4. Pre/Post Meal Examples Per Sport** ✅
 
 **Soccer**:
+
 - Pre: Banana + peanut butter, Oatmeal + berries
 - Post: Chocolate milk + protein, Rice + chicken + vegetables
 
 **Basketball**:
+
 - Pre: Bagel + jam, Energy gel + banana
 - Post: Protein shake + carbs, Sweet potato + salmon
 
 **Running**:
+
 - Pre: Banana 30-60 min before, Toast + almond butter
 - Post: 4:1 carbs to protein within 30 min, Chocolate milk
 
 **Generic Training**:
+
 - Pre: Simple carbs + protein
 - Post: Rapid protein + carbs (4:1 ratio)
 
 #### **5. Dashboard Card with P/C/F Progress Bars** ✅
+
 **File**: `js/modules/nutrition/NutritionCard.js`
 
 **Display**:
+
 ```
 ┌──────────────────────────────────┐
 │ 💪 Daily Fuel [Training Day]    │
@@ -90,6 +103,7 @@ Rest Day: 2,720 × 0.9 = 2,448 calories
 #### **6. No Food Logging UI** ✅
 
 **Approach**:
+
 - Provide targets and guidance only
 - No calorie tracking interface
 - Meal ideas and timing advice
@@ -98,6 +112,7 @@ Rest Day: 2,720 × 0.9 = 2,448 calories
 #### **7. Connect to Training Schedule for Carb Timing** ✅
 
 **Training Day Timing**:
+
 ```
 Pre-workout (1-2 hours): Simple carbs + protein
 During workout: Hydration (<60 min workout)
@@ -106,6 +121,7 @@ Evening: Balanced dinner with complex carbs
 ```
 
 **Game Day Timing**:
+
 ```
 2-3 hours before: Largest meal with carbs
 30-60 min before: Small snack if needed
@@ -115,6 +131,7 @@ Next day: Continue high carbs for recovery
 ```
 
 **Rest Day Timing**:
+
 ```
 Focus: Lower carb intake
 Meal timing: Spread evenly
@@ -126,18 +143,21 @@ Note: Maintain protein and healthy fats
 ## 📊 **Macro Breakdowns**
 
 ### **Game Day (Soccer)**
+
 - Calories: 3,264 (+20%)
 - Protein: 163g (20%), 652 cal
 - Carbs: 449g (55%), 1,796 cal
 - Fat: 91g (25%), 816 cal
 
 ### **Training Day (Soccer)**
+
 - Calories: 2,992 (+10%)
 - Protein: 187g (30%), 748 cal
 - Carbs: 336g (45%), 1,346 cal
 - Fat: 100g (30%), 898 cal
 
 ### **Rest Day**
+
 - Calories: 2,448 (-10%)
 - Protein: 184g (30%), 734 cal
 - Carbs: 214g (35%), 856 cal
@@ -150,16 +170,19 @@ Note: Maintain protein and healthy fats
 **Connected to Training Schedule**:
 
 1. **Check Training Schedule**
+
    ```javascript
    const dayType = getDayType(); // training/game/rest
    ```
 
 2. **Calculate Needs**
+
    ```javascript
    const macros = calculateMacros(calories, sport, dayType);
    ```
 
 3. **Provide Timing Advice**
+
    ```javascript
    const timing = getCarbTiming(dayType, sport);
    // Returns specific meal timing recommendations
@@ -191,6 +214,7 @@ Note: Maintain protein and healthy fats
 2. **`js/modules/nutrition/NutritionCard.js`** - Dashboard card component
 
 **Files Modified**:
+
 1. **`index.html`** - Added NutritionCard module
 
 ---

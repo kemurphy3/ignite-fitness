@@ -4,55 +4,55 @@
  */
 
 class SportSelection extends window.BaseComponent {
-    constructor() {
-        super();
-        this.selectedPrimary = null;
-        this.sportSpecificData = {};
-        this.sportOptions = {
-            running: {
-                name: 'Running',
-                description: 'Road, track, trail, and cross country',
-                icon: '🏃‍♂️',
-                subCategories: ['road', 'track', 'trail', 'cross_country']
-            },
-            cycling: {
-                name: 'Cycling',
-                description: 'Road, gravel, mountain, and indoor',
-                icon: '🚴‍♂️',
-                subCategories: ['road', 'gravel', 'mountain', 'indoor']
-            },
-            swimming: {
-                name: 'Swimming',
-                description: 'Pool and open water swimming',
-                icon: '🏊‍♂️',
-                subCategories: ['pool', 'open_water']
-            },
-            soccer: {
-                name: 'Soccer/Football',
-                description: 'Field training and match preparation',
-                icon: '⚽',
-                subCategories: ['11v11', '7v7', 'futsal', 'recreational']
-            },
-            general_fitness: {
-                name: 'General Fitness',
-                description: 'Strength, conditioning, and wellness',
-                icon: '💪',
-                subCategories: ['strength', 'conditioning', 'functional']
-            }
-        };
-    }
+  constructor() {
+    super();
+    this.selectedPrimary = null;
+    this.sportSpecificData = {};
+    this.sportOptions = {
+      running: {
+        name: 'Running',
+        description: 'Road, track, trail, and cross country',
+        icon: '🏃‍♂️',
+        subCategories: ['road', 'track', 'trail', 'cross_country'],
+      },
+      cycling: {
+        name: 'Cycling',
+        description: 'Road, gravel, mountain, and indoor',
+        icon: '🚴‍♂️',
+        subCategories: ['road', 'gravel', 'mountain', 'indoor'],
+      },
+      swimming: {
+        name: 'Swimming',
+        description: 'Pool and open water swimming',
+        icon: '🏊‍♂️',
+        subCategories: ['pool', 'open_water'],
+      },
+      soccer: {
+        name: 'Soccer/Football',
+        description: 'Field training and match preparation',
+        icon: '⚽',
+        subCategories: ['11v11', '7v7', 'futsal', 'recreational'],
+      },
+      general_fitness: {
+        name: 'General Fitness',
+        description: 'Strength, conditioning, and wellness',
+        icon: '💪',
+        subCategories: ['strength', 'conditioning', 'functional'],
+      },
+    };
+  }
 
-    /**
-     * Render sport selection step
-     * @param {Object} onboardingData - Current onboarding data
-     * @returns {string} HTML for step
-     */
-    render(onboardingData = {}) {
-        this.onboardingData = onboardingData;
-        this.selectedPrimary = onboardingData.primarySport || null;
-        this.sportSpecificData = onboardingData.sportSpecific || {};
+  /**
+   * Render sport selection step
+   * @param {Object} onboardingData - Current onboarding data
+   * @returns {string} HTML for step
+   */
+  render(onboardingData = {}) {
+    this.onboardingData = onboardingData;
+    this.selectedPrimary = onboardingData.primarySport || null;
+    this.sportSpecificData = onboardingData.sportSpecific || {};
 
-        return `
+    return `
             <div class="onboarding-step sport-selection-step">
                 <div class="step-header">
                     <h2>What's your primary training focus?</h2>
@@ -60,7 +60,9 @@ class SportSelection extends window.BaseComponent {
                 </div>
 
                 <div class="sport-grid">
-                    ${Object.entries(this.sportOptions).map(([key, sport]) => `
+                    ${Object.entries(this.sportOptions)
+                      .map(
+                        ([key, sport]) => `
                         <div class="sport-card ${this.selectedPrimary === key ? 'selected' : ''}"
                              onclick="window.SportSelection.selectPrimarySport('${key}')"
                              data-sport="${key}">
@@ -68,12 +70,18 @@ class SportSelection extends window.BaseComponent {
                             <h3>${sport.name}</h3>
                             <p>${sport.description}</p>
                             <div class="sport-subcategories">
-                                ${sport.subCategories.map(sub => `
+                                ${sport.subCategories
+                                  .map(
+                                    sub => `
                                     <span class="subcategory">${sub.replace('_', ' ')}</span>
-                                `).join('')}
+                                `
+                                  )
+                                  .join('')}
                             </div>
                         </div>
-                    `).join('')}
+                    `
+                      )
+                      .join('')}
                 </div>
 
                 ${this.selectedPrimary ? this.renderSportSpecificQuestions() : ''}
@@ -91,72 +99,74 @@ class SportSelection extends window.BaseComponent {
                 </div>
             </div>
         `;
-    }
+  }
 
-    /**
-     * Select primary sport
-     * @param {string} sportKey - Sport key
-     */
-    selectPrimarySport(sportKey) {
-        this.selectedPrimary = sportKey;
+  /**
+   * Select primary sport
+   * @param {string} sportKey - Sport key
+   */
+  selectPrimarySport(sportKey) {
+    this.selectedPrimary = sportKey;
 
-        // Update UI
-        document.querySelectorAll('.sport-card').forEach(card => {
-            card.classList.remove('selected');
-        });
-        document.querySelector(`[data-sport="${sportKey}"]`).classList.add('selected');
+    // Update UI
+    document.querySelectorAll('.sport-card').forEach(card => {
+      card.classList.remove('selected');
+    });
+    document.querySelector(`[data-sport="${sportKey}"]`).classList.add('selected');
 
-        // Render sport-specific questions
-        const container = document.querySelector('.sport-selection-step');
-        if (container) {
-            const questionsHtml = this.renderSportSpecificQuestions();
-            const existingQuestions = container.querySelector('.sport-specific-questions');
-            if (existingQuestions) {
-                existingQuestions.outerHTML = questionsHtml;
-            } else {
-                const actionsDiv = container.querySelector('.step-actions');
-                if (actionsDiv) {
-                    actionsDiv.insertAdjacentHTML('beforebegin', questionsHtml);
-                }
-            }
-
-            // Re-enable continue button
-            const continueBtn = container.querySelector('.btn-primary');
-            if (continueBtn) {
-                continueBtn.disabled = false;
-            }
+    // Render sport-specific questions
+    const container = document.querySelector('.sport-selection-step');
+    if (container) {
+      const questionsHtml = this.renderSportSpecificQuestions();
+      const existingQuestions = container.querySelector('.sport-specific-questions');
+      if (existingQuestions) {
+        existingQuestions.outerHTML = questionsHtml;
+      } else {
+        const actionsDiv = container.querySelector('.step-actions');
+        if (actionsDiv) {
+          actionsDiv.insertAdjacentHTML('beforebegin', questionsHtml);
         }
+      }
+
+      // Re-enable continue button
+      const continueBtn = container.querySelector('.btn-primary');
+      if (continueBtn) {
+        continueBtn.disabled = false;
+      }
+    }
+  }
+
+  /**
+   * Render sport-specific questions
+   * @returns {string} HTML for sport-specific questions
+   */
+  renderSportSpecificQuestions() {
+    if (!this.selectedPrimary) {
+      return '';
     }
 
-    /**
-     * Render sport-specific questions
-     * @returns {string} HTML for sport-specific questions
-     */
-    renderSportSpecificQuestions() {
-        if (!this.selectedPrimary) {return '';}
-
-        switch(this.selectedPrimary) {
-            case 'running':
-                return this.renderRunningQuestions();
-            case 'cycling':
-                return this.renderCyclingQuestions();
-            case 'swimming':
-                return this.renderSwimmingQuestions();
-            case 'soccer':
-                return this.renderSoccerQuestions();
-            default:
-                return '';
-        }
+    switch (this.selectedPrimary) {
+      case 'running':
+        return this.renderRunningQuestions();
+      case 'cycling':
+        return this.renderCyclingQuestions();
+      case 'swimming':
+        return this.renderSwimmingQuestions();
+      case 'soccer':
+        return this.renderSoccerQuestions();
+      default:
+        return '';
     }
+  }
 
-    /**
-     * Render running-specific questions
-     * @returns {string} HTML for running questions
-     */
-    renderRunningQuestions() {
-        const data = this.sportSpecificData.running || {};
+  /**
+   * Render running-specific questions
+   * @returns {string} HTML for running questions
+   */
+  renderRunningQuestions() {
+    const data = this.sportSpecificData.running || {};
 
-        return `
+    return `
             <div class="sport-specific-questions">
                 <h3>Running Specifics</h3>
 
@@ -195,16 +205,16 @@ class SportSelection extends window.BaseComponent {
                 </div>
             </div>
         `;
-    }
+  }
 
-    /**
-     * Render cycling-specific questions
-     * @returns {string} HTML for cycling questions
-     */
-    renderCyclingQuestions() {
-        const data = this.sportSpecificData.cycling || {};
+  /**
+   * Render cycling-specific questions
+   * @returns {string} HTML for cycling questions
+   */
+  renderCyclingQuestions() {
+    const data = this.sportSpecificData.cycling || {};
 
-        return `
+    return `
             <div class="sport-specific-questions">
                 <h3>Cycling Specifics</h3>
 
@@ -232,16 +242,16 @@ class SportSelection extends window.BaseComponent {
                 </div>
             </div>
         `;
-    }
+  }
 
-    /**
-     * Render swimming-specific questions
-     * @returns {string} HTML for swimming questions
-     */
-    renderSwimmingQuestions() {
-        const data = this.sportSpecificData.swimming || {};
+  /**
+   * Render swimming-specific questions
+   * @returns {string} HTML for swimming questions
+   */
+  renderSwimmingQuestions() {
+    const data = this.sportSpecificData.swimming || {};
 
-        return `
+    return `
             <div class="sport-specific-questions">
                 <h3>Swimming Specifics</h3>
 
@@ -266,16 +276,16 @@ class SportSelection extends window.BaseComponent {
                 </div>
             </div>
         `;
-    }
+  }
 
-    /**
-     * Render soccer-specific questions
-     * @returns {string} HTML for soccer questions
-     */
-    renderSoccerQuestions() {
-        const data = this.sportSpecificData.soccer || {};
+  /**
+   * Render soccer-specific questions
+   * @returns {string} HTML for soccer questions
+   */
+  renderSoccerQuestions() {
+    const data = this.sportSpecificData.soccer || {};
 
-        return `
+    return `
             <div class="sport-specific-questions">
                 <h3>Soccer Specifics</h3>
 
@@ -305,104 +315,122 @@ class SportSelection extends window.BaseComponent {
                 </div>
             </div>
         `;
+  }
+
+  /**
+   * Update sport-specific data
+   * @param {string} sport - Sport key
+   * @param {string} key - Data key
+   * @param {*} value - Data value
+   */
+  updateSportData(sport, key, value) {
+    if (!this.sportSpecificData[sport]) {
+      this.sportSpecificData[sport] = {};
+    }
+    this.sportSpecificData[sport][key] = value;
+  }
+
+  /**
+   * Update terrain selection
+   * @param {string} terrain - Terrain type
+   * @param {boolean} selected - Whether selected
+   */
+  updateTerrain(terrain, selected) {
+    const sport = this.selectedPrimary;
+    if (!this.sportSpecificData[sport]) {
+      this.sportSpecificData[sport] = { terrain: [] };
+    }
+    if (!this.sportSpecificData[sport].terrain) {
+      this.sportSpecificData[sport].terrain = [];
     }
 
-    /**
-     * Update sport-specific data
-     * @param {string} sport - Sport key
-     * @param {string} key - Data key
-     * @param {*} value - Data value
-     */
-    updateSportData(sport, key, value) {
-        if (!this.sportSpecificData[sport]) {
-            this.sportSpecificData[sport] = {};
-        }
-        this.sportSpecificData[sport][key] = value;
+    if (selected && !this.sportSpecificData[sport].terrain.includes(terrain)) {
+      this.sportSpecificData[sport].terrain.push(terrain);
+    } else if (!selected) {
+      this.sportSpecificData[sport].terrain = this.sportSpecificData[sport].terrain.filter(
+        t => t !== terrain
+      );
+    }
+  }
+
+  /**
+   * Save data and continue to next step
+   */
+  saveAndContinue() {
+    if (!this.selectedPrimary) {
+      alert('Please select a primary sport first');
+      return;
     }
 
-    /**
-     * Update terrain selection
-     * @param {string} terrain - Terrain type
-     * @param {boolean} selected - Whether selected
-     */
-    updateTerrain(terrain, selected) {
-        const sport = this.selectedPrimary;
-        if (!this.sportSpecificData[sport]) {
-            this.sportSpecificData[sport] = { terrain: [] };
-        }
-        if (!this.sportSpecificData[sport].terrain) {
-            this.sportSpecificData[sport].terrain = [];
-        }
+    // Collect all form data
+    const formData = this.collectFormData();
 
-        if (selected && !this.sportSpecificData[sport].terrain.includes(terrain)) {
-            this.sportSpecificData[sport].terrain.push(terrain);
-        } else if (!selected) {
-            this.sportSpecificData[sport].terrain = this.sportSpecificData[sport].terrain.filter(t => t !== terrain);
-        }
+    // Update onboarding data
+    const onboardingManager = window.OnboardingManager;
+    if (onboardingManager) {
+      onboardingManager.onboardingData.primarySport = this.selectedPrimary;
+      onboardingManager.onboardingData.sportSpecific = this.sportSpecificData;
+      onboardingManager.onboardingData.sportSelectionData = formData;
+
+      // Save and continue
+      onboardingManager.saveStepData('sport_selection', {
+        primarySport: this.selectedPrimary,
+        sportSpecific: this.sportSpecificData,
+        ...formData,
+      });
+
+      onboardingManager.nextStep();
+    }
+  }
+
+  /**
+   * Collect form data
+   * @returns {Object} Form data
+   */
+  collectFormData() {
+    const formData = {};
+    const sport = this.selectedPrimary;
+
+    if (sport === 'running') {
+      const focusSelect = document.getElementById('running_focus');
+      const recent5kInput = document.getElementById('recent_5k');
+      if (focusSelect) {
+        formData.focus = focusSelect.value;
+      }
+      if (recent5kInput) {
+        formData.recent5k = recent5kInput.value;
+      }
+    } else if (sport === 'cycling') {
+      const typeSelect = document.getElementById('cycling_type');
+      const ftpInput = document.getElementById('ftp_estimate');
+      if (typeSelect) {
+        formData.type = typeSelect.value;
+      }
+      if (ftpInput) {
+        formData.ftp = ftpInput.value;
+      }
+    } else if (sport === 'swimming') {
+      const envSelect = document.getElementById('swim_environment');
+      const poolSelect = document.getElementById('pool_length');
+      if (envSelect) {
+        formData.environment = envSelect.value;
+      }
+      if (poolSelect) {
+        formData.poolLength = poolSelect.value;
+      }
+    } else if (sport === 'soccer') {
+      const posSelect = document.getElementById('soccer_position');
+      const levelSelect = document.getElementById('soccer_level');
+      if (posSelect) {
+        formData.position = posSelect.value;
+      }
+      if (levelSelect) {
+        formData.level = levelSelect.value;
+      }
     }
 
-    /**
-     * Save data and continue to next step
-     */
-    saveAndContinue() {
-        if (!this.selectedPrimary) {
-            alert('Please select a primary sport first');
-            return;
-        }
-
-        // Collect all form data
-        const formData = this.collectFormData();
-
-        // Update onboarding data
-        const onboardingManager = window.OnboardingManager;
-        if (onboardingManager) {
-            onboardingManager.onboardingData.primarySport = this.selectedPrimary;
-            onboardingManager.onboardingData.sportSpecific = this.sportSpecificData;
-            onboardingManager.onboardingData.sportSelectionData = formData;
-
-            // Save and continue
-            onboardingManager.saveStepData('sport_selection', {
-                primarySport: this.selectedPrimary,
-                sportSpecific: this.sportSpecificData,
-                ...formData
-            });
-
-            onboardingManager.nextStep();
-        }
-    }
-
-    /**
-     * Collect form data
-     * @returns {Object} Form data
-     */
-    collectFormData() {
-        const formData = {};
-        const sport = this.selectedPrimary;
-
-        if (sport === 'running') {
-            const focusSelect = document.getElementById('running_focus');
-            const recent5kInput = document.getElementById('recent_5k');
-            if (focusSelect) {formData.focus = focusSelect.value;}
-            if (recent5kInput) {formData.recent5k = recent5kInput.value;}
-        } else if (sport === 'cycling') {
-            const typeSelect = document.getElementById('cycling_type');
-            const ftpInput = document.getElementById('ftp_estimate');
-            if (typeSelect) {formData.type = typeSelect.value;}
-            if (ftpInput) {formData.ftp = ftpInput.value;}
-        } else if (sport === 'swimming') {
-            const envSelect = document.getElementById('swim_environment');
-            const poolSelect = document.getElementById('pool_length');
-            if (envSelect) {formData.environment = envSelect.value;}
-            if (poolSelect) {formData.poolLength = poolSelect.value;}
-        } else if (sport === 'soccer') {
-            const posSelect = document.getElementById('soccer_position');
-            const levelSelect = document.getElementById('soccer_level');
-            if (posSelect) {formData.position = posSelect.value;}
-            if (levelSelect) {formData.level = levelSelect.value;}
-        }
-
-        return formData;
-    }
+    return formData;
+  }
 }
 
 // Create global instance
@@ -410,6 +438,5 @@ window.SportSelection = SportSelection;
 
 // Export for module systems
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = SportSelection;
+  module.exports = SportSelection;
 }
-

@@ -2,7 +2,7 @@
 
 /**
  * CURSOR PRIORITY 2: CODE CLEANUP & REDUNDANCY REMOVAL
- * 
+ *
  * MODERATE: Clean up redundant code, consolidate implementations, remove obsolete files
  * Improve maintainability and reduce technical debt
  */
@@ -18,76 +18,76 @@ console.log('   ⏱️  TIMING: After Priority 1 fixes are complete\n');
 console.log('🔍 REDUNDANCY ANALYSIS RESULTS:\n');
 
 const redundantItems = [
-    {
-        category: 'Connection Pool Implementations',
-        files: [
-            'netlify/functions/utils/connection-pool.js',
-            'netlify/functions/utils/connection-pool-simple.js'
-        ],
-        issue: 'Two separate connection pool implementations',
-        recommendation: 'Keep the full-featured version, deprecate simple version',
-        effort: 'LOW',
-        risk: 'LOW'
-    },
-    {
-        category: 'Multiple Index Files',
-        files: [
-            'js/modules/ai/index.js',
-            'js/modules/cache/index.js', 
-            'js/modules/sports/index.js',
-            'js/modules/ui/index.js',
-            'js/modules/utils/index.js'
-        ],
-        issue: '5 index.js files with potential overlap',
-        recommendation: 'Verify tree-shaking exports, consolidate if needed',
-        effort: 'MEDIUM',
-        risk: 'LOW'
-    },
-    {
-        category: 'Test File Redundancy',
-        files: [
-            'admin-get-all-users-auth.test.js',
-            'admin-get-all-users-simple.test.js', 
-            'admin-get-all-users-test.js'
-        ],
-        issue: 'Three similar admin test files',
-        recommendation: 'Merge into comprehensive admin.test.js',
-        effort: 'LOW',
-        risk: 'VERY_LOW'
-    },
-    {
-        category: 'Debugging Scripts',
-        files: [
-            'debug-cursor.js',
-            'evaluate-cursor-changes.js',
-            'evaluate-final-fix.js',
-            'evaluate-refinement.js'
-        ],
-        issue: 'Multiple evaluation/debug scripts',
-        recommendation: 'Archive completed evaluation scripts',
-        effort: 'LOW',
-        risk: 'VERY_LOW'
-    },
-    {
-        category: 'Prompt Organization Files',
-        files: [
-            'reorganized-remaining-prompts.js',
-            'tier3-enhancement-prompts.js',
-            'tier4-future-prompts.js'
-        ],
-        issue: 'Planning files mixed with source code',
-        recommendation: 'Move to docs/ directory or convert to issues',
-        effort: 'LOW',
-        risk: 'VERY_LOW'
-    }
+  {
+    category: 'Connection Pool Implementations',
+    files: [
+      'netlify/functions/utils/connection-pool.js',
+      'netlify/functions/utils/connection-pool-simple.js',
+    ],
+    issue: 'Two separate connection pool implementations',
+    recommendation: 'Keep the full-featured version, deprecate simple version',
+    effort: 'LOW',
+    risk: 'LOW',
+  },
+  {
+    category: 'Multiple Index Files',
+    files: [
+      'js/modules/ai/index.js',
+      'js/modules/cache/index.js',
+      'js/modules/sports/index.js',
+      'js/modules/ui/index.js',
+      'js/modules/utils/index.js',
+    ],
+    issue: '5 index.js files with potential overlap',
+    recommendation: 'Verify tree-shaking exports, consolidate if needed',
+    effort: 'MEDIUM',
+    risk: 'LOW',
+  },
+  {
+    category: 'Test File Redundancy',
+    files: [
+      'admin-get-all-users-auth.test.js',
+      'admin-get-all-users-simple.test.js',
+      'admin-get-all-users-test.js',
+    ],
+    issue: 'Three similar admin test files',
+    recommendation: 'Merge into comprehensive admin.test.js',
+    effort: 'LOW',
+    risk: 'VERY_LOW',
+  },
+  {
+    category: 'Debugging Scripts',
+    files: [
+      'debug-cursor.js',
+      'evaluate-cursor-changes.js',
+      'evaluate-final-fix.js',
+      'evaluate-refinement.js',
+    ],
+    issue: 'Multiple evaluation/debug scripts',
+    recommendation: 'Archive completed evaluation scripts',
+    effort: 'LOW',
+    risk: 'VERY_LOW',
+  },
+  {
+    category: 'Prompt Organization Files',
+    files: [
+      'reorganized-remaining-prompts.js',
+      'tier3-enhancement-prompts.js',
+      'tier4-future-prompts.js',
+    ],
+    issue: 'Planning files mixed with source code',
+    recommendation: 'Move to docs/ directory or convert to issues',
+    effort: 'LOW',
+    risk: 'VERY_LOW',
+  },
 ];
 
 redundantItems.forEach((item, index) => {
-    console.log(`${index + 1}. ${item.category}`);
-    console.log(`   Files: ${item.files.join(', ')}`);
-    console.log(`   Issue: ${item.issue}`);
-    console.log(`   Recommendation: ${item.recommendation}`);
-    console.log(`   Effort: ${item.effort} | Risk: ${item.risk}\n`);
+  console.log(`${index + 1}. ${item.category}`);
+  console.log(`   Files: ${item.files.join(', ')}`);
+  console.log(`   Issue: ${item.issue}`);
+  console.log(`   Recommendation: ${item.recommendation}`);
+  console.log(`   Effort: ${item.effort} | Risk: ${item.risk}\n`);
 });
 
 console.log('=' * 80);
@@ -97,7 +97,9 @@ console.log('=' * 80);
 console.log('\n🎯 TASK: Clean up redundant code and consolidate implementations\n');
 
 console.log('📍 PHASE 1: Connection Pool Consolidation');
-console.log('   1. Compare netlify/functions/utils/connection-pool.js vs connection-pool-simple.js');
+console.log(
+  '   1. Compare netlify/functions/utils/connection-pool.js vs connection-pool-simple.js'
+);
 console.log('   2. Identify which implementation is more complete/robust');
 console.log('   3. Update all references to use the chosen implementation');
 console.log('   4. Remove the redundant file');

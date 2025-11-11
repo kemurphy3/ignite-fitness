@@ -4,18 +4,18 @@
  */
 
 class RecentEfforts extends window.BaseComponent {
-    constructor() {
-        super();
-        this.efforts = {};
-    }
+  constructor() {
+    super();
+    this.efforts = {};
+  }
 
-    render(onboardingData = {}) {
-        this.onboardingData = onboardingData;
-        this.efforts = onboardingData.recentEfforts || {};
+  render(onboardingData = {}) {
+    this.onboardingData = onboardingData;
+    this.efforts = onboardingData.recentEfforts || {};
 
-        const primarySport = onboardingData.primarySport || 'running';
+    const primarySport = onboardingData.primarySport || 'running';
 
-        return `
+    return `
             <div class="onboarding-step recent-efforts-step">
                 <div class="step-header">
                     <h2>Recent Best Efforts</h2>
@@ -33,10 +33,10 @@ class RecentEfforts extends window.BaseComponent {
                 </div>
             </div>
         `;
-    }
+  }
 
-    renderRunningEfforts() {
-        return `
+  renderRunningEfforts() {
+    return `
             <div class="efforts-inputs">
                 <div class="effort-input">
                     <label>5K time:</label>
@@ -52,10 +52,10 @@ class RecentEfforts extends window.BaseComponent {
                 </div>
             </div>
         `;
-    }
+  }
 
-    renderCyclingEfforts() {
-        return `
+  renderCyclingEfforts() {
+    return `
             <div class="efforts-inputs">
                 <div class="effort-input">
                     <label>FTP (watts):</label>
@@ -67,10 +67,10 @@ class RecentEfforts extends window.BaseComponent {
                 </div>
             </div>
         `;
-    }
+  }
 
-    renderSwimmingEfforts() {
-        return `
+  renderSwimmingEfforts() {
+    return `
             <div class="efforts-inputs">
                 <div class="effort-input">
                     <label>100m best time:</label>
@@ -82,21 +82,20 @@ class RecentEfforts extends window.BaseComponent {
                 </div>
             </div>
         `;
-    }
+  }
 
-    updateEffort(key, value) {
-        this.efforts[key] = value;
-    }
+  updateEffort(key, value) {
+    this.efforts[key] = value;
+  }
 
-    saveAndContinue() {
-        const om = window.OnboardingManager;
-        if (om) {
-            om.onboardingData.recentEfforts = this.efforts;
-            om.saveStepData('recent_efforts', { recentEfforts: this.efforts });
-            om.nextStep();
-        }
+  saveAndContinue() {
+    const om = window.OnboardingManager;
+    if (om) {
+      om.onboardingData.recentEfforts = this.efforts;
+      om.saveStepData('recent_efforts', { recentEfforts: this.efforts });
+      om.nextStep();
     }
+  }
 }
 
 window.RecentEfforts = new RecentEfforts();
-

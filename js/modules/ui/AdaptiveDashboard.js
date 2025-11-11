@@ -4,23 +4,25 @@
  */
 
 class AdaptiveDashboard extends AdaptiveComponent {
-    constructor(element, options = {}) {
-        super(element, options);
-        this.authManager = window.AuthManager;
-        this.storageManager = window.StorageManager;
+  constructor(element, options = {}) {
+    super(element, options);
+    this.authManager = window.AuthManager;
+    this.storageManager = window.StorageManager;
+  }
+
+  /**
+   * Render simple mode dashboard
+   */
+  renderSimple() {
+    if (!this.element) {
+      return;
     }
 
-    /**
-     * Render simple mode dashboard
-     */
-    renderSimple() {
-        if (!this.element) {return;}
+    const username = this.authManager?.getCurrentUsername() || 'Athlete';
+    const workoutCount = this.getWorkoutCount();
+    const currentStreak = this.getCurrentStreak();
 
-        const username = this.authManager?.getCurrentUsername() || 'Athlete';
-        const workoutCount = this.getWorkoutCount();
-        const currentStreak = this.getCurrentStreak();
-
-        this.element.innerHTML = `
+    this.element.innerHTML = `
             <div class="dashboard-simple">
                 <div class="simple-mode-indicator" style="
                     position: absolute;
@@ -96,19 +98,21 @@ class AdaptiveDashboard extends AdaptiveComponent {
                 </div>
             </div>
         `;
+  }
+
+  /**
+   * Render advanced mode dashboard
+   */
+  renderAdvanced() {
+    if (!this.element) {
+      return;
     }
 
-    /**
-     * Render advanced mode dashboard
-     */
-    renderAdvanced() {
-        if (!this.element) {return;}
+    // Use existing dashboard with all features
+    if (window.DashboardHero) {
+      const hero = window.DashboardHero.render();
 
-        // Use existing dashboard with all features
-        if (window.DashboardHero) {
-            const hero = window.DashboardHero.render();
-
-            this.element.innerHTML = `
+      this.element.innerHTML = `
                 <div class="dashboard-advanced">
                     ${hero.outerHTML}
                     <div class="dashboard-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 2rem;">
@@ -129,59 +133,61 @@ class AdaptiveDashboard extends AdaptiveComponent {
                 </div>
             `;
 
-            // Load charts if available
-            if (window.Trends) {
-                setTimeout(() => {
-                    const chartsSection = this.element.querySelector('#charts-section');
-                    if (chartsSection && window.Trends.render) {
-                        chartsSection.innerHTML = window.Trends.render();
-                    }
-                }, 100);
-            }
-        } else {
-            this.renderSimple(); // Fallback
-        }
+      // Load charts if available
+      if (window.Trends) {
+        setTimeout(() => {
+          const chartsSection = this.element.querySelector('#charts-section');
+          if (chartsSection && window.Trends.render) {
+            chartsSection.innerHTML = window.Trends.render();
+          }
+        }, 100);
+      }
+    } else {
+      this.renderSimple(); // Fallback
     }
+  }
 
-    /**
-     * Get workout count from storage
-     * @returns {number} Workout count
-     */
-    getWorkoutCount() {
-        try {
-            const userId = this.authManager?.getCurrentUsername();
-            if (!userId) {return 0;}
+  /**
+   * Get workout count from storage
+   * @returns {number} Workout count
+   */
+  getWorkoutCount() {
+    try {
+      const userId = this.authManager?.getCurrentUsername();
+      if (!userId) {
+        return 0;
+      }
 
-            const userData = this.storageManager?.getUserData?.(userId) || {};
-            const workouts = userData.data?.workouts || [];
-            return workouts.length;
-        } catch (error) {
-            this.logger.error('Failed to get workout count', error);
-            return 0;
-        }
+      const userData = this.storageManager?.getUserData?.(userId) || {};
+      const workouts = userData.data?.workouts || [];
+      return workouts.length;
+    } catch (error) {
+      this.logger.error('Failed to get workout count', error);
+      return 0;
     }
+  }
 
-    /**
-     * Get current streak
-     * @returns {number} Current streak
-     */
-    getCurrentStreak() {
-        try {
-            // Simple streak calculation - can be enhanced
-            const workoutCount = this.getWorkoutCount();
-            return Math.min(workoutCount, 7); // Placeholder
-        } catch (error) {
-            this.logger.error('Failed to get streak', error);
-            return 0;
-        }
+  /**
+   * Get current streak
+   * @returns {number} Current streak
+   */
+  getCurrentStreak() {
+    try {
+      // Simple streak calculation - can be enhanced
+      const workoutCount = this.getWorkoutCount();
+      return Math.min(workoutCount, 7); // Placeholder
+    } catch (error) {
+      this.logger.error('Failed to get streak', error);
+      return 0;
     }
+  }
 
-    /**
-     * Render detailed statistics (advanced mode)
-     * @returns {string} Stats HTML
-     */
-    renderDetailedStats() {
-        return `
+  /**
+   * Render detailed statistics (advanced mode)
+   * @returns {string} Stats HTML
+   */
+  renderDetailedStats() {
+    return `
             <div class="detailed-stats">
                 <div class="stat-row">
                     <span class="stat-label">Total Volume:</span>
@@ -197,14 +203,14 @@ class AdaptiveDashboard extends AdaptiveComponent {
                 </div>
             </div>
         `;
-    }
+  }
 
-    /**
-     * Render AI insights (advanced mode)
-     * @returns {string} Insights HTML
-     */
-    renderAIInsights() {
-        return `
+  /**
+   * Render AI insights (advanced mode)
+   * @returns {string} Insights HTML
+   */
+  renderAIInsights() {
+    return `
             <div class="ai-insights">
                 <p style="color: #718096;">AI insights will appear here based on your training data.</p>
                 <button onclick="if(window.CoachChat){window.CoachChat.openChat();}" class="btn-secondary" style="margin-top: 0.5rem;">
@@ -212,14 +218,14 @@ class AdaptiveDashboard extends AdaptiveComponent {
                 </button>
             </div>
         `;
-    }
+  }
 
-    /**
-     * Render Strava panel (advanced mode)
-     * @returns {string} Strava panel HTML
-     */
-    renderStravaPanel() {
-        return `
+  /**
+   * Render Strava panel (advanced mode)
+   * @returns {string} Strava panel HTML
+   */
+  renderStravaPanel() {
+    return `
             <div class="strava-panel" style="background: white; border-radius: 8px; padding: 1.5rem;">
                 <h3 style="margin-top: 0;">Strava Integration</h3>
                 <p style="color: #718096; font-size: 0.875rem;">Connect your Strava account to automatically track activities.</p>
@@ -228,52 +234,51 @@ class AdaptiveDashboard extends AdaptiveComponent {
                 </button>
             </div>
         `;
-    }
+  }
 
-    /**
-     * Calculate total volume (placeholder)
-     * @returns {number} Total volume
-     */
-    calculateTotalVolume() {
-        // Placeholder - would calculate from actual workout data
-        return 0;
-    }
+  /**
+   * Calculate total volume (placeholder)
+   * @returns {number} Total volume
+   */
+  calculateTotalVolume() {
+    // Placeholder - would calculate from actual workout data
+    return 0;
+  }
 
-    /**
-     * Calculate weekly load (placeholder)
-     * @returns {string} Load value
-     */
-    calculateWeeklyLoad() {
-        // Placeholder - would calculate from actual load data
-        return 'N/A';
-    }
+  /**
+   * Calculate weekly load (placeholder)
+   * @returns {string} Load value
+   */
+  calculateWeeklyLoad() {
+    // Placeholder - would calculate from actual load data
+    return 'N/A';
+  }
 
-    /**
-     * Calculate average RPE (placeholder)
-     * @returns {string} Average RPE
-     */
-    calculateAvgRPE() {
-        // Placeholder - would calculate from actual RPE data
-        return 'N/A';
-    }
+  /**
+   * Calculate average RPE (placeholder)
+   * @returns {string} Average RPE
+   */
+  calculateAvgRPE() {
+    // Placeholder - would calculate from actual RPE data
+    return 'N/A';
+  }
 }
 
 // Create global instance
 window.AdaptiveDashboard = AdaptiveDashboard;
 
 // Global helper
-window.upgradeToAdvanced = function() {
-    if (window.SimpleModeManager) {
-        window.SimpleModeManager.setEnabled(false);
-        // Refresh dashboard
-        if (window.Router) {
-            window.Router.navigate('#/dashboard', { replace: true });
-        }
+window.upgradeToAdvanced = function () {
+  if (window.SimpleModeManager) {
+    window.SimpleModeManager.setEnabled(false);
+    // Refresh dashboard
+    if (window.Router) {
+      window.Router.navigate('#/dashboard', { replace: true });
     }
+  }
 };
 
 // Export for module systems
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = AdaptiveDashboard;
+  module.exports = AdaptiveDashboard;
 }
-

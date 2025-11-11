@@ -11,6 +11,7 @@ All "Done Means" items have been implemented successfully.
 **Prompt 6 has been completed with the following features:**
 
 ### **Exercise Substitution System** ✅
+
 - Substitution rules for 4 major movement patterns
 - Auto-suggests 2 alternatives with rationale
 - Filters based on dislikes and pain location
@@ -18,6 +19,7 @@ All "Done Means" items have been implemented successfully.
 - Updates plan and rest times automatically
 
 ### **Real Gym Math** ✅
+
 - Formatted weight loading instructions
 - Handles missing plates with fallback
 - US and metric support
@@ -55,28 +57,31 @@ All "Done Means" items have been implemented successfully.
 
 ✅ **Exercise substitution** respects goals, dislikes, pain, and equipment  
 ✅ **2 alternatives** with brief rationale for each  
-✅ **Formatted loading**: "Load 45 lb bar + 35 + 10 + 2.5 per side → 135 lb total"  
+✅ **Formatted loading**: "Load 45 lb bar + 35 + 10 + 2.5 per side → 135 lb
+total"  
 ✅ **Missing plate handling** suggests next best weight + extra reps  
 ✅ **Plan updates** automatically with rest and volume adjustments  
-✅ **US and metric** both supported and tested  
+✅ **US and metric** both supported and tested
 
 ---
 
 ## **Example Usage**
 
 ### **Get Exercise Substitutions:**
+
 ```javascript
 const suggestions = ExerciseAdapter.suggestSubstitutions(
-    'Bulgarian Split Squat',
-    ['walking lunges'], // User dislikes
-    'knee',            // Pain location
-    { equipment: ['dumbbells'] }
+  'Bulgarian Split Squat',
+  ['walking lunges'], // User dislikes
+  'knee', // Pain location
+  { equipment: ['dumbbells'] }
 );
 
 // Returns: Reverse Lunges with rationale and adjustments
 ```
 
 ### **Get Weight Loading:**
+
 ```javascript
 const loading = WeightDisplay.calculateLoad(135);
 // "Load 45 lb bar + 45 per side → 135 lb total"
@@ -91,6 +96,7 @@ const loading = WeightDisplay.calculateLoad(135);
 ✅ Plate math passes metric and imperial tests  
 ✅ Missing plates handled with fallback suggestions  
 ✅ Substitutions respect dislikes and pain  
-✅ Rationale included for each alternative  
+✅ Rationale included for each alternative
 
-**Users can now swap exercises seamlessly with practical loading instructions.** 🎯
+**Users can now swap exercises seamlessly with practical loading instructions.**
+🎯

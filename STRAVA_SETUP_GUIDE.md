@@ -1,9 +1,12 @@
 # Strava Integration Setup Guide
 
 ## Overview
-This guide explains how to connect your Ignite Fitness app to real Strava accounts using OAuth 2.0.
+
+This guide explains how to connect your Ignite Fitness app to real Strava
+accounts using OAuth 2.0.
 
 ## Prerequisites
+
 - A Strava account
 - A Strava app registered at https://www.strava.com/settings/api
 - A deployed version of Ignite Fitness (can be localhost for testing)
@@ -20,7 +23,8 @@ This guide explains how to connect your Ignite Fitness app to real Strava accoun
      - **Name**: Ignite Fitness (or your choice)
      - **Category**: Training
      - **Website**: Your app URL (e.g., `https://ignitefitness.netlify.app`)
-     - **Authorization Callback Domain**: Your domain (e.g., `ignitefitness.netlify.app`)
+     - **Authorization Callback Domain**: Your domain (e.g.,
+       `ignitefitness.netlify.app`)
      - **Description**: Fitness tracking and training load management
 
 3. **Get Your Credentials**
@@ -32,6 +36,7 @@ This guide explains how to connect your Ignite Fitness app to real Strava accoun
 ### Option A: Local Testing (Development)
 
 1. **Set the Client ID in localStorage**
+
    ```javascript
    // Open browser console on your app
    localStorage.setItem('strava_client_id', 'YOUR_CLIENT_ID_HERE');
@@ -88,8 +93,8 @@ exports.handler = async (event, context) => {
         client_id: process.env.STRAVA_CLIENT_ID,
         client_secret: process.env.STRAVA_CLIENT_SECRET,
         code: code,
-        grant_type: 'authorization_code'
-      })
+        grant_type: 'authorization_code',
+      }),
     });
 
     const data = await response.json();
@@ -97,7 +102,7 @@ exports.handler = async (event, context) => {
     if (data.errors) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: data.errors[0].message })
+        body: JSON.stringify({ error: data.errors[0].message }),
       };
     }
 
@@ -105,20 +110,19 @@ exports.handler = async (event, context) => {
       statusCode: 200,
       headers: {
         'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         access_token: data.access_token,
         refresh_token: data.refresh_token,
         expires_at: data.expires_at,
-        athlete: data.athlete
-      })
+        athlete: data.athlete,
+      }),
     };
-
   } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error.message })
+      body: JSON.stringify({ error: error.message }),
     };
   }
 };
@@ -131,15 +135,19 @@ exports.handler = async (event, context) => {
 ### Local Testing
 
 1. **Start your local server**
+
    ```bash
    python -m http.server 8000
    ```
 
 2. **Set up ngrok (to get HTTPS for OAuth)**
+
    ```bash
    ngrok http 8000
    ```
-   - Update your Strava app's "Authorization Callback Domain" to use the ngrok URL
+
+   - Update your Strava app's "Authorization Callback Domain" to use the ngrok
+     URL
 
 3. **Test the connection**
    - Open your app in a browser
@@ -159,6 +167,7 @@ exports.handler = async (event, context) => {
 ### Current Implementation
 
 The app automatically:
+
 - **Connects** to Strava via OAuth
 - **Syncs activities** from the last 30 days
 - **Calculates TSS** (Training Stress Score) for each activity
@@ -173,6 +182,7 @@ The app automatically:
 ### Adding More Features
 
 You can extend the integration to include:
+
 - Real-time activity updates
 - Segment analysis
 - Performance metrics
@@ -181,19 +191,23 @@ You can extend the integration to include:
 ## Troubleshooting
 
 ### "Redirect URI mismatch"
+
 - Ensure the callback URL in your Strava app matches exactly
 - Format should be: `https://yourdomain.com/callback.html`
 
 ### "Access token expired"
+
 - Tokens expire after 6 hours
 - Implement automatic refresh using the refresh token
 - Or re-authorize when expired
 
 ### "Client ID not configured"
+
 - Make sure you've set the Client ID
 - Check localStorage: `localStorage.getItem('strava_client_id')`
 
 ### CORS Errors
+
 - Ensure your Netlify function has proper CORS headers
 - Check that the function is deployed and accessible
 
