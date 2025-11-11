@@ -34,6 +34,15 @@ class ExpertCoordinator {
             climbing: this.instantiateOrFallback(window.ClimbingCoach, () => this.createDefaultExpert('climbing'))
         };
 
+        // Personal AI learning modules
+        this.personalLearner = this.instantiatePersonalModule(window.PersonalAILearner);
+        this.feedbackCollector = this.instantiatePersonalModule(window.FeedbackCollector);
+        this.adaptiveRecommender = this.instantiateAdaptiveRecommender(
+            window.AdaptiveRecommender,
+            this.personalLearner,
+            this.feedbackCollector
+        );
+
         // Register experts with memoized coordinator
         this.registerExperts();
     }
@@ -142,6 +151,7 @@ class ExpertCoordinator {
         const mergedPlan = this.mergePriorityPlans(basePlan, workingContext);
         this.applyReadinessAdjustments(mergedPlan, readiness);
         this.applyHeartRateInfluence(mergedPlan, workingContext);
+        this.applyPersonalAIAdjustments(mergedPlan, workingContext);
 
         mergedPlan.metadata = mergedPlan.metadata || {};
         mergedPlan.metadata.generatedAt = new Date().toISOString();
@@ -1483,6 +1493,107 @@ class ExpertCoordinator {
                 });
             }
         }
+    }
+
+    applyPersonalAIAdjustments(plan, context) {
+        const userId = context?.user?.id;
+        if (!userId || !this.adaptiveRecommender || !this.personalLearner) {
+            return;
+        }
+
+        try {
+            plan.notes = plan.notes || [];
+            plan.why = plan.why || [];
+            plan.metadata = plan.metadata || {};
+
+            const mainCandidates = (plan.mainSets || []).map((item, index) => ({
+                name: item.exercise || item.name,
+                baseRate: 0.65 + (index * 0.05),
+                generalLikelihood: item.successRate || 0.6,
+                exposures: item.completedSessions || 0
+            })).filter(candidate => !!candidate.name);
+
+            if (mainCandidates.length > 0) {
+                const recommendation = this.adaptiveRecommender.recommend({
+                    userId,
+                    candidates: mainCandidates,
+                    baseConfidence: plan.metadata?.combinedConfidence || 0.65
+                });
+
+                if (recommendation?.choice) {
+                    plan.metadata.personalAI = recommendation.metadata;
+                    plan.metadata.combinedConfidence = Number(
+                        ((plan.metadata.baseConfidence || 0.6) * 0.7 + recommendation.metadata.combinedConfidence * 0.3).toFixed(2)
+                    );
+                    plan.notes.push(`Personal AI weighting applied (${Math.round(plan.metadata.personalAI.combinedConfidence * 100)}% confidence).`);
+                    plan.why.push('Prioritized exercises that historically perform well for you.');
+
+                    // Bubble preferred exercise to top if different
+                    const preferredIndex = plan.mainSets.findIndex(item =>
+                        (item.exercise || item.name) === recommendation.choice.name
+                    );
+                    if (preferredIndex > 0) {
+                        const [preferred] = plan.mainSets.splice(preferredIndex, 1);
+                        plan.mainSets.unshift(preferred);
+                    }
+                }
+            }
+
+            // Adjust accessory volume based on volume tolerance pattern
+            const volumeInsights = this.personalLearner.getVolumeInsights(userId);
+            if (volumeInsights.baseline > 0 && volumeInsights.movingAverage > 0) {
+                const toleranceRatio = volumeInsights.movingAverage / volumeInsights.baseline;
+                if (toleranceRatio >= 1.2) {
+                    plan.accessories = (plan.accessories || []).map(accessory => ({
+                        ...accessory,
+                        sets: Math.ceil((accessory.sets || 2) * Math.min(toleranceRatio, 1.4))
+                    }));
+                    plan.notes.push('Accessory volume increased due to high personal tolerance.');
+                } else if (toleranceRatio <= 0.8) {
+                    plan.accessories = (plan.accessories || []).map(accessory => ({
+                        ...accessory,
+                        sets: Math.max(1, Math.round((accessory.sets || 2) * toleranceRatio))
+                    }));
+                    plan.notes.push('Accessory volume reduced based on recent tolerance patterns.');
+                }
+            }
+        } catch (error) {
+            this.logger.warn('Personal AI adjustments failed', error);
+        }
+    }
+
+    instantiatePersonalModule(ConstructorRef) {
+        if (ConstructorRef && typeof ConstructorRef === 'function') {
+            try {
+                return new ConstructorRef();
+            } catch (error) {
+                this.logger.warn('Failed to instantiate personal AI module', error);
+            }
+        }
+        return null;
+    }
+
+    instantiateAdaptiveRecommender(ConstructorRef, personalLearner, feedbackCollector) {
+        if (ConstructorRef && typeof ConstructorRef === 'function') {
+            try {
+                return new ConstructorRef({
+                    personalLearner: personalLearner || undefined,
+                    feedbackCollector: feedbackCollector || undefined,
+                    randomFn: () => {
+                        // deterministic fallback for server-side environments without Math.random
+                        if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+                            const buffer = new Uint32Array(1);
+                            crypto.getRandomValues(buffer);
+                            return buffer[0] / (0xFFFFFFFF + 1);
+                        }
+                        return Math.random();
+                    }
+                });
+            } catch (error) {
+                this.logger.warn('Failed to instantiate adaptive recommender', error);
+            }
+        }
+        return null;
     }
 }
 

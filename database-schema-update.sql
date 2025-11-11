@@ -162,6 +162,78 @@ CREATE TABLE IF NOT EXISTS body_composition_logs (
 
 CREATE INDEX IF NOT EXISTS idx_body_comp_user_date ON body_composition_logs(user_id, log_date DESC);
 
+-- Personalized AI knowledge base tables
+CREATE TABLE IF NOT EXISTS user_ai_patterns (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    pattern_type VARCHAR(100) NOT NULL,
+    pattern_data JSONB NOT NULL,
+    confidence_score DECIMAL(3,2) NOT NULL CHECK (confidence_score >= 0 AND confidence_score <= 1),
+    last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE (user_id, pattern_type)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_ai_patterns_user ON user_ai_patterns(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_ai_patterns_type ON user_ai_patterns(pattern_type);
+
+CREATE TABLE IF NOT EXISTS user_ai_recommendations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    recommendation_id VARCHAR(100) NOT NULL,
+    recommendation_type VARCHAR(100) NOT NULL,
+    payload JSONB NOT NULL,
+    prior_probability DECIMAL(5,4) NOT NULL CHECK (prior_probability >= 0 AND prior_probability <= 1),
+    likelihood DECIMAL(5,4) NOT NULL CHECK (likelihood >= 0 AND likelihood <= 1),
+    posterior_probability DECIMAL(5,4) NOT NULL CHECK (posterior_probability >= 0 AND posterior_probability <= 1),
+    user_feedback VARCHAR(10) CHECK (user_feedback IN ('positive', 'negative', 'neutral')),
+    success_rate DECIMAL(3,2) DEFAULT 0 CHECK (success_rate >= 0 AND success_rate <= 1),
+    confidence_score DECIMAL(3,2) DEFAULT 0.5 CHECK (confidence_score >= 0 AND confidence_score <= 1),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_ai_recs_unique ON user_ai_recommendations(user_id, recommendation_id);
+CREATE INDEX IF NOT EXISTS idx_user_ai_recs_type ON user_ai_recommendations(recommendation_type);
+
+CREATE TABLE IF NOT EXISTS user_exercise_adaptations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    exercise_name VARCHAR(150) NOT NULL,
+    positive_outcomes INTEGER DEFAULT 0 CHECK (positive_outcomes >= 0),
+    negative_outcomes INTEGER DEFAULT 0 CHECK (negative_outcomes >= 0),
+    total_sessions INTEGER DEFAULT 0 CHECK (total_sessions >= 0),
+    success_rate DECIMAL(3,2) DEFAULT 0 CHECK (success_rate >= 0 AND success_rate <= 1),
+    preference_score DECIMAL(3,2) DEFAULT 0.5 CHECK (preference_score >= 0 AND preference_score <= 1),
+    volume_tolerance DECIMAL(5,2) DEFAULT 0 CHECK (volume_tolerance >= 0),
+    baseline_volume DECIMAL(5,2) DEFAULT 0 CHECK (baseline_volume >= 0),
+    last_used TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE (user_id, exercise_name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_exercise_adaptations_user ON user_exercise_adaptations(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_exercise_adaptations_success_rate ON user_exercise_adaptations(success_rate DESC);
+
+CREATE TABLE IF NOT EXISTS user_goal_progress (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    goal_type VARCHAR(100) NOT NULL,
+    current_value DECIMAL(6,2) NOT NULL,
+    target_value DECIMAL(6,2) NOT NULL,
+    rate_of_change DECIMAL(6,3) DEFAULT 0,
+    predicted_completion_date DATE,
+    last_observed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    trend_slope DECIMAL(6,3),
+    confidence_score DECIMAL(3,2) DEFAULT 0.5 CHECK (confidence_score >= 0 AND confidence_score <= 1),
+    notes TEXT,
+    UNIQUE (user_id, goal_type)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_goal_progress_user ON user_goal_progress(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_goal_progress_completion ON user_goal_progress(predicted_completion_date);
+
 -- Ensure program start date column exists and is populated
 ALTER TABLE user_profiles
     ADD COLUMN IF NOT EXISTS program_start_date DATE;
