@@ -1,6 +1,8 @@
 // Test setup file for Vitest
 // This file is run before all tests
 
+import { vi } from 'vitest';
+
 // Mock localStorage for Node.js environment
 if (typeof localStorage === 'undefined') {
   const localStorageMock = {
@@ -36,6 +38,46 @@ if (typeof window === 'undefined') {
     dispatchEvent() { return true; }
   };
 }
+
+// Setup global mock functions for common patterns
+global.createMockFunction = () => vi.fn();
+global.createMockObject = (methods = []) => {
+  const mock = {};
+  methods.forEach(method => {
+    mock[method] = vi.fn();
+  });
+  return mock;
+};
+
+// Global mock managers that tests expect
+global.window = global.window || {};
+global.window.AuthManager = {
+  getCurrentUser: vi.fn(),
+  getCurrentUsername: vi.fn(),
+  isLoggedIn: vi.fn()
+};
+
+global.window.LoadCalculator = {
+  calculateWeeklyLoad: vi.fn(),
+  computeLoad: vi.fn()
+};
+
+global.window.StorageManager = {
+  getItem: vi.fn(),
+  setItem: vi.fn()
+};
+
+global.window.EventBus = {
+  on: vi.fn(),
+  emit: vi.fn()
+};
+
+global.window.SafeLogger = {
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn()
+};
 
 // Keep console methods available for debugging
 // Tests can override if needed
