@@ -209,7 +209,7 @@ class StravaHook {
     }
 
     async fetchActivityStreams(accessToken, userId, activityId) {
-        if (!activityId) {return {};} 
+        if (!activityId) {return {};}
         this.throttleIfNeeded();
         const url = `${this.baseUrl}/activities/${activityId}/streams?keys=time,heartrate&key_by_type=true`;
         const response = await this.performRequest(url, {

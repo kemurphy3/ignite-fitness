@@ -18,12 +18,12 @@ class StravaDataProcessor {
         this.eventBus = window.EventBus;
         this.authManager = window.AuthManager;
         this.storageManager = window.StorageManager;
-        
+
         this.tssFormulas = this.initializeTSSFormulas();
         this.recoveryEstimates = this.initializeRecoveryEstimates();
         this.adjustmentRules = this.initializeAdjustmentRules();
         this.importedActivities = new Set(); // Idempotency guard
-        
+
         // MVP: Initialize deduplication guard for file uploads
         this.uploadedActivities = new Set(); // Separate from existing idempotency guard
     }
@@ -96,7 +96,7 @@ class StravaDataProcessor {
                 condition: (activity) => activity.type === 'Run' && activity.distance > 10000,
                 adjustment: {
                     legVolume: 0.8,
-                    message: "Great run yesterday! Reducing leg volume to aid recovery."
+                    message: 'Great run yesterday! Reducing leg volume to aid recovery.'
                 }
             },
             highIntensity: {
@@ -107,21 +107,21 @@ class StravaDataProcessor {
                 },
                 adjustment: {
                     overallIntensity: 0.9,
-                    message: "High intensity session detected. Taking it easier today."
+                    message: 'High intensity session detected. Taking it easier today.'
                 }
             },
             longRide: {
                 condition: (activity) => activity.type === 'Ride' && activity.distance > 50000,
                 adjustment: {
                     legVolume: 0.7,
-                    message: "Long ride completed! Reducing leg work to support recovery."
+                    message: 'Long ride completed! Reducing leg work to support recovery.'
                 }
             },
             intenseSwim: {
                 condition: (activity) => activity.type === 'Swim' && activity.avg_heart_rate > 150,
                 adjustment: {
                     upperBodyVolume: 0.8,
-                    message: "Intense swim session! Reducing upper body volume today."
+                    message: 'Intense swim session! Reducing upper body volume today.'
                 }
             }
         };
@@ -138,10 +138,10 @@ class StravaDataProcessor {
             if (!activity || typeof activity !== 'object') {
                 return { success: false, error: 'Invalid activity data' };
             }
-            
+
             // Sanitize activity data
             const sanitizedActivity = this.sanitizeActivityData(activity);
-            
+
             // Check for idempotency
             const activityKey = `${sanitizedActivity.source}_${sanitizedActivity.external_id}`;
             if (this.importedActivities.has(activityKey)) {
@@ -204,12 +204,12 @@ class StravaDataProcessor {
     calculateTrainingStress(activity) {
         const activityType = activity.type;
         const formula = this.tssFormulas[activityType];
-        
+
         if (!formula) {
             // Default heuristic calculation
             return this.calculateHeuristicLoad(activity);
         }
-        
+
         return formula.calculate(activity);
     }
 
@@ -222,12 +222,12 @@ class StravaDataProcessor {
         const duration = activity.moving_time / 3600; // Convert to hours
         const distance = activity.distance / 1000; // Convert to km
         const pace = distance / duration; // km/h
-        
+
         // Simplified rTSS calculation based on pace and duration
         // This is a heuristic approximation - real rTSS requires power data
         const baseLoad = duration * 10; // Base load per hour
         const paceMultiplier = Math.pow(pace / 10, 1.5); // Pace intensity factor
-        
+
         return Math.round(baseLoad * paceMultiplier);
     }
 
@@ -240,16 +240,16 @@ class StravaDataProcessor {
         if (!activity.average_heartrate || !activity.max_heartrate) {
             return this.calculateHeuristicLoad(activity);
         }
-        
+
         const duration = activity.moving_time / 3600; // Convert to hours
         const avgHR = activity.average_heartrate;
         const maxHR = activity.max_heartrate;
         const hrRatio = avgHR / maxHR;
-        
+
         // hrTSS calculation based on heart rate reserve
         const intensityFactor = Math.pow(hrRatio, 2.5);
         const baseLoad = duration * 100; // Base TSS per hour
-        
+
         return Math.round(baseLoad * intensityFactor);
     }
 
@@ -261,11 +261,11 @@ class StravaDataProcessor {
     calculateSwimmingLoad(activity) {
         const duration = activity.moving_time / 3600; // Convert to hours
         const distance = activity.distance / 1000; // Convert to km
-        
+
         // Swimming load based on duration and distance
         const baseLoad = duration * 15; // Base load per hour
         const distanceFactor = distance * 5; // Distance factor
-        
+
         return Math.round(baseLoad + distanceFactor);
     }
 
@@ -276,11 +276,11 @@ class StravaDataProcessor {
      */
     calculateWeightTrainingLoad(activity) {
         const duration = activity.moving_time / 3600; // Convert to hours
-        
+
         // Weight training load based on duration
         // This would ideally use volume load (sets × reps × weight)
         const baseLoad = duration * 20; // Base load per hour
-        
+
         return Math.round(baseLoad);
     }
 
@@ -292,11 +292,11 @@ class StravaDataProcessor {
     calculateHeuristicLoad(activity) {
         const duration = activity.moving_time / 3600; // Convert to hours
         const distance = activity.distance / 1000; // Convert to km
-        
+
         // Simple heuristic based on duration and distance
         const baseLoad = duration * 12; // Base load per hour
         const distanceFactor = distance * 2; // Distance factor
-        
+
         return Math.round(baseLoad + distanceFactor);
     }
 
@@ -308,11 +308,11 @@ class StravaDataProcessor {
     calculateSourceLoad(activity) {
         const activityType = activity.type;
         const formula = this.tssFormulas[activityType];
-        
+
         if (formula && formula.formula !== 'heuristic') {
             return this.calculateTrainingStress(activity);
         }
-        
+
         // For heuristic activities, use a scaled version
         return Math.round(this.calculateTrainingStress(activity) * 0.8);
     }
@@ -324,24 +324,24 @@ class StravaDataProcessor {
      */
     estimateRecoveryTime(activity) {
         const activityType = activity.type;
-        const recovery = this.recoveryEstimates[activityType] || this.recoveryEstimates['Run'];
-        
-        const baseHours = recovery.baseHours;
+        const recovery = this.recoveryEstimates[activityType] || this.recoveryEstimates.Run;
+
+        const {baseHours} = recovery;
         const duration = activity.moving_time / 3600; // Convert to hours
         const distance = activity.distance / 1000; // Convert to km
-        
+
         // Calculate intensity factor based on heart rate
         let intensityFactor = 1.0;
         if (activity.average_heartrate && activity.max_heartrate) {
             const hrRatio = activity.average_heartrate / activity.max_heartrate;
             intensityFactor = 1 + (hrRatio - 0.7) * recovery.intensityMultiplier;
         }
-        
+
         // Calculate distance factor
         const distanceFactor = distance * recovery.distanceMultiplier;
-        
+
         const totalRecovery = baseHours + (duration * recovery.intensityMultiplier) + distanceFactor;
-        
+
         return Math.round(totalRecovery * 10) / 10; // Round to 1 decimal place
     }
 
@@ -355,16 +355,16 @@ class StravaDataProcessor {
             const hrRatio = activity.average_heartrate / activity.max_heartrate;
             return Math.round(hrRatio * 10);
         }
-        
+
         // Fallback based on duration and distance
         const duration = activity.moving_time / 3600; // Convert to hours
         const distance = activity.distance / 1000; // Convert to km
-        
-        if (duration > 2) return 9; // Long duration = high exertion
-        if (distance > 20) return 8; // Long distance = high exertion
-        if (duration > 1) return 7; // Medium duration = medium exertion
-        if (distance > 10) return 6; // Medium distance = medium exertion
-        
+
+        if (duration > 2) {return 9;} // Long duration = high exertion
+        if (distance > 20) {return 8;} // Long distance = high exertion
+        if (duration > 1) {return 7;} // Medium duration = medium exertion
+        if (distance > 10) {return 6;} // Medium distance = medium exertion
+
         return 5; // Default moderate exertion
     }
 
@@ -383,7 +383,7 @@ class StravaDataProcessor {
                 };
             }
         }
-        
+
         return {
             rule: 'none',
             adjustment: { overallIntensity: 1.0 },
@@ -400,10 +400,10 @@ class StravaDataProcessor {
         if (activity.type !== 'Run' || !activity.distance || !activity.moving_time) {
             return null;
         }
-        
+
         const distanceKm = activity.distance / 1000;
         const durationMinutes = activity.moving_time / 60;
-        
+
         return Math.round((durationMinutes / distanceKm) * 10) / 10; // Round to 1 decimal place
     }
 
@@ -423,18 +423,18 @@ class StravaDataProcessor {
      */
     sanitizeActivityData(activity) {
         const sanitized = {};
-        
+
         // Only allow specific fields and sanitize them
         const allowedFields = [
             'id', 'type', 'moving_time', 'elapsed_time', 'distance', 'calories',
             'average_heartrate', 'max_heartrate', 'total_elevation_gain',
             'start_date', 'avg_watts', 'weighted_avg_watts', 'source'
         ];
-        
+
         for (const field of allowedFields) {
             if (activity.hasOwnProperty(field)) {
                 const value = activity[field];
-                
+
                 // Sanitize string values
                 if (typeof value === 'string') {
                     sanitized[field] = value.replace(/[<>\"'&]/g, '');
@@ -447,11 +447,11 @@ class StravaDataProcessor {
                 }
             }
         }
-        
+
         // Ensure required fields have defaults
         sanitized.source = sanitized.source || 'strava';
         sanitized.external_id = sanitized.id ? sanitized.id.toString() : '';
-        
+
         return sanitized;
     }
 
@@ -464,26 +464,26 @@ class StravaDataProcessor {
         try {
             const processedActivities = [];
             const errors = [];
-            
+
             for (const activity of activities) {
                 const result = this.processActivity(activity);
-                
+
                 if (result.success) {
                     processedActivities.push(result.activity);
-                    
+
                     // Save to database
                     await this.saveActivity(result.activity);
                 } else {
                     errors.push({ activityId: activity.id, error: result.error });
                 }
             }
-            
+
             this.logger.audit('STRAVA_ACTIVITIES_IMPORTED', {
                 total: activities.length,
                 processed: processedActivities.length,
                 errors: errors.length
             });
-            
+
             return {
                 success: true,
                 processed: processedActivities.length,
@@ -523,12 +523,12 @@ class StravaDataProcessor {
                 source_load: activity.sourceLoad,
                 raw_data: activity.rawData || {}
             };
-            
+
             // Save to localStorage for now (would typically be database)
             const activities = this.storageManager?.get('external_activities', []);
             activities.push(activityData);
             this.storageManager?.set('external_activities', activities);
-            
+
             this.logger.debug('Activity saved:', activityData);
         } catch (error) {
             this.logger.error('Failed to save activity', error);
@@ -545,7 +545,7 @@ class StravaDataProcessor {
             const activities = this.storageManager?.get('external_activities', []);
             const cutoffDate = new Date();
             cutoffDate.setDate(cutoffDate.getDate() - days);
-            
+
             return activities.filter(activity => {
                 const activityDate = new Date(activity.start_time);
                 return activityDate >= cutoffDate;
@@ -563,19 +563,19 @@ class StravaDataProcessor {
     getActivitySummary() {
         try {
             const activities = this.getRecentActivities(30);
-            
+
             const summary = {
                 totalActivities: activities.length,
                 totalDuration: activities.reduce((sum, activity) => sum + (activity.duration_seconds || 0), 0),
                 totalDistance: activities.reduce((sum, activity) => sum + (activity.distance_meters || 0), 0),
                 totalCalories: activities.reduce((sum, activity) => sum + (activity.calories || 0), 0),
-                averageTSS: activities.length > 0 
-                    ? activities.reduce((sum, activity) => sum + (activity.training_stress_score || 0), 0) / activities.length 
+                averageTSS: activities.length > 0
+                    ? activities.reduce((sum, activity) => sum + (activity.training_stress_score || 0), 0) / activities.length
                     : 0,
                 totalRecoveryDebt: activities.reduce((sum, activity) => sum + (activity.recovery_debt_hours || 0), 0),
                 activityTypes: this.getActivityTypeBreakdown(activities)
             };
-            
+
             return summary;
         } catch (error) {
             this.logger.error('Failed to get activity summary', error);
@@ -590,7 +590,7 @@ class StravaDataProcessor {
      */
     getActivityTypeBreakdown(activities) {
         const breakdown = {};
-        
+
         activities.forEach(activity => {
             const type = activity.activity_type;
             if (!breakdown[type]) {
@@ -600,7 +600,7 @@ class StravaDataProcessor {
             breakdown[type].totalDuration += activity.duration_seconds || 0;
             breakdown[type].totalTSS += activity.training_stress_score || 0;
         });
-        
+
         return breakdown;
     }
     /**
@@ -613,14 +613,14 @@ class StravaDataProcessor {
             if (!file) {
                 throw new Error('No file provided');
             }
-            
+
             if (!file.name.endsWith('.json')) {
                 throw new Error('File must be a JSON file');
             }
-            
+
             const text = await this.readFileAsText(file);
             const data = JSON.parse(text);
-            
+
             // Handle different Strava export formats
             let activities = [];
             if (Array.isArray(data)) {
@@ -630,7 +630,7 @@ class StravaDataProcessor {
             } else {
                 throw new Error('Invalid Strava export format');
             }
-            
+
             return await this.processActivitiesFromFile(activities);
         } catch (error) {
             this.logger.error('Failed to handle file upload', error);
@@ -646,7 +646,7 @@ class StravaDataProcessor {
     async processActivitiesFromFile(activities) {
         try {
             this.logger.debug('Processing Strava activities from file', { count: activities.length });
-            
+
             const processedActivities = [];
             const duplicates = [];
             const errors = [];
@@ -665,7 +665,7 @@ class StravaDataProcessor {
                     if (processed) {
                         // Add simple training load for MVP
                         processed.simpleTrainingLoad = this.calculateSimpleTrainingLoad(processed);
-                        
+
                         processedActivities.push(processed);
                         this.uploadedActivities.add(dedupeKey);
                     }
@@ -705,7 +705,7 @@ class StravaDataProcessor {
         const type = this.mapActivityType(activity.type);
         const startTime = this.parseStartTime(activity.start_date_local);
         const duration = this.parseDuration(activity.moving_time || activity.elapsed_time);
-        
+
         return `${type}_${startTime}_${duration}`;
     }
 
@@ -739,7 +739,7 @@ class StravaDataProcessor {
      * @returns {number} Duration in minutes
      */
     parseDuration(seconds) {
-        if (!seconds || seconds <= 0) return null;
+        if (!seconds || seconds <= 0) {return null;}
         return Math.round(seconds / 60);
     }
 
@@ -749,11 +749,11 @@ class StravaDataProcessor {
      * @returns {string} ISO date string
      */
     parseStartTime(dateString) {
-        if (!dateString) return null;
-        
+        if (!dateString) {return null;}
+
         try {
             const date = new Date(dateString);
-            if (isNaN(date.getTime())) return null;
+            if (isNaN(date.getTime())) {return null;}
             return date.toISOString();
         } catch (error) {
             this.logger.warn('Invalid date format', { dateString, error });
@@ -768,9 +768,9 @@ class StravaDataProcessor {
      */
     calculateSimpleTrainingLoad(activity) {
         const { type, duration, distance, avgHeartRate } = activity;
-        
+
         let baseLoad = 0;
-        
+
         // Base load by activity type
         const typeMultipliers = {
             'run': 1.0,
@@ -780,18 +780,18 @@ class StravaDataProcessor {
             'recovery': 0.3,
             'other': 0.5
         };
-        
+
         baseLoad = typeMultipliers[type] || 0.5;
-        
+
         // Duration factor (logarithmic)
         const durationFactor = Math.log10(Math.max(duration, 1)) / 2; // 0-1 range
-        
+
         // Distance factor for cardio activities
         let distanceFactor = 0;
         if (['run', 'cycle', 'swim'].includes(type) && distance) {
             distanceFactor = Math.min(distance / 10000, 1); // 0-1 range, max at 10km
         }
-        
+
         // Heart rate factor (if available)
         let hrFactor = 0;
         if (avgHeartRate && avgHeartRate > 0) {
@@ -799,10 +799,10 @@ class StravaDataProcessor {
             const hrPercent = Math.min(avgHeartRate / 200, 1);
             hrFactor = hrPercent * 0.5; // 0-0.5 range
         }
-        
+
         // Combine factors
         const totalLoad = baseLoad * (durationFactor + distanceFactor + hrFactor) * 20;
-        
+
         // Clamp to 0-100 range
         return Math.max(0, Math.min(100, Math.round(totalLoad)));
     }
@@ -829,26 +829,26 @@ class StravaDataProcessor {
     async saveExternalActivities(activities) {
         try {
             const userId = this.authManager?.getCurrentUsername() || 'anonymous';
-            
+
             // Get existing external activities
             const existing = this.storageManager.getStorage('ignitefitness_external_activities', {});
             const userActivities = existing[userId] || [];
-            
+
             // Add new activities
             userActivities.push(...activities);
-            
+
             // Keep only last 100 activities
             if (userActivities.length > 100) {
                 userActivities.splice(0, userActivities.length - 100);
             }
-            
+
             // Save back to storage
             existing[userId] = userActivities;
             this.storageManager.setStorage('ignitefitness_external_activities', existing);
-            
+
             // Update last import time
             await this.updateLastImportTime();
-            
+
             this.logger.debug('Saved external activities', { count: activities.length });
         } catch (error) {
             this.logger.error('Failed to save external activities', error);
@@ -864,7 +864,7 @@ class StravaDataProcessor {
         try {
             const userId = this.authManager?.getCurrentUsername() || 'anonymous';
             const importTimes = this.storageManager.getStorage('ignitefitness_strava_import_times', {});
-            
+
             importTimes[userId] = new Date().toISOString();
             this.storageManager.setStorage('ignitefitness_strava_import_times', importTimes);
         } catch (error) {
@@ -880,7 +880,7 @@ class StravaDataProcessor {
         try {
             const userId = this.authManager?.getCurrentUsername() || 'anonymous';
             const importTimes = this.storageManager.getStorage('ignitefitness_strava_import_times', {});
-            
+
             return importTimes[userId] || null;
         } catch (error) {
             this.logger.error('Failed to get import time', error);
@@ -897,7 +897,7 @@ class StravaDataProcessor {
         try {
             const targetUserId = userId || this.authManager?.getCurrentUsername() || 'anonymous';
             const allActivities = this.storageManager.getStorage('ignitefitness_external_activities', {});
-            
+
             return allActivities[targetUserId] || [];
         } catch (error) {
             this.logger.error('Failed to get external activities', error);
@@ -915,17 +915,17 @@ class StravaDataProcessor {
             const userId = this.authManager?.getCurrentUsername() || 'anonymous';
             const allActivities = this.storageManager.getStorage('ignitefitness_external_activities', {});
             const userActivities = allActivities[userId] || [];
-            
+
             const index = userActivities.findIndex(a => a.id === activityId);
             if (index === -1) {
                 this.logger.warn('Activity not found for removal', { activityId });
                 return false;
             }
-            
+
             userActivities.splice(index, 1);
             allActivities[userId] = userActivities;
             this.storageManager.setStorage('ignitefitness_external_activities', allActivities);
-            
+
             this.logger.info('Removed external activity', { activityId });
             return true;
         } catch (error) {
@@ -944,7 +944,7 @@ class StravaDataProcessor {
             const activities = this.getExternalActivities(userId);
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-            
+
             return activities.filter(activity => {
                 const activityDate = new Date(activity.startTime);
                 return activityDate >= sevenDaysAgo;
@@ -963,7 +963,7 @@ class StravaDataProcessor {
     calculateWeeklyLoad(userId = null) {
         try {
             const recentActivities = this.getRecentActivities(userId);
-            
+
             return recentActivities.reduce((total, activity) => {
                 return total + (activity.simpleTrainingLoad || 0);
             }, 0);

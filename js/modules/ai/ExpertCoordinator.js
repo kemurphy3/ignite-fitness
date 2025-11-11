@@ -1458,7 +1458,7 @@ class ExpertCoordinator {
 
     applyHeartRateInfluence(plan, context) {
         const hrData = context.heartRate || {};
-        const baselineHRV = context.baselineHRV;
+        const {baselineHRV} = context;
 
         if (hrData.hrv && baselineHRV) {
             if (hrData.hrv > baselineHRV * 1.1) {

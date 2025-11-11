@@ -51,7 +51,7 @@ class ProgressTracker {
                 start: previous.date,
                 end: current.date,
                 changeBodyFat: changeBF,
-                changeWeight: changeWeight,
+                changeWeight,
                 significant
             });
         }
@@ -59,7 +59,7 @@ class ProgressTracker {
     }
 
     #computeEMA(entries) {
-        if (entries.length === 0) {return [];} 
+        if (entries.length === 0) {return [];}
         let ema = entries[0].bodyFat;
         const emaSeries = [{ date: entries[0].date, value: ema }];
         for (let i = 1; i < entries.length; i++) {
@@ -82,7 +82,7 @@ class ProgressTracker {
         return {
             plateau,
             changeBodyFat: changeBF,
-            changeWeight: changeWeight,
+            changeWeight,
             start: first.date,
             end: last.date
         };

@@ -56,7 +56,7 @@ class ZoneAnalyzer {
 
     computeZoneDistribution(series = [], zones) {
         const { totals, anomalies } = this.computeTimeInZones(series, zones);
-        const totalTime = Object.values(totals).reduce((sum, seconds) => sum + seconds, 0); 
+        const totalTime = Object.values(totals).reduce((sum, seconds) => sum + seconds, 0);
         const distribution = {};
 
         Object.entries(totals).forEach(([zone, seconds]) => {

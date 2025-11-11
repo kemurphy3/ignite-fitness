@@ -9,14 +9,14 @@ class CoachChat {
         this.overrideBar = window.OverrideBar;
         this.authManager = window.AuthManager;
         this.storageManager = window.StorageManager;
-        
+
         this.chatHistory = [];
         this.conversationContext = []; // Last 3 exchanges (user + coach pairs)
         this.isOpen = false;
-        
+
         this.STORAGE_KEY = 'ignitefitness_coach_chat_context';
         this.MAX_CONTEXT_EXCHANGES = 3; // Store last 3 exchanges
-        
+
         this.initialize();
     }
 
@@ -34,11 +34,11 @@ class CoachChat {
     loadConversationContext() {
         try {
             const userId = this.authManager?.getCurrentUserId() || this.authManager?.getCurrentUsername();
-            if (!userId) return;
+            if (!userId) {return;}
 
             const storageKey = `${this.STORAGE_KEY}_${userId}`;
             const stored = localStorage.getItem(storageKey);
-            
+
             if (stored) {
                 const context = JSON.parse(stored);
                 // Validate and load context
@@ -59,12 +59,12 @@ class CoachChat {
     saveConversationContext() {
         try {
             const userId = this.authManager?.getCurrentUserId() || this.authManager?.getCurrentUsername();
-            if (!userId) return;
+            if (!userId) {return;}
 
             const storageKey = `${this.STORAGE_KEY}_${userId}`;
             // Keep only last MAX_CONTEXT_EXCHANGES exchanges
             const contextToSave = this.conversationContext.slice(-this.MAX_CONTEXT_EXCHANGES);
-            
+
             localStorage.setItem(storageKey, JSON.stringify(contextToSave));
             this.logger.debug('Saved conversation context:', contextToSave.length, 'exchanges');
         } catch (error) {
@@ -85,7 +85,7 @@ class CoachChat {
         };
 
         this.conversationContext.push(exchange);
-        
+
         // Keep only last MAX_CONTEXT_EXCHANGES
         if (this.conversationContext.length > this.MAX_CONTEXT_EXCHANGES) {
             this.conversationContext.shift(); // Remove oldest
@@ -132,17 +132,17 @@ class CoachChat {
         if (messagesDiv) {
             messagesDiv.innerHTML = '';
         }
-        
+
         // Clear conversation context
         this.clearConversationContext();
-        
+
         // Clear chat history
         this.chatHistory = [];
-        
+
         // Show confirmation
         this.addMessage('coach', 'Conversation cleared. How can I help you?');
         window.LiveRegionManager?.announce('Conversation history cleared', 'polite');
-        
+
         this.logger.debug('Conversation cleared');
     }
 
@@ -153,7 +153,7 @@ class CoachChat {
         const chatContainer = document.createElement('div');
         chatContainer.id = 'coach-chat';
         chatContainer.className = 'coach-chat hidden';
-        
+
         chatContainer.innerHTML = `
             <div class="chat-header">
                 <h3>💬 Coach Chat</h3>
@@ -174,9 +174,9 @@ class CoachChat {
                 `).join('')}
             </div>
         `;
-        
+
         document.body.appendChild(chatContainer);
-        
+
         // Setup input handling
         const input = document.getElementById('chat-input-field');
         input.addEventListener('keypress', (e) => {
@@ -193,19 +193,19 @@ class CoachChat {
         const chat = document.getElementById('coach-chat');
         chat.classList.remove('hidden');
         this.isOpen = true;
-        
+
         // Load conversation context if not already loaded
         if (this.conversationContext.length === 0) {
             this.loadConversationContext();
         }
-        
+
         // Show welcome message (context-aware)
         if (this.conversationContext.length > 0) {
             this.addMessage('coach', 'Welcome back! I remember our earlier conversation. How can I help you today?');
         } else {
             this.addMessage('coach', 'Hey! How can I help adjust your workout today?');
         }
-        
+
         // Focus input
         const input = document.getElementById('chat-input-field');
         input?.focus();
@@ -226,22 +226,22 @@ class CoachChat {
     async sendMessage() {
         const input = document.getElementById('chat-input-field');
         const message = input.value.trim();
-        
-        if (!message) return;
-        
+
+        if (!message) {return;}
+
         // Add user message
         this.addMessage('user', message);
-        
+
         // Clear input
         input.value = '';
-        
+
         // Show delayed typing indicator (>500ms)
         let typingDiv = null;
         const typingTimer = setTimeout(() => {
             const messagesDiv = document.getElementById('chat-messages');
             typingDiv = document.createElement('div');
             typingDiv.className = 'chat-message coach typing';
-            typingDiv.innerHTML = `<div class="message-bubble"><span class="if-spinner" style="vertical-align: middle; margin-right: 8px;"></span>Coach is thinking…</div>`;
+            typingDiv.innerHTML = '<div class="message-bubble"><span class="if-spinner" style="vertical-align: middle; margin-right: 8px;"></span>Coach is thinking…</div>';
             messagesDiv.appendChild(typingDiv);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }, 500);
@@ -249,15 +249,15 @@ class CoachChat {
         // Get response with conversation context
         const response = await this.getCoachResponse(message);
         clearTimeout(typingTimer);
-        if (typingDiv && typingDiv.parentNode) typingDiv.parentNode.removeChild(typingDiv);
-        
+        if (typingDiv && typingDiv.parentNode) {typingDiv.parentNode.removeChild(typingDiv);}
+
         // Add coach response
         this.addMessage('coach', response.text);
         window.LiveRegionManager?.announce('Coach response ready', 'polite');
-        
+
         // Store exchange in conversation context
         this.addConversationExchange(message, response.text);
-        
+
         // Apply any modifications
         if (response.modifications) {
             this.applyModifications(response.modifications);
@@ -271,7 +271,7 @@ class CoachChat {
      */
     addMessage(sender, text) {
         const messagesDiv = document.getElementById('chat-messages');
-        
+
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message ${sender}`;
         messageDiv.innerHTML = `
@@ -279,10 +279,10 @@ class CoachChat {
                 ${text}
             </div>
         `;
-        
+
         messagesDiv.appendChild(messageDiv);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        
+
         // Save to history
         this.chatHistory.push({ sender, text, timestamp: new Date() });
     }
@@ -296,10 +296,10 @@ class CoachChat {
         // Get conversation context for contextual responses
         const context = this.getConversationContext();
         const lowerMessage = message.toLowerCase();
-        
+
         // Check for follow-up questions that reference previous conversation
         const isFollowUp = this.detectFollowUp(message, context);
-        
+
         // Simple pattern matching for common requests
         if (lowerMessage.includes('tired') || lowerMessage.includes('less')) {
             // Check if this is a follow-up about a previous request
@@ -312,13 +312,13 @@ class CoachChat {
                     };
                 }
             }
-            
+
             return {
                 text: "No problem! Let's reduce intensity by 20%. Focus on form over load today.",
                 modifications: { intensityMultiplier: 0.80 }
             };
         }
-        
+
         if (lowerMessage.includes('difficult') || lowerMessage.includes('too hard')) {
             // Context-aware follow-up
             if (isFollowUp && context.length > 0) {
@@ -330,49 +330,49 @@ class CoachChat {
                     };
                 }
             }
-            
+
             return {
-                text: "Got it! Switching to lighter alternatives and reducing RPE target by 2.",
+                text: 'Got it! Switching to lighter alternatives and reducing RPE target by 2.',
                 modifications: { maxRPE: 6, reduceLoad: true }
             };
         }
-        
+
         if (lowerMessage.includes('less time') || lowerMessage.includes('quick')) {
             // Context-aware: check if time was already reduced
             if (isFollowUp && context.length > 0) {
                 const lastExchange = context[context.length - 1];
                 if (lastExchange.coach && lastExchange.coach.includes('circuit')) {
                     return {
-                        text: "I already created a 20-minute version. Need it even shorter? I can create a 15-minute super-quick circuit!",
+                        text: 'I already created a 20-minute version. Need it even shorter? I can create a 15-minute super-quick circuit!',
                         modifications: { removeFinisher: true, circuitOnly: true, targetDuration: 15 }
                     };
                 }
             }
-            
+
             return {
-                text: "Creating 20-minute circuit. Skipping finisher to save time!",
+                text: 'Creating 20-minute circuit. Skipping finisher to save time!',
                 modifications: { removeFinisher: true, circuitOnly: true }
             };
         }
-        
+
         if (lowerMessage.includes('equipment')) {
             // Context-aware: check previous equipment discussions
             if (isFollowUp && context.length > 0) {
                 const lastExchange = context[context.length - 1];
                 if (lastExchange.user && lastExchange.user.includes('equipment')) {
                     return {
-                        text: "Based on our earlier discussion, here are more equipment alternatives. Which option works best for you?",
+                        text: 'Based on our earlier discussion, here are more equipment alternatives. Which option works best for you?',
                         modifications: { suggestAlternatives: true, showAllAlternatives: true }
                     };
                 }
             }
-            
+
             return {
-                text: "Here are alternatives: dumbbells, cables, or bodyweight versions. Want me to swap?",
+                text: 'Here are alternatives: dumbbells, cables, or bodyweight versions. Want me to swap?',
                 modifications: { suggestAlternatives: true }
             };
         }
-        
+
         if (lowerMessage.includes('hurt') || lowerMessage.includes('pain')) {
             // Context-aware: follow-up on injury discussions
             if (isFollowUp && context.length > 0) {
@@ -385,19 +385,19 @@ class CoachChat {
                     };
                 }
             }
-            
+
             return {
-                text: "Safety first. Which area hurts? I will suggest safer alternatives immediately.",
+                text: 'Safety first. Which area hurts? I will suggest safer alternatives immediately.',
                 modifications: { triggerInjuryCheck: true }
             };
         }
-        
+
         // Handle follow-up questions (yes/no, more/less, etc.)
         if (isFollowUp && context.length > 0) {
             const lastExchange = context[context.length - 1];
             const lastCoachMessage = lastExchange.coach || '';
             const lastUserMessage = lastExchange.user || '';
-            
+
             // Handle yes/no responses
             if (lowerMessage.includes('yes') || lowerMessage === 'y' || lowerMessage === 'yeah' || lowerMessage === 'sure') {
                 if (lastCoachMessage.includes('swap') || lastCoachMessage.includes('alternatives')) {
@@ -408,12 +408,12 @@ class CoachChat {
                 }
                 if (lastCoachMessage.includes('reduce') || lastCoachMessage.includes('lighter')) {
                     return {
-                        text: "Great! The adjustments are being applied. Your workout will be updated shortly.",
+                        text: 'Great! The adjustments are being applied. Your workout will be updated shortly.',
                         modifications: { applyModifications: true }
                     };
                 }
             }
-            
+
             if (lowerMessage.includes('no') || lowerMessage === 'n' || lowerMessage === 'nah' || lowerMessage === "don't") {
                 if (lastCoachMessage.includes('swap') || lastCoachMessage.includes('alternatives')) {
                     return {
@@ -422,16 +422,16 @@ class CoachChat {
                     };
                 }
             }
-            
+
             // Handle "what about X?" follow-ups
             if (lowerMessage.includes('what about') || lowerMessage.includes('how about')) {
                 return {
-                    text: "Good question! Let me check that for you based on our earlier discussion.",
+                    text: 'Good question! Let me check that for you based on our earlier discussion.',
                     modifications: { contextualFollowUp: true }
                 };
             }
         }
-        
+
         // Default response with context awareness
         if (context.length > 0) {
             return {
@@ -439,7 +439,7 @@ class CoachChat {
                 modifications: null
             };
         }
-        
+
         return {
             text: "I am here to help. You can say: 'less time', 'too hard', 'different equipment', or ask about specific exercises.",
             modifications: null
@@ -453,10 +453,10 @@ class CoachChat {
      * @returns {boolean} Is follow-up
      */
     detectFollowUp(message, context) {
-        if (context.length === 0) return false;
-        
+        if (context.length === 0) {return false;}
+
         const lowerMessage = message.toLowerCase();
-        
+
         // Follow-up indicators
         const followUpIndicators = [
             'yes', 'no', 'yep', 'nope', 'yeah', 'nah',
@@ -464,39 +464,39 @@ class CoachChat {
             'what about', 'how about', 'can you', 'could you',
             'also', 'and', 'still', 'again', 'too'
         ];
-        
+
         // Check for short responses that are likely follow-ups
         const shortResponses = ['yes', 'no', 'y', 'n', 'yeah', 'sure', 'ok', 'okay'];
         if (shortResponses.includes(lowerMessage.trim())) {
             return true;
         }
-        
+
         // Check for pronouns that reference previous conversation
         const pronouns = ['it', 'that', 'this', 'they', 'them'];
-        const hasPronoun = pronouns.some(pronoun => 
-            lowerMessage.includes(` ${pronoun} `) || 
-            lowerMessage.startsWith(`${pronoun} `) || 
+        const hasPronoun = pronouns.some(pronoun =>
+            lowerMessage.includes(` ${pronoun} `) ||
+            lowerMessage.startsWith(`${pronoun} `) ||
             lowerMessage.endsWith(` ${pronoun}`)
         );
-        
+
         // Check for follow-up phrases
-        const hasFollowUpPhrase = followUpIndicators.some(indicator => 
+        const hasFollowUpPhrase = followUpIndicators.some(indicator =>
             lowerMessage.includes(indicator)
         );
-        
+
         // Check if message references topics from previous exchanges
         const lastExchange = context[context.length - 1];
         if (lastExchange && lastExchange.coach) {
             const lastTopics = this.extractTopics(lastExchange.coach);
             const currentTopics = this.extractTopics(message);
-            
+
             // If current message mentions topics from previous exchange, it's likely a follow-up
             const topicMatch = currentTopics.some(topic => lastTopics.includes(topic));
             if (topicMatch) {
                 return true;
             }
         }
-        
+
         return hasPronoun || hasFollowUpPhrase || message.trim().length < 20;
     }
 
@@ -508,7 +508,7 @@ class CoachChat {
     extractTopics(message) {
         const topics = [];
         const lowerMessage = message.toLowerCase();
-        
+
         const topicKeywords = {
             'intensity': ['intensity', 'hard', 'easy', 'light', 'heavy'],
             'time': ['time', 'duration', 'quick', 'short', 'long'],
@@ -517,13 +517,13 @@ class CoachChat {
             'exercise': ['exercise', 'movement', 'lift', 'workout'],
             'volume': ['volume', 'sets', 'reps', 'amount']
         };
-        
+
         for (const [topic, keywords] of Object.entries(topicKeywords)) {
             if (keywords.some(keyword => lowerMessage.includes(keyword))) {
                 topics.push(topic);
             }
         }
-        
+
         return topics;
     }
 
@@ -540,10 +540,10 @@ class CoachChat {
                     modifications,
                     reason: 'User request via coach chat'
                 });
-                
+
                 // Update current plan
                 this.overrideBar.setCurrentPlan(newPlan);
-                
+
                 // Show notification
                 this.showNotification('Plan updated! Check your new workout.');
             }
@@ -597,7 +597,7 @@ class CoachChat {
         notification.className = 'coach-notification';
         notification.textContent = message;
         document.body.appendChild(notification);
-        
+
         setTimeout(() => notification.remove(), 3000);
     }
 }

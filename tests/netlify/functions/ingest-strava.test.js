@@ -10,7 +10,7 @@ const mockSupabaseClient = (mockData = {}) => {
     return {
         from: vi.fn((table) => {
             const tableData = mockData[table] || [];
-            
+
             return {
                 select: vi.fn(() => ({
                     eq: vi.fn((column, value) => ({
@@ -44,8 +44,8 @@ const mockSupabaseClient = (mockData = {}) => {
                 gte: vi.fn((column, value) => ({
                     lte: vi.fn((column, value) => ({
                         // This would be used for findLikelyDuplicates
-                        filter: vi.fn(() => ({ data: tableData.filter(item => 
-                            item.start_ts >= value && item.start_ts <= value 
+                        filter: vi.fn(() => ({ data: tableData.filter(item =>
+                            item.start_ts >= value && item.start_ts <= value
                         ), error: null }))
                     }))
                 }))
@@ -73,7 +73,7 @@ const createMockStravaActivity = (overrides = {}) => ({
 
 describe('Strava Ingest Handler', () => {
     let mockSupabase;
-    
+
     beforeEach(() => {
         mockSupabase = mockSupabaseClient({
             activities: [],
@@ -96,7 +96,7 @@ describe('Strava Ingest Handler', () => {
                 duration_s: 3600,
                 dedup_hash: 'abc123'
             };
-            
+
             mockSupabase.from.mockReturnValue({
                 select: vi.fn(() => ({
                     eq: vi.fn((col, val) => ({
@@ -134,7 +134,7 @@ describe('Strava Ingest Handler', () => {
             // Activities should be identified as likely duplicates
             const durationDiff = Math.abs(activities[0].duration_s - activities[1].duration_s);
             const durationTolerance = Math.max(activities[0].duration_s, activities[1].duration_s) * 0.1;
-            
+
             expect(durationDiff).toBeLessThanOrEqual(durationTolerance);
         });
 
@@ -158,7 +158,7 @@ describe('Strava Ingest Handler', () => {
 
             const timeDiffMs = Math.abs(new Date(activities[1].start_ts) - new Date(activities[0].start_ts));
             const timeDiffMinutes = timeDiffMs / (1000 * 60);
-            
+
             expect(timeDiffMinutes).toBeGreaterThan(6);
         });
     });
@@ -186,10 +186,10 @@ describe('Strava Ingest Handler', () => {
             // Calculate richness
             function calculateRichness(activity) {
                 let score = 0.0;
-                if (activity.has_hr || activity.avg_hr) score += 0.4;
-                if (activity.has_gps) score += 0.2;
-                if (activity.has_power) score += 0.2;
-                if (activity.device) score += 0.1;
+                if (activity.has_hr || activity.avg_hr) {score += 0.4;}
+                if (activity.has_gps) {score += 0.2;}
+                if (activity.has_power) {score += 0.2;}
+                if (activity.device) {score += 0.1;}
                 return Math.min(score, 1.0);
             }
 
@@ -218,8 +218,8 @@ describe('Strava Ingest Handler', () => {
 
             function calculateRichness(activity) {
                 let score = 0.0;
-                if (activity.has_hr || activity.avg_hr) score += 0.4;
-                if (activity.has_gps) score += 0.2;
+                if (activity.has_hr || activity.avg_hr) {score += 0.4;}
+                if (activity.has_gps) {score += 0.2;}
                 return Math.min(score, 1.0);
             }
 
@@ -282,7 +282,7 @@ describe('Strava Ingest Handler', () => {
 
             // Function to calculate sample rate
             function calculateSampleRate(samples) {
-                if (!Array.isArray(samples) || samples.length < 2) return 0;
+                if (!Array.isArray(samples) || samples.length < 2) {return 0;}
                 const timeSpan = samples[samples.length - 1].t - samples[0].t;
                 return samples.length / timeSpan;
             }
@@ -306,7 +306,7 @@ describe('Strava Ingest Handler', () => {
 
         it('should handle empty streams gracefully', async () => {
             const emptyStream = {};
-            
+
             expect(Object.keys(emptyStream).length).toBe(0);
         });
     });
@@ -314,7 +314,7 @@ describe('Strava Ingest Handler', () => {
     describe('Aggregates Recalculation', () => {
         it('should trigger aggregate recalculation for affected dates', async () => {
             const affectedDates = new Set(['2024-01-15', '2024-01-16']);
-            
+
             expect(affectedDates.size).toBe(2);
             expect(affectedDates.has('2024-01-15')).toBe(true);
             expect(affectedDates.has('2024-01-16')).toBe(true);
@@ -322,33 +322,33 @@ describe('Strava Ingest Handler', () => {
 
         it('should not trigger recalculation for duplicate imports', async () => {
             const affectedDates = new Set();
-            
+
             // Simulate duplicate detection
             const existingActivity = { id: 1, start_ts: '2024-01-15T07:00:00Z' };
             const newActivity = { id: 1, startTs: '2024-01-15T07:00:00Z' }; // Same hash
-            
+
             // If same hash, don't add to affected dates
             const isDuplicate = existingActivity.id === newActivity.id;
-            
+
             if (!isDuplicate) {
                 const date = new Date(newActivity.startTs).toISOString().split('T')[0];
                 affectedDates.add(date);
             }
-            
+
             expect(affectedDates.size).toBe(0);
         });
 
         it('should recalculate for dates with richer updates', async () => {
             const affectedDates = new Set();
-            
+
             // Simulate richer update
             const existingRichness = 0.5;
             const newRichness = 0.8;
-            
+
             if (newRichness > existingRichness) {
                 affectedDates.add('2024-01-15');
             }
-            
+
             expect(affectedDates.size).toBe(1);
             expect(affectedDates.has('2024-01-15')).toBe(true);
         });
@@ -359,13 +359,13 @@ describe('Strava Ingest Handler', () => {
                 { startTs: '2024-01-15T12:00:00Z' },
                 { startTs: '2024-01-15T18:00:00Z' }
             ];
-            
+
             const affectedDates = new Set();
             for (const activity of activities) {
                 const date = new Date(activity.startTs).toISOString().split('T')[0];
                 affectedDates.add(date);
             }
-            
+
             expect(affectedDates.size).toBe(1);
             expect(affectedDates.has('2024-01-15')).toBe(true);
         });
@@ -375,7 +375,7 @@ describe('Strava Ingest Handler', () => {
         it('should handle second import of same file', async () => {
             const firstImport = { status: 'imported', externalId: '12345' };
             const secondImport = { status: 'skipped_dup', externalId: '12345' };
-            
+
             expect(firstImport.status).toBe('imported');
             expect(secondImport.status).toBe('skipped_dup');
             expect(secondImport.externalId).toBe(firstImport.externalId);
@@ -390,7 +390,7 @@ describe('Strava Ingest Handler', () => {
                 has_heartrate: false,
                 average_heartrate: null
             };
-            
+
             expect(activityWithoutHR.has_heartrate).toBe(false);
             expect(activityWithoutHR.average_heartrate).toBeNull();
         });
@@ -401,14 +401,14 @@ describe('Strava Ingest Handler', () => {
                 start_date: '2024-01-15T07:00:00Z'
                 // Missing other fields
             };
-            
+
             // Should provide defaults
             const normalized = {
                 durationS: incompleteActivity.moving_time || incompleteActivity.elapsed_time || 0,
                 distanceM: incompleteActivity.distance || 0,
                 avgHr: incompleteActivity.average_heartrate || null
             };
-            
+
             expect(normalized.durationS).toBe(0);
             expect(normalized.distanceM).toBe(0);
             expect(normalized.avgHr).toBeNull();

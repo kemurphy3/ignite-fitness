@@ -317,7 +317,7 @@ class MultiObjectiveOptimizer {
     #mutate(individual, constraints) {
         const mutated = this.#clone(individual);
         mutated.schedule = mutated.schedule.map(session => {
-            let updated = { ...session };
+            const updated = { ...session };
             if (this.random() < this.mutationRate) {
                 const factor = 1 + ((this.random() - 0.5) * this.mutationScale);
                 updated.intensity = Math.min(0.95, Math.max(0.55, updated.intensity * factor));
