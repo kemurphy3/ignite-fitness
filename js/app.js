@@ -326,11 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Handle Enter key in AI chat input
   const aiInput = document.getElementById('aiChatInput');
   if (aiInput) {
-<<<<<<< Updated upstream
     aiInput.addEventListener('keypress', e => {
-=======
-    aiInput.addEventListener('keypress', (e) => {
->>>>>>> Stashed changes
       if (e.key === 'Enter') {
         sendToAI();
       }
@@ -343,13 +339,9 @@ document.addEventListener('DOMContentLoaded', () => {
 // Simple hash function for password hashing
 function simpleHash(str) {
   let hash = 0;
-<<<<<<< Updated upstream
   if (str.length === 0) {
     return hash;
   }
-=======
-  if (str.length === 0) {return hash;}
->>>>>>> Stashed changes
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
     hash = (hash << 5) - hash + char;
@@ -551,19 +543,14 @@ function _showTab(tabName, clickedButton) {
 
 // Data Functions
 function loadUserData() {
-<<<<<<< Updated upstream
   if (!currentUser || !users[currentUser]) {
     return;
   }
-=======
-  if (!currentUser || !users[currentUser]) {return;}
->>>>>>> Stashed changes
 
   const user = users[currentUser];
 
   // Load personal data
   if (user.personalData) {
-<<<<<<< Updated upstream
     if (user.personalData.age) {
       document.getElementById('age').value = user.personalData.age;
     }
@@ -576,15 +563,6 @@ function loadUserData() {
     if (user.personalData.experience) {
       document.getElementById('experience').value = user.personalData.experience;
     }
-=======
-    if (user.personalData.age) {document.getElementById('age').value = user.personalData.age;}
-    if (user.personalData.weight)
-      {document.getElementById('weight').value = user.personalData.weight;}
-    if (user.personalData.height)
-      {document.getElementById('height').value = user.personalData.height;}
-    if (user.personalData.experience)
-      {document.getElementById('experience').value = user.personalData.experience;}
->>>>>>> Stashed changes
   }
 
   // Load goals
@@ -593,37 +571,25 @@ function loadUserData() {
       const primaryGoal = document.querySelector(
         `input[name="primaryGoal"][value="${user.goals.primary}"]`
       );
-<<<<<<< Updated upstream
       if (primaryGoal) {
         primaryGoal.checked = true;
       }
-=======
-      if (primaryGoal) {primaryGoal.checked = true;}
->>>>>>> Stashed changes
     }
     if (user.goals.secondary) {
       const secondaryGoal = document.querySelector(
         `input[name="secondaryGoal"][value="${user.goals.secondary}"]`
       );
-<<<<<<< Updated upstream
       if (secondaryGoal) {
         secondaryGoal.checked = true;
       }
-=======
-      if (secondaryGoal) {secondaryGoal.checked = true;}
->>>>>>> Stashed changes
     }
   }
 }
 
 function saveUserData() {
-<<<<<<< Updated upstream
   if (!currentUser) {
     return;
   }
-=======
-  if (!currentUser) {return;}
->>>>>>> Stashed changes
   saveUserDataToStorage(currentUser, users[currentUser] || {});
 }
 
@@ -747,21 +713,11 @@ async function initializeWorkoutGenerator() {
   }
 }
 
-<<<<<<< Updated upstream
 function buildUserProfile() {
   const user = users[currentUser];
   if (!user) {
     return {};
   }
-=======
-function generateWorkoutPlan() {
-  updateWorkoutPlanGeneration();
-}
-
-function buildUserProfile() {
-  const user = users[currentUser];
-  if (!user) {return {};}
->>>>>>> Stashed changes
 
   return {
     goals: user.goals || {},
@@ -781,13 +737,9 @@ function buildUserProfile() {
 
 function displayGeneratedWorkout(workout) {
   const workoutPlanDiv = document.getElementById('workoutPlan');
-<<<<<<< Updated upstream
   if (!workoutPlanDiv) {
     return;
   }
-=======
-  if (!workoutPlanDiv) {return;}
->>>>>>> Stashed changes
 
   const html = `
         <div class="workout-plan">
@@ -1002,7 +954,6 @@ async function initializePatternDetector() {
 }
 
 function analyzeUserPatterns() {
-<<<<<<< Updated upstream
   if (!currentUser || !patternDetector) {
     return;
   }
@@ -1011,12 +962,6 @@ function analyzeUserPatterns() {
   if (!user) {
     return;
   }
-=======
-  if (!currentUser || !patternDetector) {return;}
-
-  const user = users[currentUser];
-  if (!user) {return;}
->>>>>>> Stashed changes
 
   try {
     const userProfile = buildUserProfile();
@@ -1042,7 +987,6 @@ function analyzeUserPatterns() {
 }
 
 function displayPatternInsights() {
-<<<<<<< Updated upstream
   if (!currentUser || !patternDetector) {
     return;
   }
@@ -1051,12 +995,6 @@ function displayPatternInsights() {
   if (!user?.analysis) {
     return;
   }
-=======
-  if (!currentUser || !patternDetector) {return;}
-
-  const user = users[currentUser];
-  if (!user?.analysis) {return;}
->>>>>>> Stashed changes
 
   const insights = user.analysis.insights || [];
   const recommendations = user.analysis.recommendations || [];
@@ -1128,15 +1066,10 @@ function displayPatternInsights() {
 }
 
 // Add pattern analysis to workout completion
-<<<<<<< Updated upstream
 function _onWorkoutCompleted(sessionData) {
   if (!currentUser) {
     return;
   }
-=======
-function onWorkoutCompleted(sessionData) {
-  if (!currentUser) {return;}
->>>>>>> Stashed changes
 
   // Add session to user data
   if (!users[currentUser].data) {
@@ -1173,15 +1106,10 @@ function updateSyncStatus() {
   }
 }
 
-<<<<<<< Updated upstream
 function _manualSync() {
   if (!currentUser) {
     return;
   }
-=======
-function manualSync() {
-  if (!currentUser) {return;}
->>>>>>> Stashed changes
 
   const syncStatus = document.getElementById('syncStatus');
   if (syncStatus) {
@@ -1235,7 +1163,6 @@ function updateWorkoutPlanGeneration() {
   }
 }
 
-<<<<<<< Updated upstream
 // Override the original generateWorkoutPlan function
 function _generateWorkoutPlan() {
   updateWorkoutPlanGeneration();
@@ -1246,23 +1173,13 @@ function loadRecentWorkouts() {
   if (!currentUser) {
     return;
   }
-=======
-
-// Load recent workouts
-function loadRecentWorkouts() {
-  if (!currentUser) {return;}
->>>>>>> Stashed changes
 
   const user = users[currentUser];
   const recentWorkoutsList = document.getElementById('recentWorkoutsList');
 
-<<<<<<< Updated upstream
   if (!recentWorkoutsList) {
     return;
   }
-=======
-  if (!recentWorkoutsList) {return;}
->>>>>>> Stashed changes
 
   const sessions = user?.data?.sessions || [];
   const recentSessions = sessions.slice(0, 5); // Last 5 sessions
@@ -1351,13 +1268,9 @@ function handleError(error, context = '') {
 function showErrorNotification(message, type = 'error') {
   // Remove existing notifications
   const existing = document.getElementById('error-notification');
-<<<<<<< Updated upstream
   if (existing) {
     existing.remove();
   }
-=======
-  if (existing) {existing.remove();}
->>>>>>> Stashed changes
 
   const notification = document.createElement('div');
   notification.id = 'error-notification';
@@ -1476,13 +1389,9 @@ function hideLoading() {
 
 // Enhanced button loading state
 function setButtonLoading(button, loading = true, text = 'Loading...') {
-<<<<<<< Updated upstream
   if (!button) {
     return;
   }
-=======
-  if (!button) {return;}
->>>>>>> Stashed changes
 
   if (loading) {
     button.disabled = true;
@@ -1575,13 +1484,9 @@ async function _initializeSeasonalTraining() {
 }
 
 function updateSeasonalPhaseDisplay() {
-<<<<<<< Updated upstream
   if (!seasonalTraining) {
     return;
   }
-=======
-  if (!seasonalTraining) {return;}
->>>>>>> Stashed changes
 
   const phaseInfo = seasonalTraining.getCurrentPhase();
   const phaseNameElement = document.getElementById('currentPhaseName');
@@ -1597,15 +1502,10 @@ function updateSeasonalPhaseDisplay() {
   }
 }
 
-<<<<<<< Updated upstream
 function _showPhaseModal() {
   if (!seasonalTraining) {
     return;
   }
-=======
-function showPhaseModal() {
-  if (!seasonalTraining) {return;}
->>>>>>> Stashed changes
 
   const modal = document.getElementById('phaseModal');
   const phaseDetails = document.getElementById('phaseDetails');
@@ -1625,11 +1525,7 @@ function closePhaseModal() {
 }
 
 function generatePhaseDetailsHTML(phaseInfo) {
-<<<<<<< Updated upstream
   const { details } = phaseInfo;
-=======
-  const {details} = phaseInfo;
->>>>>>> Stashed changes
   const recommendations = seasonalTraining.getPhaseRecommendations();
   const upcomingGames = seasonalTraining.getUpcomingGames(3);
 
@@ -1716,7 +1612,6 @@ function _changePhase() {
 
 function _addGame() {
   const opponent = prompt('Enter opponent name:');
-<<<<<<< Updated upstream
   if (!opponent) {
     return;
   }
@@ -1725,12 +1620,6 @@ function _addGame() {
   if (!dateStr) {
     return;
   }
-=======
-  if (!opponent) {return;}
-
-  const dateStr = prompt('Enter game date (YYYY-MM-DD):');
-  if (!dateStr) {return;}
->>>>>>> Stashed changes
 
   const gameDate = new Date(dateStr);
   if (isNaN(gameDate.getTime())) {
@@ -1766,13 +1655,9 @@ async function initializeDataStore() {
 
 // Enhanced save functions with database sync
 async function saveUserDataToDatabase() {
-<<<<<<< Updated upstream
   if (!currentUser || !dataStore) {
     return;
   }
-=======
-  if (!currentUser || !dataStore) {return;}
->>>>>>> Stashed changes
 
   try {
     const userData = {
@@ -2035,13 +1920,9 @@ function sendToAI() {
   const input = document.getElementById('aiChatInput');
   const message = input.value.trim();
 
-<<<<<<< Updated upstream
   if (!message) {
     return;
   }
-=======
-  if (!message) {return;}
->>>>>>> Stashed changes
 
   // Add user message to chat
   addMessageToChat(message, 'user');
