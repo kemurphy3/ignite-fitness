@@ -457,7 +457,9 @@ class PeriodizationView {
         if (d.getFullYear() === year && d.getMonth() === month) {
           eventByDay.set(d.getDate(), ev);
         }
-      } catch {}
+      } catch (error) {
+        this.logger.warn('PeriodizationView: invalid event date', { event: ev, error });
+      }
     });
 
     let cells = '';
@@ -520,8 +522,15 @@ class PeriodizationView {
    * @param {Object} data - Readiness data
    */
   updateBasedOnReadiness(data) {
-    // Adjust periodization based on readiness scores
-    // Reduce volume/intensity if readiness consistently low
+    if (!data) {
+      return;
+    }
+
+    this.latestReadiness = {
+      score: data.score ?? null,
+      trend: data.trend ?? null,
+      timestamp: data.timestamp ?? Date.now(),
+    };
   }
 
   /**
@@ -529,7 +538,15 @@ class PeriodizationView {
    * @param {Object} data - Load data
    */
   updateBasedOnLoad(data) {
-    // Adjust periodization based on load trends
+    if (!data) {
+      return;
+    }
+
+    this.latestLoadSummary = {
+      acuteLoad: data.acuteLoad ?? null,
+      chronicLoad: data.chronicLoad ?? null,
+      trainingStressBalance: data.trainingStressBalance ?? null,
+    };
   }
 }
 

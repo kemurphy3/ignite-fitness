@@ -2,6 +2,20 @@
  * FocusTrapManager - Manages focus trapping for modal dialogs and overlays
  * Ensures keyboard users can navigate within modals and return focus properly
  */
+const createEventBusFallback = () => ({
+  subscribe: () => () => {},
+  unsubscribe: () => {},
+  on: () => () => {},
+  off: () => {},
+  emit: () => {},
+  publish: () => {},
+});
+
+const EventBus =
+  (typeof window !== 'undefined' && window.EventBus) ||
+  (typeof module !== 'undefined' && module.exports
+    ? require('../core/EventBus.js')
+    : createEventBusFallback());
 class FocusTrapManager {
   constructor() {
     this.logger = window.SafeLogger || console;
@@ -274,7 +288,7 @@ class FocusTrapManager {
    * @param {Object} trapData - Trap data object
    */
   handleFocus(e, trapData) {
-    const { container, firstFocusableElement, lastFocusableElement } = trapData;
+    const { container, firstFocusableElement } = trapData;
 
     // Check if focus is within the container
     if (!container.contains(e.target)) {
@@ -327,9 +341,9 @@ class FocusTrapManager {
   /**
    * Setup modal event listeners
    * @param {HTMLElement} modal - Modal element
-   * @param {Object} options - Modal options
+   * @param {Object} _options - Modal options
    */
-  setupModalEventListeners(modal, options) {
+  setupModalEventListeners(modal, _options) {
     const modalId = modal.id;
 
     // Close button
@@ -430,7 +444,7 @@ class FocusTrapManager {
    * Update focusable elements for all active traps
    */
   updateAllFocusableElements() {
-    this.activeTraps.forEach((trapData, containerId) => {
+    this.activeTraps.forEach(trapData => {
       this.updateFocusableElements(trapData);
     });
   }

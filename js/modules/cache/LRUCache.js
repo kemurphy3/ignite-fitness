@@ -284,3 +284,7 @@ class LRUCache {
 
 // Export for use in other modules
 window.LRUCache = LRUCache;
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { LRUCache };
+}

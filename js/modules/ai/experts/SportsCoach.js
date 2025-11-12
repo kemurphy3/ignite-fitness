@@ -27,7 +27,7 @@ class SportsCoach {
    * @param {Object} context - User context
    * @returns {Object} Sports coach proposal
    */
-  propose({ user, season, schedule, history, readiness, preferences }) {
+  propose({ user, season, schedule, readiness }) {
     const sport = user.sport || 'soccer';
 
     const proposal = {
@@ -411,14 +411,17 @@ class SportsCoach {
     for (const [zoneName, zoneConfig] of Object.entries(this.vo2MaxZones)) {
       // Use VO₂ Max percentages as HR percentages
       const minHR = restingHR + hrReserve * zoneConfig.min;
-      const maxHR = restingHR + hrReserve * zoneConfig.max;
+      const maxHRZone = restingHR + hrReserve * zoneConfig.max;
+      const vo2Min = Math.round(zoneConfig.min * vo2Max);
+      const vo2MaxValue = Math.round(zoneConfig.max * vo2Max);
 
       zones[zoneName] = {
         min: Math.round(minHR),
-        max: Math.round(maxHR),
+        max: Math.round(maxHRZone),
         name: zoneConfig.name,
         description: zoneConfig.description,
         vo2Range: `${Math.round(zoneConfig.min * 100)}-${Math.round(zoneConfig.max * 100)}%`,
+        vo2Absolute: `${vo2Min}-${vo2MaxValue} ml/kg/min`,
       };
     }
 

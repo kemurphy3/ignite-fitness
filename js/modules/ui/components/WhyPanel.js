@@ -589,9 +589,8 @@ class WhyPanel {
     const exerciseName = button.dataset.exercise;
     const exerciseIndex = parseInt(button.dataset.index, 10);
 
-    // Get alternates from ExerciseAdapter
-    const exerciseAdapter = new ExerciseAdapter();
-    const alternates = exerciseAdapter.getAlternates(exerciseName);
+    const AdapterClass = window.ExerciseAdapter;
+    const alternates = AdapterClass ? new AdapterClass().getAlternates(exerciseName) : [];
 
     // Create modal
     const modal = this.createOverrideModal(exerciseName, exerciseIndex, alternates);
@@ -643,7 +642,7 @@ class WhyPanel {
                           alternates.length > 0
                             ? alternates
                                 .map(
-                                  (alt, i) => `
+                                  alt => `
                             <button 
                                 class="alternate-option" 
                                 data-alternate="${this.escapeHtml(alt.name)}"
@@ -886,8 +885,8 @@ class WhyPanel {
     }
 
     // Get alternatives for different pattern
-    const exerciseAdapter = new ExerciseAdapter();
-    const alternates = exerciseAdapter.getAlternates(exerciseName);
+    const AdapterClass = window.ExerciseAdapter;
+    const alternates = AdapterClass ? new AdapterClass().getAlternates(exerciseName) : [];
 
     if (alternates.length > 0) {
       // Use first alternate as different pattern

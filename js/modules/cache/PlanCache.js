@@ -2,6 +2,50 @@
  * PlanCache - Manages cached workout plans with LRU eviction and memory limits
  * Handles cache invalidation, warm-up after data changes, and memory-bounded storage
  */
+const globalScope = typeof window !== 'undefined' ? window : globalThis;
+
+const resolveLRUCache = () => {
+  if (globalScope && globalScope.LRUCache) {
+    return globalScope.LRUCache;
+  }
+  try {
+    // eslint-disable-next-line global-require
+    const moduleExport = require('./LRUCache.js');
+    return moduleExport?.LRUCache || moduleExport?.default || moduleExport;
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.debug('PlanCache: LRUCache fallback in use', error?.message || error);
+    return class SimpleCache {
+      constructor() {
+        this.store = new Map();
+      }
+      set(key, value) {
+        this.store.set(key, { value });
+        return true;
+      }
+      get(key) {
+        return this.store.get(key)?.value;
+      }
+      delete(key) {
+        return this.store.delete(key);
+      }
+      has(key) {
+        return this.store.has(key);
+      }
+      clear() {
+        this.store.clear();
+      }
+      get size() {
+        return this.store.size;
+      }
+      getStats() {
+        return { size: this.store.size, memoryUsage: 0 };
+      }
+    };
+  }
+};
+
+const ResolvedLRUCache = resolveLRUCache();
 
 class PlanCache {
   constructor(options = {}) {
@@ -16,7 +60,7 @@ class PlanCache {
     this.entryTTL = options.entryTTL || 5 * 60 * 1000; // 5 minutes
 
     // Initialize LRU Cache
-    this.cache = new LRUCache({
+    this.cache = new ResolvedLRUCache({
       maxSize: this.maxEntries,
       maxMemory: this.maxMemoryMB * 1024 * 1024, // Convert MB to bytes
       ttl: this.entryTTL,
@@ -25,12 +69,17 @@ class PlanCache {
 
     // Legacy compatibility
     this.lastRefresh = new Map();
+    this.accessOrder = new Map();
+    this.entrySizes = new Map();
+    this.currentMemoryBytes = 0;
 
     this.logger.info('PlanCache initialized with LRU cache', {
       maxMemoryMB: this.maxMemoryMB,
       maxEntries: this.maxEntries,
       entryTTL: this.entryTTL,
     });
+
+    this.cleanupInterval = null;
   }
 
   /**
@@ -167,28 +216,21 @@ class PlanCache {
   }
 
   /**
-   * Set entry in cache with LRU management
-   * @param {string} key - Cache key
-   * @param {Object} value - Value to cache
-   * @param {number} ttl - Time to live in milliseconds (optional)
-   * @returns {boolean} Success status
-   */
-  setCacheEntry(key, value, ttl = null) {
-    return this.cache.set(key, value, ttl);
-  }
-
-  /**
    * Get cache statistics
    * @returns {Object} Cache statistics
    */
   getCacheStats() {
-    const lruStats = this.cache.getStats();
+    const lruStats =
+      typeof this.cache.getStats === 'function' ? this.cache.getStats() : { size: this.cache.size };
+
     return {
       ...lruStats,
-      lastRefreshCount: this.lastRefresh.size,
+      totalEntries: lruStats.size ?? this.cache.size ?? 0,
+      memoryUsageMB: Math.round((this.currentMemoryBytes / (1024 * 1024)) * 100) / 100,
       maxMemoryMB: this.maxMemoryMB,
       maxEntries: this.maxEntries,
       entryTTL: this.entryTTL,
+      lastRefreshCount: this.lastRefresh.size,
     };
   }
 
@@ -215,23 +257,6 @@ class PlanCache {
         remainingEntries: this.cache.size,
       });
     }
-  }
-
-  /**
-   * Get cache statistics
-   * @returns {Object} Cache statistics
-   */
-  getCacheStats() {
-    return {
-      totalEntries: this.cache.size,
-      memoryUsageMB: Math.round((this.currentMemoryBytes / (1024 * 1024)) * 100) / 100,
-      maxMemoryMB: this.maxMemoryMB,
-      maxEntries: this.maxEntries,
-      memoryUtilization: Math.round(
-        (this.currentMemoryBytes / (this.maxMemoryMB * 1024 * 1024)) * 100
-      ),
-      entryUtilization: Math.round((this.cache.size / this.maxEntries) * 100),
-    };
   }
 
   /**
@@ -497,7 +522,7 @@ class PlanCache {
    * @param {number} userId - User ID
    * @returns {Promise<Object>} Preferences
    */
-  async getUserPreferences(userId) {
+  async getUserPreferences(_userId) {
     return { trainingMode: 'hybrid' };
   }
 
@@ -507,7 +532,7 @@ class PlanCache {
    * @param {string} date - Date
    * @returns {Promise<Object>} Schedule
    */
-  async getSchedule(userId, date) {
+  async getSchedule(_userId, _date) {
     return { isGameDay: false };
   }
 
@@ -516,7 +541,7 @@ class PlanCache {
    * @param {number} userId - User ID
    * @returns {Promise<Object>} History
    */
-  async getHistory(userId) {
+  async getHistory(_userId) {
     return { lastSessions: [] };
   }
 
@@ -526,7 +551,7 @@ class PlanCache {
    * @param {string} date - Date
    * @returns {Promise<number>} Readiness
    */
-  async getReadiness(userId, date) {
+  async getReadiness(_userId, _date) {
     return 7;
   }
 

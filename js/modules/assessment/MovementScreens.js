@@ -323,9 +323,16 @@ class MovementScreens {
    */
   getScreensForSport(sportId) {
     const sportScreens = [];
+    const normalizedSport = sportId?.toLowerCase() || '';
 
     Object.entries(this.screens).forEach(([id, screen]) => {
-      if (screen.sportRelevance === 'High' || screen.sportRelevance === 'Critical') {
+      const relevanceText = String(screen.sportRelevance || '').toLowerCase();
+      const isHighPriority =
+        relevanceText.includes('critical') ||
+        relevanceText.includes('high') ||
+        (normalizedSport && relevanceText.includes(normalizedSport));
+
+      if (isHighPriority) {
         sportScreens.push({
           id,
           ...screen,

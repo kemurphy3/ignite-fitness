@@ -399,7 +399,6 @@ class TouchOptimizer {
    * Prevent keyboard from moving fixed elements
    */
   preventKeyboardShifting() {
-    const viewportHeight = window.innerHeight;
     const metaViewport = document.querySelector('meta[name="viewport"]');
 
     if (metaViewport) {

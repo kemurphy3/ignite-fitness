@@ -242,3 +242,7 @@ class BaseComponent {
 
 // Export for use in other modules
 window.BaseComponent = BaseComponent;
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { BaseComponent };
+}

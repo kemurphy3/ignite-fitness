@@ -195,7 +195,7 @@ class ClimbingCoach {
    * @param {Object} context - User context
    * @returns {Object} Climbing coach proposal
    */
-  propose({ user, season, schedule, history, readiness, preferences }) {
+  propose({ user, season, readiness, preferences }) {
     const climbingStyle = this.getClimbingStyle(user, preferences);
     const routeType = this.getRouteType(user, preferences);
     const trainingPhase = this.getTrainingPhase(season, user);
@@ -481,7 +481,7 @@ class ClimbingCoach {
    * @param {number} readiness - Readiness score
    * @returns {Array} Exercise recommendations
    */
-  generateRecoveryExercises(readiness) {
+  generateRecoveryExercises(_readiness) {
     return [
       {
         name: 'Finger Extensions (Rubber Bands)',

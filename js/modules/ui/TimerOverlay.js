@@ -127,33 +127,6 @@ class TimerOverlay {
   }
 
   /**
-   * Pause session timer
-   */
-  pauseSessionTimer() {
-    if (this.sessionTimer && !this.isPaused) {
-      this.isPaused = true;
-      this.pauseStartTime = Date.now();
-      clearInterval(this.sessionTimer);
-      this.logger.debug('Session timer paused');
-    }
-  }
-
-  /**
-   * Resume session timer
-   */
-  resumeSessionTimer() {
-    if (this.isPaused) {
-      const pauseDuration = Date.now() - this.pauseStartTime;
-      this.pauseDuration += pauseDuration;
-      this.pauseStartTime = null;
-      this.isPaused = false;
-
-      this.startSessionTimer();
-      this.logger.debug('Session timer resumed');
-    }
-  }
-
-  /**
    * Start rest timer
    * @param {number} duration - Rest duration in seconds (30-180)
    * @param {Function} onComplete - Completion callback

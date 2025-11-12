@@ -28,7 +28,6 @@ class DashboardHero {
   render() {
     const username = this.authManager?.getCurrentUsername() || 'Athlete';
     const currentPhase = this.seasonPhase?.getCurrentPhase() || null;
-    const userSport = this.getUserSport();
 
     const hero = document.createElement('section');
     hero.className = 'dashboard-hero';

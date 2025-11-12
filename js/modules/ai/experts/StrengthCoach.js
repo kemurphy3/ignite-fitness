@@ -12,7 +12,7 @@ class StrengthCoach {
    * @param {Object} context - User context
    * @returns {Object} Strength coach proposal
    */
-  propose({ user, season, schedule, history, readiness, preferences }) {
+  propose({ user, season, history, readiness }) {
     const proposal = {
       blocks: [],
       constraints: [],
@@ -20,7 +20,7 @@ class StrengthCoach {
     };
 
     // Determine main movement focus
-    const mainMovement = this.determineMainMovement(user, history, season);
+    const mainMovement = this.determineMainMovement(user, history);
 
     // Progressive overload based on readiness
     const loadAdjustment = this.calculateLoadAdjustment(readiness, history);
@@ -55,7 +55,7 @@ class StrengthCoach {
     return proposal;
   }
 
-  determineMainMovement(user, history, season) {
+  determineMainMovement(user, history) {
     // Rotation logic: squat, deadlift, bench, overhead press
     const lastMainMovement = history?.lastSession?.mainMovement || 'squat';
     const rotation = { squat: 'deadlift', deadlift: 'bench', bench: 'overhead', overhead: 'squat' };

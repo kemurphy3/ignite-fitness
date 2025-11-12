@@ -3,6 +3,9 @@
  * Handles overall session timer + per-set rest periods
  * Extends BaseComponent for automatic cleanup
  */
+
+const { BaseComponent } = window;
+
 class WorkoutTimer extends BaseComponent {
   constructor() {
     super();

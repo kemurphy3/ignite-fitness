@@ -2,6 +2,20 @@
  * ScreenReaderWorkflowManager - Optimizes workout flow for screen reader users
  * Provides streamlined navigation, audio cues, and simplified interaction modes
  */
+const createEventBusFallback = () => ({
+  subscribe: () => () => {},
+  unsubscribe: () => {},
+  on: () => () => {},
+  off: () => {},
+  emit: () => {},
+  publish: () => {},
+});
+
+const EventBus =
+  (typeof window !== 'undefined' && window.EventBus) ||
+  (typeof module !== 'undefined' && module.exports
+    ? require('../core/EventBus.js')
+    : createEventBusFallback());
 class ScreenReaderWorkflowManager {
   constructor() {
     this.logger = window.SafeLogger || console;
@@ -411,7 +425,7 @@ class ScreenReaderWorkflowManager {
   generateHelpContent() {
     let content = '<h3>Keyboard Shortcuts</h3><ul>';
 
-    this.shortcuts.forEach((shortcut, key) => {
+    this.shortcuts.forEach(shortcut => {
       content += `<li><strong>Ctrl+${shortcut.key.toUpperCase()}</strong>: ${shortcut.description}</li>`;
     });
 

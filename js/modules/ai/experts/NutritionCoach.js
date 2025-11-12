@@ -12,7 +12,7 @@ class NutritionCoach {
    * @param {Object} context - User context
    * @returns {Object} Nutrition coach proposal
    */
-  propose({ user, season, schedule, history, readiness, preferences }) {
+  propose({ schedule, readiness }) {
     const proposal = {
       blocks: [],
       constraints: [],

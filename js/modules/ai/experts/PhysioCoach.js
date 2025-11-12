@@ -12,7 +12,7 @@ class PhysioCoach {
    * @param {Object} context - User context
    * @returns {Object} Physio coach proposal
    */
-  propose({ user, season, schedule, history, readiness, preferences }) {
+  propose({ user, history }) {
     const proposal = {
       blocks: [],
       constraints: [],

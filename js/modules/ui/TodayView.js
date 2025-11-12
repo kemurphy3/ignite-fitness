@@ -518,33 +518,83 @@ class TodayView {
    * Skip today's workout
    */
   async skipWorkout() {
-    if (confirm("Skip today's workout? This will mark it as skipped.")) {
-      try {
-        // Log as skipped session
-        const skippedRecord = {
-          user_id:
-            this.authManager?.getCurrentUserId() ||
-            this.authManager?.getCurrentUsername() ||
-            'anonymous',
-          session_id: `skipped_${Date.now()}`,
-          date: this.todayData.date,
-          workout_name: this.todayData.planned_session?.name || 'Planned workout',
-          status: 'skipped',
-          logged_at: new Date().toISOString(),
-        };
-
-        await this.saveSkippedSession(skippedRecord);
-
-        // Clear planned session
-        this.todayData.planned_session = null;
-
-        this.render();
-        this.showSuccess('Workout marked as skipped');
-      } catch (error) {
-        this.logger.error('Failed to skip workout:', error);
-        this.showError('Failed to skip workout');
-      }
+    const confirmed = await this.confirmSkip();
+    if (!confirmed) {
+      return;
     }
+
+    try {
+      // Log as skipped session
+      const skippedRecord = {
+        user_id:
+          this.authManager?.getCurrentUserId() ||
+          this.authManager?.getCurrentUsername() ||
+          'anonymous',
+        session_id: `skipped_${Date.now()}`,
+        date: this.todayData.date,
+        workout_name: this.todayData.planned_session?.name || 'Planned workout',
+        status: 'skipped',
+        logged_at: new Date().toISOString(),
+      };
+
+      await this.saveSkippedSession(skippedRecord);
+
+      // Clear planned session
+      this.todayData.planned_session = null;
+
+      this.render();
+      this.showSuccess('Workout marked as skipped');
+    } catch (error) {
+      this.logger.error('Failed to skip workout:', error);
+      this.showError('Failed to skip workout');
+    }
+  }
+
+  confirmSkip() {
+    if (window.DialogManager?.confirm) {
+      return window.DialogManager.confirm({
+        title: 'Skip workout?',
+        message: "Are you sure you want to skip today's workout? It will be marked as skipped.",
+        confirmLabel: 'Skip workout',
+        cancelLabel: 'Keep workout',
+      });
+    }
+
+    return new Promise(resolve => {
+      const overlay = document.createElement('div');
+      overlay.className = 'if-modal-overlay';
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      overlay.setAttribute('aria-labelledby', 'skip-workout-title');
+
+      overlay.innerHTML = `
+              <div class="if-modal">
+                  <h3 id="skip-workout-title">Skip today's workout?</h3>
+                  <p>It will be marked as skipped in your training history.</p>
+                  <div class="if-modal-actions">
+                      <button class="btn btn-secondary" data-action="cancel">Keep workout</button>
+                      <button class="btn btn-primary" data-action="confirm">Skip workout</button>
+                  </div>
+              </div>
+          `;
+
+      const close = result => {
+        overlay.remove();
+        resolve(result);
+      };
+
+      overlay.addEventListener('click', event => {
+        if (event.target === overlay) {
+          close(false);
+        }
+      });
+
+      overlay.querySelector('[data-action="cancel"]').addEventListener('click', () => close(false));
+      overlay.querySelector('[data-action="confirm"]').addEventListener('click', () => close(true));
+
+      document.body.appendChild(overlay);
+      overlay.querySelector('[data-action="cancel"]').focus();
+    });
   }
 
   /**

@@ -2,8 +2,26 @@
  * SessionManager - Secure session management with sliding windows
  * Implements automatic logout on inactivity with session renewal
  */
+const globalScope = typeof window !== 'undefined' ? window : globalThis;
 
-class SessionManager extends BaseComponent {
+const resolveBaseComponent = () => {
+  if (globalScope && globalScope.BaseComponent) {
+    return globalScope.BaseComponent;
+  }
+  try {
+    // eslint-disable-next-line global-require
+    const moduleExport = require('../ui/BaseComponent.js');
+    return moduleExport?.BaseComponent || moduleExport?.default || moduleExport;
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.debug('SessionManager: BaseComponent fallback in use', error?.message || error);
+    return class {};
+  }
+};
+
+const BaseComponentResolved = resolveBaseComponent();
+
+class SessionManager extends BaseComponentResolved {
   constructor(options = {}) {
     super(options);
 
@@ -181,7 +199,6 @@ class SessionManager extends BaseComponent {
       clearTimeout(this.sessionData.warningTimer);
     }
 
-    const now = Date.now();
     const timeUntilTimeout = this.config.sessionTimeout;
     const timeUntilWarning = timeUntilTimeout - this.config.warningTime;
 

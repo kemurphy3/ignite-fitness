@@ -157,10 +157,44 @@ class EventBus {
   }
 }
 
-// Create global instance
-window.EventBus = new EventBus();
+const getGlobalObject = () => {
+  if (typeof globalThis !== 'undefined') {
+    return globalThis;
+  }
+  if (typeof window !== 'undefined') {
+    return window;
+  }
+  if (typeof global !== 'undefined') {
+    return global;
+  }
+  return {};
+};
 
-// Export for module systems
+const globalObject = getGlobalObject();
+
+const eventBusInstance =
+  globalObject.EventBus instanceof EventBus ? globalObject.EventBus : new EventBus();
+
+if (typeof eventBusInstance.subscribe !== 'function') {
+  eventBusInstance.subscribe = function subscribe(event, callback, context) {
+    return this.on(event, callback, context);
+  };
+}
+
+if (typeof eventBusInstance.unsubscribe !== 'function') {
+  eventBusInstance.unsubscribe = function unsubscribe(event, callback, context) {
+    this.off(event, callback, context);
+  };
+}
+
+if (typeof eventBusInstance.publish !== 'function') {
+  eventBusInstance.publish = function publish(event, ...args) {
+    this.emit(event, ...args);
+  };
+}
+
+globalObject.EventBus = eventBusInstance;
+
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = EventBus;
+  module.exports = eventBusInstance;
 }

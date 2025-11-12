@@ -338,10 +338,10 @@ class VirtualList {
   /**
    * Update accessibility attributes
    */
-  updateAccessibility(startIndex, endIndex) {
+  updateAccessibility() {
     // Update aria-setsize for all visible items
     const items = this.itemsContainer.querySelectorAll('.virtual-list-item');
-    items.forEach((item, i) => {
+    items.forEach(item => {
       const index = parseInt(item.dataset.index);
       item.setAttribute('aria-posinset', index + 1);
       item.setAttribute('aria-setsize', this.filteredItems.length);

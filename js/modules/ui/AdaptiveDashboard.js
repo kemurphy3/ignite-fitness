@@ -3,6 +3,8 @@
  * Provides different experiences for beginners vs advanced users
  */
 
+const { AdaptiveComponent } = window;
+
 class AdaptiveDashboard extends AdaptiveComponent {
   constructor(element, options = {}) {
     super(element, options);

@@ -331,7 +331,7 @@ class DashboardRenderer {
                     : ''
                 }
                 
-                ${this.renderPlanNotes(plan, simple)}
+                ${this.renderPlanNotes(plan)}
             </div>
         `;
   }
@@ -342,7 +342,7 @@ class DashboardRenderer {
    * @param {boolean} simple - Simple mode
    * @returns {string} HTML for plan notes
    */
-  renderPlanNotes(plan, simple) {
+  renderPlanNotes(plan) {
     if (!plan.notes || !Array.isArray(plan.notes)) {
       return '';
     }
@@ -632,9 +632,7 @@ class DashboardRenderer {
    * @param {Object} config - Component configuration
    * @returns {string} HTML section
    */
-  generateWeeklyLoadViewSection(config) {
-    const { simple } = config;
-
+  generateWeeklyLoadViewSection() {
     return `
             <div class="dashboard-card weekly-load-view" style="grid-column: 1 / -1;">
                 <div id="week-view-container"></div>

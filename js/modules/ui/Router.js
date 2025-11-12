@@ -113,18 +113,18 @@ class Router {
    */
   setupEventListeners() {
     // Handle hash changes
-    window.addEventListener('hashchange', e => {
+    window.addEventListener('hashchange', () => {
       this.handleRouteChange();
     });
 
     // Handle browser back/forward buttons
-    window.addEventListener('popstate', e => {
+    window.addEventListener('popstate', () => {
       this.handleRouteChange();
     });
 
     // Handle programmatic navigation
-    window.addEventListener('router:navigate', e => {
-      this.navigate(e.detail.route, e.detail.options);
+    window.addEventListener('router:navigate', event => {
+      this.navigate(event.detail.route, event.detail.options);
     });
   }
 
@@ -379,10 +379,10 @@ class Router {
    * @param {Object} routeConfig - Route configuration
    */
   async loadRouteComponent(routeConfig) {
+    let container;
     try {
       // Try both possible IDs for compatibility
-      const container =
-        document.getElementById('main-content') || document.getElementById('app-content');
+      container = document.getElementById('main-content') || document.getElementById('app-content');
       if (!container) {
         this.logger.error('App content container not found');
         return;
@@ -743,8 +743,6 @@ class Router {
 
   getProfileHTML() {
     // Check Simple Mode
-    const simpleMode = window.SimpleModeManager?.isEnabled() ?? true;
-
     return `
             <div data-component="ProfileView" class="profile-view">
                 <div class="view-header">

@@ -450,17 +450,80 @@ function getRiskStatusText(riskLevel) {
 
 // Initialize modules
 function initializeAuth() {
-  if (window.AuthManager) {
+  const authManager = window.AuthManager;
+  if (!authManager) {
+    console.warn('AuthManager not available during safe initialization');
+    updateUIForLoggedOutUser();
+    return;
+  }
+
+  const applyAuthState = state => {
+    if (state?.isAuthenticated) {
+      const username = state.user?.athleteName || state.user?.username || 'Athlete';
+      updateUIForLoggedInUser(username);
+    } else {
+      updateUIForLoggedOutUser();
+    }
+  };
+
+  if (typeof authManager.onAuthStateChange === 'function') {
+    authManager.onAuthStateChange(event => {
+      if (event?.type === 'logout') {
+        applyAuthState({ isAuthenticated: false });
+      } else if (event?.user) {
+        applyAuthState({ isAuthenticated: true, user: event.user });
+      }
+    });
+  }
+
+  const finalize = () => {
+    if (typeof authManager.getAuthState === 'function') {
+      applyAuthState(authManager.getAuthState());
+    }
+  };
+
+  if (typeof authManager.readFromStorage === 'function') {
+    authManager
+      .readFromStorage()
+      .then(finalize)
+      .catch(error => {
+        console.error('Failed to read auth state safely', error);
+        updateUIForLoggedOutUser();
+      });
+  } else {
+    finalize();
   }
 }
 
 function initializeWorkoutTracker() {
-  if (window.WorkoutTracker) {
+  const { WorkoutTracker } = window;
+  if (!WorkoutTracker) {
+    console.warn('WorkoutTracker not available during safe initialization');
+    return;
+  }
+
+  if (!window.safeWorkoutTracker) {
+    window.safeWorkoutTracker = new WorkoutTracker();
+  }
+
+  if (typeof window.safeWorkoutTracker.render === 'function') {
+    window.safeWorkoutTracker.render();
   }
 }
 
 function initializeDashboard() {
-  if (window.DashboardRenderer) {
+  const { DashboardRenderer } = window;
+  if (!DashboardRenderer) {
+    console.warn('DashboardRenderer not available during safe initialization');
+    return;
+  }
+
+  if (!window.safeDashboardRenderer) {
+    window.safeDashboardRenderer = new DashboardRenderer();
+  }
+
+  if (typeof window.safeDashboardRenderer.renderDashboard === 'function') {
+    window.safeDashboardRenderer.renderDashboard();
   }
 }
 
@@ -482,10 +545,25 @@ function initializeGoalsAndHabits() {
 }
 
 function initializeLoadManagement() {
-  if (window.StravaProcessor) {
+  const { StravaProcessor, LoadCalculator } = window;
+
+  if (StravaProcessor) {
+    StravaProcessor.lastSafeInitialization = Date.now();
   }
 
-  if (window.LoadCalculator) {
+  if (!LoadCalculator) {
+    console.warn('LoadCalculator not available during safe initialization');
+    return;
+  }
+
+  if (!window.safeLoadCalculator) {
+    window.safeLoadCalculator = new LoadCalculator();
+  }
+
+  try {
+    window.safeLoadCalculator.getLoadDashboard();
+  } catch (error) {
+    console.error('Failed to initialize load dashboard safely', error);
   }
 }
 

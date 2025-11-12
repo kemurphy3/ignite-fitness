@@ -37,9 +37,8 @@ class SeasonPhase {
   /**
    * Set current phase
    * @param {string} phaseName - Phase name
-   * @param {Object} options - Phase options
    */
-  setPhase(phaseName, options = {}) {
+  setPhase(phaseName) {
     const phaseConfig = this.getPhaseConfig(phaseName);
     if (!phaseConfig) {
       this.logger.warn('Invalid phase:', phaseName);

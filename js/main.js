@@ -8,6 +8,20 @@ let users = {};
 let dataStore = null;
 let contextAwareAI = null;
 
+function applyAuthState(state) {
+  const isAuthenticated = !!state?.isAuthenticated;
+  const user = state?.user;
+
+  isLoggedIn = isAuthenticated;
+  currentUser = isAuthenticated && user?.username ? user.username : null;
+
+  if (isAuthenticated && user?.username) {
+    users[user.username] = user;
+  }
+
+  checkLoginStatus();
+}
+
 // Initialize application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Ignite Fitness App Initializing...');
@@ -55,32 +69,60 @@ function loadScript(src) {
 
 // Initialize authentication system
 function initializeAuth() {
-  // Check if user is already logged in
-  const savedUser = localStorage.getItem('ignitefitness_current_user');
-  if (savedUser) {
-    currentUser = savedUser;
-    isLoggedIn = true;
+  const authManager = window.AuthManager;
+
+  if (!authManager) {
+    const savedUser = localStorage.getItem('ignitefitness_current_user');
+    if (savedUser) {
+      currentUser = savedUser;
+      isLoggedIn = true;
+    }
+    return;
   }
 
-  // Initialize auth module with global references
-  if (typeof initAuth === 'function') {
-    initAuth({
-      currentUser: () => currentUser,
-      isLoggedIn: () => isLoggedIn,
-      users: () => users,
-      showUserDashboard,
-      hideLoginForm,
-      loadUserData,
-      showSuccess,
-      showError,
+  if (typeof authManager.onAuthStateChange === 'function') {
+    authManager.onAuthStateChange(event => {
+      if (event?.type === 'logout') {
+        applyAuthState({ isAuthenticated: false });
+      } else if (event?.user) {
+        applyAuthState({ isAuthenticated: true, user: event.user });
+      }
     });
+  }
+
+  const finalize = () => {
+    if (typeof authManager.getAuthState === 'function') {
+      applyAuthState(authManager.getAuthState());
+    }
+  };
+
+  if (typeof authManager.readFromStorage === 'function') {
+    authManager
+      .readFromStorage()
+      .then(finalize)
+      .catch(error => {
+        console.error('Failed to initialize auth state', error);
+        const savedUser = localStorage.getItem('ignitefitness_current_user');
+        if (savedUser) {
+          currentUser = savedUser;
+          isLoggedIn = true;
+        } else {
+          currentUser = null;
+          isLoggedIn = false;
+        }
+        checkLoginStatus();
+      });
+  } else {
+    finalize();
   }
 }
 
 // Initialize data store
 function initializeDataStore() {
-  if (typeof DataStore !== 'undefined') {
-    dataStore = new DataStore();
+  const DataStoreClass = window.DataStore;
+  if (typeof DataStoreClass === 'function') {
+    dataStore = new DataStoreClass();
+    window.appDataStore = dataStore;
     console.log('Data store initialized');
   } else {
     console.warn('DataStore class not available');
@@ -89,8 +131,10 @@ function initializeDataStore() {
 
 // Initialize AI systems
 function initializeAI() {
-  if (typeof ContextAwareAI !== 'undefined') {
-    contextAwareAI = new ContextAwareAI();
+  const ContextAwareAIClass = window.ContextAwareAI;
+  if (typeof ContextAwareAIClass === 'function') {
+    contextAwareAI = new ContextAwareAIClass();
+    window.appContextAwareAI = contextAwareAI;
     console.log('AI systems initialized');
   } else {
     console.warn('ContextAwareAI class not available');
@@ -115,19 +159,34 @@ function showLoginForm() {
 
 // Show user dashboard
 function showUserDashboard() {
-  document.getElementById('loginForm').classList.add('hidden');
-  document.getElementById('userDashboard').classList.remove('hidden');
+  const loginForm = document.getElementById('loginForm');
+  const userDashboard = document.getElementById('userDashboard');
+  if (loginForm) {
+    loginForm.classList.add('hidden');
+  }
+  if (userDashboard) {
+    userDashboard.classList.remove('hidden');
+  }
 
   // Update athlete name display
   const athleteNameElement = document.getElementById('currentAthleteName');
-  if (athleteNameElement && users[currentUser]) {
-    athleteNameElement.textContent = users[currentUser].athleteName || currentUser;
+  const authUser = window.AuthManager?.getCurrentUser?.();
+  const userRecord = currentUser ? users[currentUser] || authUser : authUser;
+
+  if (athleteNameElement) {
+    athleteNameElement.textContent =
+      userRecord?.athleteName || userRecord?.username || currentUser || 'Athlete';
   }
 }
 
 // Load user data
 async function loadUserData() {
   if (!currentUser) {
+    return;
+  }
+
+  if (!dataStore || typeof dataStore.get !== 'function') {
+    console.warn('Data store not available while loading user data');
     return;
   }
 
@@ -156,6 +215,11 @@ async function loadUserData() {
 // Save user data
 async function saveUserData() {
   if (!currentUser) {
+    return;
+  }
+
+  if (!dataStore || typeof dataStore.set !== 'function') {
+    console.warn('Data store not available while saving user data');
     return;
   }
 

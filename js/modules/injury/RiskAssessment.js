@@ -418,6 +418,20 @@ class RiskAssessment {
       });
     }
 
+    if (sportId === 'soccer' || sportId === 'football') {
+      recommendations.push({
+        type: 'sport_specific',
+        message: 'Emphasize ankle stability and deceleration drills tailored to pitch demands.',
+        priority: 'medium',
+      });
+    } else if (sportId === 'running') {
+      recommendations.push({
+        type: 'sport_specific',
+        message: 'Introduce cadence work and low-impact cross-training to reduce repetitive stress.',
+        priority: 'medium',
+      });
+    }
+
     return recommendations;
   }
 
@@ -467,7 +481,22 @@ class RiskAssessment {
       },
     };
 
-    return protocols[riskLevel] || protocols.moderate;
+    const protocol = { ...(protocols[riskLevel] || protocols.moderate) };
+
+    if (sportId === 'soccer' || sportId === 'football') {
+      protocol.activities = [...protocol.activities, 'low_intensity_ball_work'];
+    } else if (sportId === 'running') {
+      protocol.activities = [...protocol.activities, 'technique_drills'];
+    }
+
+    if (userData.sleep < 6) {
+      protocol.recovery = [...(protocol.recovery || []), 'sleep_extension_protocol'];
+    }
+    if (userData.soreness >= 6) {
+      protocol.recovery = [...(protocol.recovery || []), 'contrast_therapy'];
+    }
+
+    return protocol;
   }
 
   /**

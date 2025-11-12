@@ -82,7 +82,7 @@ function handleWorkoutComplete(workoutData) {
   updateWorkoutCompletionUI(workoutData);
 }
 
-function handleGoalCreated(goalData) {
+function handleGoalCreated(_goalData) {
   showSuccess('Goal created successfully!');
 }
 
@@ -534,11 +534,11 @@ function refreshLoadData() {
 }
 
 // Success/Error message functions
-function showSuccess(message) {
+function showSuccess(_message) {
   // In a real app, this would show a success notification
 }
 
-function showError(element, message) {
+function showError(_element, _message) {
   // In a real app, this would show an error notification
 }
 
@@ -547,4 +547,49 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializeApp);
 } else {
   initializeApp();
+}
+
+const appProductionPublicAPI = {
+  createSafeHTML,
+  setContentSafely,
+  createHTMLTemplate,
+  initializeApp,
+  setupEventListeners,
+  handleUserLogin,
+  handleUserLogout,
+  handleWorkoutStart,
+  handleWorkoutComplete,
+  handleGoalCreated,
+  handleHabitUpdated,
+  updateUIForLoggedInUser,
+  updateUIForLoggedOutUser,
+  updateWorkoutUI,
+  updateWorkoutCompletionUI,
+  updateHabitUI,
+  renderDashboard,
+  renderWorkoutPlan,
+  showGoalsModal,
+  renderGoals,
+  renderGoalCard,
+  showLoadManagementModal,
+  renderLoadManagement,
+  getLoadStatus,
+  getLoadStatusText,
+  getRiskStatusText,
+  initializeAuth,
+  initializeWorkoutTracker,
+  initializeDashboard,
+  initializeGoalsAndHabits,
+  initializeLoadManagement,
+  showMotivationalToast,
+  closeMotivationalToast,
+  closeGoalsModal,
+  closeLoadManagementModal,
+  refreshLoadData,
+  showSuccess,
+  showError,
+};
+
+if (typeof window !== 'undefined') {
+  Object.assign(window, appProductionPublicAPI);
 }

@@ -213,7 +213,7 @@ class MemoizedCoordinator {
    * @param {Object} options - Options
    * @returns {Promise<Object>} Generated plan
    */
-  async generatePlan(proposals, context, options) {
+  async generatePlan(proposals, context, _options) {
     // Merge proposals
     const mergedPlan = this.mergeProposals(proposals, context);
 
@@ -479,7 +479,7 @@ class MemoizedCoordinator {
    * @param {Object} context - Context
    * @returns {Object} Goal progress
    */
-  calculateGoalProgress(context) {
+  calculateGoalProgress(_context) {
     // Placeholder implementation
     return {
       strength: 0.6,
@@ -532,7 +532,7 @@ class MemoizedCoordinator {
    * @param {Object} context - Context
    * @returns {Object} Validated plan
    */
-  validatePlan(plan, context) {
+  validatePlan(plan, _context) {
     // Placeholder implementation
     return plan;
   }

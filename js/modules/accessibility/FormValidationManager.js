@@ -2,6 +2,20 @@
  * FormValidationManager - Manages accessible form validation with screen reader announcements
  * Provides comprehensive form validation with proper error handling and announcements
  */
+const createEventBusFallback = () => ({
+  subscribe: () => () => {},
+  unsubscribe: () => {},
+  on: () => () => {},
+  off: () => {},
+  emit: () => {},
+  publish: () => {},
+});
+
+const EventBus =
+  (typeof window !== 'undefined' && window.EventBus) ||
+  (typeof module !== 'undefined' && module.exports
+    ? require('../core/EventBus.js')
+    : createEventBusFallback());
 class FormValidationManager {
   constructor() {
     this.logger = window.SafeLogger || console;
@@ -66,7 +80,7 @@ class FormValidationManager {
 
     // Phone validation
     this.addValidationRule('phone', {
-      pattern: /^[\+]?[1-9][\d]{0,15}$/,
+      pattern: /^\+?[1-9]\d{0,15}$/,
       message: 'Please enter a valid phone number',
       required: false,
     });
@@ -402,7 +416,7 @@ class FormValidationManager {
 
     // Validate all fields
     let isValid = true;
-    formData.fields.forEach((fieldData, fieldName) => {
+    formData.fields.forEach(fieldData => {
       const { field } = fieldData;
       const fieldValid = this.validateField(field, formData);
       if (!fieldValid) {
@@ -552,7 +566,7 @@ class FormValidationManager {
     }
 
     // Validate all fields
-    formData.fields.forEach((fieldData, fieldName) => {
+    formData.fields.forEach(fieldData => {
       const { field } = fieldData;
       this.validateField(field, formData);
     });

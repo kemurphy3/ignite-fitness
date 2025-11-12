@@ -1010,7 +1010,7 @@ class ExpertCoordinator {
    * @param {Object} context - User context
    * @returns {Object} Fallback plan
    */
-  getFallbackPlan(context) {
+  getFallbackPlan(_context) {
     return {
       warmup: ['general_mobility', 'light_cardio'],
       mainSets: [

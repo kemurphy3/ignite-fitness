@@ -2,6 +2,20 @@
  * CognitiveAccessibilityManager - Provides cognitive accessibility features
  * Includes reading aids, content simplification, and cognitive load reduction
  */
+const createEventBusFallback = () => ({
+  subscribe: () => () => {},
+  unsubscribe: () => {},
+  on: () => () => {},
+  off: () => {},
+  emit: () => {},
+  publish: () => {},
+});
+
+const EventBus =
+  (typeof window !== 'undefined' && window.EventBus) ||
+  (typeof module !== 'undefined' && module.exports
+    ? require('../core/EventBus.js')
+    : createEventBusFallback());
 class CognitiveAccessibilityManager {
   constructor() {
     this.logger = window.SafeLogger || console;
@@ -311,8 +325,6 @@ class CognitiveAccessibilityManager {
    */
   adjustReadingLevel() {
     const level = this.userPreferences.readingLevel;
-    const config = this.readingLevels[level];
-
     // Apply reading level styles
     document.body.className = document.body.className.replace(/reading-level-\w+/g, '');
     document.body.classList.add(`reading-level-${level}`);

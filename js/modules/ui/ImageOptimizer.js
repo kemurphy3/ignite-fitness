@@ -261,7 +261,7 @@ class ImageOptimizer {
    */
   generateResponsiveSrcset(src) {
     const baseSrc = src.replace(/\.[^/.]+$/, '');
-    const extension = src.split('.').pop();
+    const extension = src.split('.').pop() || 'jpg';
 
     const sizes = [320, 640, 960, 1280, 1920];
     const srcset = sizes.map(size => {
@@ -332,7 +332,6 @@ class ImageOptimizer {
    */
   convertImageFormat(src) {
     const baseSrc = src.replace(/\.[^/.]+$/, '');
-    const extension = src.split('.').pop();
 
     // Try AVIF first (best compression)
     if (this.options.enableAVIF && this.supportedFormats.avif) {

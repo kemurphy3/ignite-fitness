@@ -6,7 +6,6 @@
 
 // Global application state
 let currentUser = null;
-let isLoggedIn = false;
 
 // Boot error handling and cache clearing
 window.IF_clearCachesAndReload = async function () {
@@ -367,7 +366,6 @@ function login() {
   const result = window.AuthManager?.login(username, password);
   if (result.success) {
     currentUser = username;
-    isLoggedIn = true;
     showSuccess('Login successful!');
 
     // Check if user needs onboarding
@@ -407,7 +405,6 @@ function register() {
 
   if (result.success) {
     currentUser = username;
-    isLoggedIn = true;
     showSuccess('Registration successful! Welcome to Ignite Fitness!');
     showUserDashboard();
     hideRegisterForm();
@@ -452,7 +449,6 @@ function logout() {
   const result = window.AuthManager?.logout();
   if (result.success) {
     currentUser = null;
-    isLoggedIn = false;
     showLoginForm();
     showSuccess('Logged out successfully!');
   }
@@ -1135,6 +1131,8 @@ function showExerciseFeedback(exerciseName, exerciseData) {
   const modal = document.getElementById('exerciseFeedbackModal');
   if (modal) {
     modal.classList.remove('hidden');
+    window.currentExerciseName = exerciseName;
+    window.currentExerciseData = exerciseData || null;
     renderExerciseFeedback(exerciseName, exerciseData);
   }
 }
@@ -1145,10 +1143,48 @@ function renderExerciseFeedback(exerciseName, exerciseData) {
     return;
   }
 
+  const hasExerciseContext =
+    exerciseData && typeof exerciseData === 'object' && Object.keys(exerciseData).length > 0;
+  const exerciseContextHtml = hasExerciseContext
+    ? `
+            <div class="exercise-context">
+                <h5>Session context</h5>
+                <ul>
+                    ${
+                      exerciseData.sets
+                        ? `<li><strong>Sets:</strong> ${exerciseData.sets}</li>`
+                        : ''
+                    }
+                    ${
+                      exerciseData.reps
+                        ? `<li><strong>Reps:</strong> ${exerciseData.reps}</li>`
+                        : ''
+                    }
+                    ${
+                      exerciseData.weight
+                        ? `<li><strong>Weight:</strong> ${exerciseData.weight}</li>`
+                        : ''
+                    }
+                    ${
+                      exerciseData.duration
+                        ? `<li><strong>Duration:</strong> ${exerciseData.duration}</li>`
+                        : ''
+                    }
+                    ${
+                      exerciseData.intensity
+                        ? `<li><strong>Intensity:</strong> ${exerciseData.intensity}</li>`
+                        : ''
+                    }
+                </ul>
+            </div>
+        `
+    : '';
+
   container.innerHTML = `
         <div class="exercise-feedback-form">
             <h4>How was your ${exerciseName}?</h4>
             <p>Your feedback helps us adjust your workout for next time.</p>
+            ${exerciseContextHtml}
             
             <div class="feedback-options">
                 <div class="feedback-option" onclick="selectFeedbackOption(this, 'pain')">
@@ -1558,8 +1594,6 @@ function renderCreateGoalForm() {
   if (!goalManager) {
     return;
   }
-
-  const { goalTemplates } = goalManager;
 
   container.innerHTML = `
         <div class="create-goal-form">
@@ -2106,3 +2140,55 @@ function initializeLoadManagement() {
     console.log('Load calculator initialized');
   }
 }
+
+const globalScope = typeof window !== 'undefined' ? window : globalThis;
+const appModularPublicAPI = {
+  login,
+  register,
+  resetPassword,
+  logout,
+  showPasswordReset,
+  hidePasswordReset,
+  showRegisterForm,
+  hideRegisterForm,
+  showTab,
+  savePersonalInfo,
+  saveGoals,
+  answerOnboardingQuestion,
+  skipOnboarding,
+  showPreferences,
+  savePreferences,
+  toggleRole,
+  startWorkout,
+  updateSliderValue,
+  completeDailyCheckIn,
+  skipDailyCheckIn,
+  showExerciseFeedback,
+  selectFeedbackOption,
+  setExerciseRating,
+  submitExerciseFeedback,
+  selectAlternative,
+  selectExerciseAlternative,
+  calculateExerciseProgression,
+  adaptWorkoutToTime,
+  showCreateGoalModal,
+  selectGoalType,
+  createGoal,
+  closeGoalsModal,
+  showHabitsModal,
+  closeHabitsModal,
+  initializeGoalsAndHabits,
+  showLoadManagementModal,
+  closeLoadManagementModal,
+  refreshLoadData,
+  showStravaImportModal,
+  selectImportOption,
+  importStravaActivities,
+  initializeLoadManagement,
+};
+
+Object.entries(appModularPublicAPI).forEach(([name, fn]) => {
+  if (typeof fn === 'function') {
+    globalScope[name] = fn;
+  }
+});

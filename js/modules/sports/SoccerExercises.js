@@ -58,8 +58,17 @@ class SoccerExercises {
 
     this.logger.debug(`Rendering ${filteredExercises.length} exercises with virtual scrolling`);
 
+    const VirtualListClass = window.VirtualList;
+    if (!VirtualListClass) {
+      this.logger.warn('VirtualList not available; rendering without virtualization');
+      filteredExercises.forEach((exercise, index) =>
+        container.appendChild(this.renderExerciseItem(exercise, index, onSelect))
+      );
+      return null;
+    }
+
     // Create virtual list
-    const virtualList = new VirtualList({
+    const virtualList = new VirtualListClass({
       container,
       items: filteredExercises,
       itemHeight: 80,

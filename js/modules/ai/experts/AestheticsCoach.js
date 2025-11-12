@@ -12,7 +12,7 @@ class AestheticsCoach {
    * @param {Object} context - User context
    * @returns {Object} Aesthetics coach proposal
    */
-  propose({ user, season, schedule, history, readiness, preferences }) {
+  propose({ readiness, preferences }) {
     const proposal = {
       blocks: [],
       constraints: [],

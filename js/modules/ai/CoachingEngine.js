@@ -2,15 +2,47 @@
  * CoachingEngine - AI-powered coaching and recommendations
  * Handles AI interactions and personalized coaching
  */
+const globalScope = typeof window !== 'undefined' ? window : globalThis;
+
+const resolveModule = (globalKey, loadModule) => {
+  if (globalScope && globalScope[globalKey]) {
+    return globalScope[globalKey];
+  }
+  try {
+    return loadModule();
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.debug(`CoachingEngine: ${globalKey} not available`, error?.message || error);
+    return null;
+  }
+};
+
+const ContextAwareAIClass = resolveModule('ContextAwareAI', () => {
+  // eslint-disable-next-line global-require
+  const { ContextAwareAI } = require('../../ai/context-aware-ai.js');
+  return ContextAwareAI;
+});
+
+const SeasonalTrainingSystemClass = resolveModule('SeasonalTrainingSystem', () => {
+  // eslint-disable-next-line global-require
+  const { SeasonalTrainingSystem } = require('../../training/seasonal-training.js');
+  return SeasonalTrainingSystem;
+});
+
+const PatternDetectorClass = resolveModule('PatternDetector', () => {
+  // eslint-disable-next-line global-require
+  const { PatternDetector } = require('../../ai/pattern-detector.js');
+  return PatternDetector;
+});
 class CoachingEngine {
   constructor() {
     this.contextAwareAI = null;
     this.seasonalTraining = null;
     this.patternDetector = null;
-    this.logger = window.SafeLogger || console;
-    this.eventBus = window.EventBus;
-    this.authManager = window.AuthManager;
-    this.workoutTracker = window.WorkoutTracker;
+    this.logger = (globalScope && globalScope.SafeLogger) || console;
+    this.eventBus = globalScope?.EventBus || null;
+    this.authManager = globalScope?.AuthManager || null;
+    this.workoutTracker = globalScope?.WorkoutTracker || null;
 
     this.initializeAI();
   }
@@ -21,21 +53,21 @@ class CoachingEngine {
   initializeAI() {
     try {
       // Initialize context-aware AI if available
-      if (typeof ContextAwareAI !== 'undefined') {
-        this.contextAwareAI = new ContextAwareAI();
+      if (ContextAwareAIClass) {
+        this.contextAwareAI = new ContextAwareAIClass();
         this.logger.info('Context-aware AI initialized');
       }
 
       // Initialize seasonal training if available
-      if (typeof SeasonalTrainingSystem !== 'undefined') {
-        this.seasonalTraining = new SeasonalTrainingSystem();
+      if (SeasonalTrainingSystemClass) {
+        this.seasonalTraining = new SeasonalTrainingSystemClass();
         this.seasonalTraining.initialize();
         this.logger.info('Seasonal training system initialized');
       }
 
       // Initialize pattern detector if available
-      if (typeof PatternDetector !== 'undefined') {
-        this.patternDetector = new PatternDetector();
+      if (PatternDetectorClass) {
+        this.patternDetector = new PatternDetectorClass();
         this.logger.info('Pattern detector initialized');
       }
     } catch (error) {

@@ -405,15 +405,19 @@ class SeasonalPrograms {
    * @returns {string} Focus area
    */
   getWeeklyFocus(phase, week) {
-    if (phase.name === 'Pre-Season') {
-      return 'strength and power';
-    } else if (phase.name === 'In-Season') {
-      return 'maintenance and sprint/agility';
-    } else if (phase.name === 'Off-Season') {
-      return 'strength development';
-    } else {
-      return 'recovery and regeneration';
+    const phaseName = phase.name || 'General';
+    const block = Math.max(1, Math.ceil(week / 4));
+
+    if (phaseName === 'Pre-Season') {
+      return block === 1 ? 'strength and power' : 'power and speed';
     }
+    if (phaseName === 'In-Season') {
+      return block === 1 ? 'maintenance and sprint/agility' : 'recovery and tactical sharpness';
+    }
+    if (phaseName === 'Off-Season') {
+      return block === 1 ? 'strength development' : 'aerobic base building';
+    }
+    return block === 1 ? 'recovery and regeneration' : 'mobility and technique';
   }
 
   /**
@@ -1126,12 +1130,24 @@ class SeasonalPrograms {
    * @returns {Object} Monitoring protocols
    */
   generateMonitoringProtocols(sportId, seasonId) {
-    return {
+    const protocols = {
       daily: ['sleep_quality', 'mood', 'fatigue', 'soreness'],
       weekly: ['training_load', 'performance_metrics', 'body_weight'],
       monthly: ['fitness_tests', 'movement_screen', 'injury_check'],
       seasonal: ['body_composition', 'performance_assessment', 'goal_review'],
     };
+
+    if (sportId === 'soccer' || sportId === 'football') {
+      protocols.weekly.push('gps_metrics', 'technical_session_rating');
+    }
+
+    if (seasonId === 'off-season') {
+      protocols.daily.push('mobility_score');
+    } else if (seasonId === 'in-season') {
+      protocols.daily.push('match_recovery_status');
+    }
+
+    return protocols;
   }
 
   /**

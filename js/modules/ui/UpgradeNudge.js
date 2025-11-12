@@ -11,10 +11,9 @@ class UpgradeNudge {
   /**
    * Show nudge for disabled feature
    * @param {string} flagName - Feature flag name
-   * @param {string} context - Context (where nudge is shown)
    * @returns {HTMLElement} Nudge element
    */
-  render(flagName, context = 'general') {
+  render(flagName) {
     const descriptions = this.featureFlags.getFlagDescriptions();
     const feature = descriptions[flagName];
 
@@ -49,9 +48,16 @@ class UpgradeNudge {
   handleUpgrade(flagName) {
     this.logger.audit('UPGRADE_NUDGE_CLICKED', { feature: flagName });
 
-    // For now, just show message
-    // Later: redirect to upgrade flow
-    alert(`Coming soon: ${flagName.replace(/_/g, ' ')}\n\nThis feature will be available soon!`);
+    const friendlyName = flagName.replace(/_/g, ' ');
+    const message = `Coming soon: ${friendlyName}. This feature will be available in a future update.`;
+
+    if (window.showInfoNotification) {
+      window.showInfoNotification(message, 'info');
+    } else if (window.LiveRegionManager) {
+      window.LiveRegionManager.announce(message, 'polite');
+    } else {
+      this.logger.info(message);
+    }
   }
 
   /**
@@ -67,14 +73,13 @@ class UpgradeNudge {
    * Attach nudge to element if feature is disabled
    * @param {HTMLElement} element - Target element
    * @param {string} flagName - Feature flag name
-   * @param {string} context - Context
    */
-  attach(element, flagName, context = 'general') {
+  attach(element, flagName) {
     if (!element || !this.shouldShowNudge(flagName)) {
       return;
     }
 
-    const nudge = this.render(flagName, context);
+    const nudge = this.render(flagName);
     if (nudge) {
       element.appendChild(nudge);
     }

@@ -2,6 +2,20 @@
  * LiveRegionManager - centralized ARIA live announcements (WCAG 2.1 AA)
  * Provides polite/assertive regions with de-duplication and throttling
  */
+const createEventBusFallback = () => ({
+  subscribe: () => () => {},
+  unsubscribe: () => {},
+  on: () => () => {},
+  off: () => {},
+  emit: () => {},
+  publish: () => {},
+});
+
+const EventBus =
+  (typeof window !== 'undefined' && window.EventBus) ||
+  (typeof module !== 'undefined' && module.exports
+    ? require('../core/EventBus.js')
+    : createEventBusFallback());
 (function () {
   class LiveRegionManager {
     constructor() {
@@ -262,7 +276,7 @@ class LiveRegionManager {
    * @param {Object} data - Error announcement data
    */
   handleErrorAnnouncement(data) {
-    const { error, message, context } = data;
+    const { error, message } = data;
 
     let announcement = '';
     if (error) {
@@ -294,7 +308,7 @@ class LiveRegionManager {
    * @param {Object} data - Success announcement data
    */
   handleSuccessAnnouncement(data) {
-    const { type, message, details } = data;
+    const { type, message } = data;
 
     let announcement = '';
     switch (type) {

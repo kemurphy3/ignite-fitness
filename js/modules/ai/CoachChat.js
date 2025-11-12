@@ -421,7 +421,6 @@ class CoachChat {
     if (isFollowUp && context.length > 0) {
       const lastExchange = context[context.length - 1];
       const lastCoachMessage = lastExchange.coach || '';
-      const lastUserMessage = lastExchange.user || '';
 
       // Handle yes/no responses
       if (

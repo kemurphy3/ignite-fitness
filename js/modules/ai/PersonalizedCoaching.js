@@ -227,11 +227,7 @@ class PersonalizedCoaching {
       const safeResponse = this.applyGuardrails(personalizedResponse, messageAnalysis);
 
       // Determine response type and confidence
-      const transparencyData = this.analyzeResponseTransparency(
-        scenario,
-        userContext,
-        messageAnalysis
-      );
+      const transparencyData = this.analyzeResponseTransparency(scenario, userContext);
 
       this.logger.debug('Coaching response generated', {
         scenario,
@@ -278,10 +274,9 @@ class PersonalizedCoaching {
    * Analyze response transparency to determine type, confidence, and rationale
    * @param {string} scenario - Coaching scenario
    * @param {Object} context - User context
-   * @param {Object} messageAnalysis - Message analysis
    * @returns {Object} Transparency data
    */
-  analyzeResponseTransparency(scenario, context, messageAnalysis) {
+  analyzeResponseTransparency(scenario, context) {
     // Determine response type based on scenario and data quality
     let responseType = 'template';
     let confidence = 0;
@@ -725,8 +720,6 @@ class PersonalizedCoaching {
    * @returns {string} Personalized response
    */
   createPersonalizedResponse(scenario, context, messageAnalysis) {
-    const templates = this.coachingTemplates;
-
     switch (scenario) {
       case 'injury':
         return this.createInjuryResponse(context, messageAnalysis);
@@ -912,7 +905,7 @@ class PersonalizedCoaching {
    */
   async handleProgressionUpdate(data) {
     try {
-      const context = await this.buildContext();
+      await this.buildContext();
 
       // Check for plateau breakthrough
       if (data.exercise && data.previousWeight && data.currentWeight) {
@@ -1157,7 +1150,7 @@ class PersonalizedCoaching {
    * @param {Object} messageAnalysis - Message analysis
    * @returns {string} General response
    */
-  createGeneralResponse(context, messageAnalysis) {
+  createGeneralResponse(context, _messageAnalysis) {
     // Base response on user's current state and goals
     if (context.primaryGoal === 'strength') {
       return "I see you're focused on building strength - that's awesome! Your consistency with {frequency} workouts per week is exactly what you need to see progress.";
@@ -1238,7 +1231,7 @@ class PersonalizedCoaching {
    * @param {number} days - Number of days to look back
    * @returns {Array} Recent workouts
    */
-  getRecentWorkouts(days) {
+  getRecentWorkouts(_days) {
     // This would typically fetch from database
     return [];
   }
@@ -1257,7 +1250,7 @@ class PersonalizedCoaching {
    * @param {number} days - Number of days to check
    * @returns {number} Missed workouts
    */
-  getMissedWorkouts(days) {
+  getMissedWorkouts(_days) {
     // This would typically calculate from workout history
     return 0;
   }
@@ -1312,7 +1305,7 @@ class PersonalizedCoaching {
    * @param {number} days - Number of days to average
    * @returns {number} Average RPE
    */
-  getAverageRPE(days) {
+  getAverageRPE(_days) {
     // This would typically be calculated from workout data
     return 7.5;
   }
@@ -1358,7 +1351,7 @@ class PersonalizedCoaching {
    * @param {number} days - Number of days to analyze
    * @returns {string} Energy trend
    */
-  getEnergyTrend(days) {
+  getEnergyTrend(_days) {
     // This would typically be calculated from daily check-ins
     return 'stable';
   }
@@ -1368,7 +1361,7 @@ class PersonalizedCoaching {
    * @param {number} days - Number of days to analyze
    * @returns {string} Stress trend
    */
-  getStressTrend(days) {
+  getStressTrend(_days) {
     // This would typically be calculated from daily check-ins
     return 'stable';
   }
@@ -1378,7 +1371,7 @@ class PersonalizedCoaching {
    * @param {Object} context - User context
    * @returns {string} Primary exercise
    */
-  getPrimaryExercise(context) {
+  getPrimaryExercise(_context) {
     // This would typically be determined from user's most common exercise
     return 'Squat';
   }
@@ -1388,7 +1381,7 @@ class PersonalizedCoaching {
    * @param {string} exercise - Exercise name
    * @returns {number} Current weight
    */
-  getCurrentWeight(exercise) {
+  getCurrentWeight(_exercise) {
     // This would typically fetch from progression data
     return 135;
   }
@@ -1398,7 +1391,7 @@ class PersonalizedCoaching {
    * @param {string} sport - Sport name
    * @returns {number} Weeks to season
    */
-  getWeeksToSeason(sport) {
+  getWeeksToSeason(_sport) {
     // This would typically be calculated based on sport and date
     return 6;
   }

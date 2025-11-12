@@ -87,6 +87,15 @@ class BodyCompositionTracker {
         });
       }
     }
+    if (goals.targetWeight && latest?.weight) {
+      const difference = latest.weight - goals.targetWeight;
+      if (Math.abs(difference) <= 0.5) {
+        recommendations.push({
+          type: 'celebration',
+          message: 'Weight goal achieved – focus on maintenance strategies.',
+        });
+      }
+    }
     return recommendations;
   }
 
@@ -106,6 +115,12 @@ class BodyCompositionTracker {
           message: 'No significant weight change for 3 weeks – plateau protocol recommended.',
         });
       }
+    }
+    if (trends.bodyFatChangePerWeek > 0.25) {
+      alerts.push({
+        type: 'body_fat_increase',
+        message: 'Body fat trending up. Review nutrition quality and training intensity.',
+      });
     }
     return alerts;
   }

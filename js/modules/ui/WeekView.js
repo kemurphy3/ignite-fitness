@@ -793,10 +793,9 @@ class WeekView {
   /**
    * Generate load recommendation
    * @param {Object} status - Load status
-   * @param {Object} weekData - Week data
    * @returns {string} Recommendation
    */
-  generateLoadRecommendation(status, weekData) {
+  generateLoadRecommendation(status) {
     if (status.key === 'onTrack') {
       return 'Continue with your current training plan.';
     }

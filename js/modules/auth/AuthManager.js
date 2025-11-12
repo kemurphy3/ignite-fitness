@@ -365,7 +365,7 @@ class AuthManager {
       localStorage.setItem(this.storageKeys.users, JSON.stringify(this.users));
 
       // Auto-login after registration
-      const userData = {
+      const registeredUser = {
         ...this.users[username],
         username,
       };
@@ -375,7 +375,7 @@ class AuthManager {
 
       this.writeToStorage({
         token: `session_${this.loginTimestamp}_${username}`,
-        user: userData,
+        user: registeredUser,
       });
 
       this.logger.audit('USER_REGISTRATION', { username, athleteName });

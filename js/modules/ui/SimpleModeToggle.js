@@ -138,8 +138,6 @@ class SimpleModeToggle {
    * @param {string} mode - Mode to select
    */
   selectMode(mode) {
-    const isSimple = mode === 'simple';
-
     // Update visual selection
     const options = this.container.querySelectorAll('.toggle-option');
     options.forEach(option => {

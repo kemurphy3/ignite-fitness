@@ -518,42 +518,82 @@ class ExerciseProgression {
 
   // Exercise selection methods (would be expanded)
   getFoundationExercises(userProfile) {
+    const preferred = userProfile?.preferredExercises?.foundation;
+    if (Array.isArray(preferred) && preferred.length > 0) {
+      return preferred;
+    }
     return ['bodyweight_squats', 'wall_passing', 'basic_juggling'];
   }
 
   getAdaptationExercises(userProfile) {
+    const preferred = userProfile?.preferredExercises?.adaptation;
+    if (Array.isArray(preferred) && preferred.length > 0) {
+      return preferred;
+    }
     return ['goblet_squats', 'cone_dribbling', 'ladder_drills'];
   }
 
   getProgressionExercises(userProfile) {
+    const preferred = userProfile?.preferredExercises?.progression;
+    if (Array.isArray(preferred) && preferred.length > 0) {
+      return preferred;
+    }
     return ['back_squats', 'passing_patterns', 'agility_courses'];
   }
 
   getBaseBuildingExercises(userProfile) {
+    const preferred = userProfile?.preferredExercises?.baseBuilding;
+    if (Array.isArray(preferred) && preferred.length > 0) {
+      return preferred;
+    }
     return ['squats', 'deadlifts', 'interval_training'];
   }
 
   getStrengthExercises(userProfile) {
+    const preferred = userProfile?.preferredExercises?.strength;
+    if (Array.isArray(preferred) && preferred.length > 0) {
+      return preferred;
+    }
     return ['heavy_squats', 'heavy_deadlifts', 'plyometrics'];
   }
 
   getPowerExercises(userProfile) {
+    const preferred = userProfile?.preferredExercises?.power;
+    if (Array.isArray(preferred) && preferred.length > 0) {
+      return preferred;
+    }
     return ['jump_training', 'sprint_training', 'explosive_movements'];
   }
 
   getPreparationExercises(userProfile) {
+    const preferred = userProfile?.preferredExercises?.preparation;
+    if (Array.isArray(preferred) && preferred.length > 0) {
+      return preferred;
+    }
     return ['movement_prep', 'activation_drills', 'mobility_work'];
   }
 
   getOverloadExercises(userProfile) {
+    const preferred = userProfile?.preferredExercises?.overload;
+    if (Array.isArray(preferred) && preferred.length > 0) {
+      return preferred;
+    }
     return ['maximal_strength', 'high_intensity_intervals', 'complex_training'];
   }
 
   getPeakExercises(userProfile) {
+    const preferred = userProfile?.preferredExercises?.peak;
+    if (Array.isArray(preferred) && preferred.length > 0) {
+      return preferred;
+    }
     return ['power_training', 'sport_specific_drills', 'competition_prep'];
   }
 
   getTaperExercises(userProfile) {
+    const preferred = userProfile?.preferredExercises?.taper;
+    if (Array.isArray(preferred) && preferred.length > 0) {
+      return preferred;
+    }
     return ['light_training', 'recovery_work', 'mental_preparation'];
   }
 
@@ -567,73 +607,174 @@ class ExerciseProgression {
   }
 
   getTimeInPhase(phase) {
-    // Implementation would track actual time in phase
-    return 4; // Placeholder
+    if (!phase) {
+      return 4;
+    }
+
+    const startDate = phase.startDate ? new Date(phase.startDate) : null;
+    if (!startDate || Number.isNaN(startDate.getTime())) {
+      return 4;
+    }
+
+    const weeksInMs = 7 * 24 * 60 * 60 * 1000;
+    const elapsed = Math.max(0, Date.now() - startDate.getTime());
+    return Math.max(1, Math.round(elapsed / weeksInMs));
   }
 
   getPhaseCriteria(phase) {
-    // Implementation would define phase-specific criteria
-    return ['technique_mastery', 'injury_free', 'consistent_performance'];
+    const phaseName = phase?.name || 'general';
+
+    const criteriaByPhase = {
+      foundation: ['technique_mastery', 'injury_free', 'consistent_performance'],
+      adaptation: ['movement_quality', 'volume_tolerance', 'injury_free'],
+      progression: ['strength_gains', 'movement_quality', 'recovery_readiness'],
+      peak: ['power_output', 'competition_readiness', 'fatigue_management'],
+      taper: ['freshness', 'injury_free', 'mental_preparedness'],
+    };
+
+    return criteriaByPhase[phaseName] || criteriaByPhase.foundation;
   }
 
   evaluateCriterion(criterion, performanceData) {
-    // Implementation would evaluate specific criteria
-    return true; // Placeholder
+    if (!performanceData || !criterion) {
+      return false;
+    }
+
+    const value = performanceData[criterion];
+    if (typeof value === 'boolean') {
+      return value;
+    }
+    if (typeof value === 'number') {
+      return value >= 1;
+    }
+    if (typeof value === 'string') {
+      return value.length > 0;
+    }
+
+    return Boolean(value);
   }
 
   isPlateaued(performanceData) {
-    // Implementation would detect performance plateaus
-    return false; // Placeholder
+    const trend = performanceData?.trend;
+    const progressRate = performanceData?.progressRate ?? 0;
+    return trend === 'flat' || trend === 'declining' || progressRate <= 0.01;
   }
 
   isOvertrained(performanceData) {
-    // Implementation would detect overtraining
-    return false; // Placeholder
+    const fatigueScore = performanceData?.fatigueScore ?? 0;
+    const recoveryScore = performanceData?.recoveryScore ?? 10;
+    return fatigueScore >= 8 || recoveryScore <= 3;
   }
 
   isRapidProgress(performanceData) {
-    // Implementation would detect rapid progress
-    return false; // Placeholder
+    const trend = performanceData?.trend;
+    const progressRate = performanceData?.progressRate ?? 0;
+    return trend === 'accelerating' || progressRate >= 0.15;
   }
 
   adjustDuration(duration, ageAdaptations) {
-    // Implementation would adjust duration based on age
-    return duration;
+    if (typeof duration !== 'number' || !ageAdaptations) {
+      return duration;
+    }
+
+    const modifier = ageAdaptations.durationModifier ?? 1;
+    return Math.round(duration * modifier);
   }
 
   adjustIntensity(intensity, ageAdaptations) {
-    // Implementation would adjust intensity based on age
+    if (!ageAdaptations) {
+      return intensity;
+    }
+
+    if (typeof intensity === 'number' && typeof ageAdaptations.intensityModifier === 'number') {
+      const adjusted = intensity * ageAdaptations.intensityModifier;
+      return Math.max(0, Math.min(1, adjusted));
+    }
+
+    if (typeof intensity === 'string' && ageAdaptations.intensityPreference) {
+      return ageAdaptations.intensityPreference;
+    }
+
     return intensity;
   }
 
   getInjuryModifications(injuryHistory) {
-    // Implementation would provide injury-specific modifications
-    return [];
+    if (!Array.isArray(injuryHistory) || injuryHistory.length === 0) {
+      return [];
+    }
+
+    const modificationMap = {
+      knee: ['reduce_plyometrics', 'avoid_deep_flexion'],
+      shoulder: ['limit_overhead_pressing', 'focus_on_stability'],
+      back: ['emphasize_core_stability', 'avoid_heavy_axial_loading'],
+    };
+
+    return injuryHistory
+      .map(injury => modificationMap[injury] || null)
+      .filter(Boolean)
+      .flat();
   }
 
   getAlternativeExercises(injuryHistory) {
-    // Implementation would provide alternative exercises
-    return [];
+    if (!Array.isArray(injuryHistory) || injuryHistory.length === 0) {
+      return [];
+    }
+
+    const alternatives = {
+      knee: ['sled_push', 'leg_press', 'step_up'],
+      shoulder: ['landmine_press', 'cable_row', 'face_pull'],
+      back: ['glute_bridge', 'single_leg_deadlift', 'bird_dog'],
+    };
+
+    return injuryHistory
+      .map(injury => alternatives[injury] || null)
+      .filter(Boolean)
+      .flat();
   }
 
   adjustForTimeConstraints(duration, timeConstraints) {
-    // Implementation would adjust for time constraints
-    return duration;
+    if (typeof duration !== 'number' || !timeConstraints?.sessionLength) {
+      return duration;
+    }
+
+    const modifiers = {
+      short: 0.75,
+      standard: 1,
+      extended: 1.25,
+    };
+
+    const modifier = modifiers[timeConstraints.sessionLength] ?? 1;
+    return Math.round(duration * modifier);
   }
 
   adjustEquipment(requiredEquipment, availableEquipment) {
-    // Implementation would adjust equipment requirements
-    return requiredEquipment;
+    if (!Array.isArray(requiredEquipment)) {
+      return requiredEquipment;
+    }
+    if (!Array.isArray(availableEquipment) || availableEquipment.length === 0) {
+      return requiredEquipment;
+    }
+
+    const normalizedAvailable = availableEquipment.map(item => item.toLowerCase());
+    return requiredEquipment.filter(item => normalizedAvailable.includes(item.toLowerCase()));
   }
 
   getCurrentLevel(exerciseId, userProfile) {
-    // Implementation would determine current exercise level
-    return 'beginner';
+    const exerciseLevels = userProfile?.experienceLevel || {};
+    const fallback = userProfile?.experience || 'beginner';
+    return exerciseLevels[exerciseId] || fallback;
   }
 
   getNextLevel(exerciseId, userProfile) {
-    // Implementation would determine next exercise level
-    return 'intermediate';
+    const progression = ['beginner', 'intermediate', 'advanced', 'elite'];
+    const currentLevel = this.getCurrentLevel(exerciseId, userProfile);
+    const currentIndex = progression.indexOf(currentLevel);
+
+    if (currentIndex === -1 || currentIndex === progression.length - 1) {
+      return currentLevel || 'advanced';
+    }
+
+    return progression[currentIndex + 1];
   }
 
   getProgressionRate(experience) {
@@ -646,13 +787,17 @@ class ExerciseProgression {
   }
 
   getExerciseAdaptations(exerciseId, userProfile) {
-    // Implementation would provide exercise-specific adaptations
-    return {};
+    const adaptations = userProfile?.exerciseAdaptations?.[exerciseId];
+    return adaptations || {};
   }
 
   getEquipmentLimitations(availableEquipment) {
-    // Implementation would identify equipment limitations
-    return [];
+    if (!Array.isArray(availableEquipment)) {
+      return [];
+    }
+
+    const heavyEquipment = ['barbell', 'squat rack', 'lifting platform'];
+    return heavyEquipment.filter(item => !availableEquipment.includes(item));
   }
 }
 

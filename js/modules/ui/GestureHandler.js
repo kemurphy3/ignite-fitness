@@ -62,12 +62,12 @@ class GestureHandler {
     // Touch event listeners
     document.addEventListener('touchstart', e => this.handleTouchStart(e), { passive: true });
     document.addEventListener('touchmove', e => this.handleTouchMove(e), { passive: true });
-    document.addEventListener('touchend', e => this.handleTouchEnd(e), { passive: true });
+    document.addEventListener('touchend', () => this.handleTouchEnd(), { passive: true });
 
     // Mouse event listeners for desktop testing
     document.addEventListener('mousedown', e => this.handleMouseDown(e), { passive: true });
     document.addEventListener('mousemove', e => this.handleMouseMove(e), { passive: true });
-    document.addEventListener('mouseup', e => this.handleMouseUp(e), { passive: true });
+    document.addEventListener('mouseup', () => this.handleMouseUp(), { passive: true });
 
     // Prevent pull-to-refresh on most pages
     this.preventPullToRefresh();
@@ -151,9 +151,8 @@ class GestureHandler {
 
   /**
    * Handle touch end
-   * @param {TouchEvent} event - Touch event
    */
-  handleTouchEnd(event) {
+  handleTouchEnd() {
     const current = this.activeGestures.get('current');
     if (!current) {
       return;
@@ -176,7 +175,7 @@ class GestureHandler {
       this.handleSwipe(current, deltaY > 0 ? 'down' : 'up');
     } else if (distance < 10) {
       // Tap
-      this.handleTap(current, event);
+      this.handleTap(current);
     }
 
     this.activeGestures.delete('current');
@@ -246,9 +245,8 @@ class GestureHandler {
   /**
    * Handle tap gesture
    * @param {Object} gestureData - Gesture data
-   * @param {Event} event - Touch event
    */
-  handleTap(gestureData, event) {
+  handleTap(gestureData) {
     const currentTime = Date.now();
     const lastTap = this.activeGestures.get('lastTap');
 
@@ -506,7 +504,7 @@ class GestureHandler {
     current.deltaY = event.clientY - current.startY;
   }
 
-  handleMouseUp(event) {
+  handleMouseUp() {
     if (this.isTouchDevice()) {
       return;
     }

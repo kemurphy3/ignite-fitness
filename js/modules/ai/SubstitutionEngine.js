@@ -129,7 +129,7 @@ class SubstitutionEngine {
     targetModality,
     targetLoad,
     adaptation,
-    constraints
+    _constraints
   ) {
     try {
       // Get all workouts for target modality
@@ -267,7 +267,7 @@ class SubstitutionEngine {
    * @param {string} targetModality - Target modality
    * @returns {number} Scaled duration in seconds
    */
-  scaleIntervalDuration(originalDuration, timeFactor, intensity, targetModality) {
+  scaleIntervalDuration(originalDuration, timeFactor, _intensity, _targetModality) {
     // Base scaling
     let scaledDuration = originalDuration * timeFactor;
 

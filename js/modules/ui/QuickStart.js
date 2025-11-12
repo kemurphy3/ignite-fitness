@@ -37,7 +37,7 @@ class QuickStart {
     });
 
     // Listen for workout completion
-    this.eventBus.on('SESSION_COMPLETED', data => {
+    this.eventBus.on('SESSION_COMPLETED', () => {
       this.isActive = false;
     });
   }
@@ -251,8 +251,6 @@ class QuickStart {
    */
   async getUserContext() {
     const userId = this.getUserId();
-    const today = new Date().toISOString().split('T')[0];
-
     const readiness = await this.getReadiness();
     const preferences = await this.storageManager.getPreferences(userId);
 

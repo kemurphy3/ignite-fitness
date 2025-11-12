@@ -364,7 +364,7 @@ window.removeStravaActivity = async function (activityId) {
 };
 
 window.showStravaHelp = function () {
-  alert(`How to export from Strava:
+  const message = `How to export from Strava:
 
 1. Go to strava.com and log in
 2. Click your profile picture → Settings
@@ -376,7 +376,15 @@ window.showStravaHelp = function () {
 8. Find "activities.json" in the extracted folder
 9. Upload that file here
 
-Note: This is a manual process. Automatic sync coming soon!`);
+Note: This is a manual process. Automatic sync coming soon!`;
+
+  if (window.showInfoNotification) {
+    window.showInfoNotification(message, 'info');
+  } else if (window.LiveRegionManager) {
+    window.LiveRegionManager.announce(message, 'assertive');
+  } else {
+    (window.SafeLogger || console).info(message);
+  }
 };
 
 window.StravaImportUI = StravaImportUI;

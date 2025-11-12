@@ -2,6 +2,20 @@
  * VoiceControlManager - Handles voice commands for hands-free workout tracking
  * Provides speech recognition, voice commands, and speech feedback
  */
+const createEventBusFallback = () => ({
+  subscribe: () => () => {},
+  unsubscribe: () => {},
+  on: () => () => {},
+  off: () => {},
+  emit: () => {},
+  publish: () => {},
+});
+
+const EventBus =
+  (typeof window !== 'undefined' && window.EventBus) ||
+  (typeof module !== 'undefined' && module.exports
+    ? require('../core/EventBus.js')
+    : createEventBusFallback());
 class VoiceControlManager {
   constructor() {
     this.logger = window.SafeLogger || console;
@@ -362,9 +376,8 @@ class VoiceControlManager {
   /**
    * Execute voice command
    * @param {Object} matchedCommand - Matched command
-   * @param {string} originalCommand - Original command text
    */
-  executeCommand(matchedCommand, originalCommand) {
+  executeCommand(matchedCommand) {
     const { key, command } = matchedCommand;
 
     try {
@@ -609,8 +622,8 @@ class VoiceControlManager {
 
     categories.forEach(category => {
       const categoryCommands = Array.from(this.commands.entries())
-        .filter(([key, cmd]) => cmd.category === category)
-        .map(([key, cmd]) => key);
+        .filter(([, cmd]) => cmd.category === category)
+        .map(([key]) => key);
 
       if (categoryCommands.length > 0) {
         help += `${category} commands: ${categoryCommands.join(', ')}. `;

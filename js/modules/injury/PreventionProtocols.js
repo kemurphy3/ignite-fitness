@@ -401,6 +401,24 @@ class PreventionProtocols {
       }
     });
 
+    positionProtocols.forEach(({ protocol }) => {
+      const components = protocol.components || {};
+      if (components.mobility_work) {
+        schedule.wednesday.push({
+          type: 'mobility_work',
+          protocol: protocol.name,
+          duration: components.mobility_work.duration || 15,
+        });
+      }
+      if (components.position_specific) {
+        schedule.friday.push({
+          type: 'position_specific',
+          protocol: protocol.name,
+          duration: components.position_specific.duration || 20,
+        });
+      }
+    });
+
     return schedule;
   }
 

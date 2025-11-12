@@ -2,6 +2,9 @@
  * Trends - Real chart rendering with ChartManager
  * Uses web worker for chart rendering to prevent main thread blocking
  */
+
+const { ChartManager } = window;
+
 class Trends {
   constructor() {
     this.logger = window.SafeLogger || console;
@@ -12,6 +15,7 @@ class Trends {
       last30Days: null,
       cacheTime: null,
       ttl: 5 * 60 * 1000, // 5 minutes
+      byChart: new Map(),
     };
 
     // Initialize on page load
@@ -129,9 +133,9 @@ class Trends {
    */
   async getDataForChart(chartId) {
     // Check cache first
-    if (this.cache.last30Days && this.isCacheValid()) {
-      this.logger.debug('Using cached chart data');
-      return this.cache.last30Days;
+    if (chartId && this.cache.byChart.has(chartId) && this.isCacheValid()) {
+      this.logger.debug(`Using cached chart data for ${chartId}`);
+      return this.cache.byChart.get(chartId);
     }
 
     // Fetch fresh data
@@ -143,6 +147,9 @@ class Trends {
 
     // Cache data
     this.cache.last30Days = data;
+    if (chartId) {
+      this.cache.byChart.set(chartId, data);
+    }
     this.cache.cacheTime = Date.now();
 
     return data;
@@ -164,7 +171,7 @@ class Trends {
 
       // Filter for user and date range
       const sessions = [];
-      Object.entries(allSessions).forEach(([key, session]) => {
+      Object.values(allSessions).forEach(session => {
         if (session.userId === userId && session.session) {
           const sessionDate = new Date(session.session.timestamp || session.session.date);
           if (sessionDate >= startDate && sessionDate <= endDate) {
@@ -315,7 +322,6 @@ class Trends {
   getWeekKey(date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
     const week = Math.ceil(date.getDate() / 7);
     return `${year}-${month}-W${week}`;
   }
@@ -423,7 +429,7 @@ class Trends {
       this.charts.set(chartId, chart);
 
       // Add accessibility features
-      this.addChartAccessibility(element, chartId, data, config);
+      this.addChartAccessibility(element, chartId, data);
     } catch (error) {
       this.logger.error('Failed to create chart:', error);
       throw error;
@@ -435,16 +441,15 @@ class Trends {
    * @param {HTMLElement} element - Chart container element
    * @param {string} chartId - Chart identifier
    * @param {Object} data - Chart data
-   * @param {Object} config - Chart configuration
    */
-  addChartAccessibility(element, chartId, data, config) {
+  addChartAccessibility(element, chartId, data) {
     const canvas = element.querySelector('canvas');
     if (!canvas) {
       return;
     }
 
     // Add ARIA attributes to canvas
-    const chartDescription = this.generateChartDescription(chartId, data, config);
+    const chartDescription = this.generateChartDescription(chartId, data);
     canvas.setAttribute('role', 'img');
     canvas.setAttribute('aria-label', chartDescription.title);
     canvas.setAttribute('aria-describedby', `${chartId}-description`);
@@ -457,7 +462,7 @@ class Trends {
     element.appendChild(descriptionDiv);
 
     // Add data table for screen readers
-    const dataTable = this.createDataTable(chartId, data, config);
+    const dataTable = this.createDataTable(chartId, data);
     if (dataTable) {
       element.appendChild(dataTable);
     }
@@ -473,7 +478,7 @@ class Trends {
    * @param {Object} config - Chart configuration
    * @returns {Object} Description object
    */
-  generateChartDescription(chartId, data, config) {
+  generateChartDescription(chartId, data) {
     const descriptions = {
       'strength-chart': {
         title: 'Strength progress chart showing personal records over time',
@@ -573,10 +578,9 @@ class Trends {
    * Create data table for screen readers
    * @param {string} chartId - Chart identifier
    * @param {Object} data - Chart data
-   * @param {Object} config - Chart configuration
    * @returns {HTMLElement} Data table element
    */
-  createDataTable(chartId, data, config) {
+  createDataTable(chartId, data) {
     const table = document.createElement('table');
     table.className = 'sr-only chart-data-table';
     table.setAttribute('aria-label', `Data table for ${chartId}`);
@@ -1286,6 +1290,7 @@ class Trends {
 
     this.cache.last30Days = null;
     this.cache.cacheTime = null;
+    this.cache.byChart = new Map();
   }
 
   /**
@@ -1293,6 +1298,7 @@ class Trends {
    */
   async refresh() {
     this.cache.last30Days = null;
+    this.cache.byChart = new Map();
     this.destroy();
     await this.init();
   }

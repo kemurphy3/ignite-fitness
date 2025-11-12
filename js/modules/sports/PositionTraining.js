@@ -349,6 +349,8 @@ class PositionTraining {
         instructions: this.getExerciseInstructions(exerciseId),
         progressions: this.getExerciseProgressions(exerciseId),
         injuryPrevention: this.getExerciseInjuryPrevention(exerciseId),
+        sportContext: sportId,
+        positionContext: positionId,
       };
     });
   }
@@ -383,7 +385,29 @@ class PositionTraining {
       },
     };
 
-    return progressions[experience] || progressions.beginner;
+    const baseProgression = progressions[experience] || progressions.beginner;
+
+    if (!moduleId) {
+      return baseProgression;
+    }
+
+    const progressionClone = JSON.parse(JSON.stringify(baseProgression));
+
+    if (moduleId.includes('conditioning')) {
+      Object.values(progressionClone).forEach(block => {
+        block.focus = `${block.focus}_conditioning`;
+        block.volume = 'high';
+      });
+    } else if (moduleId.includes('strength')) {
+      Object.values(progressionClone).forEach(block => {
+        block.intensity = 'very_high';
+      });
+    }
+
+    progressionClone.totalWeeks = weeks;
+    progressionClone.moduleId = moduleId;
+
+    return progressionClone;
   }
 
   /**
@@ -398,6 +422,7 @@ class PositionTraining {
       injuryHistory: this.getInjuryAdaptations(userProfile.injuryHistory),
       goals: this.getGoalAdaptations(userProfile.goals),
       timeConstraints: this.getTimeAdaptations(userProfile.timeConstraints),
+      moduleFocus: moduleId,
     };
 
     return adaptations;
@@ -454,6 +479,27 @@ class PositionTraining {
         message: `Prioritize ${focus} in your training program`,
       });
     });
+
+    if (Array.isArray(userProfile?.injuryHistory) && userProfile.injuryHistory.length > 0) {
+      userProfile.injuryHistory.forEach(injury => {
+        if (injuryRisks.includes(injury)) {
+          recommendations.push({
+            type: 'personal_injury_prevention',
+            risk: injury,
+            priority: 'critical',
+            message: `Your history indicates ${injury}. Add targeted prehab before each session.`,
+          });
+        }
+      });
+    }
+
+    if (Array.isArray(userProfile?.goals) && userProfile.goals.length > 0) {
+      recommendations.push({
+        type: 'goal_alignment',
+        priority: 'high',
+        message: `Align position training with personal goals: ${userProfile.goals.join(', ')}.`,
+      });
+    }
 
     return recommendations;
   }
@@ -577,15 +623,39 @@ class PositionTraining {
   }
 
   getExerciseInstructions(exerciseId) {
-    return `Instructions for ${exerciseId}`;
+    const instructions = {
+      reaction_drills: 'React to visual cues from a coach and sprint to the indicated cone.',
+      diving_progressions: 'Practice kneeling, half, and full dives focusing on landing mechanics.',
+      squats: 'Maintain neutral spine, drive knees out, descend to parallel, and stand explosively.',
+      deadlifts: 'Hinge at hips, keep bar close, brace core, and drive through heels.',
+      interval_training: 'Perform 60 seconds of hard effort followed by 60 seconds easy, repeat 10 times.',
+      sprint_training: 'Sprint 30 meters at 90% effort, walk back for recovery, repeat for 8 reps.',
+    };
+    return instructions[exerciseId] || `Follow standard coaching guidelines for ${exerciseId}.`;
   }
 
   getExerciseProgressions(exerciseId) {
-    return ['beginner', 'intermediate', 'advanced'];
+    const progressions = {
+      reaction_drills: ['static_reaction', 'dynamic_reaction', 'multi_directional'],
+      diving_progressions: ['kneeling_dive', 'half_dive', 'full_layout'],
+      squats: ['goblet_squat', 'front_squat', 'back_squat'],
+      deadlifts: ['kettlebell_deadlift', 'trap_bar_deadlift', 'barbell_deadlift'],
+      interval_training: ['1:2_work_rest', '1:1_work_rest', '2:1_work_rest'],
+      sprint_training: ['acceleration_drills', 'flying_sprints', 'max_velocity'],
+    };
+    return progressions[exerciseId] || ['beginner', 'intermediate', 'advanced'];
   }
 
   getExerciseInjuryPrevention(exerciseId) {
-    return ['proper_form', 'gradual_progression', 'adequate_warm_up'];
+    const prevention = {
+      reaction_drills: ['proper_warmup', 'space_clearance', 'footwear_check'],
+      diving_progressions: ['neck_strengthening', 'landing_drills', 'shoulder_mobility'],
+      squats: ['core_bracing', 'hip_mobility', 'gradual_load_progression'],
+      deadlifts: ['posterior_chain_activation', 'neutral_spine', 'load_monitoring'],
+      interval_training: ['progressive_load', 'adequate_recovery', 'hydration'],
+      sprint_training: ['hamstring_pre_activation', 'technique_drills', 'surface_check'],
+    };
+    return prevention[exerciseId] || ['proper_form', 'gradual_progression', 'adequate_warm_up'];
   }
 
   getAlternativeExercises(injuryHistory) {
