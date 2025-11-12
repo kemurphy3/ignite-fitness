@@ -249,9 +249,10 @@ window.SimpleModeToggle = SimpleModeToggle;
 
 // Helper to create toggle in container
 window.createSimpleModeToggle = function (containerId) {
+  const logger = window.SafeLogger || console;
   const container = document.getElementById(containerId);
   if (!container) {
-    console.error('Container not found:', containerId);
+    logger.error('Container not found', { containerId });
     return null;
   }
 

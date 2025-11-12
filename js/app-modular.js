@@ -4,20 +4,23 @@
  * Reduced from 1800+ lines to <200 lines
  */
 
+// Initialize logger
+const logger = window.SafeLogger || console;
+
 // Global application state
 let currentUser = null;
 
 // Boot error handling and cache clearing
 window.IF_clearCachesAndReload = async function () {
   try {
-    console.log('Clearing all caches and reloading...');
+    logger.info('Clearing all caches and reloading');
 
     // Clear all caches
     if ('caches' in window) {
       const cacheNames = await caches.keys();
       for (const name of cacheNames) {
         await caches.delete(name);
-        console.log('Deleted cache:', name);
+        logger.info('Deleted cache', { cacheName: name });
       }
     }
 
@@ -26,7 +29,7 @@ window.IF_clearCachesAndReload = async function () {
       const registrations = await navigator.serviceWorker.getRegistrations();
       for (const registration of registrations) {
         await registration.unregister();
-        console.log('Unregistered service worker');
+        logger.info('Unregistered service worker');
       }
     }
 
@@ -37,7 +40,7 @@ window.IF_clearCachesAndReload = async function () {
     // Force reload
     location.reload(true);
   } catch (error) {
-    console.error('Failed to clear caches:', error);
+    logger.error('Failed to clear caches', { error: error.message, stack: error.stack });
     location.reload(true);
   }
 };
@@ -91,14 +94,14 @@ ${error.stack || error.message || error}
 // Initialize when DOM is loaded with error handling
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    console.log('Ignite Fitness App Starting...');
+    logger.info('Ignite Fitness App Starting');
 
     // Deterministic boot sequence
     if (window.BootSequence) {
       await window.BootSequence.boot();
     } else {
       // Fallback if BootSequence not available
-      console.warn('BootSequence not available, using fallback');
+      logger.warn('BootSequence not available, using fallback');
       if (window.AuthManager) {
         await window.AuthManager.readFromStorage();
         const authState = window.AuthManager.getAuthState();
@@ -123,26 +126,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Mark app as ready
     window.appReady = true;
-    console.log('Ignite Fitness App Ready!');
+    logger.info('Ignite Fitness App Ready');
 
     // Get service worker version and display it
     getServiceWorkerVersion();
   } catch (error) {
-    console.error('Boot error:', error);
+    logger.error('Boot error', { error: error.message, stack: error.stack });
     showBootError(error);
   }
 });
 
 // Global error handler for unhandled errors
 window.addEventListener('error', event => {
-  console.error('Unhandled error:', event.error);
+  logger.error('Unhandled error', { error: event.error?.message, stack: event.error?.stack });
   if (!window.appReady) {
     showBootError(event.error);
   }
 });
 
 window.addEventListener('unhandledrejection', event => {
-  console.error('Unhandled promise rejection:', event.reason);
+  logger.error('Unhandled promise rejection', { reason: String(event.reason), stack: event.reason?.stack });
   if (!window.appReady) {
     showBootError(event.reason);
   }
@@ -233,9 +236,9 @@ function initializeUIEnhancements() {
     // Add workout styles
     addWorkoutStyles();
 
-    console.log('UI enhancements initialized successfully');
+    logger.info('UI enhancements initialized successfully');
   } catch (error) {
-    console.error('Failed to initialize UI enhancements:', error);
+    logger.error('Failed to initialize UI enhancements', { error: error.message, stack: error.stack });
     // Don't throw - these are non-critical enhancements
   }
 }
@@ -249,7 +252,7 @@ function migrateUserData() {
     return; // No migration needed
   }
 
-  console.log('Migrating user data from version', storedVersion || '1.0', 'to', currentVersion);
+  logger.info('Migrating user data', { fromVersion: storedVersion || '1.0', toVersion: currentVersion });
 
   // Migrate from version 1.0 to 2.0
   if (!storedVersion || storedVersion === '1.0') {
@@ -258,7 +261,7 @@ function migrateUserData() {
 
   // Set new version
   localStorage.setItem('ignitefitness_data_version', currentVersion);
-  console.log('Data migration completed');
+  logger.info('Data migration completed');
 }
 
 function migrateFromV1ToV2() {
@@ -294,7 +297,7 @@ function migrateFromV1ToV2() {
     migrateStravaData();
     migrateWorkoutData();
   } catch (error) {
-    console.error('Error during data migration:', error);
+    logger.error('Error during data migration', { error: error.message, stack: error.stack });
   }
 }
 
@@ -338,7 +341,7 @@ function migrateWorkoutData() {
       );
       localStorage.removeItem('ignitefitness_workouts');
     } catch (error) {
-      console.error('Error migrating workout data:', error);
+      logger.error('Error migrating workout data', { error: error.message, stack: error.stack });
     }
   }
 }
@@ -651,7 +654,7 @@ function showError(element, message) {
 }
 
 function showSuccess(message) {
-  console.log('Success:', message);
+  logger.info('Success', { message });
   // Implementation for success notifications
 }
 
@@ -1447,7 +1450,7 @@ function showProgressionSummary(progression) {
     `;
 
   // This would typically be displayed in the workout interface
-  console.log('Progression Summary:', summaryHtml);
+  logger.info('Progression Summary generated', { summaryLength: summaryHtml.length });
 }
 
 function adaptWorkoutToTime(availableTime) {
@@ -2132,12 +2135,12 @@ function closeStravaImportModal() {
 function initializeLoadManagement() {
   if (window.StravaProcessor) {
     // Initialize Strava processor
-    console.log('Strava processor initialized');
+    logger.info('Strava processor initialized');
   }
 
   if (window.LoadCalculator) {
     // Initialize load calculator
-    console.log('Load calculator initialized');
+    logger.info('Load calculator initialized');
   }
 }
 

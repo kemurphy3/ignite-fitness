@@ -11,8 +11,8 @@ const resolveModule = (globalKey, loadModule) => {
   try {
     return loadModule();
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.debug(`CoachingEngine: ${globalKey} not available`, error?.message || error);
+    const logger = window.SafeLogger || console;
+    logger.debug(`CoachingEngine: ${globalKey} not available`, { error: error?.message || String(error) });
     return null;
   }
 };

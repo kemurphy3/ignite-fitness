@@ -3,6 +3,7 @@
 
 class DataStore {
   constructor() {
+    this.logger = window.SafeLogger || console;
     this.cache = new Map();
     this.pendingWrites = new Map();
     this.syncQueue = [];
@@ -43,7 +44,7 @@ class DataStore {
 
       return data;
     } catch (error) {
-      console.error(`Error fetching data for key ${key}:`, error);
+      this.logger.error('Error fetching data', { key, error: error.message, stack: error.stack });
 
       // Return cached data if available
       const cached = this.cache.get(key);
@@ -98,7 +99,7 @@ class DataStore {
       try {
         return await this.fetchFromAPI(key);
       } catch (error) {
-        console.warn(`API fetch failed for ${key}, using local data:`, error);
+        this.logger.warn('API fetch failed, using local data', { key, error: error.message });
         return localData;
       }
     }
@@ -112,7 +113,7 @@ class DataStore {
       const data = localStorage.getItem(`ignitefitness_${key}`);
       return data ? JSON.parse(data) : null;
     } catch (error) {
-      console.error(`Error loading ${key} from localStorage:`, error);
+      this.logger.error('Error loading from localStorage', { key, error: error.message, stack: error.stack });
       return null;
     }
   }
@@ -122,7 +123,7 @@ class DataStore {
     try {
       localStorage.setItem(`ignitefitness_${key}`, JSON.stringify(data));
     } catch (error) {
-      console.error(`Error saving ${key} to localStorage:`, error);
+      this.logger.error('Error saving to localStorage', { key, error: error.message, stack: error.stack });
     }
   }
 
@@ -207,7 +208,7 @@ class DataStore {
       try {
         await this.syncToAPI(item.key, item.data);
       } catch (error) {
-        console.error(`Sync failed for ${item.key}:`, error);
+        this.logger.error('Sync failed', { key: item.key, error: error.message, stack: error.stack });
         // Re-queue for retry
         this.syncQueue.push(item);
       }
@@ -272,7 +273,7 @@ class DataStore {
       }
 
       const result = await response.json();
-      console.log(`Successfully synced ${key} to database:`, result);
+      this.logger.info('Successfully synced to database', { key, result });
 
       // Update last sync time
       this.lastSyncTime = Date.now();
@@ -280,7 +281,7 @@ class DataStore {
 
       return result;
     } catch (error) {
-      console.error(`Sync error for ${key}:`, error);
+      this.logger.error('Sync error', { key, error: error.message, stack: error.stack });
 
       // If it's a network error, queue for retry
       if (error.name === 'TypeError' || error.message.includes('fetch')) {

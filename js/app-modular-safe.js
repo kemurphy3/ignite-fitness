@@ -3,6 +3,9 @@
  * Main application file with security improvements
  */
 
+// Initialize logger
+const logger = window.SafeLogger || console;
+
 // Safe HTML creation function
 function createSafeHTML(htmlString) {
   const tempDiv = document.createElement('div');
@@ -450,7 +453,7 @@ function getRiskStatusText(riskLevel) {
 function initializeAuth() {
   const authManager = window.AuthManager;
   if (!authManager) {
-    console.warn('AuthManager not available during safe initialization');
+    logger.warn('AuthManager not available during safe initialization');
     updateUIForLoggedOutUser();
     return;
   }
@@ -485,7 +488,7 @@ function initializeAuth() {
       .readFromStorage()
       .then(finalize)
       .catch(error => {
-        console.error('Failed to read auth state safely', error);
+        logger.error('Failed to read auth state safely', { error: error.message, stack: error.stack });
         updateUIForLoggedOutUser();
       });
   } else {
@@ -496,7 +499,7 @@ function initializeAuth() {
 function initializeWorkoutTracker() {
   const { WorkoutTracker } = window;
   if (!WorkoutTracker) {
-    console.warn('WorkoutTracker not available during safe initialization');
+    logger.warn('WorkoutTracker not available during safe initialization');
     return;
   }
 
@@ -512,7 +515,7 @@ function initializeWorkoutTracker() {
 function initializeDashboard() {
   const { DashboardRenderer } = window;
   if (!DashboardRenderer) {
-    console.warn('DashboardRenderer not available during safe initialization');
+    logger.warn('DashboardRenderer not available during safe initialization');
     return;
   }
 
@@ -550,7 +553,7 @@ function initializeLoadManagement() {
   }
 
   if (!LoadCalculator) {
-    console.warn('LoadCalculator not available during safe initialization');
+    logger.warn('LoadCalculator not available during safe initialization');
     return;
   }
 
@@ -561,7 +564,7 @@ function initializeLoadManagement() {
   try {
     window.safeLoadCalculator.getLoadDashboard();
   } catch (error) {
-    console.error('Failed to initialize load dashboard safely', error);
+    logger.error('Failed to initialize load dashboard safely', { error: error.message, stack: error.stack });
   }
 }
 
@@ -614,7 +617,7 @@ function showSuccess(_message) {
 }
 
 function _showError(element, message) {
-  console.error('Error:', message);
+  logger.error('Error', { message, element: element?.id || 'unknown' });
   // In a real app, this would show an error notification
 }
 

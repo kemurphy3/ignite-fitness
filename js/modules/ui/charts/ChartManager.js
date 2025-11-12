@@ -40,7 +40,8 @@ class ChartManager {
         // If no message received within 1 second, assume worker failed
         const initTimeout = setTimeout(() => {
           if (this.supportsOffscreenCanvas && !this.workerReady) {
-            console.warn('ChartManager: Worker did not respond, falling back to main thread');
+            const logger = window.SafeLogger || console;
+            logger.warn('ChartManager: Worker did not respond, falling back to main thread');
             this.supportsOffscreenCanvas = false;
             if (this.worker) {
               this.worker.terminate();
@@ -64,15 +65,18 @@ class ChartManager {
 
         // Only log once per instance to avoid duplicates
         if (!this._initLogged) {
-          console.debug('ChartManager: Web Worker created, waiting for initialization...');
+          const logger = window.SafeLogger || console;
+          logger.debug('ChartManager: Web Worker created, waiting for initialization');
           this._initLogged = true;
         }
       } catch (error) {
-        console.warn('ChartManager: Failed to create worker, falling back to main thread:', error);
+        const logger = window.SafeLogger || console;
+        logger.warn('ChartManager: Failed to create worker, falling back to main thread', { error: error.message, stack: error.stack });
         this.supportsOffscreenCanvas = false;
       }
     } else {
-      console.log('ChartManager: OffscreenCanvas not supported, using main thread');
+      const logger = window.SafeLogger || console;
+      logger.info('ChartManager: OffscreenCanvas not supported, using main thread');
     }
   }
 
@@ -86,10 +90,8 @@ class ChartManager {
       case 'INIT_ERROR':
         // Worker failed to initialize (usually CDN/CORS issue)
         // Use debug level since this is expected behavior in local dev
-        console.debug(
-          'ChartWorker initialization failed, falling back to main thread:',
-          message || error
-        );
+        const logger = window.SafeLogger || console;
+        logger.debug('ChartWorker initialization failed, falling back to main thread', { message, error: error?.message || String(error) });
         this.supportsOffscreenCanvas = false;
         if (this.worker) {
           this.worker.terminate();

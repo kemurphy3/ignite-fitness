@@ -1,6 +1,9 @@
 // Main Application Entry Point
 // Loads and initializes all modules
 
+// Initialize logger
+const logger = window.SafeLogger || console;
+
 // Global variables
 let currentUser = null;
 let isLoggedIn = false;
@@ -24,7 +27,7 @@ function applyAuthState(state) {
 
 // Initialize application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('Ignite Fitness App Initializing...');
+  logger.info('Ignite Fitness App Initializing');
 
   // Load modules
   loadModules();
@@ -41,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load user data if logged in
   checkLoginStatus();
 
-  console.log('Ignite Fitness App Initialized Successfully!');
+  logger.info('Ignite Fitness App Initialized Successfully');
 });
 
 // Load all JavaScript modules
@@ -101,7 +104,7 @@ function initializeAuth() {
       .readFromStorage()
       .then(finalize)
       .catch(error => {
-        console.error('Failed to initialize auth state', error);
+        logger.error('Failed to initialize auth state', { error: error.message, stack: error.stack });
         const savedUser = localStorage.getItem('ignitefitness_current_user');
         if (savedUser) {
           currentUser = savedUser;
@@ -123,9 +126,9 @@ function initializeDataStore() {
   if (typeof DataStoreClass === 'function') {
     dataStore = new DataStoreClass();
     window.appDataStore = dataStore;
-    console.log('Data store initialized');
+    logger.info('Data store initialized');
   } else {
-    console.warn('DataStore class not available');
+    logger.warn('DataStore class not available');
   }
 }
 
@@ -135,9 +138,9 @@ function initializeAI() {
   if (typeof ContextAwareAIClass === 'function') {
     contextAwareAI = new ContextAwareAIClass();
     window.appContextAwareAI = contextAwareAI;
-    console.log('AI systems initialized');
+    logger.info('AI systems initialized');
   } else {
-    console.warn('ContextAwareAI class not available');
+    logger.warn('ContextAwareAI class not available');
   }
 }
 
@@ -186,7 +189,7 @@ async function loadUserData() {
   }
 
   if (!dataStore || typeof dataStore.get !== 'function') {
-    console.warn('Data store not available while loading user data');
+    logger.warn('Data store not available while loading user data');
     return;
   }
 
@@ -208,7 +211,7 @@ async function loadUserData() {
     loadGoalsToForm();
     loadWearableSettingsToForm();
   } catch (error) {
-    console.error('Error loading user data:', error);
+    logger.error('Error loading user data', { error: error.message, stack: error.stack });
   }
 }
 
@@ -219,7 +222,7 @@ async function saveUserData() {
   }
 
   if (!dataStore || typeof dataStore.set !== 'function') {
-    console.warn('Data store not available while saving user data');
+    logger.warn('Data store not available while saving user data');
     return;
   }
 
@@ -230,7 +233,7 @@ async function saveUserData() {
     // Also save to localStorage as backup
     localStorage.setItem('ignitefitness_users', JSON.stringify(users));
   } catch (error) {
-    console.error('Error saving user data:', error);
+    logger.error('Error saving user data', { error: error.message, stack: error.stack });
   }
 }
 

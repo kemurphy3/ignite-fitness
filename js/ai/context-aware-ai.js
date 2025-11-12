@@ -3,6 +3,7 @@
 
 class ContextAwareAI {
   constructor() {
+    this.logger = window.SafeLogger || console;
     this.userHistory = this.loadUserHistory();
     this.patterns = this.loadPatterns();
     this.successMetrics = this.loadSuccessMetrics();
@@ -29,7 +30,7 @@ class ContextAwareAI {
             lastUpdated: Date.now(),
           };
     } catch (error) {
-      console.error('Error loading user history:', error);
+      this.logger.error('Error loading user history', { error: error.message, stack: error.stack });
       return { interactions: [], preferences: {}, patterns: {}, lastUpdated: Date.now() };
     }
   }
@@ -47,7 +48,7 @@ class ContextAwareAI {
             failurePatterns: {},
           };
     } catch (error) {
-      console.error('Error loading patterns:', error);
+      this.logger.error('Error loading patterns', { error: error.message, stack: error.stack });
       return {
         workoutPreferences: {},
         responsePatterns: {},
@@ -71,7 +72,7 @@ class ContextAwareAI {
             lastUpdated: Date.now(),
           };
     } catch (error) {
-      console.error('Error loading success metrics:', error);
+      this.logger.error('Error loading success metrics', { error: error.message, stack: error.stack });
       return {
         workoutCompletions: 0,
         goalAchievements: 0,
@@ -87,7 +88,7 @@ class ContextAwareAI {
     try {
       localStorage.setItem('ai_user_history', JSON.stringify(this.userHistory));
     } catch (error) {
-      console.error('Error saving user history:', error);
+      this.logger.error('Error saving user history', { error: error.message, stack: error.stack });
     }
   }
 
@@ -96,7 +97,7 @@ class ContextAwareAI {
     try {
       localStorage.setItem('ai_patterns', JSON.stringify(this.patterns));
     } catch (error) {
-      console.error('Error saving patterns:', error);
+      this.logger.error('Error saving patterns', { error: error.message, stack: error.stack });
     }
   }
 
@@ -105,7 +106,7 @@ class ContextAwareAI {
     try {
       localStorage.setItem('ai_success_metrics', JSON.stringify(this.successMetrics));
     } catch (error) {
-      console.error('Error saving success metrics:', error);
+      this.logger.error('Error saving success metrics', { error: error.message, stack: error.stack });
     }
   }
 
@@ -248,7 +249,7 @@ class ContextAwareAI {
       const currentUser = localStorage.getItem('ignitefitness_current_user');
       return userData[currentUser] || {};
     } catch (error) {
-      console.error('Error getting user profile:', error);
+      this.logger.error('Error getting user profile', { error: error.message, stack: error.stack });
       return {};
     }
   }
@@ -397,12 +398,12 @@ class ContextAwareAI {
           "I apologize, but I couldn't generate a response at this time."
         );
       } else {
-        console.warn('AI API call failed, using fallback response');
+        this.logger.warn('AI API call failed, using fallback response', { status: response.status });
         const fallbackResult = this.getFallbackResponse(userInput);
         return fallbackResult.message || fallbackResult;
       }
     } catch (error) {
-      console.warn('AI API call error, using fallback response:', error);
+      this.logger.warn('AI API call error, using fallback response', { error: error.message, stack: error.stack });
       const fallbackResult = this.getFallbackResponse(userInput);
       return fallbackResult.message || fallbackResult;
     }

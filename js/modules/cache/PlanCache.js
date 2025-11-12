@@ -13,8 +13,8 @@ const resolveLRUCache = () => {
     const moduleExport = require('./LRUCache.js');
     return moduleExport?.LRUCache || moduleExport?.default || moduleExport;
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.debug('PlanCache: LRUCache fallback in use', error?.message || error);
+    const logger = window.SafeLogger || console;
+    logger.debug('PlanCache: LRUCache fallback in use', { error: error?.message || String(error) });
     return class SimpleCache {
       constructor() {
         this.store = new Map();

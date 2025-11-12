@@ -347,10 +347,12 @@ class StravaImportUI {
 // Global functions for HTML onclick handlers
 window.importFromStrava = async function () {
   // Future: implement token-based import
-  console.log('Token-based import not implemented yet');
+  const logger = window.SafeLogger || console;
+  logger.info('Token-based import not implemented yet');
 };
 
 window.removeStravaActivity = async function (activityId) {
+  const logger = window.SafeLogger || console;
   try {
     const success = await window.StravaProcessor.removeExternalActivity(activityId);
     if (success) {
@@ -359,7 +361,7 @@ window.removeStravaActivity = async function (activityId) {
       ui.refresh();
     }
   } catch (error) {
-    console.error('Failed to remove activity', error);
+    logger.error('Failed to remove activity', { error: error.message, stack: error.stack, activityId });
   }
 };
 

@@ -13,8 +13,8 @@ const resolveBaseComponent = () => {
     const moduleExport = require('../ui/BaseComponent.js');
     return moduleExport?.BaseComponent || moduleExport?.default || moduleExport;
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.debug('SessionManager: BaseComponent fallback in use', error?.message || error);
+    const logger = window.SafeLogger || console;
+    logger.debug('SessionManager: BaseComponent fallback in use', { error: error?.message || String(error) });
     return class {};
   }
 };
