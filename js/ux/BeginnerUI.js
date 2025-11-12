@@ -1,7 +1,7 @@
 /**
  * Beginner-friendly UI components
  */
-class BeginnerUI {
+class _BeginnerUI {
   static createWelcomeMessage() {
     return `
         <div class="welcome-banner" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">

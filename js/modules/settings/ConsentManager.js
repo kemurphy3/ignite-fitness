@@ -3,6 +3,8 @@
  * Manages user consent with audit trails and withdrawal capabilities
  */
 
+import { BaseComponent } from '../ui/BaseComponent.js';
+
 class ConsentManager extends BaseComponent {
   constructor(options = {}) {
     super(options);

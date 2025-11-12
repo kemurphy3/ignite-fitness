@@ -509,7 +509,7 @@ class ProfileSetup {
 
     if (this.validateForm(formData)) {
       this.storeProfileData(formData);
-      onboardingManager.completeOnboarding();
+      window.onboardingManager.completeOnboarding();
     } else {
       this.showValidationErrors();
     }

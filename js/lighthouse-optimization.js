@@ -37,7 +37,7 @@
   document.querySelectorAll('img').forEach(img => {
     if (!img.hasAttribute('width') || !img.hasAttribute('height')) {
       // Set aspect ratio to prevent layout shift
-      const aspectRatio = img.naturalWidth / img.naturalHeight;
+      const _aspectRatio = img.naturalWidth / img.naturalHeight;
       img.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`;
     }
   });

@@ -427,7 +427,8 @@ class RiskAssessment {
     } else if (sportId === 'running') {
       recommendations.push({
         type: 'sport_specific',
-        message: 'Introduce cadence work and low-impact cross-training to reduce repetitive stress.',
+        message:
+          'Introduce cadence work and low-impact cross-training to reduce repetitive stress.',
         priority: 'medium',
       });
     }

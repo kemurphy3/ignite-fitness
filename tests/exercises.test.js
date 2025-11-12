@@ -2,6 +2,12 @@
 // Test file for exercise-related API endpoints
 // Tests exercises-bulk-create.js and related functionality
 
+/* global request, app, validToken */
+// Note: These test globals need to be properly imported or set up
+// request - supertest request function
+// app - Express app instance
+// validToken - Authentication token for tests
+
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   setupTestDB,

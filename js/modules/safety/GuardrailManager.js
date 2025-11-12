@@ -186,6 +186,13 @@ class GuardrailManager {
     const limits =
       this.limits.weeklyLoadCaps[trainingLevel] || this.limits.weeklyLoadCaps.intermediate;
 
+    // Initialize result object
+    const result = {
+      passed: true,
+      warnings: [],
+      autoAdjustments: [],
+    };
+
     // Calculate current weekly load (last 7 days)
     const weekStartDate = new Date();
     weekStartDate.setDate(weekStartDate.getDate() - 7);
@@ -245,10 +252,14 @@ class GuardrailManager {
 
     // Warning if approaching limit
     if (projectedLoad > limits.total * 0.9) {
-      return {
-        passed: true,
-        warning: `Approaching weekly load cap (${Math.round((projectedLoad / limits.total) * 100)}%)`,
-      };
+      result.warnings.push(
+        `Approaching weekly load cap (${Math.round((projectedLoad / limits.total) * 100)}%)`
+      );
+    }
+
+    // Return result with any warnings or adjustments
+    if (result.warnings.length > 0 || result.autoAdjustments.length > 0) {
+      return result;
     }
 
     return { passed: true };

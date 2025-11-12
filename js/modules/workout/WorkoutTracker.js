@@ -1228,7 +1228,6 @@ class WorkoutTracker {
       exercises: workout.exercises || [],
       startTime: new Date().toISOString(),
       status: 'active',
-      exercises: [],
     };
 
     this.currentExerciseIndex = 0;

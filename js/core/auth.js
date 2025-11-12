@@ -15,12 +15,14 @@ const authCompat = (() => {
     return Math.abs(hash).toString(16);
   };
 
-  const callIfAvailable = methodName => (...args) => {
-    if (typeof window !== 'undefined' && typeof window[methodName] === 'function') {
-      return window[methodName](...args);
-    }
-    return undefined;
-  };
+  const callIfAvailable =
+    methodName =>
+    (...args) => {
+      if (typeof window !== 'undefined' && typeof window[methodName] === 'function') {
+        return window[methodName](...args);
+      }
+      return undefined;
+    };
 
   return {
     login: callIfAvailable('login'),

@@ -8,15 +8,6 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
-  "include": [
-    "js/modules/ai/CoachChat.js",
-    "js/ai/context-aware-ai.js",
-    "js/ai/pattern-detector.js"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "coverage",
-    "tests/**/*"
-  ]
+  "include": ["js/modules/ai/CoachChat.js", "js/ai/context-aware-ai.js", "js/ai/pattern-detector.js"],
+  "exclude": ["node_modules", "dist", "coverage", "tests/**/*"]
 }

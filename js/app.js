@@ -80,7 +80,7 @@ async function loadModule(modulePath, className, options = {}) {
 /**
  * Load heavy modules on demand
  */
-async function loadHeavyModules() {
+async function _loadHeavyModules() {
   try {
     // Load soccer exercises only when needed
     const soccerExercises = await loadModule(
@@ -155,7 +155,7 @@ function migrateFromV1ToV2() {
         const user = usersData[username];
         migratedUsers[username] = {
           version: '2.0',
-          username: username,
+          username,
           password: user.password,
           athleteName: user.athleteName,
           personalData: user.personalData || {},
@@ -217,7 +217,7 @@ function migrateWorkoutData() {
       localStorage.setItem(
         'ignitefitness_workout_data',
         JSON.stringify({
-          workouts: workouts,
+          workouts,
           version: '2.0',
           last_updated: Date.now(),
         })
@@ -250,20 +250,20 @@ function saveUserDataToStorage(userId, data) {
   localStorage.setItem('ignitefitness_users', JSON.stringify(users));
 }
 
-function getUserDataFromStorage(userId) {
+function _getUserDataFromStorage(userId) {
   return users[userId] || null;
 }
 
-function saveAppData(key, data) {
+function _saveAppData(key, data) {
   const appData = {
     version: '2.0',
-    data: data,
+    data,
     last_updated: Date.now(),
   };
   localStorage.setItem(`ignitefitness_${key}`, JSON.stringify(appData));
 }
 
-function getAppData(key) {
+function _getAppData(key) {
   const stored = localStorage.getItem(`ignitefitness_${key}`);
   if (stored) {
     try {
@@ -278,7 +278,7 @@ function getAppData(key) {
 }
 
 // Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', () => {
   console.log('Ignite Fitness App Starting...');
 
   // Run data migration first
@@ -326,7 +326,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Handle Enter key in AI chat input
   const aiInput = document.getElementById('aiChatInput');
   if (aiInput) {
-    aiInput.addEventListener('keypress', function (e) {
+    aiInput.addEventListener('keypress', e => {
       if (e.key === 'Enter') {
         sendToAI();
       }
@@ -339,7 +339,9 @@ document.addEventListener('DOMContentLoaded', function () {
 // Simple hash function for password hashing
 function simpleHash(str) {
   let hash = 0;
-  if (str.length === 0) return hash;
+  if (str.length === 0) {
+    return hash;
+  }
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
     hash = (hash << 5) - hash + char;
@@ -349,7 +351,7 @@ function simpleHash(str) {
 }
 
 // Authentication Functions
-function login() {
+function _login() {
   const username = document.getElementById('loginUsername').value;
   const password = document.getElementById('loginPassword').value;
   const errorDiv = document.getElementById('loginError');
@@ -378,7 +380,7 @@ function login() {
   }
 }
 
-function register() {
+function _register() {
   const username = document.getElementById('regUsername').value;
   const password = document.getElementById('regPassword').value;
   const confirmPassword = document.getElementById('regConfirmPassword').value;
@@ -408,7 +410,7 @@ function register() {
   // Create new user with hashed password
   users[username] = {
     passwordHash: simpleHash(password),
-    athleteName: athleteName,
+    athleteName,
     personalData: {},
     goals: {},
     wearableSettings: {},
@@ -437,7 +439,7 @@ function register() {
   loadUserData();
 }
 
-function resetPassword() {
+function _resetPassword() {
   const username = document.getElementById('resetUsername').value;
   const athleteName = document.getElementById('resetAthleteName').value;
   const newPassword = document.getElementById('newPassword').value;
@@ -492,7 +494,7 @@ function showUserDashboard() {
   }
 }
 
-function showPasswordReset() {
+function _showPasswordReset() {
   document.getElementById('loginForm').classList.add('hidden');
   document.getElementById('passwordResetForm').classList.remove('hidden');
 }
@@ -502,7 +504,7 @@ function hidePasswordReset() {
   document.getElementById('loginForm').classList.remove('hidden');
 }
 
-function showRegisterForm() {
+function _showRegisterForm() {
   document.getElementById('loginForm').classList.add('hidden');
   document.getElementById('registerForm').classList.remove('hidden');
 }
@@ -511,12 +513,12 @@ function hideRegisterForm() {
   document.getElementById('registerForm').classList.add('hidden');
 }
 
-function hideLoginForm() {
+function _hideLoginForm() {
   document.getElementById('loginForm').classList.add('hidden');
 }
 
 // Tab Functions
-function showTab(tabName, clickedButton) {
+function _showTab(tabName, clickedButton) {
   // Hide all tab contents
   document.querySelectorAll('.tab-content').forEach(tab => {
     tab.classList.add('hidden');
@@ -541,19 +543,26 @@ function showTab(tabName, clickedButton) {
 
 // Data Functions
 function loadUserData() {
-  if (!currentUser || !users[currentUser]) return;
+  if (!currentUser || !users[currentUser]) {
+    return;
+  }
 
   const user = users[currentUser];
 
   // Load personal data
   if (user.personalData) {
-    if (user.personalData.age) document.getElementById('age').value = user.personalData.age;
-    if (user.personalData.weight)
+    if (user.personalData.age) {
+      document.getElementById('age').value = user.personalData.age;
+    }
+    if (user.personalData.weight) {
       document.getElementById('weight').value = user.personalData.weight;
-    if (user.personalData.height)
+    }
+    if (user.personalData.height) {
       document.getElementById('height').value = user.personalData.height;
-    if (user.personalData.experience)
+    }
+    if (user.personalData.experience) {
       document.getElementById('experience').value = user.personalData.experience;
+    }
   }
 
   // Load goals
@@ -562,23 +571,29 @@ function loadUserData() {
       const primaryGoal = document.querySelector(
         `input[name="primaryGoal"][value="${user.goals.primary}"]`
       );
-      if (primaryGoal) primaryGoal.checked = true;
+      if (primaryGoal) {
+        primaryGoal.checked = true;
+      }
     }
     if (user.goals.secondary) {
       const secondaryGoal = document.querySelector(
         `input[name="secondaryGoal"][value="${user.goals.secondary}"]`
       );
-      if (secondaryGoal) secondaryGoal.checked = true;
+      if (secondaryGoal) {
+        secondaryGoal.checked = true;
+      }
     }
   }
 }
 
 function saveUserData() {
-  if (!currentUser) return;
+  if (!currentUser) {
+    return;
+  }
   saveUserDataToStorage(currentUser, users[currentUser] || {});
 }
 
-async function savePersonalInfo() {
+async function _savePersonalInfo() {
   const saveButton = document.querySelector('button[onclick="savePersonalInfo()"]');
 
   try {
@@ -620,7 +635,7 @@ async function savePersonalInfo() {
       age: parseInt(age),
       weight: parseFloat(weight),
       height: parseInt(height),
-      experience: experience,
+      experience,
     };
 
     if (!users[currentUser]) {
@@ -641,7 +656,7 @@ async function savePersonalInfo() {
   }
 }
 
-async function saveGoals() {
+async function _saveGoals() {
   const saveButton = document.querySelector('button[onclick="saveGoals()"]');
 
   try {
@@ -698,29 +713,11 @@ async function initializeWorkoutGenerator() {
   }
 }
 
-function generateWorkoutPlan() {
-  if (!currentUser || !workoutGenerator) {
-    showError(null, 'Workout generator not available');
-    return;
-  }
-
-  const userProfile = buildUserProfile();
-  const sessionType = 'Upper Body'; // Default session type
-  const availableTime = 60; // Default 60 minutes
-
-  try {
-    const workout = workoutGenerator.generateWorkout(userProfile, sessionType, availableTime);
-    displayGeneratedWorkout(workout);
-    showSuccess('Workout plan generated successfully!');
-  } catch (error) {
-    console.error('Workout generation failed:', error);
-    showError(null, 'Failed to generate workout plan');
-  }
-}
-
 function buildUserProfile() {
   const user = users[currentUser];
-  if (!user) return {};
+  if (!user) {
+    return {};
+  }
 
   return {
     goals: user.goals || {},
@@ -740,9 +737,11 @@ function buildUserProfile() {
 
 function displayGeneratedWorkout(workout) {
   const workoutPlanDiv = document.getElementById('workoutPlan');
-  if (!workoutPlanDiv) return;
+  if (!workoutPlanDiv) {
+    return;
+  }
 
-  let html = `
+  const html = `
         <div class="workout-plan">
             <h3>Generated Workout Plan</h3>
             <div class="workout-info">
@@ -910,7 +909,7 @@ function addWorkoutStyles() {
 /**
  * Load soccer exercises when needed
  */
-async function loadSoccerExercises() {
+async function _loadSoccerExercises() {
   try {
     const soccerModule = await loadModule(
       './modules/sports/SoccerExercises.js',
@@ -928,7 +927,7 @@ async function loadSoccerExercises() {
 /**
  * Load seasonal programs when needed
  */
-async function loadSeasonalPrograms() {
+async function _loadSeasonalPrograms() {
   try {
     const seasonalModule = await loadModule(
       './modules/sports/SeasonalPrograms.js',
@@ -955,10 +954,14 @@ async function initializePatternDetector() {
 }
 
 function analyzeUserPatterns() {
-  if (!currentUser || !patternDetector) return;
+  if (!currentUser || !patternDetector) {
+    return;
+  }
 
   const user = users[currentUser];
-  if (!user) return;
+  if (!user) {
+    return;
+  }
 
   try {
     const userProfile = buildUserProfile();
@@ -984,10 +987,14 @@ function analyzeUserPatterns() {
 }
 
 function displayPatternInsights() {
-  if (!currentUser || !patternDetector) return;
+  if (!currentUser || !patternDetector) {
+    return;
+  }
 
   const user = users[currentUser];
-  if (!user?.analysis) return;
+  if (!user?.analysis) {
+    return;
+  }
 
   const insights = user.analysis.insights || [];
   const recommendations = user.analysis.recommendations || [];
@@ -1059,8 +1066,10 @@ function displayPatternInsights() {
 }
 
 // Add pattern analysis to workout completion
-function onWorkoutCompleted(sessionData) {
-  if (!currentUser) return;
+function _onWorkoutCompleted(sessionData) {
+  if (!currentUser) {
+    return;
+  }
 
   // Add session to user data
   if (!users[currentUser].data) {
@@ -1097,8 +1106,10 @@ function updateSyncStatus() {
   }
 }
 
-function manualSync() {
-  if (!currentUser) return;
+function _manualSync() {
+  if (!currentUser) {
+    return;
+  }
 
   const syncStatus = document.getElementById('syncStatus');
   if (syncStatus) {
@@ -1119,15 +1130,15 @@ function manualSync() {
     });
 }
 
-function startWorkout() {
+function _startWorkout() {
   showSuccess('Workout logging will be implemented in the full version!');
 }
 
-function logQuickWorkout() {
+function _logQuickWorkout() {
   showSuccess('Quick workout logging will be implemented in the full version!');
 }
 
-function viewProgress() {
+function _viewProgress() {
   // Show pattern insights
   displayPatternInsights();
   showSuccess('Progress analysis completed!');
@@ -1153,18 +1164,22 @@ function updateWorkoutPlanGeneration() {
 }
 
 // Override the original generateWorkoutPlan function
-function generateWorkoutPlan() {
+function _generateWorkoutPlan() {
   updateWorkoutPlanGeneration();
 }
 
 // Load recent workouts
 function loadRecentWorkouts() {
-  if (!currentUser) return;
+  if (!currentUser) {
+    return;
+  }
 
   const user = users[currentUser];
   const recentWorkoutsList = document.getElementById('recentWorkoutsList');
 
-  if (!recentWorkoutsList) return;
+  if (!recentWorkoutsList) {
+    return;
+  }
 
   const sessions = user?.data?.sessions || [];
   const recentSessions = sessions.slice(0, 5); // Last 5 sessions
@@ -1198,7 +1213,7 @@ function loadRecentWorkouts() {
   recentWorkoutsList.innerHTML = workoutsHtml;
 }
 
-function logout() {
+function _logout() {
   currentUser = null;
   isLoggedIn = false;
   localStorage.removeItem('ignitefitness_current_user');
@@ -1253,7 +1268,9 @@ function handleError(error, context = '') {
 function showErrorNotification(message, type = 'error') {
   // Remove existing notifications
   const existing = document.getElementById('error-notification');
-  if (existing) existing.remove();
+  if (existing) {
+    existing.remove();
+  }
 
   const notification = document.createElement('div');
   notification.id = 'error-notification';
@@ -1372,7 +1389,9 @@ function hideLoading() {
 
 // Enhanced button loading state
 function setButtonLoading(button, loading = true, text = 'Loading...') {
-  if (!button) return;
+  if (!button) {
+    return;
+  }
 
   if (loading) {
     button.disabled = true;
@@ -1450,7 +1469,7 @@ async function initializeAI() {
 }
 
 // Seasonal Training Functions
-async function initializeSeasonalTraining() {
+async function _initializeSeasonalTraining() {
   try {
     const seasonalModule = await loadModule(
       './modules/sports/SeasonalTrainingSystem.js',
@@ -1465,7 +1484,9 @@ async function initializeSeasonalTraining() {
 }
 
 function updateSeasonalPhaseDisplay() {
-  if (!seasonalTraining) return;
+  if (!seasonalTraining) {
+    return;
+  }
 
   const phaseInfo = seasonalTraining.getCurrentPhase();
   const phaseNameElement = document.getElementById('currentPhaseName');
@@ -1481,8 +1502,10 @@ function updateSeasonalPhaseDisplay() {
   }
 }
 
-function showPhaseModal() {
-  if (!seasonalTraining) return;
+function _showPhaseModal() {
+  if (!seasonalTraining) {
+    return;
+  }
 
   const modal = document.getElementById('phaseModal');
   const phaseDetails = document.getElementById('phaseDetails');
@@ -1502,7 +1525,7 @@ function closePhaseModal() {
 }
 
 function generatePhaseDetailsHTML(phaseInfo) {
-  const details = phaseInfo.details;
+  const { details } = phaseInfo;
   const recommendations = seasonalTraining.getPhaseRecommendations();
   const upcomingGames = seasonalTraining.getUpcomingGames(3);
 
@@ -1573,7 +1596,7 @@ function generatePhaseDetailsHTML(phaseInfo) {
   return html;
 }
 
-function changePhase() {
+function _changePhase() {
   const phases = ['off-season', 'pre-season', 'in-season', 'playoffs'];
   const currentPhase = seasonalTraining.getCurrentPhase().phase;
   const currentIndex = phases.indexOf(currentPhase);
@@ -1587,12 +1610,16 @@ function changePhase() {
   }
 }
 
-function addGame() {
+function _addGame() {
   const opponent = prompt('Enter opponent name:');
-  if (!opponent) return;
+  if (!opponent) {
+    return;
+  }
 
   const dateStr = prompt('Enter game date (YYYY-MM-DD):');
-  if (!dateStr) return;
+  if (!dateStr) {
+    return;
+  }
 
   const gameDate = new Date(dateStr);
   if (isNaN(gameDate.getTime())) {
@@ -1628,7 +1655,9 @@ async function initializeDataStore() {
 
 // Enhanced save functions with database sync
 async function saveUserDataToDatabase() {
-  if (!currentUser || !dataStore) return;
+  if (!currentUser || !dataStore) {
+    return;
+  }
 
   try {
     const userData = {
@@ -1718,7 +1747,7 @@ function ensureStravaConfig(config) {
   }
 }
 
-function connectToStrava() {
+function _connectToStrava() {
   try {
     const config = resolveStravaConfig();
     ensureStravaConfig(config);
@@ -1763,7 +1792,7 @@ async function refreshStravaToken() {
       },
       body: JSON.stringify({
         action: 'refresh_token',
-        refreshToken: refreshToken,
+        refreshToken,
       }),
     });
 
@@ -1786,7 +1815,7 @@ async function refreshStravaToken() {
   }
 }
 
-async function syncStravaData() {
+async function _syncStravaData() {
   const statusDiv = document.getElementById('stravaStatus');
   const syncBtn = document.getElementById('stravaSyncBtn');
 
@@ -1872,7 +1901,7 @@ async function syncStravaData() {
   }
 }
 
-function toggleAIChat() {
+function _toggleAIChat() {
   const chatContainer = document.getElementById('aiChatContainer');
   const chatToggle = document.getElementById('aiChatToggle');
 
@@ -1891,7 +1920,9 @@ function sendToAI() {
   const input = document.getElementById('aiChatInput');
   const message = input.value.trim();
 
-  if (!message) return;
+  if (!message) {
+    return;
+  }
 
   // Add user message to chat
   addMessageToChat(message, 'user');
@@ -1947,7 +1978,7 @@ function hideTypingIndicator() {
   }
 }
 
-function quickAction(action) {
+function _quickAction(action) {
   const input = document.getElementById('aiChatInput');
 
   switch (action) {

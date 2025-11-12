@@ -3,6 +3,8 @@
  * Provides secure disconnect functionality for Strava and other services
  */
 
+import { BaseComponent } from '../ui/BaseComponent.js';
+
 class IntegrationPanel extends BaseComponent {
   constructor(options = {}) {
     super(options);

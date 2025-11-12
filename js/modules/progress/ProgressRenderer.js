@@ -2,6 +2,9 @@
  * ProgressRenderer - Basic chart visualization for strength gains and consistency metrics
  * Renders weekly volume bar charts and PR progression line charts using ChartManager
  */
+
+import { ChartManager } from '../ui/charts/ChartManager.js';
+
 class ProgressRenderer {
   constructor() {
     this.logger = window.SafeLogger || console;
@@ -36,7 +39,7 @@ class ProgressRenderer {
 
     // Initialize ChartManager
     try {
-      if (typeof ChartManager === 'undefined') {
+      if (!ChartManager) {
         this.logger.warn('ChartManager not available, charts will be disabled');
         this.chartManager = null;
         return;
@@ -86,6 +89,8 @@ class ProgressRenderer {
       this.renderTimelineSummary(element, data);
     } catch (error) {
       this.logger.error('Failed to render progress charts:', error);
+      const element =
+        typeof container === 'string' ? document.getElementById(container) : container;
       this.showError(element, error);
     }
   }

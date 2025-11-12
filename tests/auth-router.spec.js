@@ -3,6 +3,8 @@
  * Tests for authentication and routing guards
  */
 
+/* global test, jest */
+
 // Mock localStorage
 const localStorageMock = (() => {
   let store = {};

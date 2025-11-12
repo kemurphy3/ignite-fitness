@@ -2,7 +2,7 @@
  * User Guidance System
  * Provides contextual help and tips
  */
-class GuidanceSystem {
+class _GuidanceSystem {
   constructor() {
     this.tips = {
       goals: 'Start with 1-2 specific goals. You can always add more later!',

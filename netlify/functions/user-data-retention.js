@@ -50,7 +50,7 @@ exports.handler = async (event, context) => {
 
     // Handle different actions
     switch (action) {
-      case 'get_settings':
+      case 'get_settings': {
         const settings = await retentionManager.getUserRetentionSettings(userId);
         return {
           statusCode: 200,
@@ -60,8 +60,9 @@ exports.handler = async (event, context) => {
             settings,
           }),
         };
+      }
 
-      case 'update_settings':
+      case 'update_settings': {
         const { retentionDays: newRetentionDays, autoDeleteEnabled } = body;
         if (!newRetentionDays) {
           return {
@@ -86,8 +87,9 @@ exports.handler = async (event, context) => {
             settings: updatedSettings,
           }),
         };
+      }
 
-      case 'process_retention':
+      case 'process_retention': {
         const results = await retentionManager.processDataRetention(userId, {
           retentionDays: retentionDays || 365,
           deleteUser: deleteUser || false,
@@ -101,8 +103,9 @@ exports.handler = async (event, context) => {
             results,
           }),
         };
+      }
 
-      case 'delete_account':
+      case 'delete_account': {
         const deletionResults = await retentionManager.processDataRetention(userId, {
           retentionDays: 0, // Delete all data
           deleteUser: true,
@@ -117,6 +120,7 @@ exports.handler = async (event, context) => {
             results: deletionResults,
           }),
         };
+      }
 
       default:
         return {

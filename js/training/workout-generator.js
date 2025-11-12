@@ -436,7 +436,7 @@ class WorkoutGenerator {
 
   // Generate workout based on user profile and goals
   generateWorkout(userProfile, sessionType, availableTime = 60) {
-    const { goals, experience, personalData, currentPhase, recentWorkouts, preferences } =
+    const { goals, experience, _personalData, currentPhase, _recentWorkouts, preferences } =
       userProfile;
 
     // Determine workout focus based on goals
@@ -630,7 +630,7 @@ class WorkoutGenerator {
   }
 
   // Select exercise with muscle group rotation logic
-  selectExerciseWithRotation(exercises, userProfile, targetMuscleGroup) {
+  selectExerciseWithRotation(exercises, userProfile, _targetMuscleGroup) {
     if (exercises.length === 0) {
       return null;
     }
@@ -716,7 +716,7 @@ class WorkoutGenerator {
   }
 
   // Check if equipment is available
-  isEquipmentAvailable(equipment, userProfile) {
+  isEquipmentAvailable(_equipment, _userProfile) {
     // This would check against user's available equipment
     // For now, assume all equipment is available
     return true;
@@ -742,7 +742,7 @@ class WorkoutGenerator {
   }
 
   // Calculate reps based on template
-  calculateReps(templateReps, userProfile) {
+  calculateReps(templateReps, _userProfile) {
     if (typeof templateReps === 'string') {
       const [min, max] = templateReps.split('-').map(Number);
       return `${min}-${max}`;
@@ -780,7 +780,7 @@ class WorkoutGenerator {
   }
 
   // Generate exercise notes
-  generateExerciseNotes(exercise, userProfile) {
+  generateExerciseNotes(exercise, _userProfile) {
     const notes = [];
 
     if (exercise.difficulty === 'advanced') {
@@ -855,7 +855,7 @@ class WorkoutGenerator {
   }
 
   // Generate workout notes
-  generateWorkoutNotes(focus, currentPhase, preferences) {
+  generateWorkoutNotes(focus, currentPhase, _preferences) {
     const notes = [];
 
     if (focus === 'strength') {
@@ -873,96 +873,6 @@ class WorkoutGenerator {
     }
 
     return notes.join('. ');
-  }
-
-  // Generate workout based on user profile and session type (enhanced version)
-  generateWorkout(userProfile, sessionType, duration) {
-    try {
-      if (!userProfile) {
-        this.logger.warn('No user profile provided for workout generation');
-        return this.generateFallbackWorkout(sessionType || 'Full Body', duration || 60);
-      }
-
-      if (!sessionType) {
-        this.logger.warn('No session type provided, using default');
-        sessionType = 'Full Body';
-      }
-
-      if (!duration || duration < 15) {
-        this.logger.warn('Invalid duration provided, using default');
-        duration = 60;
-      }
-
-      const workout = {
-        id: this.generateWorkoutId(),
-        type: sessionType,
-        duration,
-        exercises: [],
-        warmup: this.generateWarmup(sessionType, duration),
-        cooldown: this.generateCooldown(sessionType, duration),
-        notes: '',
-        totalVolume: 0,
-        createdAt: new Date().toISOString(),
-      };
-
-      // Select exercises based on session type and user profile
-      const selectedExercises = this.selectExercises(userProfile, sessionType, duration);
-
-      if (!selectedExercises || selectedExercises.length === 0) {
-        this.logger.warn('No exercises selected, using fallback workout');
-        return this.generateFallbackWorkout(sessionType, duration);
-      }
-
-      // Assign sets, reps, and weights
-      workout.exercises = this.assignExerciseParameters(selectedExercises, userProfile);
-
-      // Calculate total volume
-      workout.totalVolume = this.calculateWorkoutVolume(workout.exercises);
-
-      // Adjust for seasonal phase if available
-      if (userProfile.currentPhase) {
-        const adjustedWorkout = this.adjustForSeasonalPhase(workout, userProfile.currentPhase);
-        workout.exercises = adjustedWorkout.exercises;
-        workout.phaseAdjustments = adjustedWorkout.phaseAdjustment;
-      }
-
-      // Add progressive overload if previous workout exists
-      if (userProfile.lastWorkout || userProfile.recentWorkouts?.[0]) {
-        const previousWorkout = userProfile.lastWorkout || userProfile.recentWorkouts[0];
-        const progressedWorkout = this.addProgressiveOverload(previousWorkout, workout);
-        workout.exercises = progressedWorkout.exercises;
-        workout.progressionApplied = progressedWorkout.progressionApplied;
-        workout.progressionSummary = progressedWorkout.progressionSummary;
-      }
-
-      // Calculate rest periods
-      workout.restPeriods = this.calculateRestPeriods(workout.exercises);
-
-      // Add rest periods to each exercise
-      workout.exercises.forEach((exercise, index) => {
-        if (workout.restPeriods && workout.restPeriods[index]) {
-          exercise.rest = workout.restPeriods[index];
-        }
-      });
-
-      // Generate workout notes
-      workout.notes = this.generateWorkoutNotes(
-        this.determineWorkoutFocus(userProfile.goals || {}, sessionType),
-        userProfile.currentPhase,
-        userProfile.preferences
-      );
-
-      // Validate workout has exercises
-      if (workout.exercises.length === 0) {
-        this.logger.warn('Generated workout has no exercises, using fallback');
-        return this.generateFallbackWorkout(sessionType, duration);
-      }
-
-      return workout;
-    } catch (error) {
-      this.logger.error('Error generating workout:', error);
-      return this.generateFallbackWorkout(sessionType || 'Full Body', duration || 60);
-    }
   }
 
   // Calculate total workout volume
@@ -1018,178 +928,6 @@ class WorkoutGenerator {
 
     workout.phaseAdjustment = adjustment;
     return workout;
-  }
-
-  // Generate warmup routine
-  generateWarmup(sessionType) {
-    const warmupTemplates = {
-      'Upper Body': [
-        { name: 'Arm Circles', duration: '30 seconds', description: 'Forward and backward' },
-        { name: 'Shoulder Rolls', duration: '30 seconds', description: 'Forward and backward' },
-        { name: 'Light Push-ups', duration: '1 minute', description: '10-15 reps' },
-        { name: 'Band Pull-aparts', duration: '1 minute', description: '15-20 reps' },
-      ],
-      'Lower Body': [
-        { name: 'Leg Swings', duration: '30 seconds each leg', description: 'Forward and side' },
-        { name: 'Walking Lunges', duration: '1 minute', description: '10-15 reps' },
-        { name: 'Bodyweight Squats', duration: '1 minute', description: '15-20 reps' },
-        {
-          name: 'Hip Circles',
-          duration: '30 seconds each direction',
-          description: 'Standing hip mobility',
-        },
-      ],
-      'Full Body': [
-        { name: 'Jumping Jacks', duration: '1 minute', description: 'Moderate pace' },
-        { name: 'Arm Circles', duration: '30 seconds', description: 'Forward and backward' },
-        { name: 'Bodyweight Squats', duration: '1 minute', description: '15-20 reps' },
-        { name: 'Push-ups', duration: '1 minute', description: '10-15 reps' },
-      ],
-      Cardio: [
-        { name: 'Light Jogging', duration: '3 minutes', description: 'Easy pace' },
-        {
-          name: 'Dynamic Stretching',
-          duration: '2 minutes',
-          description: 'Leg swings, arm circles',
-        },
-        {
-          name: 'Gradual Intensity',
-          duration: '2 minutes',
-          description: 'Build up to target pace',
-        },
-      ],
-      'Soccer Training': [
-        { name: 'Light Jogging', duration: '2 minutes', description: 'Easy pace' },
-        { name: 'High Knees', duration: '30 seconds', description: 'Moderate intensity' },
-        { name: 'Butt Kicks', duration: '30 seconds', description: 'Moderate intensity' },
-        {
-          name: 'Lateral Shuffles',
-          duration: '30 seconds each direction',
-          description: 'Side-to-side movement',
-        },
-        {
-          name: 'Carioca',
-          duration: '30 seconds each direction',
-          description: 'Cross-step movement',
-        },
-      ],
-    };
-
-    return warmupTemplates[sessionType] || warmupTemplates['Full Body'];
-  }
-
-  // Generate cooldown routine
-  generateCooldown(sessionType) {
-    const cooldownTemplates = {
-      'Upper Body': [
-        {
-          name: 'Shoulder Stretch',
-          duration: '30 seconds each',
-          description: 'Cross-body and overhead',
-        },
-        { name: 'Chest Stretch', duration: '30 seconds', description: 'Doorway stretch' },
-        { name: 'Tricep Stretch', duration: '30 seconds each', description: 'Overhead stretch' },
-        { name: 'Deep Breathing', duration: '2 minutes', description: 'Focus on recovery' },
-      ],
-      'Lower Body': [
-        { name: 'Quad Stretch', duration: '30 seconds each', description: 'Standing quad stretch' },
-        {
-          name: 'Hamstring Stretch',
-          duration: '30 seconds each',
-          description: 'Seated or standing',
-        },
-        { name: 'Hip Flexor Stretch', duration: '30 seconds each', description: 'Lunge position' },
-        { name: 'Calf Stretch', duration: '30 seconds each', description: 'Wall or step stretch' },
-      ],
-      'Full Body': [
-        {
-          name: 'Full Body Stretch',
-          duration: '5 minutes',
-          description: 'Comprehensive stretching',
-        },
-        { name: 'Deep Breathing', duration: '2 minutes', description: 'Focus on recovery' },
-        { name: 'Light Walking', duration: '3 minutes', description: 'Cool down walk' },
-      ],
-      Cardio: [
-        { name: 'Light Walking', duration: '5 minutes', description: 'Gradual cool down' },
-        { name: 'Stretching', duration: '5 minutes', description: 'Focus on worked muscles' },
-        { name: 'Deep Breathing', duration: '2 minutes', description: 'Recovery breathing' },
-      ],
-      'Soccer Training': [
-        { name: 'Light Jogging', duration: '3 minutes', description: 'Easy pace' },
-        {
-          name: 'Dynamic Stretching',
-          duration: '3 minutes',
-          description: 'Leg swings, arm circles',
-        },
-        {
-          name: 'Static Stretching',
-          duration: '4 minutes',
-          description: 'Hold stretches 30 seconds',
-        },
-      ],
-    };
-
-    return cooldownTemplates[sessionType] || cooldownTemplates['Full Body'];
-  }
-
-  // Select exercises based on user profile and session type
-  selectExercises(userProfile, sessionType, availableTime) {
-    const exercises = [];
-    const timePerExercise = Math.floor(availableTime / 6); // Roughly 6 exercises for 60 minutes
-
-    // Get exercise categories based on session type
-    let exerciseCategories = [];
-    switch (sessionType) {
-      case 'Upper Body':
-        exerciseCategories = ['chest', 'back', 'shoulders', 'arms'];
-        break;
-      case 'Lower Body':
-        exerciseCategories = ['quadriceps', 'hamstrings', 'glutes', 'calves'];
-        break;
-      case 'Full Body':
-        exerciseCategories = ['chest', 'back', 'quadriceps', 'hamstrings'];
-        break;
-      case 'Cardio':
-        exerciseCategories = ['cardio'];
-        break;
-      case 'Soccer Training':
-        exerciseCategories = ['soccer'];
-        break;
-      case 'Core':
-        exerciseCategories = ['core'];
-        break;
-      default:
-        exerciseCategories = ['chest', 'back', 'quadriceps'];
-    }
-
-    // Select exercises from each category
-    exerciseCategories.forEach(category => {
-      const categoryExercises = this.getExercisesByCategory(category);
-      if (categoryExercises.length > 0) {
-        const selectedExercise = this.selectExerciseForUser(
-          categoryExercises,
-          userProfile,
-          category
-        );
-        if (selectedExercise) {
-          exercises.push(selectedExercise);
-        }
-      }
-    });
-
-    // Always add core work (except for Core-only sessions)
-    if (sessionType !== 'Core') {
-      const coreExercises = this.getExercisesByCategory('core');
-      if (coreExercises.length > 0) {
-        const selectedCore = this.selectExerciseForUser(coreExercises, userProfile, 'core');
-        if (selectedCore) {
-          exercises.push(selectedCore);
-        }
-      }
-    }
-
-    return exercises;
   }
 
   // Calculate rest periods based on exercise intensity
@@ -1258,7 +996,7 @@ class WorkoutGenerator {
       // Track progression applied
       const progressionApplied = [];
 
-      currentWorkout.exercises.forEach((exercise, index) => {
+      currentWorkout.exercises.forEach((exercise, _index) => {
         if (!exercise) {
           return;
         }

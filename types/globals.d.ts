@@ -12,24 +12,24 @@ declare global {
     LiveRegionManager: any;
     CoachChat: any;
     ContextAwareAI: any;
-    
+
     // Authentication
     currentUser: string | null;
     isLoggedIn: boolean;
     users: Record<string, any>;
-    
+
     // UI functions
     showUserDashboard: () => void;
     loadUserData: (user: string) => void;
     showSuccess: (message: string) => void;
     showError: (element: HTMLElement, message: string) => void;
     hideLoginForm: () => void;
-    
+
     // Utility functions
     createHTMLTemplate: (template: TemplateStringsArray, ...values: any[]) => string;
     setContentSafely: (element: HTMLElement, content: string) => void;
   }
-  
+
   // Global constants
   const CLAUDE_API_KEY: string;
   const OPENAI_API_KEY: string;

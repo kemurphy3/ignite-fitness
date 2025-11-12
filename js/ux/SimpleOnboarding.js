@@ -2,7 +2,7 @@
  * Simplified Onboarding Flow
  * Reduces complexity for beta users
  */
-class SimpleOnboarding {
+class _SimpleOnboarding {
   constructor() {
     this.currentStep = 0;
     this.totalSteps = 3;

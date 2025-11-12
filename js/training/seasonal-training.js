@@ -672,37 +672,41 @@ class SeasonalTrainingSystem {
     const day = now.getDate();
 
     switch (this.currentPhase) {
-      case 'off-season':
+      case 'off-season': {
         // January 1st to March 31st
         const offSeasonStart = new Date(now.getFullYear(), 0, 1);
         const offSeasonEnd = new Date(now.getFullYear(), 2, 31);
         const offSeasonTotal = offSeasonEnd - offSeasonStart;
         const offSeasonElapsed = now - offSeasonStart;
         return Math.max(0, Math.min(offSeasonElapsed / offSeasonTotal, 1));
+      }
 
-      case 'pre-season':
+      case 'pre-season': {
         // April 1st to May 31st
         const preSeasonStart = new Date(now.getFullYear(), 3, 1);
         const preSeasonEnd = new Date(now.getFullYear(), 4, 31);
         const preSeasonTotal = preSeasonEnd - preSeasonStart;
         const preSeasonElapsed = now - preSeasonStart;
         return Math.max(0, Math.min(preSeasonElapsed / preSeasonTotal, 1));
+      }
 
-      case 'in-season':
+      case 'in-season': {
         // June 1st to November 30th
         const inSeasonStart = new Date(now.getFullYear(), 5, 1);
         const inSeasonEnd = new Date(now.getFullYear(), 10, 30);
         const inSeasonTotal = inSeasonEnd - inSeasonStart;
         const inSeasonElapsed = now - inSeasonStart;
         return Math.max(0, Math.min(inSeasonElapsed / inSeasonTotal, 1));
+      }
 
-      case 'playoffs':
+      case 'playoffs': {
         // December 1st to December 31st
         const playoffsStart = new Date(now.getFullYear(), 11, 1);
         const playoffsEnd = new Date(now.getFullYear(), 11, 31);
         const playoffsTotal = playoffsEnd - playoffsStart;
         const playoffsElapsed = now - playoffsStart;
         return Math.max(0, Math.min(playoffsElapsed / playoffsTotal, 1));
+      }
 
       default:
         return 0;

@@ -3,6 +3,8 @@
  * Offloads chart rendering to prevent main thread blocking
  */
 
+/* global importScripts */
+
 // Try to import Chart.js from CDN, but catch errors since CORS may block it
 // Note: importScripts() throws synchronously if it fails, which will prevent
 // the rest of this script from executing. However, if we catch it here,

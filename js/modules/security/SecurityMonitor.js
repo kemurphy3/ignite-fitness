@@ -3,6 +3,8 @@
  * Detects suspicious activity, failed logins, and security events
  */
 
+import { BaseComponent } from '../ui/BaseComponent.js';
+
 class SecurityMonitor extends BaseComponent {
   constructor(options = {}) {
     super(options);

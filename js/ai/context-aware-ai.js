@@ -822,7 +822,6 @@ class ContextAwareAI {
     return progressionCount / (workouts.length - 1);
   }
 
-
   // Get recent sessions (all types)
   getRecentSessions(days) {
     const user = this.getCurrentUser();
@@ -1036,7 +1035,6 @@ class ContextAwareAI {
     return users[currentUser] || null;
   }
 
-
   // Analyze query complexity
   analyzeQueryComplexity(query, context) {
     const queryLength = query.length;
@@ -1194,7 +1192,6 @@ class ContextAwareAI {
     const lowerQuery = query.toLowerCase();
     return expertiseKeywords.some(keyword => lowerQuery.includes(keyword));
   }
-
 
   // Call AI API (mock implementation)
   async callAIAPI(prompt, selectedModel) {

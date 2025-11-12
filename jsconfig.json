@@ -29,20 +29,8 @@
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "typeRoots": ["./types", "./node_modules/@types"]
   },
-  "include": [
-    "js/**/*",
-    "scripts/**/*",
-    "netlify/functions/**/*",
-    "types/**/*"
-  ],
-  "exclude": [
-    "node_modules", 
-    "dist", 
-    "coverage",
-    "tests/**/*",
-    "**/*.test.js",
-    "**/*.spec.js"
-  ],
+  "include": ["js/**/*", "scripts/**/*", "netlify/functions/**/*", "types/**/*"],
+  "exclude": ["node_modules", "dist", "coverage", "tests/**/*", "**/*.test.js", "**/*.spec.js"],
   "typeAcquisition": {
     "enable": true,
     "include": ["chart.js", "vitest", "node"]

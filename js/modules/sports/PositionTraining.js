@@ -626,9 +626,11 @@ class PositionTraining {
     const instructions = {
       reaction_drills: 'React to visual cues from a coach and sprint to the indicated cone.',
       diving_progressions: 'Practice kneeling, half, and full dives focusing on landing mechanics.',
-      squats: 'Maintain neutral spine, drive knees out, descend to parallel, and stand explosively.',
+      squats:
+        'Maintain neutral spine, drive knees out, descend to parallel, and stand explosively.',
       deadlifts: 'Hinge at hips, keep bar close, brace core, and drive through heels.',
-      interval_training: 'Perform 60 seconds of hard effort followed by 60 seconds easy, repeat 10 times.',
+      interval_training:
+        'Perform 60 seconds of hard effort followed by 60 seconds easy, repeat 10 times.',
       sprint_training: 'Sprint 30 meters at 90% effort, walk back for recovery, repeat for 8 reps.',
     };
     return instructions[exerciseId] || `Follow standard coaching guidelines for ${exerciseId}.`;

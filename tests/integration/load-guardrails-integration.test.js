@@ -13,6 +13,7 @@ if (typeof window === 'undefined') {
 describe('LoadGuardrails Integration', () => {
   let guardrails;
   let loadCalculator;
+  let mockLogger;
 
   beforeEach(() => {
     // Ensure dependencies are loaded
@@ -29,6 +30,14 @@ describe('LoadGuardrails Integration', () => {
     if (typeof localStorage !== 'undefined') {
       localStorage.clear();
     }
+
+    // Mock logger for testing
+    mockLogger = {
+      audit: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      info: vi.fn(),
+    };
   });
 
   describe('Weekly Ramp Rate Monitoring', () => {

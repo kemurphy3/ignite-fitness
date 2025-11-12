@@ -3,6 +3,16 @@
  * Run this in browser console for manual QA
  */
 
+// Import ExpertCoordinator if running in Node.js environment
+let ExpertCoordinator;
+if (typeof require !== 'undefined') {
+  try {
+    ExpertCoordinator = require('../../js/ai/expert-coordinator.js');
+  } catch (error) {
+    console.warn('ExpertCoordinator not available:', error);
+  }
+}
+
 // Helper to load dependencies (ensure modules are loaded)
 function setupTestEnvironment() {
   // Make sure all modules are loaded

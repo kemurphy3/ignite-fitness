@@ -3,6 +3,8 @@
  * Provides comprehensive data export, opt-out, and consent management
  */
 
+import { BaseComponent } from '../ui/BaseComponent.js';
+
 class PrivacyPanel extends BaseComponent {
   constructor(options = {}) {
     super(options);

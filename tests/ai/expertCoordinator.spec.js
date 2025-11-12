@@ -5,6 +5,14 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
+// Import ExpertCoordinator
+let ExpertCoordinator;
+try {
+  ExpertCoordinator = require('../../js/ai/expert-coordinator.js');
+} catch (error) {
+  console.warn('ExpertCoordinator not available:', error);
+}
+
 (function () {
   'use strict';
 

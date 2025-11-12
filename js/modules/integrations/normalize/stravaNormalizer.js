@@ -3,6 +3,8 @@
  * Normalizes Strava activity data to internal format with async yielding
  */
 
+import { AsyncYielder } from '../../utils/AsyncYielder.js';
+
 class StravaNormalizer {
   constructor() {
     this.asyncYielder = new AsyncYielder({
@@ -146,13 +148,11 @@ class StravaNormalizer {
       Surfing: 'Other',
       Windsurfing: 'Other',
       Kitesurfing: 'Other',
-      Windsurfing: 'Other',
       Wakeboarding: 'Other',
       WaterSkiing: 'Other',
       Snorkeling: 'Other',
       ScubaDiving: 'Other',
       WhitewaterRafting: 'Other',
-      RockClimbing: 'Other',
       IceClimbing: 'Other',
       Mountaineering: 'Other',
       Hiking: 'Hike',
@@ -168,7 +168,6 @@ class StravaNormalizer {
       TrackCycling: 'Ride',
       IndoorCycling: 'Ride',
       VirtualRun: 'Run',
-      VirtualRide: 'Ride',
       VirtualSwim: 'Swim',
       VirtualWorkout: 'Strength',
       VirtualHike: 'Hike',
@@ -215,7 +214,6 @@ class StravaNormalizer {
       VirtualKayaking: 'Other',
       VirtualSailing: 'Other',
       VirtualStandUpPaddling: 'Other',
-      VirtualSurfing: 'Other',
       VirtualWindsurfing: 'Other',
       VirtualKitesurfing: 'Other',
       VirtualWakeboarding: 'Other',
@@ -223,7 +221,6 @@ class StravaNormalizer {
       VirtualSnorkeling: 'Other',
       VirtualScubaDiving: 'Other',
       VirtualWhitewaterRafting: 'Other',
-      VirtualRockClimbing: 'Other',
       VirtualIceClimbing: 'Other',
       VirtualMountaineering: 'Other',
     };

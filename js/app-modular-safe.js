@@ -35,7 +35,6 @@ function createHTMLTemplate(strings, ...values) {
 
 // Initialize the application
 function initializeApp() {
-
   // Initialize all modules
   initializeAuth();
   initializeWorkoutTracker();
@@ -45,7 +44,6 @@ function initializeApp() {
 
   // Set up event listeners
   setupEventListeners();
-
 }
 
 // Event listener setup
