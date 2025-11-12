@@ -3,7 +3,7 @@
  * Seeds database with initial schema and sample data
  */
 
-exports.handler = async (event, context) => {
+exports.handler = async (event, _context) => {
   // Only allow POST requests
   if (event.httpMethod !== 'POST') {
     return {

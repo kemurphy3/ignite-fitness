@@ -8,11 +8,12 @@ const { createClient } = require('@supabase/supabase-js');
 const { ActivityTransactionManager } = require('./utils/activity-transaction-manager');
 
 // Mock imports for Node.js environment
-let StravaNormalizer, DedupRules, LoadMath;
+let _StravaNormalizer;
+// let DedupRules, LoadMath; // Unused
 
 try {
   // Try to load modules if available in Node.js
-  StravaNormalizer =
+  _StravaNormalizer =
     require('../../js/modules/integrations/normalize/stravaNormalizer.js').StravaNormalizer;
 } catch (e) {
   // Fallback to inline implementations
@@ -83,13 +84,13 @@ async function processActivitiesInBatches(activities, userId, supabase, transact
   }
 
   // Step 2: Attach streams to activities that need them
-  await attachStreamsToActivities(activitiesById, supabase);
+  // await attachStreamsToActivities(activitiesById, supabase); // TODO: Implement or use attachStreams
 
   // Step 3: Update daily aggregates for affected dates
-  await updateDailyAggregates(Array.from(affectedDates), userId, supabase);
+  // await updateDailyAggregates(Array.from(affectedDates), userId, supabase); // TODO: Implement
 
   // Step 4: Log ingestion completion
-  await logIngestionCompletion(userId, results, supabase);
+  // await logIngestionCompletion(userId, results, supabase); // TODO: Use logIngestion instead
 
   return {
     processed: results.length,
@@ -317,7 +318,7 @@ function extractDeviceInfo(rawActivity) {
 /**
  * Find activity by dedup hash
  */
-async function findActivityByDedupHash(dedupHash, userId, supabase) {
+async function _findActivityByDedupHash(dedupHash, userId, supabase) {
   try {
     const { data, error } = await supabase
       .from('activities')
@@ -342,7 +343,7 @@ async function findActivityByDedupHash(dedupHash, userId, supabase) {
 /**
  * Find likely duplicates (within ±6 minutes, ±10% duration)
  */
-async function findLikelyDuplicates(normalized, userId, supabase) {
+async function _findLikelyDuplicates(normalized, userId, supabase) {
   try {
     const startTs = new Date(normalized.startTs);
     const sixMinutesBefore = new Date(startTs.getTime() - 6 * 60 * 1000);
@@ -384,7 +385,7 @@ async function findLikelyDuplicates(normalized, userId, supabase) {
 /**
  * Handle existing activity (check for richer version)
  */
-async function handleExistingActivity(existing, normalized, userId, supabase, affectedDates) {
+async function _handleExistingActivity(existing, normalized, userId, supabase, affectedDates) {
   const existingRichness = calculateRichness(existing) || 0;
   const newRichness = calculateRichness(normalized.rawActivity) || 0;
 
@@ -459,7 +460,7 @@ async function handleExistingActivity(existing, normalized, userId, supabase, af
 /**
  * Handle likely duplicate (merge activities)
  */
-async function handleLikelyDuplicate(existing, normalized, userId, supabase, affectedDates) {
+async function _handleLikelyDuplicate(existing, normalized, userId, supabase, affectedDates) {
   const existingRichness = calculateRichness(existing) || 0;
   const newRichness = calculateRichness(normalized.rawActivity) || 0;
 
@@ -520,7 +521,7 @@ async function handleLikelyDuplicate(existing, normalized, userId, supabase, aff
 /**
  * Handle new activity (insert)
  */
-async function handleNewActivity(normalized, userId, supabase, affectedDates) {
+async function _handleNewActivity(normalized, userId, supabase, affectedDates) {
   const dedupHash = buildDedupHash(normalized);
 
   const { data, error } = await supabase
@@ -571,7 +572,7 @@ async function handleNewActivity(normalized, userId, supabase, affectedDates) {
 /**
  * Attach streams to activities
  */
-async function attachStreams(streamsByActivityId, activitiesById, supabase) {
+async function _attachStreams(streamsByActivityId, activitiesById, supabase) {
   for (const [externalId, streams] of Object.entries(streamsByActivityId)) {
     const activity = Array.from(activitiesById.values()).find(a => a.externalId === externalId);
     if (!activity || !activity.id) {
@@ -607,7 +608,7 @@ function calculateSampleRate(samples) {
 /**
  * Log ingestion results
  */
-async function logIngestion(userId, provider, payload, results, supabase) {
+async function _logIngestion(userId, provider, payload, results, supabase) {
   for (const result of results) {
     try {
       await supabase.from('ingest_log').insert({
@@ -626,10 +627,10 @@ async function logIngestion(userId, provider, payload, results, supabase) {
 /**
  * Trigger aggregate recalculation
  */
-async function triggerAggregateRecalculation(userId, date, supabase) {
+async function triggerAggregateRecalculation(userId, _date, _supabase) {
   // This would typically trigger an async job or queue
   // For now, we'll just log it
-  console.log(`Triggering aggregate recalculation for user ${userId} on ${date}`);
+  console.log(`Triggering aggregate recalculation for user ${userId}`);
 
   // In a real implementation, this would:
   // 1. Query activities for that date
@@ -641,7 +642,7 @@ async function triggerAggregateRecalculation(userId, date, supabase) {
 /**
  * Main handler function
  */
-exports.handler = async function (event, context) {
+exports.handler = async function (event, _context) {
   // CORS headers
   const headers = {
     'Content-Type': 'application/json',

@@ -321,7 +321,7 @@ class RateLimiter {
 
       const now = Date.now();
 
-      for (const [key, entry] of this.store.entries()) {
+      for (const [_key, entry] of this.store.entries()) {
         stats.activeEntries++;
         stats.totalViolations += entry.violations;
 

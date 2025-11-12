@@ -103,7 +103,7 @@ class SeasonalTrainingSystem {
   detectCurrentPhase() {
     const now = new Date();
     const month = now.getMonth();
-    const day = now.getDate();
+    const _day = now.getDate();
 
     // Default phase detection based on calendar
     if (month >= 0 && month <= 2) {
@@ -668,8 +668,8 @@ class SeasonalTrainingSystem {
   // Calculate phase progress as a percentage
   calculatePhaseProgress() {
     const now = new Date();
-    const month = now.getMonth();
-    const day = now.getDate();
+    const _month = now.getMonth();
+    const _day = now.getDate();
 
     switch (this.currentPhase) {
       case 'off-season': {

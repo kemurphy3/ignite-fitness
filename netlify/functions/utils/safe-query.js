@@ -5,7 +5,7 @@
  * with built-in SQL injection protection and validation.
  */
 
-const { neon } = require('@neondatabase/serverless');
+// const { neon } = require('@neondatabase/serverless'); // Unused - using getNeonClient instead
 
 // Initialize database connection
 const { getNeonClient } = require('./connection-pool');
@@ -19,7 +19,7 @@ const sql = getNeonClient();
 function sanitizeInput(input) {
   if (typeof input === 'string') {
     // Remove potential SQL injection characters
-    return input.replace(/['"\\;\-]/g, '');
+    return input.replace(/['"\\;-]/g, '');
   }
   if (typeof input === 'number') {
     // Ensure numbers are within safe ranges
@@ -167,13 +167,13 @@ async function safeUpdate(table, data, conditions, options = {}) {
   }
 
   const updateClause = Object.entries(data)
-    .map(([key, value], index) => {
+    .map(([key, _value], index) => {
       return `${key} = $${index + 1}`;
     })
     .join(', ');
 
   const whereClause = Object.entries(conditions)
-    .map(([key, value], index) => {
+    .map(([key, _value], index) => {
       return `${key} = $${index + Object.keys(data).length + 1}`;
     })
     .join(' AND ');
@@ -198,7 +198,7 @@ async function safeDelete(table, conditions, options = {}) {
   }
 
   const whereClause = Object.entries(conditions)
-    .map(([key, value], index) => {
+    .map(([key, _value], index) => {
       return `${key} = $${index + 1}`;
     })
     .join(' AND ');

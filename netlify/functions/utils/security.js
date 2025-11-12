@@ -156,7 +156,8 @@ function escapeSQL(input) {
       .replace(/\0/g, '\\0')
       .replace(/\n/g, '\\n')
       .replace(/\r/g, '\\r')
-      .replace(/\u001a/g, '\\Z');
+      // eslint-disable-next-line no-control-regex
+      .replace(/\u001A/g, '\\Z');
   }
 
   return input;

@@ -3,7 +3,7 @@
  * Backend readiness calculation and adjustment logic
  */
 
-exports.handler = async (event, context) => {
+exports.handler = async (event, _context) => {
   // CORS headers
   const headers = {
     'Access-Control-Allow-Origin': '*',

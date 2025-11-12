@@ -469,7 +469,7 @@ class MemoryMonitor {
       return;
     }
 
-    const memoryInfo = this.getMemoryInfo();
+    const _memoryInfo = this.getMemoryInfo();
 
     dashboard.innerHTML = `
             <div style="font-weight: 600; margin-bottom: 8px;">Memory Monitor</div>

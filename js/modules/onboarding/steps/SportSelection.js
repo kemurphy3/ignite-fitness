@@ -358,6 +358,7 @@ class SportSelection extends window.BaseComponent {
    */
   saveAndContinue() {
     if (!this.selectedPrimary) {
+      // eslint-disable-next-line no-alert
       alert('Please select a primary sport first');
       return;
     }

@@ -97,7 +97,7 @@ class AuditLogger {
    * @param {Object} eventData - Event data
    * @param {Object} options - Logging options
    */
-  async logAuditEvent(operation, eventData, options = {}) {
+  async logAuditEvent(operation, eventData, _options = {}) {
     try {
       // Validate operation
       if (!this.config.sensitiveOperations.includes(operation)) {
@@ -637,7 +637,6 @@ function withAuditLogging(handler, options = {}) {
   return async (event, context) => {
     const startTime = Date.now();
     let result = null;
-    let error = null;
 
     try {
       result = await handler(event, context);
@@ -662,7 +661,7 @@ function withAuditLogging(handler, options = {}) {
 
       return result;
     } catch (err) {
-      error = err;
+      // Error caught and logged below
 
       // Log failed operation
       await auditLogger.logAuditEvent('api_call', {

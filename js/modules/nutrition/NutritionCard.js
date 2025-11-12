@@ -74,7 +74,7 @@ class NutritionCard {
    * @param {Object} macros - Macros breakdown
    * @returns {string} Rationale text
    */
-  generateDefaultRationale(dayType, macros) {
+  generateDefaultRationale(dayType, _macros) {
     const dayText = {
       game: 'Higher carbs fuel explosive game performance',
       training: 'Balanced macros support training adaptation',
@@ -317,7 +317,7 @@ class NutritionCard {
    * @returns {Array} Meal examples
    */
   getMealExamples(dayType) {
-    const sport = this.getUserSport();
+    const _sport = this.getUserSport();
 
     const examples = {
       training: [

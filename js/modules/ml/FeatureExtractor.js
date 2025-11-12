@@ -209,7 +209,9 @@ class FeatureExtractor {
 
   #logGamma(z) {
     const coefficients = [
+      // eslint-disable-next-line no-loss-of-precision
       76.18009172947146, -86.50532032941677, 24.01409824083091, -1.231739572450155,
+      // eslint-disable-next-line no-loss-of-precision
       0.1208650973866179e-2, -0.5395239384953e-5,
     ];
     const x = z;
@@ -221,6 +223,7 @@ class FeatureExtractor {
       y += 1;
       ser += coefficients[j] / y;
     }
+    // eslint-disable-next-line no-loss-of-precision
     return -tmp + Math.log((2.5066282746310005 * ser) / x);
   }
 }

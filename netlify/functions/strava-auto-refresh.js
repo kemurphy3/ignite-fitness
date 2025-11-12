@@ -6,7 +6,7 @@ const { createLogger } = require('./utils/safe-logging');
 // Create safe logger for this context
 const logger = createLogger('strava-auto-refresh');
 
-exports.handler = async event => {
+exports.handler = async _event => {
   // This function is triggered by Netlify Scheduled Functions
   // Schedule: every 5 minutes
 

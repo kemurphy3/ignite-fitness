@@ -16,7 +16,7 @@ exports.handler = async event => {
       return errorResponse(400, 'BAD_JSON', 'Invalid JSON');
     }
 
-    const { level, message, timestamp, args, url, userAgent } = body || {};
+    const { level, message, timestamp, args: _args, url, userAgent: _userAgent } = body || {};
     if (!level || !message) {
       return errorResponse(422, 'INVALID_LOG', 'Missing level or message');
     }

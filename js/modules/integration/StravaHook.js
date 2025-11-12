@@ -253,7 +253,7 @@ class StravaHook {
 
   async performRequest(url, options = {}, attempt = 1) {
     this.recordRequest();
-    const { userId, ...fetchOptions } = options;
+    const { userId: _userId, ...fetchOptions } = options;
     try {
       const response = await this.fetchImpl(url, fetchOptions);
       if (response.status === 429) {

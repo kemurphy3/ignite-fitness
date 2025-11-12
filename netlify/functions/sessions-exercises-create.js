@@ -1,5 +1,5 @@
 // POST /sessions/:sessionId/exercises - Bulk Create with Transaction
-const { neon } = require('@neondatabase/serverless');
+// const { neon } = require('@neondatabase/serverless'); // Unused - using getNeonClient instead
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const Ajv = require('ajv');
@@ -79,7 +79,7 @@ exports.handler = async event => {
 
   try {
     // Extract session ID from path
-    const sessionId = event.path.match(/\/sessions\/([^\/]+)\/exercises/)?.[1];
+    const sessionId = event.path.match(/\/sessions\/([^/]+)\/exercises/)?.[1];
     if (!sessionId) {
       return {
         statusCode: 400,
@@ -197,7 +197,7 @@ exports.handler = async event => {
     }
 
     // Parse and validate input
-    const { exercises, client_request_id } = JSON.parse(event.body);
+    const { exercises, client_request_id: _client_request_id } = JSON.parse(event.body);
 
     if (!Array.isArray(exercises) || exercises.length === 0) {
       return {
@@ -315,7 +315,7 @@ exports.handler = async event => {
     let insertedExercises = [];
 
     try {
-      await sql.begin(async sql => {
+      await sql.begin(async sqlClient => {
         // Bulk insert exercises
         const insertData = results.map(ex => ({
           session_id: sessionId,
@@ -336,13 +336,13 @@ exports.handler = async event => {
           request_hash: requestHash,
         }));
 
-        insertedExercises = await sql`
-                    INSERT INTO session_exercises ${sql(insertData)}
+        insertedExercises = await sqlClient`
+                    INSERT INTO session_exercises ${sqlClient(insertData)}
                     RETURNING id, name, order_index, created_at
                 `;
 
         // Log bulk creation in history
-        await sql`
+        await sqlClient`
                     INSERT INTO session_exercise_history (
                         exercise_id, session_id, user_id, action, new_data, changed_by
                     )
@@ -358,7 +358,7 @@ exports.handler = async event => {
                 `;
 
         // Reindex to ensure no gaps
-        await sql`SELECT reindex_session_exercises(${sessionId})`;
+        await sqlClient`SELECT reindex_session_exercises(${sessionId})`;
       });
 
       console.log(

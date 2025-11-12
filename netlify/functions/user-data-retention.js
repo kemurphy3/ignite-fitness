@@ -9,7 +9,7 @@ const { createLogger } = require('./utils/safe-logging');
 
 const logger = createLogger('UserDataRetentionHandler');
 
-exports.handler = async (event, context) => {
+exports.handler = async (event, _context) => {
   // Set CORS headers
   const headers = {
     'Access-Control-Allow-Origin': '*',

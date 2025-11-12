@@ -70,7 +70,7 @@ class WeightMath {
    * @param {string} exerciseName - Optional exercise name for progression constraints
    * @returns {Object} Load plan with plates and display text
    */
-  gymLoadPlan(config, targetWeight, exerciseName = null) {
+  gymLoadPlan(config, targetWeight, _exerciseName = null) {
     try {
       const equipment = { ...this.equipment, ...config };
       const plateSet = equipment.availablePlates || this.configs[equipment.mode || 'us'].plates;

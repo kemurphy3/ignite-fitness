@@ -26,7 +26,7 @@ class PredictionEngine {
 
     const cleaned = series
       .map(entry => {
-        if (entry == null) {
+        if (entry === null || entry === undefined) {
           return null;
         }
         if (typeof entry === 'number') {

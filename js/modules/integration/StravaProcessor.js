@@ -332,10 +332,10 @@ class StravaDataProcessor {
     const distance = activity.distance / 1000; // Convert to km
 
     // Calculate intensity factor based on heart rate
-    let intensityFactor = 1.0;
+    let _intensityFactor = 1.0;
     if (activity.average_heartrate && activity.max_heartrate) {
       const hrRatio = activity.average_heartrate / activity.max_heartrate;
-      intensityFactor = 1 + (hrRatio - 0.7) * recovery.intensityMultiplier;
+      _intensityFactor = 1 + (hrRatio - 0.7) * recovery.intensityMultiplier;
     }
 
     // Calculate distance factor
@@ -451,12 +451,12 @@ class StravaDataProcessor {
     ];
 
     for (const field of allowedFields) {
-      if (activity.hasOwnProperty(field)) {
+      if (Object.prototype.hasOwnProperty.call(activity, field)) {
         const value = activity[field];
 
         // Sanitize string values
         if (typeof value === 'string') {
-          sanitized[field] = value.replace(/[<>\"'&]/g, '');
+          sanitized[field] = value.replace(/[<>"'&]/g, '');
         } else if (typeof value === 'number' && !isNaN(value) && isFinite(value)) {
           sanitized[field] = value;
         } else if (typeof value === 'boolean') {
@@ -853,7 +853,7 @@ class StravaDataProcessor {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = e => resolve(e.target.result);
-      reader.onerror = e => reject(new Error('Failed to read file'));
+      reader.onerror = _e => reject(new Error('Failed to read file'));
       reader.readAsText(file);
     });
   }
@@ -976,7 +976,7 @@ class StravaDataProcessor {
    * @param {string} userId - User ID
    * @returns {Array} Recent activities
    */
-  getRecentActivities(userId = null) {
+  getRecentActivitiesForReadiness(userId = null) {
     try {
       const activities = this.getExternalActivities(userId);
       const sevenDaysAgo = new Date();
@@ -999,7 +999,7 @@ class StravaDataProcessor {
    */
   calculateWeeklyLoad(userId = null) {
     try {
-      const recentActivities = this.getRecentActivities(userId);
+      const recentActivities = this.getRecentActivitiesForReadiness(userId);
 
       return recentActivities.reduce((total, activity) => {
         return total + (activity.simpleTrainingLoad || 0);

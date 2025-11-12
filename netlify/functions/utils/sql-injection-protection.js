@@ -308,7 +308,7 @@ class SQLInjectionProtection {
       throw new Error('Data must be a non-empty object');
     }
 
-    const updateFields = Object.entries(data).map(([key, value], index) => {
+    const updateFields = Object.entries(data).map(([key, _value], index) => {
       const validatedKey = this.validateColumnName(key);
       return `${validatedKey} = $${index + 1}`;
     });
@@ -349,7 +349,7 @@ class SQLInjectionProtection {
     }
 
     const whereClause = Object.entries(conditions)
-      .map(([key, value], index) => {
+      .map(([key, _value], index) => {
         const validatedKey = this.validateColumnName(key);
         return `${validatedKey} = $${index + 1}`;
       })

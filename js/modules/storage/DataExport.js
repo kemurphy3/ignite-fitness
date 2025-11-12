@@ -325,7 +325,7 @@ class DataExport {
    * @param {Object} exportData - Export data
    * @param {Object} options - Export options
    */
-  async downloadCSV(exportData, options = {}) {
+  async downloadCSV(exportData, _options = {}) {
     const timestamp = new Date().toISOString().split('T')[0];
     let csvContent = '';
 
@@ -405,7 +405,7 @@ class DataExport {
    * @param {Object} exportData - Export data
    * @param {Object} options - Export options
    */
-  async downloadJSON(exportData, options = {}) {
+  async downloadJSON(exportData, _options = {}) {
     const timestamp = new Date().toISOString().split('T')[0];
     const jsonContent = JSON.stringify(exportData, null, 2);
 

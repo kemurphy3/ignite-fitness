@@ -383,7 +383,7 @@ class GoalsStep {
 
     // Handle select inputs
     section.querySelectorAll('select.follow-up-input').forEach(select => {
-      select.addEventListener('change', e => {
+      select.addEventListener('change', _e => {
         const { question } = select.dataset;
         if (!this.followUpData[goal]) {
           this.followUpData[goal] = {};
@@ -394,7 +394,7 @@ class GoalsStep {
 
     // Handle text inputs
     section.querySelectorAll('input[type="text"].follow-up-input').forEach(input => {
-      input.addEventListener('input', e => {
+      input.addEventListener('input', _e => {
         const { question } = input.dataset;
         if (!this.followUpData[goal]) {
           this.followUpData[goal] = {};

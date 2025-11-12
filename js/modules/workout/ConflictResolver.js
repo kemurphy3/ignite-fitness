@@ -244,7 +244,7 @@ class ConflictResolver {
    * @param {Object} context - Context
    * @returns {Object} Resolution result
    */
-  generateResolution(scheduledWorkout, conflicts, userSchedule, context) {
+  generateResolution(scheduledWorkout, conflicts, _userSchedule, _context) {
     const resolution = {
       canProceed: true,
       recommendations: [],

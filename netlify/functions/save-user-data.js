@@ -1,4 +1,4 @@
-const { neon } = require('@neondatabase/serverless');
+// const { neon } = require('@neondatabase/serverless'); // Unused - using getNeonClient instead
 
 const { getNeonClient } = require('./utils/connection-pool');
 const sql = getNeonClient();

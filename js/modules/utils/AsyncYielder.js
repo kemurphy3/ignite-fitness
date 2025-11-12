@@ -120,12 +120,10 @@ class AsyncYielder {
 
     const startTime = performance.now();
     let result = null;
-    let isComplete = false;
 
     try {
       // Execute task with time monitoring
       result = await this.executeWithTimeLimit(task, maxTime);
-      isComplete = true;
     } catch (error) {
       if (error.name === 'TimeLimitExceeded') {
         // Task exceeded time limit, yield and retry
@@ -143,7 +141,7 @@ class AsyncYielder {
           ...options,
           maxTime: Math.max(maxTime * 0.5, 10),
         });
-        isComplete = true;
+        const _isComplete = true;
       } else {
         throw error;
       }
@@ -160,7 +158,7 @@ class AsyncYielder {
    */
   async executeWithTimeLimit(task, maxTime) {
     return new Promise((resolve, reject) => {
-      const startTime = performance.now();
+      const _startTime = performance.now();
 
       // Set up timeout
       const timeoutId = setTimeout(() => {

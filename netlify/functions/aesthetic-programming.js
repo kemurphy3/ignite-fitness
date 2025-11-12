@@ -160,7 +160,7 @@ const ACCESSORY_MATRIX = {
 };
 
 // Performance movements that take 70% of training time
-const PERFORMANCE_MOVEMENTS = [
+const _PERFORMANCE_MOVEMENTS = [
   'Squat',
   'Deadlift',
   'Bench Press',
@@ -171,7 +171,7 @@ const PERFORMANCE_MOVEMENTS = [
   'Snatches',
 ];
 
-exports.handler = async (event, context) => {
+exports.handler = async (event, _context) => {
   // CORS headers
   const headers = {
     'Access-Control-Allow-Origin': '*',

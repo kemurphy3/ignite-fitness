@@ -457,7 +457,7 @@ class SubstitutionEngine {
    * @param {number} targetLoad - Target load
    * @returns {number} Quality score (0-100)
    */
-  calculateQualityScore(candidate, targetLoad) {
+  calculateQualityScore(candidate, _targetLoad) {
     let score = 50; // Base score
 
     // Load accuracy (40 points max)
@@ -494,7 +494,7 @@ class SubstitutionEngine {
    * @param {number} targetLoad - Target load
    * @returns {string} Reasoning explanation
    */
-  generateReasoning(originalSession, substitution, targetLoad) {
+  generateReasoning(originalSession, substitution, _targetLoad) {
     const reasons = [];
 
     // Duration explanation

@@ -1,6 +1,6 @@
 // Distributed Lock Implementation for Token Refresh Race Condition Prevention
 const crypto = require('crypto');
-const { getDB } = require('./database');
+// const { getDB } = require('./database'); // Unused
 
 async function acquireRefreshLock(sql, userId, timeoutMs = 5000) {
   const lockId = hashUserId(userId);

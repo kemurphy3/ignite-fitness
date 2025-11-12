@@ -4,7 +4,7 @@
  * Based on BMR (Mifflin-St Jeor) + activity multiplier
  */
 
-exports.handler = async (event, context) => {
+exports.handler = async (event, _context) => {
   // CORS headers
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -81,6 +81,7 @@ function calculateNutrition(
   goals = null,
   weeklyLoad = null
 ) {
+  const _weeklyLoad = weeklyLoad;
   // Calculate BMR using Mifflin-St Jeor equation
   const bmr = calculateBMR(gender, age, weight, height, bodyFat);
 
@@ -480,7 +481,7 @@ function getTimingRecommendations(sport, dayType) {
  * @param {string} sport - Sport type
  * @returns {Object} Carb timing
  */
-function getCarbTiming(dayType, sport) {
+function getCarbTiming(dayType, _sport) {
   if (dayType === 'game') {
     return {
       '2-3 hours before': 'Largest meal with carbs',

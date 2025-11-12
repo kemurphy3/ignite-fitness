@@ -3,7 +3,7 @@
  * POST /substitutions - Generate workout substitutions
  */
 
-const { neon } = require('@neondatabase/serverless');
+// const { neon } = require('@neondatabase/serverless'); // Unused - using getNeonClient instead
 
 // Mock helpers if not available
 const handleCORS = () => {
@@ -451,7 +451,7 @@ class SubstitutionEngine {
       .sort((a, b) => b.quality_score - a.quality_score);
   }
 
-  calculateQualityScore(candidate, targetLoad) {
+  calculateQualityScore(candidate, _targetLoad) {
     let score = 50;
     const loadAccuracy = 1 - Math.min(candidate.load_variance, 0.25);
     score += loadAccuracy * 40;
@@ -470,7 +470,7 @@ class SubstitutionEngine {
     return Math.round(score * 10) / 10;
   }
 
-  generateReasoning(originalSession, substitution, targetLoad) {
+  generateReasoning(originalSession, substitution, _targetLoad) {
     const reasons = [];
     const durationChange = substitution.scaled_duration - originalSession.duration_minutes;
     const durationPercent = Math.round((durationChange / originalSession.duration_minutes) * 100);
@@ -547,7 +547,7 @@ EquivalenceRules.validateDurationLimits = (zone, duration) => {
   return { valid: true };
 };
 
-exports.handler = withErrorHandling(async (event, context) => {
+exports.handler = withErrorHandling(async (event, _context) => {
   if (event.httpMethod === 'OPTIONS') {
     return handleCORS();
   }

@@ -50,6 +50,7 @@ class WorkoutTracker {
       if (window.showErrorNotification) {
         window.showErrorNotification(`Workout blocked: ${blockMessage}`, 'error');
       } else {
+        // eslint-disable-next-line no-alert
         alert(`Workout blocked:\n${blockMessage}\n\nPlease adjust your plan or wait for recovery.`);
       }
 
@@ -370,7 +371,7 @@ class WorkoutTracker {
     // Extract structure from blocks
     const structure = [];
     let totalDuration = 0;
-    let maxIntensity = 'Z1';
+    let _maxIntensity = 'Z1';
 
     if (plan.blocks) {
       plan.blocks.forEach(block => {
@@ -412,7 +413,7 @@ class WorkoutTracker {
           block.items?.forEach(item => {
             const zone = this.mapRPEToZone(item.targetRPE || 7);
             if (['Z4', 'Z5'].includes(zone)) {
-              maxIntensity = zone;
+              _maxIntensity = zone;
             }
           });
         } else if (block.name?.toLowerCase().includes('cooldown')) {
@@ -687,6 +688,7 @@ class WorkoutTracker {
       }
 
       if (!this.substitutionOptions || this.substitutionOptions.length === 0) {
+        // eslint-disable-next-line no-alert
         alert('No substitution options available. Please check your equipment and preferences.');
         return;
       }
@@ -1206,7 +1208,7 @@ class WorkoutTracker {
    * Refresh for mode
    * @param {string} mode - Current mode
    */
-  refreshForMode(mode) {
+  refreshForMode(_mode) {
     if (this.currentPlan) {
       this.render();
     }

@@ -234,7 +234,7 @@ class WeightDisplay {
    * @returns {string} Formatted display
    */
   formatWeightDisplay(targetWeight, options = {}) {
-    const { showInstructions = true, showBarOnly = false } = options;
+    const { showInstructions = true, showBarOnly: _showBarOnly = false } = options;
 
     const loadResult = this.calculateLoad(targetWeight);
 

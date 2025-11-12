@@ -178,7 +178,7 @@ class DailyCheckIn {
    */
   updateCheckInData(metric, value) {
     try {
-      if (!this.checkInData.hasOwnProperty(metric)) {
+      if (!Object.prototype.hasOwnProperty.call(this.checkInData, metric)) {
         return { success: false, error: 'Invalid metric' };
       }
 

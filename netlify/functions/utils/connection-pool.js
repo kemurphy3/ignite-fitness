@@ -78,7 +78,7 @@ class ConnectionPoolManager {
       });
 
       // Pool event handlers
-      this.pgPool.on('connect', client => {
+      this.pgPool.on('connect', _client => {
         this.connectionStats.totalConnections++;
         this.connectionStats.activeConnections++;
         console.log(
@@ -86,7 +86,7 @@ class ConnectionPoolManager {
         );
       });
 
-      this.pgPool.on('acquire', client => {
+      this.pgPool.on('acquire', _client => {
         this.connectionStats.activeConnections++;
         this.connectionStats.idleConnections = Math.max(
           0,
@@ -94,7 +94,7 @@ class ConnectionPoolManager {
         );
       });
 
-      this.pgPool.on('release', client => {
+      this.pgPool.on('release', _client => {
         this.connectionStats.activeConnections = Math.max(
           0,
           this.connectionStats.activeConnections - 1
@@ -102,7 +102,7 @@ class ConnectionPoolManager {
         this.connectionStats.idleConnections++;
       });
 
-      this.pgPool.on('remove', client => {
+      this.pgPool.on('remove', _client => {
         this.connectionStats.totalConnections = Math.max(
           0,
           this.connectionStats.totalConnections - 1
@@ -114,7 +114,7 @@ class ConnectionPoolManager {
         console.log(`📊 Connection removed. Total: ${this.connectionStats.totalConnections}`);
       });
 
-      this.pgPool.on('error', (err, client) => {
+      this.pgPool.on('error', (err, _client) => {
         console.error('❌ Unexpected pool error:', err);
         this.connectionStats.activeConnections = Math.max(
           0,
@@ -209,7 +209,7 @@ class ConnectionPoolManager {
     try {
       const pool = this.getPgPool();
       const client = await pool.connect();
-      const result = await client.query('SELECT NOW() as current_time');
+      const _result = await client.query('SELECT NOW() as current_time');
       client.release();
       results.pgPool.healthy = true;
     } catch (error) {

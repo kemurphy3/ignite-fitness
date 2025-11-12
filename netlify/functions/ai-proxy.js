@@ -1,5 +1,5 @@
 // API configuration - using environment variables directly
-const STRAVA_TOKENS = {
+const _STRAVA_TOKENS = {
   clientId: process.env.STRAVA_CLIENT_ID,
   clientSecret: process.env.STRAVA_CLIENT_SECRET,
 };
@@ -175,7 +175,7 @@ const okPreflight = () => ({
   body: '',
 });
 
-exports.handler = async (event, context) => {
+exports.handler = async (event, _context) => {
   // Handle preflight requests
   if (event.httpMethod === 'OPTIONS') {
     return okPreflight();

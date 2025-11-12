@@ -994,7 +994,7 @@ class OnboardingManager {
    * @returns {string} Time estimate text
    */
   getTimeEstimate() {
-    const remainingSteps = this.onboardingSteps.length - this.currentStep - 1;
+    const _remainingSteps = this.onboardingSteps.length - this.currentStep - 1;
     const stepTimeEstimates = {
       goals: 1,
       sport_soccer: 2,

@@ -1,5 +1,5 @@
 // Audit Logging System for Strava Token Management
-const { getDB } = require('./database');
+// const { getDB } = require('./database'); // Unused
 
 async function auditLog(sql, data) {
   try {

@@ -44,7 +44,7 @@ const RETENTION_CONFIG = {
 /**
  * Data Cleanup Job Handler
  */
-exports.handler = async event => {
+exports.handler = async _event => {
   try {
     logger.info('Data cleanup job started', {
       timestamp: new Date().toISOString(),
@@ -165,6 +165,7 @@ async function cleanupWorkoutData() {
   const affectedUsers = new Set();
   let offset = 0;
 
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     // Get old workout data in batches
     const { data: oldWorkouts, error } = await supabase
@@ -218,6 +219,7 @@ async function cleanupActivityData() {
   const affectedUsers = new Set();
   let offset = 0;
 
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const { data: oldActivities, error } = await supabase
       .from('activities')
@@ -268,6 +270,7 @@ async function cleanupSessionData() {
   const affectedUsers = new Set();
   let offset = 0;
 
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const { data: oldSessions, error } = await supabase
       .from('user_sessions')
@@ -320,6 +323,7 @@ async function cleanupAuditLogs() {
   let deletedCount = 0;
   let offset = 0;
 
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const { data: oldLogs, error } = await supabase
       .from('audit_logs')
@@ -368,6 +372,7 @@ async function cleanupConsentHistory() {
   const affectedUsers = new Set();
   let offset = 0;
 
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const { data: oldConsent, error } = await supabase
       .from('consent_history')
@@ -420,6 +425,7 @@ async function cleanupErrorLogs() {
   let deletedCount = 0;
   let offset = 0;
 
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const { data: oldErrors, error } = await supabase
       .from('error_logs')
@@ -467,6 +473,7 @@ async function cleanupCacheData() {
   let deletedCount = 0;
   let offset = 0;
 
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const { data: oldCache, error } = await supabase
       .from('cache_data')
@@ -512,6 +519,7 @@ async function cleanupExpiredTokens() {
   let deletedCount = 0;
   let offset = 0;
 
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const { data: expiredTokens, error } = await supabase
       .from('user_tokens')
@@ -569,10 +577,10 @@ async function sendRetentionNotifications() {
       try {
         await sendRetentionNotification(user);
         notificationsSent++;
-      } catch (error) {
+      } catch (err) {
         logger.error('Failed to send retention notification', {
           user_id: user.user_id,
-          error: error.message,
+          error: err.message,
         });
       }
     }
@@ -664,7 +672,7 @@ exports.manualCleanup = async event => {
   }
 
   try {
-    const { data_type, user_id, retention_days } = JSON.parse(event.body || '{}');
+    const { data_type, user_id: _user_id, retention_days: _retention_days } = JSON.parse(event.body || '{}');
 
     if (!data_type) {
       return {

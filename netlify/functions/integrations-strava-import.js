@@ -1,5 +1,5 @@
 // POST /integrations/strava/import - Import Activities with Resume Support
-const { neon } = require('@neondatabase/serverless');
+// const { neon } = require('@neondatabase/serverless'); // Unused - using getNeonClient instead
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
@@ -7,11 +7,11 @@ const crypto = require('crypto');
 const {
   ImportError,
   fetchWithTimeout,
-  mapStravaActivity,
+  // mapStravaActivity, // Unused
   validateAfterParam,
   generateContinueToken,
   parseContinueToken,
-  sanitizeForLog,
+  // sanitizeForLog, // Unused
   handleStravaRateLimit,
   buildStravaUrl,
   processActivitiesBatch,
@@ -44,7 +44,8 @@ exports.handler = async event => {
 
   const runId = crypto.randomUUID();
   const importStartTime = Date.now();
-  const MAX_RUNTIME_MS = 9000; // 9s budget (1s buffer for Netlify's 10s limit)
+  const MAX_RUNTIME_MS = 9000; // 9s budget (1s buffer for Netlify's 10s limit);
+  let userId = null; // Declare outside try for catch block access
 
   try {
     // Authenticate
@@ -54,7 +55,6 @@ exports.handler = async event => {
     }
 
     const token = authHeader.substring(7);
-    let userId;
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -316,8 +316,8 @@ exports.handler = async event => {
       }
 
       // Process activities in transaction
-      const pageResults = await sql.begin(async sql => {
-        return await processActivitiesBatch(sql, activities, userId, runId, page, after, perPage);
+      const pageResults = await sql.begin(async sqlClient => {
+        return await processActivitiesBatch(sqlClient, activities, userId, runId, page, after, perPage);
       });
 
       // Accumulate results
@@ -391,8 +391,9 @@ exports.handler = async event => {
       user_id: userId,
     });
 
-    // Mark as failed
-    await sql`
+    // Mark as failed (only if userId was set)
+    if (userId) {
+      await sql`
             UPDATE integrations_strava
             SET 
                 last_run_at = NOW(),
@@ -403,6 +404,7 @@ exports.handler = async event => {
                 updated_at = NOW()
             WHERE user_id = ${userId}
         `.catch(err => logger.error('Failed to update import status', { error: err.message }));
+    }
 
     if (error instanceof ImportError) {
       return error.toResponse(headers);

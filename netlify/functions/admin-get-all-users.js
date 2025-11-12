@@ -1,10 +1,10 @@
-const { neon } = require('@neondatabase/serverless');
+// const { neon } = require('@neondatabase/serverless'); // Unused - using getNeonClient instead
 const crypto = require('crypto');
 const {
   verifyAdmin,
   auditLog,
   errorResponse,
-  withTimeout,
+  // withTimeout, // Unused
   successResponse,
 } = require('./utils/admin-auth');
 
@@ -19,9 +19,9 @@ const {
 const sql = getNeonClient();
 
 // Helper function to get total users count
-async function getTotalUsersCount(sql) {
+async function getTotalUsersCount(sqlClient) {
   try {
-    const countResult = await sql`SELECT COUNT(*) as total FROM users`;
+    const countResult = await sqlClient`SELECT COUNT(*) as total FROM users`;
     return parseInt(countResult[0].total);
   } catch (error) {
     console.error('Error getting total users count:', error);
@@ -116,8 +116,8 @@ exports.handler = async event => {
                 LIMIT $${cursorCondition.values.length + 1}
             `;
 
-      const queryParams = [...cursorCondition.values, pagination.limit + 1];
-      const users = await sql(usersQuery, queryParams);
+      const queryParams2 = [...cursorCondition.values, pagination.limit + 1];
+      const users = await sql(usersQuery, queryParams2);
 
       const recentActivity = await sql`
                 SELECT 

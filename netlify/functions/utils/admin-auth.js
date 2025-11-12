@@ -1,7 +1,7 @@
 // Admin Authentication and Authorization Utilities
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const { neon } = require('@neondatabase/serverless');
+// const { neon } = require('@neondatabase/serverless'); // Unused - using getNeonClient instead
 
 const { getNeonClient } = require('./connection-pool');
 const sql = getNeonClient();
@@ -158,21 +158,19 @@ const decodeCursor = cursor => {
 
 // Query timeout wrapper
 const withTimeout = async (queryFn, timeoutMs = 5000) => {
-  return new Promise(async (resolve, reject) => {
-    const timeout = setTimeout(() => {
-      reject(new Error('Query timeout'));
-    }, timeoutMs);
+  const timeout = setTimeout(() => {
+    throw new Error('Query timeout');
+  }, timeoutMs);
 
-    try {
-      await sql`SET statement_timeout = '5s'`;
-      const result = await queryFn();
-      clearTimeout(timeout);
-      resolve(result);
-    } catch (error) {
-      clearTimeout(timeout);
-      reject(error);
-    }
-  });
+  try {
+    await sql`SET statement_timeout = '5s'`;
+    const result = await queryFn();
+    clearTimeout(timeout);
+    return result;
+  } catch (error) {
+    clearTimeout(timeout);
+    throw error;
+  }
 };
 
 // Common response headers

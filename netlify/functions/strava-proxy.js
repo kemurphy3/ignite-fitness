@@ -114,7 +114,7 @@ const okPreflight = () => ({
   body: '',
 });
 
-exports.handler = async (event, context) => {
+exports.handler = async (event, _context) => {
   // Handle preflight requests
   if (event.httpMethod === 'OPTIONS') {
     return okPreflight();
@@ -125,9 +125,10 @@ exports.handler = async (event, context) => {
     return methodNotAllowed();
   }
 
+  let authResult = null;
   try {
     // Verify JWT authentication
-    const authResult = verifyJWT(event.headers);
+    authResult = verifyJWT(event.headers);
     if (!authResult.success) {
       return unauthorized(authResult.error);
     }
@@ -146,7 +147,6 @@ exports.handler = async (event, context) => {
     }
 
     let response;
-    let responseData;
 
     switch (action) {
       case 'refresh_token':
@@ -178,7 +178,7 @@ exports.handler = async (event, context) => {
         });
         break;
 
-      case 'get_activities':
+      case 'get_activities': {
         if (!accessToken) {
           return {
             statusCode: 400,
@@ -206,8 +206,9 @@ exports.handler = async (event, context) => {
           );
         });
         break;
+      }
 
-      case 'get_activity':
+      case 'get_activity': {
         if (!accessToken || !data?.activityId) {
           return {
             statusCode: 400,
@@ -229,8 +230,9 @@ exports.handler = async (event, context) => {
           });
         });
         break;
+      }
 
-      case 'get_athlete':
+      case 'get_athlete': {
         if (!accessToken) {
           return {
             statusCode: 400,
@@ -252,8 +254,9 @@ exports.handler = async (event, context) => {
           });
         });
         break;
+      }
 
-      case 'get_rate_limit_status':
+      case 'get_rate_limit_status': {
         // Return current rate limiter status
         const status = rateLimiter.getStatus();
         return {
@@ -264,6 +267,7 @@ exports.handler = async (event, context) => {
             rateLimitStatus: status,
           }),
         };
+      }
 
       default:
         return {
@@ -277,7 +281,7 @@ exports.handler = async (event, context) => {
         };
     }
 
-    responseData = await response.json();
+    const responseData = await response.json();
 
     return {
       statusCode: response.status,
@@ -292,7 +296,7 @@ exports.handler = async (event, context) => {
     ) {
       logger.warn('Rate limit error', {
         error_message: error.message,
-        user_id: authResult.userId,
+        user_id: authResult?.userId || 'unknown',
       });
 
       return {
@@ -313,7 +317,7 @@ exports.handler = async (event, context) => {
     logger.error('Strava proxy failed', {
       error_type: error.name,
       error_message: error.message,
-      user_id: authResult.userId,
+      user_id: authResult?.userId || 'unknown',
     });
 
     return {

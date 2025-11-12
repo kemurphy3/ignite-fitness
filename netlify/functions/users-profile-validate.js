@@ -84,7 +84,7 @@ exports.handler = async event => {
 
   const sql = getServerlessDB();
   const ajv = new Ajv();
-  const validate = ajv.compile(createProfileSchema);
+  const _validate = ajv.compile(createProfileSchema);
 
   try {
     // Authenticate user

@@ -1,7 +1,7 @@
 const {
   getDB,
-  authenticate,
-  checkRateLimit,
+  // authenticate, // Unused
+  // checkRateLimit, // Unused
   errorResponse,
   successResponse,
   preflightResponse,

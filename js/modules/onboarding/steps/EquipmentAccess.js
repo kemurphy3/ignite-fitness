@@ -227,7 +227,7 @@ class EquipmentAccess extends window.BaseComponent {
     document.querySelectorAll('.days-btn').forEach(btn => {
       btn.classList.remove('selected');
     });
-    document.querySelectorAll('.days-btn').forEach((btn, index) => {
+    document.querySelectorAll('.days-btn').forEach((btn, _index) => {
       if (parseInt(btn.textContent) === days) {
         btn.classList.add('selected');
       }

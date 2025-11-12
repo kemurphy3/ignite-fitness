@@ -1,5 +1,5 @@
 // GET /api/admin/sessions/by-type - Distribution of session types with privacy protection
-const { neon } = require('@neondatabase/serverless');
+// const { neon } = require('@neondatabase/serverless'); // Unused - using getNeonClient instead
 const crypto = require('crypto');
 const {
   verifyAdmin,
@@ -9,7 +9,7 @@ const {
   successResponse,
 } = require('./utils/admin-auth');
 
-const { safeQuery, validateBucket } = require('./utils/safe-query');
+const { safeQuery, validateBucket: _validateBucket } = require('./utils/safe-query');
 
 const { getNeonClient } = require('./utils/connection-pool');
 const sql = getNeonClient();

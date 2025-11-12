@@ -1,5 +1,5 @@
 // GET /sessions/:sessionId/exercises - List with Stable Pagination
-const { neon } = require('@neondatabase/serverless');
+// const { neon } = require('@neondatabase/serverless'); // Unused - using getNeonClient instead
 const jwt = require('jsonwebtoken');
 const {
   validatePaginationParams,
@@ -40,7 +40,7 @@ exports.handler = async event => {
 
   try {
     // Extract session ID
-    const sessionId = event.path.match(/\/sessions\/([^\/]+)\/exercises/)?.[1];
+    const sessionId = event.path.match(/\/sessions\/([^/]+)\/exercises/)?.[1];
     if (!sessionId) {
       return {
         statusCode: 400,

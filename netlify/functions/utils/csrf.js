@@ -379,7 +379,7 @@ function getCSRFStats() {
   let activeTokens = 0;
   let expiredTokens = 0;
 
-  for (const [token, data] of csrfTokens.entries()) {
+  for (const [_token, data] of csrfTokens.entries()) {
     if (now < data.expiresAt) {
       activeTokens++;
     } else {

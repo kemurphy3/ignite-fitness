@@ -3,14 +3,14 @@
  * Safe logging backend for injury assessments and disclaimers
  */
 
-const InjuryFlags = {
+const _InjuryFlags = {
   painAssessment: 'PAIN_ASSESSMENT',
   injuryFlag: 'INJURY_FLAG',
   modification: 'EXERCISE_MODIFICATION',
   disclaimerAccepted: 'DISCLAIMER_ACCEPTED',
 };
 
-exports.handler = async (event, context) => {
+exports.handler = async (event, _context) => {
   // CORS headers
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -145,7 +145,7 @@ async function logExerciseModification(data) {
  * @returns {Object} Assessment history
  */
 async function getAssessmentHistory(data) {
-  const { userId, limit = 10 } = data;
+  const { userId: _userId, limit: _limit = 10 } = data;
 
   // This would query actual database
   const history = [
@@ -172,7 +172,7 @@ async function getAssessmentHistory(data) {
  * @returns {Object} Persistent pain analysis
  */
 function checkPersistentPain(data) {
-  const { history, currentPain } = data;
+  const { history, currentPain: _currentPain } = data;
 
   if (!history || history.length < 3) {
     return {

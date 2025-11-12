@@ -68,7 +68,7 @@ class TimeWindows extends window.BaseComponent {
 
   selectDays(days) {
     this.timeWindows.trainingDaysPerWeek = days;
-    document.querySelectorAll('.day-btn').forEach((btn, i) => {
+    document.querySelectorAll('.day-btn').forEach((btn, _i) => {
       btn.classList.toggle('selected', parseInt(btn.textContent) === days);
     });
   }

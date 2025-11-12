@@ -1,5 +1,5 @@
 // GET /integrations/strava/status - Get Sync Status
-const { neon } = require('@neondatabase/serverless');
+// const { neon } = require('@neondatabase/serverless'); // Unused - using getNeonClient instead
 const jwt = require('jsonwebtoken');
 
 exports.handler = async event => {

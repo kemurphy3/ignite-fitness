@@ -761,6 +761,7 @@ class CognitiveAccessibilityManager {
     const destructiveButtons = document.querySelectorAll('[data-destructive]');
     destructiveButtons.forEach(button => {
       button.addEventListener('click', e => {
+        // eslint-disable-next-line no-alert
         if (!confirm('Are you sure you want to perform this action?')) {
           e.preventDefault();
         }
@@ -776,6 +777,7 @@ class CognitiveAccessibilityManager {
     const importantButtons = document.querySelectorAll('[data-important]');
     importantButtons.forEach(button => {
       button.addEventListener('click', e => {
+        // eslint-disable-next-line no-alert
         if (!confirm('Please confirm this action.')) {
           e.preventDefault();
         }

@@ -362,6 +362,7 @@
       if (this.errorCount > 3) {
         console.warn('Multiple errors detected, attempting recovery...');
         setTimeout(() => {
+          // eslint-disable-next-line no-alert
           if (confirm('Multiple errors detected. Would you like to reload the page?')) {
             window.location.reload();
           }

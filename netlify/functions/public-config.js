@@ -5,7 +5,7 @@
  * NEVER includes API keys, secrets, or sensitive environment variables.
  */
 
-exports.handler = async (event, context) => {
+exports.handler = async (event, _context) => {
   // Set CORS headers
   const headers = {
     'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGINS || '*',

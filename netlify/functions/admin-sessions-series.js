@@ -1,5 +1,5 @@
 // GET /api/admin/sessions/series - Time series with proper timezone handling
-const { neon } = require('@neondatabase/serverless');
+// const { neon } = require('@neondatabase/serverless'); // Unused - using getNeonClient instead
 const crypto = require('crypto');
 const {
   verifyAdmin,

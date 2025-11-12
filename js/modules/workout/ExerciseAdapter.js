@@ -808,7 +808,7 @@ class ExerciseAdapter {
    * @returns {Object} Progression trend
    */
   calculateProgressionTrend(exerciseData) {
-    const { weights, dates } = exerciseData;
+    const { weights, dates: _dates } = exerciseData;
 
     if (weights.length < 3) {
       return { status: 'insufficient_data', trend: 0 };

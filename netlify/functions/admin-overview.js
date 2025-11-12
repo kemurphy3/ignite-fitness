@@ -1,5 +1,5 @@
 // GET /api/admin/overview - Global platform metrics with privacy protection
-const { neon } = require('@neondatabase/serverless');
+// const { neon } = require('@neondatabase/serverless'); // Unused - using getNeonClient instead
 const crypto = require('crypto');
 const {
   verifyAdmin,

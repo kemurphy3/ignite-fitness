@@ -3,7 +3,7 @@
  * Provides atomic operations with rollback capability for Strava ingestion
  */
 
-const { createClient } = require('@supabase/supabase-js');
+// const { createClient } = require('@supabase/supabase-js'); // Unused
 const TransactionRollbackManager = require('./transaction-rollback');
 
 class ActivityTransactionManager {

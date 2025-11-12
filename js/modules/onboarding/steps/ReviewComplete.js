@@ -73,6 +73,7 @@ class ReviewComplete extends window.BaseComponent {
 
   completeOnboarding() {
     if (!this.validateRequired()) {
+      // eslint-disable-next-line no-alert
       alert('Please complete all required fields');
       return;
     }

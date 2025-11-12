@@ -1,5 +1,5 @@
 // GET /users/preferences - Get user preferences with atomic creation
-const { neon } = require('@neondatabase/serverless');
+// const { neon } = require('@neondatabase/serverless'); // Unused - using getNeonClient instead
 const jwt = require('jsonwebtoken');
 const { errorResponse, successResponse, sanitizeForLog } = require('./utils/user-preferences');
 

@@ -1,5 +1,5 @@
 // PATCH /users/preferences - Update user preferences atomically
-const { neon } = require('@neondatabase/serverless');
+// const { neon } = require('@neondatabase/serverless'); // Unused - using getNeonClient instead
 const jwt = require('jsonwebtoken');
 const {
   errorResponse,

@@ -142,7 +142,7 @@ class LoadMath {
    * @param {Object} userProfile - User profile
    * @returns {number} Estimated TRIMP
    */
-  static estimateTRIMP(activity, userProfile) {
+  static estimateTRIMP(activity, _userProfile) {
     const { durationS, type } = activity;
     const durationMinutes = durationS / 60;
 
@@ -177,7 +177,7 @@ class LoadMath {
     }
 
     const durationHours = durationS / 3600;
-    const zones = this.getHRZones(userProfile);
+    const _zones = this.getHRZones(userProfile);
     const maxHR = userProfile.maxHR || this.estimateMaxHR(userProfile.age, userProfile.gender);
     const restHR = userProfile.restHR || 60;
 
@@ -370,7 +370,7 @@ class LoadMath {
    * @returns {Object} Load calculation results
    */
   static calculateLoad(activity, userProfile) {
-    const { durationS, avgHr, hrStream, type, date } = activity;
+    const { durationS, avgHr, hrStream, type: _type, date: _date } = activity;
 
     if (!durationS || durationS === 0) {
       return {
@@ -392,7 +392,7 @@ class LoadMath {
     const intensityRecommendation = this.getIntensityRecommendation(trimp, userProfile);
 
     // Calculate weekly load (would typically sum daily TRIMP values)
-    const weeklyLoad = this.calculateWeeklyLoad(userProfile, date);
+    const weeklyLoad = this.calculateWeeklyLoad(userProfile, new Date());
 
     return {
       trimp: Math.round(trimp * 100) / 100, // Round to 2 decimal places
@@ -466,7 +466,7 @@ class LoadMath {
    * @param {string} date - Current date (YYYY-MM-DD)
    * @returns {number} Weekly TRIMP total
    */
-  static calculateWeeklyLoad(userProfile, date) {
+  static calculateWeeklyLoad(userProfile, _date) {
     // This would typically query the database for activities in the past 7 days
     // For now, return a calculated estimate based on user's training frequency
 

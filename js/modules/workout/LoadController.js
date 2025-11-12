@@ -262,7 +262,7 @@ class LoadController {
    * @param {string} userId - User ID
    * @returns {number} Volume change %
    */
-  calculateVolumeChange(userId) {
+  calculateVolumeChange(_userId) {
     // Simplified - would calculate from session history
     return 0;
   }

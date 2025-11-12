@@ -123,7 +123,7 @@ async function computeDailyAggregates(userId, date, supabase) {
     aggregates.loadScore = aggregates.trimp; // Simplified
 
     // Upsert into daily_aggregates table
-    const { data: upserted, error: upsertError } = await supabase
+    const { data: _upserted, error: upsertError } = await supabase
       .from('daily_aggregates')
       .upsert(
         {
@@ -342,7 +342,7 @@ function calculateStrain(monotony, dailyLoads) {
 /**
  * Netlify Function Handler
  */
-exports.handler = async function (event, context) {
+exports.handler = async function (event, _context) {
   // CORS headers
   const headers = {
     'Content-Type': 'application/json',

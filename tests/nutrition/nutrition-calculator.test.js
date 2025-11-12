@@ -33,7 +33,7 @@ describe('Nutrition Calculator', () => {
     dayType = 'training',
     weight = 70
   ) {
-    let protein, carbs, fat;
+    let protein;
 
     // Protein: goal and weight dependent
     if (goal === 'muscle' || goal === 'performance') {
@@ -49,11 +49,11 @@ describe('Nutrition Calculator', () => {
     // Fat: 25-30% of calories
     const fatPercent = 0.27;
     const fatCals = targetCalories * fatPercent;
-    fat = fatCals / 9;
+    const fat = fatCals / 9;
 
     // Carbs: remaining calories
     const remainingCals = targetCalories - proteinCals - fatCals;
-    carbs = remainingCals / 4;
+    const carbs = remainingCals / 4;
 
     return {
       protein: Math.round(protein),

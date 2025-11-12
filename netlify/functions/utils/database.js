@@ -1,6 +1,7 @@
 // Database Connection Management for Strava Token System
 // Updated to use centralized connection pooling
-const { getNeonClient, executeQuery } = require('./connection-pool');
+const { getNeonClient } = require('./connection-pool');
+// const { executeQuery } = require('./connection-pool'); // Unused
 
 // Legacy compatibility functions
 function getServerlessDB() {

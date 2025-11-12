@@ -219,7 +219,7 @@ class MinimalOnboarding {
     };
 
     const durationChecked = duration => {
-      return this.onboardingData.time_windows.typical_duration == duration ? 'checked' : '';
+      return this.onboardingData.time_windows.typical_duration === duration ? 'checked' : '';
     };
 
     const daysSelected = days => {
@@ -644,7 +644,7 @@ class MinimalOnboarding {
     }
   }
 
-  attachStepEventListeners(stepName) {
+  attachStepEventListeners(_stepName) {
     // Additional event listeners can be attached here for specific steps
   }
 }

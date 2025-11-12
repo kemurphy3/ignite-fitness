@@ -1,7 +1,7 @@
 // pagination.js
 // Comprehensive pagination utilities for IgniteFitness API
 
-const crypto = require('crypto');
+// const crypto = require('crypto'); // Unused
 
 /**
  * Pagination configuration

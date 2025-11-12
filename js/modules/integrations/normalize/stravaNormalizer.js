@@ -145,7 +145,6 @@ class StravaNormalizer {
       Kayaking: 'Other',
       Sailing: 'Other',
       StandUpPaddling: 'Other',
-      Surfing: 'Other',
       Windsurfing: 'Other',
       Kitesurfing: 'Other',
       Wakeboarding: 'Other',

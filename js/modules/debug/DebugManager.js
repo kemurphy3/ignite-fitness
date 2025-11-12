@@ -341,7 +341,7 @@ class DebugManager {
    * @param {string} key - localStorage key
    * @returns {string} Last modified time
    */
-  getKeyLastModified(key) {
+  getKeyLastModified(_key) {
     // This is an approximation since localStorage doesn't store timestamps
     // We'll use the current time for now
     return new Date().toISOString();

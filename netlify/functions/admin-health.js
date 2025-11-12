@@ -1,5 +1,5 @@
 // GET /api/admin/health - System health with proper auth
-const { neon } = require('@neondatabase/serverless');
+// const { neon } = require('@neondatabase/serverless'); // Unused - using getNeonClient instead
 const crypto = require('crypto');
 const {
   verifyAdmin,
@@ -28,7 +28,7 @@ exports.handler = async event => {
     const { adminId } = await verifyAdmin(token, requestId);
 
     // Database checks
-    const dbCheck = await withTimeout(async () => {
+    const _dbCheck = await withTimeout(async () => {
       return await sql`SELECT NOW() as time, version() as version`;
     });
 

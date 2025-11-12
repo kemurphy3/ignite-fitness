@@ -56,7 +56,7 @@ exports.handler = async event => {
   }
 
   try {
-    const { code, state } = JSON.parse(event.body || '{}');
+    const { code, state: _state } = JSON.parse(event.body || '{}');
 
     if (!code) {
       return badReq('Missing authorization code');

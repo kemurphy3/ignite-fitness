@@ -234,7 +234,7 @@ class HabitTracker {
    * @returns {boolean} Condition met
    */
   checkAchievementCondition(achievement, habitData) {
-    const { condition } = achievement;
+    const { condition: _condition } = achievement;
 
     switch (achievement.id) {
       case 'first_workout':
@@ -316,7 +316,7 @@ class HabitTracker {
    * @param {string} userId - User ID
    * @returns {Array} User achievements
    */
-  getUserAchievements(userId) {
+  getUserAchievements(_userId) {
     return this.achievementDefinitions.filter(achievement => achievement.unlocked);
   }
 

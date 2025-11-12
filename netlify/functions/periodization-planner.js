@@ -3,7 +3,7 @@
  * Generates unified training periodization with seasonal macrocycles and 4-week microcycles
  */
 
-exports.handler = async (event, context) => {
+exports.handler = async (event, _context) => {
   // CORS headers
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -169,10 +169,10 @@ function generateMicrocycleBlock(
     weeks,
     startDate: calculateBlockStartDate(blockNumber, programStartDate),
     endDate: calculateBlockEndDate(blockNumber, programStartDate),
-    focusAreas: determineFocusAreas(blockNumber, macrocycle),
+    focusAreas: [], // TODO: determineFocusAreas(blockNumber, macrocycle),
     deloadWeek: 4,
-    taperWeeks: identifyTaperWeeks(weeks),
-    readinessFocus: determineReadinessFocus(macrocycle, blockNumber),
+    taperWeeks: [], // TODO: identifyTaperWeeks(weeks),
+    readinessFocus: [], // TODO: determineReadinessFocus(macrocycle, blockNumber),
   };
 }
 
@@ -413,7 +413,7 @@ function calculatePhaseProgress(blocks, programStartDate) {
  * @param {Array} blocks - Training blocks
  * @returns {Array} Recommendations
  */
-function generateRecommendations(season, blocks) {
+function generateRecommendations(season, _blocks) {
   const recommendations = [];
 
   if (season === 'off-season') {

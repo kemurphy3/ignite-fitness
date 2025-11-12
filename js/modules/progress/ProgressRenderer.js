@@ -62,7 +62,7 @@ class ProgressRenderer {
    * @param {string|HTMLElement} container - Container ID or element
    * @param {Object} options - Render options
    */
-  async renderCharts(container, options = {}) {
+  async renderCharts(container, _options = {}) {
     try {
       const element =
         typeof container === 'string' ? document.getElementById(container) : container;

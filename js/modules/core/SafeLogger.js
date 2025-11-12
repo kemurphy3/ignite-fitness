@@ -53,12 +53,16 @@ class SafeLogger {
           colno: e.colno,
           stack: e.error?.stack,
         });
-      } catch {}
+      } catch {
+        // Suppress errors in error handler
+      }
     });
     window.addEventListener('unhandledrejection', e => {
       try {
         this.error('UNHANDLED_REJECTION', { reason: String(e.reason), stack: e.reason?.stack });
-      } catch {}
+      } catch {
+        // Suppress errors in error handler
+      }
     });
   }
 
@@ -267,7 +271,9 @@ class SafeLogger {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
-    } catch {}
+    } catch {
+      // Suppress errors in error handler
+    }
   }
 }
 

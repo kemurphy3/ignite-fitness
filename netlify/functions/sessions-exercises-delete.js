@@ -1,5 +1,5 @@
 // DELETE /sessions/:sessionId/exercises/:exerciseId - Delete with History
-const { neon } = require('@neondatabase/serverless');
+// const { neon } = require('@neondatabase/serverless'); // Unused - using getNeonClient instead
 const jwt = require('jsonwebtoken');
 
 // Helper to sanitize for logging
@@ -33,7 +33,7 @@ exports.handler = async event => {
 
   try {
     // Extract IDs
-    const pathMatch = event.path.match(/\/sessions\/([^\/]+)\/exercises\/([^\/]+)/);
+    const pathMatch = event.path.match(/\/sessions\/([^/]+)\/exercises\/([^/]+)/);
     if (!pathMatch) {
       return {
         statusCode: 400,
@@ -84,9 +84,9 @@ exports.handler = async event => {
     }
 
     // Verify ownership and delete in transaction
-    await sql.begin(async sql => {
+    await sql.begin(async sqlClient => {
       // Check session ownership
-      const sessionCheck = await sql`
+      const sessionCheck = await sqlClient`
                 SELECT user_id FROM sessions 
                 WHERE id = ${sessionId}
             `;
@@ -96,7 +96,7 @@ exports.handler = async event => {
       }
 
       // Check if exercise exists and belongs to user's session (idempotency)
-      const exerciseCheck = await sql`
+      const exerciseCheck = await sqlClient`
                 SELECT id FROM session_exercises
                 WHERE id = ${exerciseId}
                 AND session_id = ${sessionId}
@@ -112,7 +112,7 @@ exports.handler = async event => {
       }
 
       // Delete and capture old data - verify exercise belongs to user's session
-      const deleted = await sql`
+      const deleted = await sqlClient`
                 DELETE FROM session_exercises
                 WHERE id = ${exerciseId}
                 AND session_id = ${sessionId}
@@ -121,7 +121,7 @@ exports.handler = async event => {
             `;
 
       // Log deletion
-      await sql`
+      await sqlClient`
                 INSERT INTO session_exercise_history (
                     exercise_id, session_id, user_id, action, old_data, changed_by
                 ) VALUES (
@@ -131,7 +131,7 @@ exports.handler = async event => {
             `;
 
       // Reindex remaining exercises
-      await sql`SELECT reindex_session_exercises(${sessionId})`;
+      await sqlClient`SELECT reindex_session_exercises(${sessionId})`;
     });
 
     console.log(

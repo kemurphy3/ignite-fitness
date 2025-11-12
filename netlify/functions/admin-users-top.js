@@ -1,5 +1,5 @@
 // GET /api/admin/users/top - Top users with keyset pagination
-const { neon } = require('@neondatabase/serverless');
+// const { neon } = require('@neondatabase/serverless'); // Unused - using getNeonClient instead
 const crypto = require('crypto');
 const {
   verifyAdmin,

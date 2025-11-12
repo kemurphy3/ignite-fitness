@@ -1,5 +1,5 @@
 // PUT /sessions/:sessionId/exercises/:exerciseId - Update with Ownership Check
-const { neon } = require('@neondatabase/serverless');
+// const { neon } = require('@neondatabase/serverless'); // Unused - using getNeonClient instead
 const jwt = require('jsonwebtoken');
 const Ajv = require('ajv');
 
@@ -77,7 +77,7 @@ exports.handler = async event => {
 
   try {
     // Extract IDs from path
-    const pathMatch = event.path.match(/\/sessions\/([^\/]+)\/exercises\/([^\/]+)/);
+    const pathMatch = event.path.match(/\/sessions\/([^/]+)\/exercises\/([^/]+)/);
     if (!pathMatch) {
       return {
         statusCode: 400,
@@ -270,20 +270,20 @@ exports.handler = async event => {
     // Perform update in transaction
     let updated;
 
-    await sql.begin(async sql => {
+    await sql.begin(async sqlClient => {
       // Store old data for history
       const oldData = exerciseCheck[0];
 
       // Update exercise
-      updated = await sql`
+      updated = await sqlClient`
                 UPDATE session_exercises
-                SET ${sql(updateFields)}
+                SET ${sqlClient(updateFields)}
                 WHERE id = ${exerciseId}
                 RETURNING *
             `;
 
       // Log to history
-      await sql`
+      await sqlClient`
                 INSERT INTO session_exercise_history (
                     exercise_id, session_id, user_id, action, old_data, new_data, changed_by
                 ) VALUES (
@@ -294,7 +294,7 @@ exports.handler = async event => {
 
       // Reindex if order changed
       if (updates.order_index !== undefined) {
-        await sql`SELECT reindex_session_exercises(${sessionId})`;
+        await sqlClient`SELECT reindex_session_exercises(${sessionId})`;
       }
     });
 

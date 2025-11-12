@@ -8,7 +8,7 @@ const { createClient } = require('@supabase/supabase-js');
 // Initialize Supabase client
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
-exports.handler = async (event, context) => {
+exports.handler = async (event, _context) => {
   // Handle CORS
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -35,7 +35,7 @@ exports.handler = async (event, context) => {
 
   try {
     const payload = JSON.parse(event.body);
-    const { metrics, timestamp, sessionId, userId } = payload;
+    const { metrics, timestamp: _timestamp, sessionId, userId } = payload;
 
     if (!metrics || !Array.isArray(metrics)) {
       return {

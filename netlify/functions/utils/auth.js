@@ -83,9 +83,10 @@ function analyzeCharacterSets(str) {
     lowercase: /[a-z]/.test(str),
     uppercase: /[A-Z]/.test(str),
     digits: /[0-9]/.test(str),
-    special: /[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(str),
+    special: /[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/.test(str),
     spaces: /\s/.test(str),
-    unicode: /[^\x00-\x7F]/.test(str),
+    // eslint-disable-next-line no-control-regex
+    unicode: /[^\u0000-\u007F]/.test(str),
   };
 
   analysis.hasRequired = JWT_CONFIG.requiredCharacterSets.every(set => analysis[set]);

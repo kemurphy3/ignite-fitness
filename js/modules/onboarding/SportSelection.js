@@ -564,6 +564,7 @@ class ProfileSetup {
    */
   showValidationErrors() {
     // Simple validation feedback
+    // eslint-disable-next-line no-alert
     alert('Please fill in all required fields');
   }
 
