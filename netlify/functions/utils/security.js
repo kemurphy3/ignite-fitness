@@ -150,14 +150,16 @@ function validateJSONSize(jsonString, maxSize = 1024 * 1024) {
 // Escape SQL special characters (additional protection)
 function escapeSQL(input) {
   if (typeof input === 'string') {
-    return input
-      .replace(/'/g, "''")
-      .replace(/\\/g, '\\\\')
-      .replace(/\0/g, '\\0')
-      .replace(/\n/g, '\\n')
-      .replace(/\r/g, '\\r')
-      // eslint-disable-next-line no-control-regex
-      .replace(/\u001A/g, '\\Z');
+    return (
+      input
+        .replace(/'/g, "''")
+        .replace(/\\/g, '\\\\')
+        .replace(/\0/g, '\\0')
+        .replace(/\n/g, '\\n')
+        .replace(/\r/g, '\\r')
+        // eslint-disable-next-line no-control-regex
+        .replace(/\u001A/g, '\\Z')
+    );
   }
 
   return input;

@@ -317,7 +317,15 @@ exports.handler = async event => {
 
       // Process activities in transaction
       const pageResults = await sql.begin(async sqlClient => {
-        return await processActivitiesBatch(sqlClient, activities, userId, runId, page, after, perPage);
+        return await processActivitiesBatch(
+          sqlClient,
+          activities,
+          userId,
+          runId,
+          page,
+          after,
+          perPage
+        );
       });
 
       // Accumulate results

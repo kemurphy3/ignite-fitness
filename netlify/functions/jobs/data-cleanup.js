@@ -672,7 +672,11 @@ exports.manualCleanup = async event => {
   }
 
   try {
-    const { data_type, user_id: _user_id, retention_days: _retention_days } = JSON.parse(event.body || '{}');
+    const {
+      data_type,
+      user_id: _user_id,
+      retention_days: _retention_days,
+    } = JSON.parse(event.body || '{}');
 
     if (!data_type) {
       return {

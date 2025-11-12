@@ -47,7 +47,11 @@ function calculateSoccerShapeLoad(workout) {
  * @returns {Array} Substitution workouts
  */
 async function findSoccerShapeSubstitutions(sql, originalWorkout, constraints) {
-  const { equipment, time_limit, injury_considerations: _injury_considerations } = constraints || {};
+  const {
+    equipment,
+    time_limit,
+    injury_considerations: _injury_considerations,
+  } = constraints || {};
 
   const whereConditions = [
     'template_id != $1',
