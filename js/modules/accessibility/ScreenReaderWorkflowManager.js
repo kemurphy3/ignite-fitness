@@ -2,20 +2,34 @@
  * ScreenReaderWorkflowManager - Optimizes workout flow for screen reader users
  * Provides streamlined navigation, audio cues, and simplified interaction modes
  */
-const createEventBusFallback = () => ({
-  subscribe: () => () => {},
-  unsubscribe: () => {},
-  on: () => () => {},
-  off: () => {},
-  emit: () => {},
-  publish: () => {},
-});
 
-const EventBus =
-  (typeof window !== 'undefined' && window.EventBus) ||
-  (typeof module !== 'undefined' && module.exports
-    ? require('../core/EventBus.js')
-    : createEventBusFallback());
+// Get EventBus instance - ensure it's available globally
+const getEventBus = () => {
+  if (typeof window !== 'undefined' && window.EventBus) {
+    return window.EventBus;
+  }
+  if (typeof globalThis !== 'undefined' && globalThis.EventBus) {
+    return globalThis.EventBus;
+  }
+  if (typeof module !== 'undefined' && module.exports) {
+    try {
+      return require('../core/EventBus.js');
+    } catch (e) {
+      // Fallback if require fails
+    }
+  }
+  // Fallback no-op EventBus
+  return {
+    subscribe: () => () => {},
+    unsubscribe: () => {},
+    on: () => () => {},
+    off: () => {},
+    emit: () => {},
+    publish: () => {},
+  };
+};
+
+const EventBus = getEventBus();
 class ScreenReaderWorkflowManager {
   constructor() {
     this.logger = window.SafeLogger || console;
