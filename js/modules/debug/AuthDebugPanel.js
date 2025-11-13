@@ -15,6 +15,7 @@
 
   class AuthDebugPanel {
     constructor() {
+      this.logger = window.SafeLogger || console;
       this.panel = null;
       this.isVisible = false;
     }
@@ -151,12 +152,7 @@
   }
 
   // Log availability
-  console.log(
-    '%c[DEV] Auth Debug Panel loaded. Use: window.__IGNITE__.auth.debugPanel()',
-    'color: #4299e1; font-weight: bold;'
-  );
-  console.log(
-    '%c[DEV] Hotkeys: Alt+Shift+L = Force #/login, Ctrl+Shift+D = Toggle debug panel',
-    'color: #4299e1;'
-  );
+  const logger = window.SafeLogger || console;
+  logger.info('[DEV] Auth Debug Panel loaded. Use: window.__IGNITE__.auth.debugPanel()');
+  logger.info('[DEV] Hotkeys: Alt+Shift+L = Force #/login, Ctrl+Shift+D = Toggle debug panel');
 })();

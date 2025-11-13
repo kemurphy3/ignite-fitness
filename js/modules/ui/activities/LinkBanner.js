@@ -159,7 +159,7 @@ class LinkBanner {
           this.showError(banner, result.error);
         }
       } else {
-        console.warn('LinkingActions not available');
+        this.logger.warn('LinkingActions not available');
         this.showError(banner, 'Linking actions not available');
       }
     } catch (error) {

@@ -5,6 +5,9 @@
 
 /* global importScripts */
 
+// Logger for worker context (workers can't access window.SafeLogger)
+const logger = typeof self !== 'undefined' && self.SafeLogger ? self.SafeLogger : console;
+
 // Try to import Chart.js from CDN, but catch errors since CORS may block it
 // Note: importScripts() throws synchronously if it fails, which will prevent
 // the rest of this script from executing. However, if we catch it here,
@@ -31,7 +34,7 @@ try {
     self.postMessage(initError);
   } catch (e) {
     // If postMessage fails, worker is unusable anyway
-    console.error('ChartWorker: Cannot send error message', e);
+    logger.error('ChartWorker: Cannot send error message', { error: e.message, stack: e.stack });
   }
 }
 
@@ -44,7 +47,7 @@ if (!chartJSAvailable) {
 class ChartWorker {
   constructor() {
     if (typeof Chart === 'undefined') {
-      console.error('ChartWorker: Chart.js not available');
+      logger.error('ChartWorker: Chart.js not available');
       self.postMessage({
         type: 'INIT_ERROR',
         error: 'Chart.js not available',
@@ -60,7 +63,7 @@ class ChartWorker {
     // Listen for messages from main thread
     self.addEventListener('message', this.handleMessage.bind(this));
 
-    console.log('ChartWorker initialized');
+    logger.info('ChartWorker initialized');
   }
 
   /**
@@ -84,10 +87,10 @@ class ChartWorker {
           this.resizeChart(data);
           break;
         default:
-          console.warn('Unknown message type:', type);
+          logger.warn('Unknown message type', { type });
       }
     } catch (error) {
-      console.error('ChartWorker error:', error);
+      logger.error('ChartWorker error', { error: error.message, stack: error.stack, type });
       self.postMessage({
         type: 'ERROR',
         error: error.message,
@@ -138,7 +141,7 @@ class ChartWorker {
         [imageData]
       );
     } catch (error) {
-      console.error('Failed to create chart:', error);
+      logger.error('Failed to create chart', { error: error.message, stack: error.stack, chartId });
       self.postMessage({
         type: 'CHART_ERROR',
         chartId,
@@ -153,7 +156,7 @@ class ChartWorker {
   updateChart({ chartId, data }) {
     const chart = this.charts.get(chartId);
     if (!chart) {
-      console.warn('Chart not found:', chartId);
+      logger.warn('Chart not found', { chartId });
       return;
     }
 
@@ -174,7 +177,7 @@ class ChartWorker {
         [imageData]
       );
     } catch (error) {
-      console.error('Failed to update chart:', error);
+      logger.error('Failed to update chart', { error: error.message, stack: error.stack, chartId });
       self.postMessage({
         type: 'CHART_ERROR',
         chartId,
@@ -205,7 +208,7 @@ class ChartWorker {
   resizeChart({ chartId, width, height }) {
     const chart = this.charts.get(chartId);
     if (!chart) {
-      console.warn('Chart not found for resize:', chartId);
+      logger.warn('Chart not found for resize', { chartId });
       return;
     }
 
@@ -229,7 +232,7 @@ class ChartWorker {
         [imageData]
       );
     } catch (error) {
-      console.error('Failed to resize chart:', error);
+      logger.error('Failed to resize chart', { error: error.message, stack: error.stack, chartId });
       self.postMessage({
         type: 'CHART_ERROR',
         chartId,
@@ -244,7 +247,7 @@ if (chartJSAvailable && typeof Chart !== 'undefined') {
   try {
     new ChartWorker();
   } catch (error) {
-    console.error('ChartWorker initialization failed:', error);
+    logger.error('ChartWorker initialization failed', { error: error.message, stack: error.stack });
     self.postMessage({
       type: 'INIT_ERROR',
       error: 'ChartWorker initialization failed',
@@ -254,8 +257,6 @@ if (chartJSAvailable && typeof Chart !== 'undefined') {
 } else {
   // Chart.js not available - worker is unusable but stays alive
   // INIT_ERROR already sent in the catch block above
-  // Use console.debug to reduce noise (this is expected in local dev)
-  console.debug(
-    'ChartWorker: Cannot initialize - Chart.js not available. Worker will not function.'
-  );
+  // Use debug level to reduce noise (this is expected in local dev)
+  logger.debug('ChartWorker: Cannot initialize - Chart.js not available. Worker will not function.');
 }

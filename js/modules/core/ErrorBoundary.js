@@ -17,6 +17,7 @@
    */
   class ErrorBoundary {
     constructor(config = {}) {
+      this.logger = window.SafeLogger || console;
       this.config = {
         logToConsole: config.logToConsole !== false,
         logToRemote: config.logToRemote || false,
@@ -38,7 +39,7 @@
         return;
       }
 
-      console.log('Error Boundary initialized');
+      this.logger.info('Error Boundary initialized');
 
       // Catch unhandled promise rejections
       this.setupPromiseRejectionHandler();
@@ -60,7 +61,7 @@
      */
     setupPromiseRejectionHandler() {
       window.addEventListener('unhandledrejection', event => {
-        console.error('Unhandled promise rejection:', event.reason);
+        this.logger.error('Unhandled promise rejection', { reason: event.reason?.message || String(event.reason), stack: event.reason?.stack });
 
         this.handleError({
           type: 'promise_rejection',
@@ -81,7 +82,7 @@
      */
     setupErrorHandler() {
       window.addEventListener('error', event => {
-        console.error('JavaScript error:', event.error);
+        this.logger.error('JavaScript error', { error: event.error?.message || event.message, stack: event.error?.stack, filename: event.filename });
 
         this.handleError({
           type: 'javascript_error',
@@ -106,7 +107,7 @@
         event => {
           // Check if it's a resource loading error
           if (event.target && event.target !== window && !event.error) {
-            console.error('Resource loading error:', event.target);
+            this.logger.error('Resource loading error', { target: event.target.tagName, src: event.target.src || event.target.href });
 
             this.handleError({
               type: 'resource_error',
@@ -135,14 +136,14 @@
 
       // Log to console
       if (this.config.logToConsole) {
-        console.group('🔴 Error Caught');
-        console.error('Type:', errorInfo.type);
-        console.error('Message:', errorInfo.message);
-        console.error('Timestamp:', errorInfo.timestamp);
-        if (errorInfo.stack) {
-          console.error('Stack:', errorInfo.stack);
-        }
-        console.groupEnd();
+        this.logger.error('Error Caught', {
+          type: errorInfo.type,
+          message: errorInfo.message,
+          timestamp: errorInfo.timestamp,
+          stack: errorInfo.stack,
+          filename: errorInfo.filename,
+          url: errorInfo.url,
+        });
       }
 
       // Show fallback UI
@@ -155,14 +156,14 @@
         try {
           this.config.onError(errorInfo);
         } catch (e) {
-          console.error('Error in custom error handler:', e);
+          this.logger.error('Error in custom error handler', { error: e.message, stack: e.stack });
         }
       }
 
       // Log to remote endpoint if configured
       if (this.config.logToRemote && this.config.remoteEndpoint) {
         this.logToRemote(errorInfo).catch(e => {
-          console.error('Failed to log error to remote:', e);
+          this.logger.error('Failed to log error to remote', { error: e.message, stack: e.stack });
         });
       }
     }
@@ -350,7 +351,7 @@
           }),
         });
       } catch (e) {
-        console.error('Failed to log error to remote:', e);
+        this.logger.error('Failed to log error to remote', { error: e.message, stack: e.stack });
       }
     }
 
@@ -360,7 +361,7 @@
     setupErrorRecovery() {
       // Auto-recover after multiple errors
       if (this.errorCount > 3) {
-        console.warn('Multiple errors detected, attempting recovery...');
+        this.logger.warn('Multiple errors detected, attempting recovery', { errorCount: this.errorCount });
         setTimeout(() => {
           // eslint-disable-next-line no-alert
           if (confirm('Multiple errors detected. Would you like to reload the page?')) {
@@ -403,7 +404,8 @@
     showFallbackUI: true,
     onError: errorInfo => {
       // Custom error handling logic
-      console.log('Custom error handler called with:', errorInfo);
+      const logger = window.SafeLogger || console;
+      logger.info('Custom error handler called', { errorInfo });
     },
   });
 

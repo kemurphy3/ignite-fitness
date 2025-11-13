@@ -1,6 +1,9 @@
 // Performance-Optimized App.js with Code Splitting
 // Heavy modules are loaded dynamically to improve initial load time
 
+// Initialize logger
+const logger = window.SafeLogger || console;
+
 // Global variables
 let currentUser = null;
 let isLoggedIn = false;
@@ -66,7 +69,7 @@ async function loadModule(modulePath, className, options = {}) {
 
     return instance;
   } catch (error) {
-    console.error(`Failed to load module ${modulePath}:`, error);
+    logger.error('Failed to load module', { modulePath, className, error: error.message, stack: error.stack });
     loadingStates.delete(cacheKey);
 
     if (options.showLoading) {
@@ -98,7 +101,7 @@ async function _loadHeavyModules() {
 
     return { soccerExercises, seasonalPrograms };
   } catch (error) {
-    console.error('Failed to load heavy modules:', error);
+    logger.error('Failed to load heavy modules', { error: error.message, stack: error.stack });
     showError(null, 'Failed to load some features. Please refresh the page.');
     return null;
   }
@@ -117,7 +120,7 @@ function preloadCriticalModules() {
 
   criticalModules.forEach(({ path, className }) => {
     loadModule(path, className, { showLoading: false }).catch(error =>
-      console.warn(`Preload failed for ${className}:`, error)
+      logger.warn('Preload failed', { className, error: error.message, stack: error.stack })
     );
   });
 }
@@ -131,7 +134,7 @@ function migrateUserData() {
     return; // No migration needed
   }
 
-  console.log('Migrating user data from version', storedVersion || '1.0', 'to', currentVersion);
+  logger.info('Migrating user data', { fromVersion: storedVersion || '1.0', toVersion: currentVersion });
 
   // Migrate from version 1.0 to 2.0
   if (!storedVersion || storedVersion === '1.0') {
@@ -140,7 +143,7 @@ function migrateUserData() {
 
   // Set new version
   localStorage.setItem('ignitefitness_data_version', currentVersion);
-  console.log('Data migration completed');
+  logger.info('Data migration completed');
 }
 
 function migrateFromV1ToV2() {
@@ -176,7 +179,7 @@ function migrateFromV1ToV2() {
     migrateStravaData();
     migrateWorkoutData();
   } catch (error) {
-    console.error('Error during data migration:', error);
+    logger.error('Error during data migration', { error: error.message, stack: error.stack });
     // Continue with app initialization even if migration fails
   }
 }
@@ -224,7 +227,7 @@ function migrateWorkoutData() {
       );
       localStorage.removeItem('ignitefitness_workouts');
     } catch (error) {
-      console.error('Error migrating workout data:', error);
+      logger.error('Error migrating workout data', { error: error.message, stack: error.stack });
     }
   }
 }
@@ -270,7 +273,7 @@ function _getAppData(key) {
       const parsed = JSON.parse(stored);
       return parsed.data;
     } catch (error) {
-      console.error(`Error parsing app data for ${key}:`, error);
+      logger.error('Error parsing app data', { key, error: error.message, stack: error.stack });
       return null;
     }
   }
@@ -279,7 +282,7 @@ function _getAppData(key) {
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('Ignite Fitness App Starting...');
+  logger.info('Ignite Fitness App Starting');
 
   // Run data migration first
   migrateUserData();
@@ -297,7 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       users = JSON.parse(savedUsers);
     } catch (error) {
-      console.error('Error parsing saved users:', error);
+      logger.error('Error parsing saved users', { error: error.message, stack: error.stack });
       users = {};
     }
   }
@@ -333,7 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  console.log('Ignite Fitness App Ready!');
+  logger.info('Ignite Fitness App Ready');
 });
 
 // Simple hash function for password hashing
@@ -707,9 +710,9 @@ async function initializeWorkoutGenerator() {
       'WorkoutGenerator'
     );
     workoutGenerator = workoutModule;
-    console.log('Workout generator initialized');
+    logger.info('Workout generator initialized');
   } catch (error) {
-    console.warn('WorkoutGenerator not available:', error);
+    logger.warn('WorkoutGenerator not available', { error: error.message, stack: error.stack });
   }
 }
 
@@ -918,7 +921,7 @@ async function _loadSoccerExercises() {
     );
     return soccerModule;
   } catch (error) {
-    console.error('Failed to load soccer exercises:', error);
+    logger.error('Failed to load soccer exercises', { error: error.message, stack: error.stack });
     showError(null, 'Soccer exercises not available. Please refresh the page.');
     return null;
   }
@@ -936,7 +939,7 @@ async function _loadSeasonalPrograms() {
     );
     return seasonalModule;
   } catch (error) {
-    console.error('Failed to load seasonal programs:', error);
+    logger.error('Failed to load seasonal programs', { error: error.message, stack: error.stack });
     showError(null, 'Seasonal programs not available. Please refresh the page.');
     return null;
   }
@@ -947,9 +950,9 @@ async function initializePatternDetector() {
   try {
     const patternModule = await loadModule('./modules/ai/PatternDetector.js', 'PatternDetector');
     patternDetector = patternModule;
-    console.log('Pattern detector initialized');
+    logger.info('Pattern detector initialized');
   } catch (error) {
-    console.warn('PatternDetector not available:', error);
+    logger.warn('PatternDetector not available', { error: error.message, stack: error.stack });
   }
 }
 
@@ -978,10 +981,10 @@ function analyzeUserPatterns() {
     // Save updated user data
     saveUserData();
 
-    console.log('Pattern analysis completed:', analysis);
+    logger.info('Pattern analysis completed', { analysis });
     return analysis;
   } catch (error) {
-    console.error('Pattern analysis failed:', error);
+    logger.error('Pattern analysis failed', { error: error.message, stack: error.stack });
     return null;
   }
 }
@@ -1122,7 +1125,7 @@ function _manualSync() {
       showSuccess('Data synced successfully!');
     })
     .catch(error => {
-      console.error('Sync failed:', error);
+      logger.error('Sync failed', { error: error.message, stack: error.stack });
       showError(null, 'Sync failed. Please try again.');
       if (syncStatus) {
         syncStatus.textContent = '❌ Sync Failed';
@@ -1157,7 +1160,7 @@ function updateWorkoutPlanGeneration() {
       displayGeneratedWorkout(workout);
       showSuccess('Workout plan generated successfully!');
     } catch (error) {
-      console.error('Workout generation failed:', error);
+      logger.error('Workout generation failed', { error: error.message, stack: error.stack });
       showError(null, 'Failed to generate workout plan');
     }
   }
@@ -1231,7 +1234,7 @@ function showError(element, message) {
 
 // Enhanced error handling with user-friendly messages
 function handleError(error, context = '') {
-  console.error(`Error in ${context}:`, error);
+  logger.error(`Error in ${context}`, { error: error.message, stack: error.stack, context });
 
   let userMessage = 'An unexpected error occurred. Please try again.';
 
@@ -1450,9 +1453,9 @@ async function initializeCoreSystems() {
     // Initialize pattern detector
     await initializePatternDetector();
 
-    console.log('Core systems initialized successfully');
+    logger.info('Core systems initialized successfully');
   } catch (error) {
-    console.error('Failed to initialize core systems:', error);
+    logger.error('Failed to initialize core systems', { error: error.message, stack: error.stack });
     showError(null, 'Some features may not be available. Please refresh the page.');
   }
 }
@@ -1462,9 +1465,9 @@ async function initializeAI() {
   try {
     const aiModule = await loadModule('./modules/ai/ContextAwareAI.js', 'ContextAwareAI');
     contextAwareAI = aiModule;
-    console.log('AI system initialized');
+    logger.info('AI system initialized');
   } catch (error) {
-    console.warn('ContextAwareAI not available:', error);
+    logger.warn('ContextAwareAI not available', { error: error.message, stack: error.stack });
   }
 }
 
@@ -1477,9 +1480,9 @@ async function _initializeSeasonalTraining() {
     );
     seasonalTraining = seasonalModule;
     seasonalTraining.initialize();
-    console.log('Seasonal training system initialized');
+    logger.info('Seasonal training system initialized');
   } catch (error) {
-    console.warn('SeasonalTrainingSystem not available:', error);
+    logger.warn('SeasonalTrainingSystem not available', { error: error.message, stack: error.stack });
   }
 }
 
@@ -1651,9 +1654,9 @@ async function initializeDataStore() {
     const dataStoreModule = await loadModule('./modules/data/DataStore.js', 'DataStore');
     dataStore = dataStoreModule;
     dataStore.setCurrentUser(currentUser);
-    console.log('Data store initialized');
+    logger.info('Data store initialized');
   } catch (error) {
-    console.warn('DataStore not available:', error);
+    logger.warn('DataStore not available', { error: error.message, stack: error.stack });
   }
 }
 
@@ -1682,9 +1685,9 @@ async function saveUserDataToDatabase() {
     };
 
     await dataStore.save('user_data', userData);
-    console.log('User data synced to database');
+    logger.info('User data synced to database');
   } catch (error) {
-    console.error('Failed to sync user data to database:', error);
+    logger.error('Failed to sync user data to database', { error: error.message, stack: error.stack });
     showError(null, 'Failed to sync data to database');
   }
 }
@@ -1761,7 +1764,7 @@ function _connectToStrava() {
     const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id=${encodeURIComponent(config.clientId)}&redirect_uri=${encodedRedirect}&response_type=code&scope=${encodedScope}&state=${state}`;
     window.location.href = stravaAuthUrl;
   } catch (error) {
-    console.error('Failed to start Strava OAuth flow:', error);
+    logger.error('Failed to start Strava OAuth flow', { error: error.message, stack: error.stack });
     showError(
       null,
       error.message || 'Strava integration requires configuration. Contact your administrator.'
@@ -1813,7 +1816,7 @@ async function refreshStravaToken() {
 
     checkStravaConnection();
   } catch (error) {
-    console.error('Token refresh failed:', error);
+    logger.error('Token refresh failed', { error: error.message, stack: error.stack });
     // Clear invalid tokens
     disconnectFromStrava();
   }
@@ -1897,7 +1900,7 @@ async function _syncStravaData() {
 
     showSuccess(`Synced ${activities.length} activities from Strava`);
   } catch (error) {
-    console.error('Strava sync failed:', error);
+    logger.error('Strava sync failed', { error: error.message, stack: error.stack });
     statusDiv.className = 'device-status disconnected';
     statusDiv.innerHTML = `<p>❌ Sync failed: ${error.message}</p>`;
     showError(null, `Strava sync failed: ${error.message}`);
@@ -1947,7 +1950,7 @@ function sendToAI() {
       .catch(error => {
         hideTypingIndicator();
         addMessageToChat('Sorry, I encountered an error. Please try again.', 'ai');
-        console.error('AI Error:', error);
+        logger.error('AI Error', { error: error.message, stack: error.stack });
       });
   } else {
     hideTypingIndicator();

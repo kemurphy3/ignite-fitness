@@ -7,6 +7,9 @@
 (function () {
   'use strict';
 
+  // Initialize logger
+  const logger = window.SafeLogger || console;
+
   // 1. Preconnect to external domains
   const preconnectDomains = ['https://fonts.googleapis.com', 'https://fonts.gstatic.com'];
 
@@ -97,7 +100,7 @@
 
   // 9. Remove unused CSS
   // This would typically be done during build process
-  console.log('Optimizing for Lighthouse performance and accessibility');
+  logger.info('Optimizing for Lighthouse performance and accessibility');
 
   // 10. Accessibility enhancements
   // Add proper ARIA labels
@@ -121,7 +124,7 @@
     }
   });
 
-  console.log('Lighthouse optimizations applied');
+  logger.info('Lighthouse optimizations applied');
 })();
 
 /**
@@ -131,7 +134,7 @@ if ('PerformanceObserver' in window) {
   // Monitor Core Web Vitals
   const observer = new PerformanceObserver(list => {
     for (const entry of list.getEntries()) {
-      console.log('Web Vital:', entry.name, entry.value);
+      logger.info('Web Vital', { name: entry.name, value: entry.value });
 
       // Send to analytics
       if (window.analytics) {
@@ -147,7 +150,7 @@ if ('PerformanceObserver' in window) {
   try {
     observer.observe({ entryTypes: ['largest-contentful-paint', 'first-input', 'layout-shift'] });
   } catch (e) {
-    console.warn('Performance Observer not fully supported');
+    logger.warn('Performance Observer not fully supported', { error: e.message });
   }
 }
 
@@ -201,5 +204,5 @@ if ('PerformanceObserver' in window) {
     });
   });
 
-  console.log('Accessibility enhancements applied');
+  logger.info('Accessibility enhancements applied');
 })();

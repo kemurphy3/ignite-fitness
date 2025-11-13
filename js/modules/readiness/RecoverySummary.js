@@ -318,7 +318,8 @@ Last injury report (${daysAgo} days ago):
 window.RecoverySummary = new RecoverySummary();
 // Initialize asynchronously - don't block page load
 window.RecoverySummary.initialize().catch(err => {
-  console.error('RecoverySummary initialization error:', err);
+  const logger = window.SafeLogger || console;
+  logger.error('RecoverySummary initialization error', { error: err.message, stack: err.stack });
 });
 
 // Export for module systems

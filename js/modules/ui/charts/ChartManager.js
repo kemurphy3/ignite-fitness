@@ -4,6 +4,7 @@
  */
 class ChartManager {
   constructor() {
+    this.logger = window.SafeLogger || console;
     this.worker = null;
     this.charts = new Map();
     this.pendingRequests = new Map();
@@ -110,12 +111,12 @@ class ChartManager {
         break;
 
       case 'CHART_ERROR':
-        console.error(`Chart error for ${chartId}:`, error);
+        this.logger.error('Chart error', { chartId, error: error?.message || String(error), stack: error?.stack });
         this.showChartError(chartId, error);
         break;
 
       case 'ERROR':
-        console.error('Worker error:', error);
+        this.logger.error('Worker error', { error: error?.message || String(error), stack: error?.stack });
         break;
     }
   }
@@ -124,7 +125,7 @@ class ChartManager {
    * Handle worker errors
    */
   handleWorkerError(error) {
-    console.warn('ChartWorker error, falling back to main thread:', error.message || error);
+    this.logger.warn('ChartWorker error, falling back to main thread', { error: error.message || String(error), stack: error?.stack });
     this.supportsOffscreenCanvas = false;
     if (this.worker) {
       this.worker.terminate();
@@ -202,7 +203,7 @@ class ChartManager {
         return chart;
       });
     } catch (error) {
-      console.error('Failed to create chart in main thread:', error);
+      this.logger.error('Failed to create chart in main thread', { chartId, error: error.message, stack: error.stack });
       this.showChartError(canvasElement, error.message);
       throw error;
     }

@@ -3,6 +3,7 @@
 
 class PatternDetector {
   constructor() {
+    this.logger = window.SafeLogger || console;
     this.patterns = {
       performance: {},
       timing: {},
@@ -197,7 +198,7 @@ class PatternDetector {
       // Return ratio (capped at 1.0)
       return Math.min(1.0, actualWorkouts / expectedWorkouts);
     } catch (error) {
-      console.error('Error calculating consistency:', error);
+      this.logger.error('Error calculating consistency', { error: error.message, stack: error.stack });
       return 0;
     }
   }
@@ -238,7 +239,7 @@ class PatternDetector {
 
       return (secondHalfVolume - firstHalfVolume) / firstHalfVolume;
     } catch (error) {
-      console.error('Error calculating improvement:', error);
+      this.logger.error('Error calculating improvement', { error: error.message, stack: error.stack });
       return 0;
     }
   }
@@ -678,7 +679,7 @@ class PatternDetector {
         }
       }
     } catch (error) {
-      console.error('Error generating insights:', error);
+      this.logger.error('Error generating insights', { error: error.message, stack: error.stack });
     }
   }
 
@@ -773,7 +774,7 @@ class PatternDetector {
         }
       }
     } catch (error) {
-      console.error('Error generating recommendations:', error);
+      this.logger.error('Error generating recommendations', { error: error.message, stack: error.stack });
     }
   }
 
