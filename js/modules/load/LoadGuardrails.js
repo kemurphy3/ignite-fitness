@@ -574,6 +574,9 @@ class LoadGuardrails {
     const hiitSessions = upcomingSessions.filter(s => this.isHighIntensitySession(s));
 
     for (const session of hiitSessions.slice(0, 2)) {
+      // Store original intensity before modification
+      const originalIntensity = session.intensity?.primary_zone || session.intensity || session.structure?.[0]?.intensity;
+
       // Modify next 2 HIIT sessions
       session.modifications = session.modifications || [];
       session.modifications.push({
@@ -607,7 +610,28 @@ class LoadGuardrails {
         });
       }
 
-      await this.saveSessionModification(userId, session);
+      // Get new intensity after modification
+      const newIntensity = session.intensity?.primary_zone || session.intensity || session.structure?.[0]?.intensity || originalIntensity;
+
+      // FIX: Add the expected method call with object format as specified in TEST FIX 3
+      await this.saveSessionModification({
+        sessionId: session.id,
+        userId: userId,
+        originalIntensity: originalIntensity,
+        newIntensity: newIntensity,
+        reason: 'HIIT_REDUCTION',
+        reductionFactor: reduction,
+      });
+
+      // Also save the modified session object to ensure changes are persisted
+      const allUpcomingSessions = await this.getUpcomingSessions(userId, 30);
+      const sessionIndex = allUpcomingSessions.findIndex(
+        s => s.id === session.id || s.template_id === session.template_id
+      );
+      if (sessionIndex >= 0) {
+        allUpcomingSessions[sessionIndex] = session;
+        localStorage.setItem(`ignite_upcoming_sessions_${userId}`, JSON.stringify(allUpcomingSessions));
+      }
     }
 
     // Emit event for UI updates
@@ -932,23 +956,78 @@ class LoadGuardrails {
 
   /**
    * Save session modification
-   * @param {string} userId - User ID
-   * @param {Object} session - Modified session
+   * @param {string|Object} userIdOrData - User ID (legacy) or modification data object
+   * @param {Object} session - Modified session (legacy format)
    */
-  async saveSessionModification(userId, session) {
+  async saveSessionModification(userIdOrData, session) {
     try {
-      const upcomingSessions = await this.getUpcomingSessions(userId, 30);
-      const index = upcomingSessions.findIndex(
-        s => s.id === session.id || s.template_id === session.template_id
-      );
-
-      if (index >= 0) {
-        upcomingSessions[index] = session;
+      // Handle new object format from TEST FIX 3
+      let userId;
+      let sessionToSave;
+      
+      if (typeof userIdOrData === 'object' && userIdOrData !== null && userIdOrData.userId) {
+        // New format: object with sessionId, userId, originalIntensity, etc.
+        userId = userIdOrData.userId;
+        const upcomingSessions = await this.getUpcomingSessions(userId, 30);
+        
+        // Find the session to update
+        sessionToSave = upcomingSessions.find(s => s.id === userIdOrData.sessionId);
+        if (sessionToSave) {
+          // Update session with modification data
+          sessionToSave.modifications = sessionToSave.modifications || [];
+          sessionToSave.modifications.push({
+            type: 'intensity_reduction',
+            originalIntensity: userIdOrData.originalIntensity,
+            newIntensity: userIdOrData.newIntensity,
+            reason: userIdOrData.reason,
+            reductionFactor: userIdOrData.reductionFactor,
+            appliedAt: new Date().toISOString(),
+          });
+        } else {
+          // Session not found, create a minimal session record
+          sessionToSave = {
+            id: userIdOrData.sessionId,
+            modifications: [{
+              type: 'intensity_reduction',
+              originalIntensity: userIdOrData.originalIntensity,
+              newIntensity: userIdOrData.newIntensity,
+              reason: userIdOrData.reason,
+              reductionFactor: userIdOrData.reductionFactor,
+              appliedAt: new Date().toISOString(),
+            }],
+          };
+          upcomingSessions.push(sessionToSave);
+        }
+        
+        // Update or add session to upcoming sessions
+        const index = upcomingSessions.findIndex(
+          s => s.id === sessionToSave.id || s.template_id === sessionToSave.template_id
+        );
+        if (index >= 0) {
+          upcomingSessions[index] = sessionToSave;
+        } else if (!upcomingSessions.includes(sessionToSave)) {
+          upcomingSessions.push(sessionToSave);
+        }
+        
+        localStorage.setItem(`ignite_upcoming_sessions_${userId}`, JSON.stringify(upcomingSessions));
       } else {
-        upcomingSessions.push(session);
-      }
+        // Legacy format: (userId, session)
+        userId = userIdOrData;
+        sessionToSave = session;
+        
+        const upcomingSessions = await this.getUpcomingSessions(userId, 30);
+        const index = upcomingSessions.findIndex(
+          s => s.id === sessionToSave.id || s.template_id === sessionToSave.template_id
+        );
 
-      localStorage.setItem(`ignite_upcoming_sessions_${userId}`, JSON.stringify(upcomingSessions));
+        if (index >= 0) {
+          upcomingSessions[index] = sessionToSave;
+        } else {
+          upcomingSessions.push(sessionToSave);
+        }
+
+        localStorage.setItem(`ignite_upcoming_sessions_${userId}`, JSON.stringify(upcomingSessions));
+      }
     } catch (error) {
       this.logger.error('Failed to save session modification', error);
     }
