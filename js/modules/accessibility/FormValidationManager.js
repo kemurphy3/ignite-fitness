@@ -94,7 +94,7 @@ class FormValidationManager {
 
     // Phone validation
     this.addValidationRule('phone', {
-      pattern: /^\+?[1-9]\d{0,15}$/,
+      pattern: /^[+]?[1-9]\d{0,15}$/,
       message: 'Please enter a valid phone number',
       required: false,
     });
