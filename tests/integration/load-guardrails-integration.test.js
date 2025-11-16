@@ -4,10 +4,41 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import LoadCalculator from '../../js/modules/load/LoadCalculator.js';
+import LoadGuardrails from '../../js/modules/load/LoadGuardrails.js';
 
 // Mock window globals if needed
 if (typeof window === 'undefined') {
   global.window = {};
+}
+
+// Initialize window globals for tests
+if (!window.LoadCalculator) {
+  window.LoadCalculator = new LoadCalculator();
+}
+if (!window.LoadGuardrails) {
+  window.LoadGuardrails = new LoadGuardrails();
+}
+if (!window.EventBus) {
+  window.EventBus = {
+    emit: vi.fn(),
+    on: vi.fn(),
+    off: vi.fn(),
+    TOPICS: {
+      SESSION_COMPLETED: 'SESSION_COMPLETED',
+      READINESS_UPDATED: 'READINESS_UPDATED',
+      PHASE_CHANGED: 'PHASE_CHANGED',
+      PROFILE_UPDATED: 'PROFILE_UPDATED',
+    },
+  };
+}
+if (!window.SafeLogger) {
+  window.SafeLogger = {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  };
 }
 
 describe('LoadGuardrails Integration', () => {
@@ -17,7 +48,6 @@ describe('LoadGuardrails Integration', () => {
 
   beforeEach(() => {
     // Ensure dependencies are loaded
-    // These should be available from the main app initialization
     guardrails = window.LoadGuardrails;
     loadCalculator = window.LoadCalculator;
 

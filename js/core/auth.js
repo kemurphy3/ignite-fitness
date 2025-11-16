@@ -18,8 +18,11 @@ const authCompat = (() => {
   const callIfAvailable =
     methodName =>
     (...args) => {
-      if (typeof window !== 'undefined' && typeof window[methodName] === 'function') {
-        return window[methodName](...args);
+      if (typeof window !== 'undefined') {
+        const method = window[methodName];
+        if (typeof method === 'function') {
+          return method(...args);
+        }
       }
       return undefined;
     };

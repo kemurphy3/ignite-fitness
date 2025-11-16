@@ -133,8 +133,15 @@ describe('fetchWithTimeout', () => {
     vi.useFakeTimers();
     const fetchSpy = vi.fn(
       (url, options) =>
-        new Promise((resolve, reject) => {
+        new Promise((_resolve, reject) => {
+          // Simulate a slow request that will be aborted
+          const timeoutId = setTimeout(() => {
+            const abortError = new Error('aborted');
+            abortError.name = 'AbortError';
+            reject(abortError);
+          }, 20); // Longer than the timeout
           options?.signal?.addEventListener('abort', () => {
+            clearTimeout(timeoutId);
             const abortError = new Error('aborted');
             abortError.name = 'AbortError';
             reject(abortError);
@@ -144,8 +151,13 @@ describe('fetchWithTimeout', () => {
     global.fetch = fetchSpy;
 
     const promise = fetchWithTimeout('https://example.com/slow', {}, 10);
+    
+    // Advance timers to trigger timeout
     await vi.advanceTimersByTimeAsync(15);
+    
+    // Wait for the promise to reject
     await expect(promise).rejects.toThrow('Request timeout after 10ms');
+    
     vi.useRealTimers();
   });
 });

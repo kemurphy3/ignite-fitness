@@ -265,6 +265,18 @@ class SafeLogger {
 // Export for use in other modules
 module.exports = SafeLogger;
 
+// Export createLogger function for compatibility
+module.exports.createLogger = function(name) {
+  const logger = SafeLogger.create();
+  // Add convenience methods that use console
+  logger.info = (...args) => console.info(`[${name}]`, ...args);
+  logger.warn = (...args) => console.warn(`[${name}]`, ...args);
+  logger.error = (...args) => console.error(`[${name}]`, ...args);
+  logger.debug = (...args) => console.debug(`[${name}]`, ...args);
+  logger.log = (...args) => console.log(`[${name}]`, ...args);
+  return logger;
+};
+
 // Also export for browser use
 if (typeof window !== 'undefined') {
   window.SafeLogger = SafeLogger;

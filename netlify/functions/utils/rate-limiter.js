@@ -7,11 +7,20 @@
 const SafeLogger = require('./safe-logging');
 
 // Create safe logger for rate limiting
-const logger = SafeLogger.create({
+const loggerInstance = SafeLogger.create({
   enableMasking: true,
   visibleChars: 4,
   maskChar: '*',
 });
+
+// Create logger with convenience methods
+const logger = {
+  info: (...args) => console.info('[RateLimiter]', ...args),
+  warn: (...args) => console.warn('[RateLimiter]', ...args),
+  error: (...args) => console.error('[RateLimiter]', ...args),
+  debug: (...args) => console.debug('[RateLimiter]', ...args),
+  log: (...args) => console.log('[RateLimiter]', ...args),
+};
 
 // Rate limiting configuration
 const RATE_LIMIT_CONFIG = {

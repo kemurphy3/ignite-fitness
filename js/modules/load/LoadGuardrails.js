@@ -90,6 +90,12 @@ class LoadGuardrails {
       return;
     }
 
+    // Check if TOPICS exists
+    if (!this.eventBus.TOPICS) {
+      this.logger.warn('EventBus.TOPICS not available, guardrails will not auto-monitor');
+      return;
+    }
+
     // Listen for session completion
     this.eventBus.on(this.eventBus.TOPICS.SESSION_COMPLETED, data => {
       if (data && data.userId) {
