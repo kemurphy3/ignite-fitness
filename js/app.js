@@ -1166,8 +1166,8 @@ function updateWorkoutPlanGeneration() {
   }
 }
 
-// Override the original generateWorkoutPlan function
-function _generateWorkoutPlan() {
+// Generate workout plan based on user profile and preferences
+function generateWorkoutPlan() {
   updateWorkoutPlanGeneration();
 }
 

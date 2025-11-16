@@ -421,9 +421,10 @@ function saveGoals() {
   showSuccess('Goals saved!');
 }
 
-function generateWorkoutPlan() {
-  showSuccess('Workout plan generation will be implemented in the full version!');
-}
+// generateWorkoutPlan is defined in app.js - removed duplicate declaration
+// function generateWorkoutPlan() {
+//   showSuccess('Workout plan generation will be implemented in the full version!');
+// }
 
 function logout() {
   currentUser = null;
@@ -435,6 +436,19 @@ function logout() {
 
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
+  // generateWorkoutPlan is defined in app.js - will be available globally when app.js loads
+  // Using a getter to avoid ESLint error about undefined variable
+  const getGenerateWorkoutPlan = () => {
+    if (typeof generateWorkoutPlan !== 'undefined') {
+      return generateWorkoutPlan;
+    }
+    return function() { 
+      if (typeof showSuccess === 'function') {
+        showSuccess('Workout plan generation will be implemented in the full version!');
+      }
+    };
+  };
+
   module.exports = {
     currentUser,
     isLoggedIn,
@@ -448,7 +462,7 @@ if (typeof module !== 'undefined' && module.exports) {
     showTab,
     savePersonalInfo,
     saveGoals,
-    generateWorkoutPlan,
+    get generateWorkoutPlan() { return getGenerateWorkoutPlan(); },
     logout,
   };
 }
