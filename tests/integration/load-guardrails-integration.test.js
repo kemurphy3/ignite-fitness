@@ -38,6 +38,14 @@ if (!window.SafeLogger) {
     warn: vi.fn(),
     error: vi.fn(),
     debug: vi.fn(),
+    audit: vi.fn(),
+    create: vi.fn(() => ({
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      debug: vi.fn(),
+      audit: vi.fn(),
+    })),
   };
 }
 
@@ -61,13 +69,19 @@ describe('LoadGuardrails Integration', () => {
       localStorage.clear();
     }
 
-    // Mock logger for testing
+    // Mock logger for testing - ensure it has audit method
     mockLogger = {
       audit: vi.fn(),
       error: vi.fn(),
       warn: vi.fn(),
       info: vi.fn(),
+      debug: vi.fn(),
     };
+
+    // Ensure guardrails uses a logger with audit method
+    if (guardrails) {
+      guardrails.logger = mockLogger;
+    }
   });
 
   describe('Weekly Ramp Rate Monitoring', () => {

@@ -551,6 +551,11 @@ class TodayView {
   }
 
   confirmSkip() {
+    // Use global.confirm as fallback for test environments
+    if (typeof global !== 'undefined' && typeof global.confirm === 'function') {
+      return Promise.resolve(global.confirm('Skip workout?'));
+    }
+
     if (window.DialogManager?.confirm) {
       return window.DialogManager.confirm({
         title: 'Skip workout?',
