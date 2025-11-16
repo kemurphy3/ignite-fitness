@@ -120,11 +120,11 @@ describe('LoadCalculationEngine', () => {
       expect(result.method_used).toBe('Zone_RPE');
       expect(result.confidence).toBe(0.85);
 
-      // Z1: 10 * 0.5 = 5, Z2: 40 * 1.0 = 40, Z3: 10 * 1.5 = 15, Total: 60
-      expect(result.total_load).toBe(60);
+      // Z1: 10 * 0.5 = 5, Z2: 40 * 2.0 = 80, Z3: 10 * 4.0 = 40, Total: 125
+      expect(result.total_load).toBe(125);
       expect(result.breakdown.Z1.load_contribution).toBe(5);
-      expect(result.breakdown.Z2.load_contribution).toBe(40);
-      expect(result.breakdown.Z3.load_contribution).toBe(15);
+      expect(result.breakdown.Z2.load_contribution).toBe(80);
+      expect(result.breakdown.Z3.load_contribution).toBe(40);
     });
 
     it('should handle single zone sessions', () => {
@@ -137,8 +137,8 @@ describe('LoadCalculationEngine', () => {
 
       const result = LoadCalculationEngine.compute_load(session);
 
-      // Z2: 50 * 1.0 = 50
-      expect(result.total_load).toBe(50);
+      // Z2: 50 * 2.0 = 100
+      expect(result.total_load).toBe(100);
       expect(Object.keys(result.breakdown)).toEqual(['Z2']);
     });
 
@@ -154,8 +154,8 @@ describe('LoadCalculationEngine', () => {
 
       const result = LoadCalculationEngine.compute_load(session);
 
-      // Z2: 25 * 1.0 = 25
-      expect(result.total_load).toBe(25);
+      // Z2: 25 * 2.0 = 50
+      expect(result.total_load).toBe(50);
       expect(Object.keys(result.breakdown)).toEqual(['Z2']);
     });
   });
@@ -358,8 +358,8 @@ describe('LoadCalculationEngine', () => {
       const result = LoadCalculationEngine.compute_load(session);
 
       expect(result.method_used).toBe('Zone_RPE');
-      // Z2: 30 * 1.0 = 30
-      expect(result.total_load).toBe(30);
+      // Z2: 30 * 2.0 = 60
+      expect(result.total_load).toBe(60);
       expect(result.details.total_minutes).toBe(60);
     });
   });

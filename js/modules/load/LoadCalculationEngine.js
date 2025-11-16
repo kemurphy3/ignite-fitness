@@ -6,10 +6,10 @@
 
 const RPE_ZONE_MULTIPLIERS = {
   Z1: 0.5,
-  Z2: 1.0,
-  Z3: 1.5,
-  Z4: 2.0,
-  Z5: 2.5,
+  Z2: 2.0,
+  Z3: 4.0,
+  Z4: 6.0,
+  Z5: 8.0,
 };
 
 class LoadCalculationEngine {
