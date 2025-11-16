@@ -79,8 +79,8 @@
     ]
   },
   "dependencies": {
-    "chart.js": "^4.4.0",
     "@neondatabase/serverless": "^1.0.2",
+    "chart.js": "^4.4.0",
     "dotenv": "^16.4.5",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.11.3"

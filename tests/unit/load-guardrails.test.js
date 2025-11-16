@@ -107,7 +107,7 @@ class LoadGuardrails {
   async checkWeeklyRampRate(userId) {
     try {
       const loadHistory = await this.getWeeklyLoadHistory(userId, 2);
-      
+
       if (!loadHistory || loadHistory.length < 2) {
         return { status: 'insufficient_data' };
       }
@@ -245,7 +245,10 @@ class LoadGuardrails {
       rampRate,
       exceedsThreshold,
       severity,
-      consecutiveIncreases: this.checkConsecutiveIncreases(loadHistory, thresholds.maxWeeklyIncrease),
+      consecutiveIncreases: this.checkConsecutiveIncreases(
+        loadHistory,
+        thresholds.maxWeeklyIncrease
+      ),
       recommendedReduction: this.calculateRecommendedReduction(rampRate, thresholds),
       message: `Load increase detected (${Math.round(rampRate * 100)}% vs ${Math.round(thresholds.maxWeeklyIncrease * 100)}% max)`,
     };

@@ -258,5 +258,7 @@ if (chartJSAvailable && typeof Chart !== 'undefined') {
   // Chart.js not available - worker is unusable but stays alive
   // INIT_ERROR already sent in the catch block above
   // Use debug level to reduce noise (this is expected in local dev)
-  logger.debug('ChartWorker: Cannot initialize - Chart.js not available. Worker will not function.');
+  logger.debug(
+    'ChartWorker: Cannot initialize - Chart.js not available. Worker will not function.'
+  );
 }

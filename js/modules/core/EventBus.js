@@ -43,7 +43,9 @@ class EventBus {
     const listeners = this.events.get(event);
     if (listeners.length >= this.maxListeners) {
       const logger = window.SafeLogger || console;
-      logger.warn(`Event '${event}' has reached maximum listeners`, { maxListeners: this.maxListeners });
+      logger.warn(`Event '${event}' has reached maximum listeners`, {
+        maxListeners: this.maxListeners,
+      });
     }
 
     const listener = { callback, context };
@@ -116,7 +118,10 @@ class EventBus {
         }
       } catch (error) {
         const logger = window.SafeLogger || console;
-        logger.error(`Error in event listener for '${event}'`, { error: error.message, stack: error.stack });
+        logger.error(`Error in event listener for '${event}'`, {
+          error: error.message,
+          stack: error.stack,
+        });
       }
     });
   }

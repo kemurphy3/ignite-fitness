@@ -72,7 +72,10 @@ class ChartManager {
         }
       } catch (error) {
         const logger = window.SafeLogger || console;
-        logger.warn('ChartManager: Failed to create worker, falling back to main thread', { error: error.message, stack: error.stack });
+        logger.warn('ChartManager: Failed to create worker, falling back to main thread', {
+          error: error.message,
+          stack: error.stack,
+        });
         this.supportsOffscreenCanvas = false;
       }
     } else {
@@ -88,17 +91,21 @@ class ChartManager {
     const { type, chartId, imageData, error, message } = event.data;
 
     switch (type) {
-      case 'INIT_ERROR':
+      case 'INIT_ERROR': {
         // Worker failed to initialize (usually CDN/CORS issue)
         // Use debug level since this is expected behavior in local dev
         const logger = window.SafeLogger || console;
-        logger.debug('ChartWorker initialization failed, falling back to main thread', { message, error: error?.message || String(error) });
+        logger.debug('ChartWorker initialization failed, falling back to main thread', {
+          message,
+          error: error?.message || String(error),
+        });
         this.supportsOffscreenCanvas = false;
         if (this.worker) {
           this.worker.terminate();
           this.worker = null;
         }
         break;
+      }
 
       case 'CHART_CREATED':
       case 'CHART_UPDATED':
@@ -111,12 +118,19 @@ class ChartManager {
         break;
 
       case 'CHART_ERROR':
-        this.logger.error('Chart error', { chartId, error: error?.message || String(error), stack: error?.stack });
+        this.logger.error('Chart error', {
+          chartId,
+          error: error?.message || String(error),
+          stack: error?.stack,
+        });
         this.showChartError(chartId, error);
         break;
 
       case 'ERROR':
-        this.logger.error('Worker error', { error: error?.message || String(error), stack: error?.stack });
+        this.logger.error('Worker error', {
+          error: error?.message || String(error),
+          stack: error?.stack,
+        });
         break;
     }
   }
@@ -125,7 +139,10 @@ class ChartManager {
    * Handle worker errors
    */
   handleWorkerError(error) {
-    this.logger.warn('ChartWorker error, falling back to main thread', { error: error.message || String(error), stack: error?.stack });
+    this.logger.warn('ChartWorker error, falling back to main thread', {
+      error: error.message || String(error),
+      stack: error?.stack,
+    });
     this.supportsOffscreenCanvas = false;
     if (this.worker) {
       this.worker.terminate();
@@ -203,7 +220,11 @@ class ChartManager {
         return chart;
       });
     } catch (error) {
-      this.logger.error('Failed to create chart in main thread', { chartId, error: error.message, stack: error.stack });
+      this.logger.error('Failed to create chart in main thread', {
+        chartId,
+        error: error.message,
+        stack: error.stack,
+      });
       this.showChartError(canvasElement, error.message);
       throw error;
     }

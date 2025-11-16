@@ -14,7 +14,9 @@ const resolveBaseComponent = () => {
     return moduleExport?.BaseComponent || moduleExport?.default || moduleExport;
   } catch (error) {
     const logger = window.SafeLogger || console;
-    logger.debug('SessionManager: BaseComponent fallback in use', { error: error?.message || String(error) });
+    logger.debug('SessionManager: BaseComponent fallback in use', {
+      error: error?.message || String(error),
+    });
     return class {};
   }
 };

@@ -72,7 +72,10 @@ class ContextAwareAI {
             lastUpdated: Date.now(),
           };
     } catch (error) {
-      this.logger.error('Error loading success metrics', { error: error.message, stack: error.stack });
+      this.logger.error('Error loading success metrics', {
+        error: error.message,
+        stack: error.stack,
+      });
       return {
         workoutCompletions: 0,
         goalAchievements: 0,
@@ -106,7 +109,10 @@ class ContextAwareAI {
     try {
       localStorage.setItem('ai_success_metrics', JSON.stringify(this.successMetrics));
     } catch (error) {
-      this.logger.error('Error saving success metrics', { error: error.message, stack: error.stack });
+      this.logger.error('Error saving success metrics', {
+        error: error.message,
+        stack: error.stack,
+      });
     }
   }
 
@@ -398,12 +404,17 @@ class ContextAwareAI {
           "I apologize, but I couldn't generate a response at this time."
         );
       } else {
-        this.logger.warn('AI API call failed, using fallback response', { status: response.status });
+        this.logger.warn('AI API call failed, using fallback response', {
+          status: response.status,
+        });
         const fallbackResult = this.getFallbackResponse(userInput);
         return fallbackResult.message || fallbackResult;
       }
     } catch (error) {
-      this.logger.warn('AI API call error, using fallback response', { error: error.message, stack: error.stack });
+      this.logger.warn('AI API call error, using fallback response', {
+        error: error.message,
+        stack: error.stack,
+      });
       const fallbackResult = this.getFallbackResponse(userInput);
       return fallbackResult.message || fallbackResult;
     }

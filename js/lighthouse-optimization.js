@@ -130,35 +130,41 @@
 /**
  * Performance Monitoring
  */
-if ('PerformanceObserver' in window) {
-  // Monitor Core Web Vitals
-  const observer = new PerformanceObserver(list => {
-    for (const entry of list.getEntries()) {
-      logger.info('Web Vital', { name: entry.name, value: entry.value });
+(function () {
+  'use strict';
+  const logger = window.SafeLogger || console;
 
-      // Send to analytics
-      if (window.analytics) {
-        window.analytics.track(entry.name, {
-          value: entry.value,
-          timing: entry.startTime,
-        });
+  if ('PerformanceObserver' in window) {
+    // Monitor Core Web Vitals
+    const observer = new PerformanceObserver(list => {
+      for (const entry of list.getEntries()) {
+        logger.info('Web Vital', { name: entry.name, value: entry.value });
+
+        // Send to analytics
+        if (window.analytics) {
+          window.analytics.track(entry.name, {
+            value: entry.value,
+            timing: entry.startTime,
+          });
+        }
       }
-    }
-  });
+    });
 
-  // Observe LCP, FID, CLS
-  try {
-    observer.observe({ entryTypes: ['largest-contentful-paint', 'first-input', 'layout-shift'] });
-  } catch (e) {
-    logger.warn('Performance Observer not fully supported', { error: e.message });
+    // Observe LCP, FID, CLS
+    try {
+      observer.observe({ entryTypes: ['largest-contentful-paint', 'first-input', 'layout-shift'] });
+    } catch (e) {
+      logger.warn('Performance Observer not fully supported', { error: e.message });
+    }
   }
-}
+})();
 
 /**
  * Accessibility Enhancements
  */
 (function () {
   'use strict';
+  const logger = window.SafeLogger || console;
 
   // Ensure all interactive elements are keyboard accessible
   document.addEventListener('keydown', e => {

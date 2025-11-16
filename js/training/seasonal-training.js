@@ -553,7 +553,10 @@ class SeasonalTrainingSystem {
           date: new Date(game.date),
         }));
       } catch (error) {
-        this.logger.error('Error loading game schedule', { error: error.message, stack: error.stack });
+        this.logger.error('Error loading game schedule', {
+          error: error.message,
+          stack: error.stack,
+        });
         this.gameSchedule = [];
       }
     }

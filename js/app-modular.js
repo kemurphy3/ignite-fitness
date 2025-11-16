@@ -145,7 +145,10 @@ window.addEventListener('error', event => {
 });
 
 window.addEventListener('unhandledrejection', event => {
-  logger.error('Unhandled promise rejection', { reason: String(event.reason), stack: event.reason?.stack });
+  logger.error('Unhandled promise rejection', {
+    reason: String(event.reason),
+    stack: event.reason?.stack,
+  });
   if (!window.appReady) {
     showBootError(event.reason);
   }
@@ -238,7 +241,10 @@ function initializeUIEnhancements() {
 
     logger.info('UI enhancements initialized successfully');
   } catch (error) {
-    logger.error('Failed to initialize UI enhancements', { error: error.message, stack: error.stack });
+    logger.error('Failed to initialize UI enhancements', {
+      error: error.message,
+      stack: error.stack,
+    });
     // Don't throw - these are non-critical enhancements
   }
 }
@@ -252,7 +258,10 @@ function migrateUserData() {
     return; // No migration needed
   }
 
-  logger.info('Migrating user data', { fromVersion: storedVersion || '1.0', toVersion: currentVersion });
+  logger.info('Migrating user data', {
+    fromVersion: storedVersion || '1.0',
+    toVersion: currentVersion,
+  });
 
   // Migrate from version 1.0 to 2.0
   if (!storedVersion || storedVersion === '1.0') {

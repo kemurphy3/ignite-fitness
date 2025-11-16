@@ -69,7 +69,12 @@ async function loadModule(modulePath, className, options = {}) {
 
     return instance;
   } catch (error) {
-    logger.error('Failed to load module', { modulePath, className, error: error.message, stack: error.stack });
+    logger.error('Failed to load module', {
+      modulePath,
+      className,
+      error: error.message,
+      stack: error.stack,
+    });
     loadingStates.delete(cacheKey);
 
     if (options.showLoading) {
@@ -134,7 +139,10 @@ function migrateUserData() {
     return; // No migration needed
   }
 
-  logger.info('Migrating user data', { fromVersion: storedVersion || '1.0', toVersion: currentVersion });
+  logger.info('Migrating user data', {
+    fromVersion: storedVersion || '1.0',
+    toVersion: currentVersion,
+  });
 
   // Migrate from version 1.0 to 2.0
   if (!storedVersion || storedVersion === '1.0') {
@@ -1167,8 +1175,13 @@ function updateWorkoutPlanGeneration() {
 }
 
 // Generate workout plan based on user profile and preferences
-function generateWorkoutPlan() {
+function _generateWorkoutPlan() {
   updateWorkoutPlanGeneration();
+}
+
+// Make function available globally
+if (typeof window !== 'undefined') {
+  window._generateWorkoutPlan = _generateWorkoutPlan;
 }
 
 // Load recent workouts
@@ -1482,7 +1495,10 @@ async function _initializeSeasonalTraining() {
     seasonalTraining.initialize();
     logger.info('Seasonal training system initialized');
   } catch (error) {
-    logger.warn('SeasonalTrainingSystem not available', { error: error.message, stack: error.stack });
+    logger.warn('SeasonalTrainingSystem not available', {
+      error: error.message,
+      stack: error.stack,
+    });
   }
 }
 
@@ -1687,7 +1703,10 @@ async function saveUserDataToDatabase() {
     await dataStore.save('user_data', userData);
     logger.info('User data synced to database');
   } catch (error) {
-    logger.error('Failed to sync user data to database', { error: error.message, stack: error.stack });
+    logger.error('Failed to sync user data to database', {
+      error: error.message,
+      stack: error.stack,
+    });
     showError(null, 'Failed to sync data to database');
   }
 }

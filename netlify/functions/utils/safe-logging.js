@@ -266,7 +266,7 @@ class SafeLogger {
 module.exports = SafeLogger;
 
 // Export createLogger function for compatibility
-module.exports.createLogger = function(name) {
+module.exports.createLogger = function (name) {
   const logger = SafeLogger.create();
   // Add convenience methods that use console
   logger.info = (...args) => console.info(`[${name}]`, ...args);

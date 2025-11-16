@@ -361,7 +361,11 @@ window.removeStravaActivity = async function (activityId) {
       ui.refresh();
     }
   } catch (error) {
-    logger.error('Failed to remove activity', { error: error.message, stack: error.stack, activityId });
+    logger.error('Failed to remove activity', {
+      error: error.message,
+      stack: error.stack,
+      activityId,
+    });
   }
 };
 

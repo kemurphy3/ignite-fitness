@@ -61,7 +61,10 @@
      */
     setupPromiseRejectionHandler() {
       window.addEventListener('unhandledrejection', event => {
-        this.logger.error('Unhandled promise rejection', { reason: event.reason?.message || String(event.reason), stack: event.reason?.stack });
+        this.logger.error('Unhandled promise rejection', {
+          reason: event.reason?.message || String(event.reason),
+          stack: event.reason?.stack,
+        });
 
         this.handleError({
           type: 'promise_rejection',
@@ -82,7 +85,11 @@
      */
     setupErrorHandler() {
       window.addEventListener('error', event => {
-        this.logger.error('JavaScript error', { error: event.error?.message || event.message, stack: event.error?.stack, filename: event.filename });
+        this.logger.error('JavaScript error', {
+          error: event.error?.message || event.message,
+          stack: event.error?.stack,
+          filename: event.filename,
+        });
 
         this.handleError({
           type: 'javascript_error',
@@ -107,7 +114,10 @@
         event => {
           // Check if it's a resource loading error
           if (event.target && event.target !== window && !event.error) {
-            this.logger.error('Resource loading error', { target: event.target.tagName, src: event.target.src || event.target.href });
+            this.logger.error('Resource loading error', {
+              target: event.target.tagName,
+              src: event.target.src || event.target.href,
+            });
 
             this.handleError({
               type: 'resource_error',
@@ -361,7 +371,9 @@
     setupErrorRecovery() {
       // Auto-recover after multiple errors
       if (this.errorCount > 3) {
-        this.logger.warn('Multiple errors detected, attempting recovery', { errorCount: this.errorCount });
+        this.logger.warn('Multiple errors detected, attempting recovery', {
+          errorCount: this.errorCount,
+        });
         setTimeout(() => {
           // eslint-disable-next-line no-alert
           if (confirm('Multiple errors detected. Would you like to reload the page?')) {

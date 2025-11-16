@@ -12,7 +12,9 @@ const resolveModule = (globalKey, loadModule) => {
     return loadModule();
   } catch (error) {
     const logger = window.SafeLogger || console;
-    logger.debug(`CoachingEngine: ${globalKey} not available`, { error: error?.message || String(error) });
+    logger.debug(`CoachingEngine: ${globalKey} not available`, {
+      error: error?.message || String(error),
+    });
     return null;
   }
 };

@@ -198,7 +198,10 @@ class PatternDetector {
       // Return ratio (capped at 1.0)
       return Math.min(1.0, actualWorkouts / expectedWorkouts);
     } catch (error) {
-      this.logger.error('Error calculating consistency', { error: error.message, stack: error.stack });
+      this.logger.error('Error calculating consistency', {
+        error: error.message,
+        stack: error.stack,
+      });
       return 0;
     }
   }
@@ -239,7 +242,10 @@ class PatternDetector {
 
       return (secondHalfVolume - firstHalfVolume) / firstHalfVolume;
     } catch (error) {
-      this.logger.error('Error calculating improvement', { error: error.message, stack: error.stack });
+      this.logger.error('Error calculating improvement', {
+        error: error.message,
+        stack: error.stack,
+      });
       return 0;
     }
   }
@@ -774,7 +780,10 @@ class PatternDetector {
         }
       }
     } catch (error) {
-      this.logger.error('Error generating recommendations', { error: error.message, stack: error.stack });
+      this.logger.error('Error generating recommendations', {
+        error: error.message,
+        stack: error.stack,
+      });
     }
   }
 

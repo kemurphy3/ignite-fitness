@@ -113,7 +113,11 @@ class DataStore {
       const data = localStorage.getItem(`ignitefitness_${key}`);
       return data ? JSON.parse(data) : null;
     } catch (error) {
-      this.logger.error('Error loading from localStorage', { key, error: error.message, stack: error.stack });
+      this.logger.error('Error loading from localStorage', {
+        key,
+        error: error.message,
+        stack: error.stack,
+      });
       return null;
     }
   }
@@ -123,7 +127,11 @@ class DataStore {
     try {
       localStorage.setItem(`ignitefitness_${key}`, JSON.stringify(data));
     } catch (error) {
-      this.logger.error('Error saving to localStorage', { key, error: error.message, stack: error.stack });
+      this.logger.error('Error saving to localStorage', {
+        key,
+        error: error.message,
+        stack: error.stack,
+      });
     }
   }
 
@@ -208,7 +216,11 @@ class DataStore {
       try {
         await this.syncToAPI(item.key, item.data);
       } catch (error) {
-        this.logger.error('Sync failed', { key: item.key, error: error.message, stack: error.stack });
+        this.logger.error('Sync failed', {
+          key: item.key,
+          error: error.message,
+          stack: error.stack,
+        });
         // Re-queue for retry
         this.syncQueue.push(item);
       }

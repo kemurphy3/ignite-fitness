@@ -488,7 +488,10 @@ function initializeAuth() {
       .readFromStorage()
       .then(finalize)
       .catch(error => {
-        logger.error('Failed to read auth state safely', { error: error.message, stack: error.stack });
+        logger.error('Failed to read auth state safely', {
+          error: error.message,
+          stack: error.stack,
+        });
         updateUIForLoggedOutUser();
       });
   } else {
@@ -564,7 +567,10 @@ function initializeLoadManagement() {
   try {
     window.safeLoadCalculator.getLoadDashboard();
   } catch (error) {
-    logger.error('Failed to initialize load dashboard safely', { error: error.message, stack: error.stack });
+    logger.error('Failed to initialize load dashboard safely', {
+      error: error.message,
+      stack: error.stack,
+    });
   }
 }
 

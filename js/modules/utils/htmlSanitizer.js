@@ -28,7 +28,10 @@ class HtmlSanitizer {
       this.initialized = true;
     } catch (error) {
       const logger = window.SafeLogger || console;
-      logger.warn('DOMPurify not available, falling back to basic escaping', { error: error.message, stack: error.stack });
+      logger.warn('DOMPurify not available, falling back to basic escaping', {
+        error: error.message,
+        stack: error.stack,
+      });
       this.dompurify = null;
       this.initialized = true;
     }

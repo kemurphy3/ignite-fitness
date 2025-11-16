@@ -7,7 +7,7 @@
 const SafeLogger = require('./safe-logging');
 
 // Create safe logger for rate limiting
-const loggerInstance = SafeLogger.create({
+const _loggerInstance = SafeLogger.create({
   enableMasking: true,
   visibleChars: 4,
   maskChar: '*',

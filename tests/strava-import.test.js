@@ -151,13 +151,13 @@ describe('fetchWithTimeout', () => {
     global.fetch = fetchSpy;
 
     const promise = fetchWithTimeout('https://example.com/slow', {}, 10);
-    
+
     // Advance timers to trigger timeout
     await vi.advanceTimersByTimeAsync(15);
-    
+
     // Wait for the promise to reject
     await expect(promise).rejects.toThrow('Request timeout after 10ms');
-    
+
     vi.useRealTimers();
   });
 });

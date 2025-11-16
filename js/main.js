@@ -104,7 +104,10 @@ function initializeAuth() {
       .readFromStorage()
       .then(finalize)
       .catch(error => {
-        logger.error('Failed to initialize auth state', { error: error.message, stack: error.stack });
+        logger.error('Failed to initialize auth state', {
+          error: error.message,
+          stack: error.stack,
+        });
         const savedUser = localStorage.getItem('ignitefitness_current_user');
         if (savedUser) {
           currentUser = savedUser;
@@ -439,10 +442,10 @@ if (typeof module !== 'undefined' && module.exports) {
   // generateWorkoutPlan is defined in app.js - will be available globally when app.js loads
   // Using a getter to avoid ESLint error about undefined variable
   const getGenerateWorkoutPlan = () => {
-    if (typeof generateWorkoutPlan !== 'undefined') {
-      return generateWorkoutPlan;
+    if (typeof window !== 'undefined' && window._generateWorkoutPlan) {
+      return window._generateWorkoutPlan;
     }
-    return function() { 
+    return function () {
       if (typeof showSuccess === 'function') {
         showSuccess('Workout plan generation will be implemented in the full version!');
       }
@@ -462,7 +465,9 @@ if (typeof module !== 'undefined' && module.exports) {
     showTab,
     savePersonalInfo,
     saveGoals,
-    get generateWorkoutPlan() { return getGenerateWorkoutPlan(); },
+    get generateWorkoutPlan() {
+      return getGenerateWorkoutPlan();
+    },
     logout,
   };
 }
