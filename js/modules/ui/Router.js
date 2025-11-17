@@ -400,6 +400,17 @@ class Router {
       // Render component
       container.innerHTML = component;
 
+      // Extract and execute any scripts in the component HTML
+      const scripts = container.querySelectorAll('script');
+      scripts.forEach(oldScript => {
+        const newScript = document.createElement('script');
+        Array.from(oldScript.attributes).forEach(attr => {
+          newScript.setAttribute(attr.name, attr.value);
+        });
+        newScript.textContent = oldScript.textContent;
+        oldScript.parentNode.replaceChild(newScript, oldScript);
+      });
+
       // Initialize component if it has an init method
       const componentElement = container.querySelector('[data-component]');
       if (componentElement && window[routeConfig.component]) {
@@ -407,6 +418,16 @@ class Router {
         if (typeof componentInstance.init === 'function') {
           componentInstance.init();
         }
+      }
+
+      // Initialize RegisterView handlers
+      if (routeConfig.component === 'RegisterView') {
+        this.initRegisterView();
+      }
+
+      // Initialize LoginView handlers
+      if (routeConfig.component === 'LoginView') {
+        this.initLoginView();
       }
 
       // Hide loading state
@@ -859,40 +880,6 @@ class Router {
                                 </button>
                             </div>
                         </form>
-                        <script>
-                            // LoginView resilience - prevent unmount unless login succeeds or explicit navigation
-                            window.handleLoginSubmit = async function(event) {
-                                event.preventDefault();
-                                const username = document.getElementById('loginUsername').value;
-                                const password = document.getElementById('loginPassword').value;
-                                const errorDiv = document.getElementById('loginError');
-                                
-                                if (!window.AuthManager) {
-                                    errorDiv.textContent = 'Auth system not ready. Please reload.';
-                                    errorDiv.style.display = 'block';
-                                    return;
-                                }
-                                
-                                const result = window.AuthManager.login(username, password);
-                                
-                                if (result.success) {
-                                    errorDiv.style.display = 'none';
-                                    // Update auth state and navigate to intended route
-                                    const authState = window.AuthManager.getAuthState();
-                                    const router = window.Router;
-                                    if (router && router.lastKnownRoute) {
-                                        router.navigate(router.lastKnownRoute);
-                                        router.lastKnownRoute = null;
-                                    } else {
-                                        router.navigate('#/dashboard');
-                                    }
-                                } else {
-                                    errorDiv.textContent = result.error || 'Login failed';
-                                    errorDiv.style.display = 'block';
-                                    // Stay on login screen - DO NOT unmount
-                                }
-                            };
-                        </script>
                     </section>
                 </div>
             </div>
@@ -991,131 +978,197 @@ class Router {
                             </a>
                         </p>
                     </div>
-                    
-                    <script>
-                        window.handleQuickSignup = async function(event) {
-                            event.preventDefault();
-                            const usernameEl = document.getElementById('signup-username');
-                            const passwordEl = document.getElementById('signup-password');
-                            const confirmPasswordEl = document.getElementById('signup-confirm-password');
-                            const athleteNameEl = document.getElementById('signup-athlete-name');
-                            const errorDiv = document.getElementById('signupError');
-                            
-                            // Validate form elements exist
-                            if (!usernameEl || !passwordEl || !confirmPasswordEl || !athleteNameEl) {
-                                if (errorDiv) {
-                                    errorDiv.textContent = 'Registration form not available. Please refresh the page.';
-                                    errorDiv.style.display = 'block';
-                                }
-                                return;
-                            }
-                            
-                            const username = usernameEl.value.trim();
-                            const password = passwordEl.value;
-                            const confirmPassword = confirmPasswordEl.value;
-                            const athleteName = athleteNameEl.value.trim();
-                            
-                            // Clear previous errors
-                            if (errorDiv) {
-                                errorDiv.style.display = 'none';
-                                errorDiv.textContent = '';
-                            }
-                            
-                            // Validate all fields are filled
-                            if (!username || !password || !confirmPassword || !athleteName) {
-                                if (errorDiv) {
-                                    errorDiv.textContent = 'Please fill in all fields';
-                                    errorDiv.style.display = 'block';
-                                }
-                                return;
-                            }
-                            
-                            // Validate passwords match
-                            if (password !== confirmPassword) {
-                                if (errorDiv) {
-                                    errorDiv.textContent = 'Passwords do not match. Please check and try again.';
-                                    errorDiv.style.display = 'block';
-                                }
-                                // Highlight the confirm password field
-                                confirmPasswordEl.style.borderColor = '#ef4444';
-                                confirmPasswordEl.focus();
-                                return;
-                            } else {
-                                confirmPasswordEl.style.borderColor = '';
-                            }
-                            
-                            if (!window.AuthManager) {
-                                if (errorDiv) {
-                                    errorDiv.textContent = 'Auth system not ready. Please reload.';
-                                    errorDiv.style.display = 'block';
-                                }
-                                return;
-                            }
-                            
-                            // Show loading state
-                            const submitBtn = event.target.querySelector('button[type="submit"]');
-                            const originalText = submitBtn.textContent;
-                            submitBtn.textContent = 'Creating account...';
-                            submitBtn.disabled = true;
-                            
-                            try {
-                                const result = window.AuthManager.register({
-                                    username,
-                                    password,
-                                    confirmPassword,
-                                    athleteName
-                                });
-                                
-                                if (result.success) {
-                                    if (errorDiv) {
-                                        errorDiv.style.display = 'none';
-                                    }
-                                    
-                                    // Show success message
-                                    submitBtn.textContent = 'Account created! Redirecting...';
-                                    submitBtn.style.background = '#10b981';
-                                    
-                                    // Auto-login after registration, proceed to onboarding
-                                    const authState = window.AuthManager.getAuthState();
-                                    if (authState.isAuthenticated) {
-                                        // Check if user needs onboarding
-                                        const needsOnboarding = window.OnboardingManager?.needsOnboarding() ?? true;
-                                        if (needsOnboarding && window.OnboardingManager) {
-                                            setTimeout(() => {
-                                                window.OnboardingManager.startOnboarding(authState.user?.username);
-                                            }, 500);
-                                        } else {
-                                            setTimeout(() => {
-                                                window.Router?.navigate('#/');
-                                            }, 500);
-                                        }
-                                    } else {
-                                        setTimeout(() => {
-                                            window.Router?.navigate('#/onboarding');
-                                        }, 500);
-                                    }
-                                } else {
-                                    if (errorDiv) {
-                                        errorDiv.textContent = result.error || 'Account creation failed';
-                                        errorDiv.style.display = 'block';
-                                    }
-                                    submitBtn.textContent = originalText;
-                                    submitBtn.disabled = false;
-                                }
-                            } catch (error) {
-                                console.error('Registration error:', error);
-                                if (errorDiv) {
-                                    errorDiv.textContent = 'Account creation failed. Please try again.';
-                                    errorDiv.style.display = 'block';
-                                }
-                                submitBtn.textContent = originalText;
-                                submitBtn.disabled = false;
-                            }
-                        };
-                    </script>
                 </div>
             </div>
         `;
+  }
+
+  /**
+   * Initialize RegisterView handlers
+   */
+  initRegisterView() {
+    window.handleQuickSignup = async function (event) {
+      event.preventDefault();
+      const usernameEl = document.getElementById('signup-username');
+      const passwordEl = document.getElementById('signup-password');
+      const confirmPasswordEl = document.getElementById('signup-confirm-password');
+      const athleteNameEl = document.getElementById('signup-athlete-name');
+      const errorDiv = document.getElementById('signupError');
+
+      // Validate form elements exist
+      if (!usernameEl || !passwordEl || !confirmPasswordEl || !athleteNameEl) {
+        if (errorDiv) {
+          errorDiv.textContent = 'Registration form not available. Please refresh the page.';
+          errorDiv.style.display = 'block';
+        }
+        return;
+      }
+
+      const username = usernameEl.value.trim();
+      const password = passwordEl.value;
+      const confirmPassword = confirmPasswordEl.value;
+      const athleteName = athleteNameEl.value.trim();
+
+      // Clear previous errors
+      if (errorDiv) {
+        errorDiv.style.display = 'none';
+        errorDiv.textContent = '';
+      }
+
+      // Validate all fields are filled
+      if (!username || !password || !confirmPassword || !athleteName) {
+        if (errorDiv) {
+          errorDiv.textContent = 'Please fill in all fields';
+          errorDiv.style.display = 'block';
+        }
+        return;
+      }
+
+      // Validate passwords match
+      if (password !== confirmPassword) {
+        if (errorDiv) {
+          errorDiv.textContent = 'Passwords do not match. Please check and try again.';
+          errorDiv.style.display = 'block';
+        }
+        // Highlight the confirm password field
+        confirmPasswordEl.style.borderColor = '#ef4444';
+        confirmPasswordEl.focus();
+        return;
+      } else {
+        confirmPasswordEl.style.borderColor = '';
+      }
+
+      if (!window.AuthManager) {
+        if (errorDiv) {
+          errorDiv.textContent = 'Auth system not ready. Please reload.';
+          errorDiv.style.display = 'block';
+        }
+        return;
+      }
+
+      // Show loading state
+      const submitBtn = event.target.querySelector('button[type="submit"]');
+      const originalText = submitBtn ? submitBtn.textContent : 'Create Account & Continue';
+      if (submitBtn) {
+        submitBtn.textContent = 'Creating account...';
+        submitBtn.disabled = true;
+      }
+
+      try {
+        const result = window.AuthManager.register({
+          username,
+          password,
+          confirmPassword,
+          athleteName,
+        });
+
+        if (result.success) {
+          if (errorDiv) {
+            errorDiv.style.display = 'none';
+          }
+
+          // Show success message
+          if (submitBtn) {
+            submitBtn.textContent = 'Account created! Redirecting...';
+            submitBtn.style.background = '#10b981';
+          }
+
+          // Auto-login after registration, proceed to onboarding
+          const authState = window.AuthManager.getAuthState();
+          if (authState.isAuthenticated) {
+            // Check if user needs onboarding
+            const needsOnboarding = window.OnboardingManager?.needsOnboarding() ?? true;
+            if (needsOnboarding && window.OnboardingManager) {
+              setTimeout(() => {
+                window.OnboardingManager.startOnboarding(authState.user?.username);
+              }, 500);
+            } else {
+              setTimeout(() => {
+                window.Router?.navigate('#/');
+              }, 500);
+            }
+          } else {
+            setTimeout(() => {
+              window.Router?.navigate('#/onboarding');
+            }, 500);
+          }
+        } else {
+          if (errorDiv) {
+            errorDiv.textContent = result.error || 'Account creation failed';
+            errorDiv.style.display = 'block';
+          }
+          if (submitBtn) {
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+          }
+        }
+      } catch (error) {
+        // Registration error logged
+        if (window.SafeLogger) {
+          window.SafeLogger.error('Registration error', error);
+        }
+        if (errorDiv) {
+          errorDiv.textContent = 'Account creation failed. Please try again.';
+          errorDiv.style.display = 'block';
+        }
+        if (submitBtn) {
+          submitBtn.textContent = originalText;
+          submitBtn.disabled = false;
+        }
+      }
+    };
+  }
+
+  /**
+   * Initialize LoginView handlers
+   */
+  initLoginView() {
+    window.handleLoginSubmit = async function (event) {
+      event.preventDefault();
+      const usernameEl = document.getElementById('loginUsername');
+      const passwordEl = document.getElementById('loginPassword');
+      const errorDiv = document.getElementById('loginError');
+
+      if (!usernameEl || !passwordEl) {
+        if (errorDiv) {
+          errorDiv.textContent = 'Login form not available. Please refresh the page.';
+          errorDiv.style.display = 'block';
+        }
+        return;
+      }
+
+      const username = usernameEl.value;
+      const password = passwordEl.value;
+
+      if (!window.AuthManager) {
+        if (errorDiv) {
+          errorDiv.textContent = 'Auth system not ready. Please reload.';
+          errorDiv.style.display = 'block';
+        }
+        return;
+      }
+
+      const result = window.AuthManager.login(username, password);
+
+      if (result.success) {
+        if (errorDiv) {
+          errorDiv.style.display = 'none';
+        }
+        // Update auth state and navigate to intended route
+        const router = window.Router;
+        if (router && router.lastKnownRoute) {
+          router.navigate(router.lastKnownRoute);
+          router.lastKnownRoute = null;
+        } else {
+          router?.navigate('#/dashboard');
+        }
+      } else {
+        if (errorDiv) {
+          errorDiv.textContent = result.error || 'Login failed';
+          errorDiv.style.display = 'block';
+        }
+      }
+    };
   }
 
   getNotFoundHTML() {
