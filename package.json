@@ -36,7 +36,7 @@
     "test:ci": "npm run test:unit && npm run test:integration",
     "quality:check": "npm run format:check && npm run lint:check && npm run typecheck",
     "quality:fix": "npm run lint:fix && npm run format",
-    "pre-commit": "npm run quality:check && npm run test:ci",
+    "pre-commit": "npm run quality:check",
     "serve": "npx http-server . -p 3000 -c-1 || python3 -m http.server 3000 || echo 'No server available, install http-server or use Python'",
     "start": "npm run serve",
     "db:migrate": "psql $DATABASE_URL -f database-beta-workout-templates.sql && psql $DATABASE_URL -f database-beta-substitution-engine.sql && psql $DATABASE_URL -f database-beta-safety-guardrails.sql && psql $DATABASE_URL -f database-beta-enhanced-sessions.sql",

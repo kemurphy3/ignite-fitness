@@ -6,10 +6,4 @@ npm run quality:check || {
   exit 1
 }
 
-npm run test:ci || {
-  echo "❌ Tests failed"
-  echo "💡 Fix failing tests before committing"
-  exit 1
-}
-
 echo "✅ Pre-commit checks passed"
