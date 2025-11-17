@@ -326,7 +326,7 @@ class AuthManager {
     try {
       const { username, password, confirmPassword, athleteName } = userData;
 
-      if (!username || !password || !athleteName) {
+      if (!username || !password || !confirmPassword || !athleteName) {
         return { success: false, error: 'Please fill in all fields' };
       }
 

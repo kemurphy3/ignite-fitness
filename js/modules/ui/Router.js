@@ -937,6 +937,22 @@ class Router {
                         </div>
                         
                         <div class="form-group">
+                            <label for="signup-confirm-password">Confirm Password</label>
+                            <input type="password" 
+                                   id="signup-confirm-password" 
+                                   name="confirmPassword"
+                                   placeholder="Re-enter your password"
+                                   autocomplete="new-password"
+                                   aria-required="true"
+                                   required
+                                   minlength="6"
+                                   class="form-input">
+                            <div class="field-hint" style="font-size: 0.875rem; color: #718096; margin-top: 0.25rem;">
+                                Re-enter your password to confirm
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
                             <label for="signup-athlete-name">Your Name</label>
                             <input type="text" 
                                    id="signup-athlete-name" 
@@ -967,14 +983,60 @@ class Router {
                     <script>
                         window.handleQuickSignup = async function(event) {
                             event.preventDefault();
-                            const username = document.getElementById('signup-username').value;
-                            const password = document.getElementById('signup-password').value;
-                            const athleteName = document.getElementById('signup-athlete-name').value;
+                            const usernameEl = document.getElementById('signup-username');
+                            const passwordEl = document.getElementById('signup-password');
+                            const confirmPasswordEl = document.getElementById('signup-confirm-password');
+                            const athleteNameEl = document.getElementById('signup-athlete-name');
                             const errorDiv = document.getElementById('signupError');
                             
+                            // Validate form elements exist
+                            if (!usernameEl || !passwordEl || !confirmPasswordEl || !athleteNameEl) {
+                                if (errorDiv) {
+                                    errorDiv.textContent = 'Registration form not available. Please refresh the page.';
+                                    errorDiv.style.display = 'block';
+                                }
+                                return;
+                            }
+                            
+                            const username = usernameEl.value.trim();
+                            const password = passwordEl.value;
+                            const confirmPassword = confirmPasswordEl.value;
+                            const athleteName = athleteNameEl.value.trim();
+                            
+                            // Clear previous errors
+                            if (errorDiv) {
+                                errorDiv.style.display = 'none';
+                                errorDiv.textContent = '';
+                            }
+                            
+                            // Validate all fields are filled
+                            if (!username || !password || !confirmPassword || !athleteName) {
+                                if (errorDiv) {
+                                    errorDiv.textContent = 'Please fill in all fields';
+                                    errorDiv.style.display = 'block';
+                                }
+                                return;
+                            }
+                            
+                            // Validate passwords match
+                            if (password !== confirmPassword) {
+                                if (errorDiv) {
+                                    errorDiv.textContent = 'Passwords do not match. Please check and try again.';
+                                    errorDiv.style.display = 'block';
+                                }
+                                // Highlight the confirm password field
+                                confirmPasswordEl.style.borderColor = '#ef4444';
+                                confirmPasswordEl.focus();
+                                return;
+                            } else {
+                                confirmPasswordEl.style.borderColor = '';
+                            }
+                            
                             if (!window.AuthManager) {
-                                errorDiv.textContent = 'Auth system not ready. Please reload.';
-                                errorDiv.style.display = 'block';
+                                if (errorDiv) {
+                                    errorDiv.textContent = 'Auth system not ready. Please reload.';
+                                    errorDiv.style.display = 'block';
+                                }
                                 return;
                             }
                             
@@ -988,34 +1050,52 @@ class Router {
                                 const result = window.AuthManager.register({
                                     username,
                                     password,
-                                    confirmPassword: password,
+                                    confirmPassword,
                                     athleteName
                                 });
                                 
                                 if (result.success) {
-                                    errorDiv.style.display = 'none';
+                                    if (errorDiv) {
+                                        errorDiv.style.display = 'none';
+                                    }
+                                    
+                                    // Show success message
+                                    submitBtn.textContent = 'Account created! Redirecting...';
+                                    submitBtn.style.background = '#10b981';
+                                    
                                     // Auto-login after registration, proceed to onboarding
                                     const authState = window.AuthManager.getAuthState();
                                     if (authState.isAuthenticated) {
                                         // Check if user needs onboarding
                                         const needsOnboarding = window.OnboardingManager?.needsOnboarding() ?? true;
                                         if (needsOnboarding && window.OnboardingManager) {
-                                            window.OnboardingManager.startOnboarding(authState.user?.username);
+                                            setTimeout(() => {
+                                                window.OnboardingManager.startOnboarding(authState.user?.username);
+                                            }, 500);
                                         } else {
-                                            window.Router?.navigate('#/dashboard');
+                                            setTimeout(() => {
+                                                window.Router?.navigate('#/');
+                                            }, 500);
                                         }
                                     } else {
-                                        window.Router?.navigate('#/onboarding');
+                                        setTimeout(() => {
+                                            window.Router?.navigate('#/onboarding');
+                                        }, 500);
                                     }
                                 } else {
-                                    errorDiv.textContent = result.error || 'Account creation failed';
-                                    errorDiv.style.display = 'block';
+                                    if (errorDiv) {
+                                        errorDiv.textContent = result.error || 'Account creation failed';
+                                        errorDiv.style.display = 'block';
+                                    }
                                     submitBtn.textContent = originalText;
                                     submitBtn.disabled = false;
                                 }
                             } catch (error) {
-                                errorDiv.textContent = 'Account creation failed. Please try again.';
-                                errorDiv.style.display = 'block';
+                                console.error('Registration error:', error);
+                                if (errorDiv) {
+                                    errorDiv.textContent = 'Account creation failed. Please try again.';
+                                    errorDiv.style.display = 'block';
+                                }
                                 submitBtn.textContent = originalText;
                                 submitBtn.disabled = false;
                             }
