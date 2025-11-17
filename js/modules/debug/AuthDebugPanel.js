@@ -7,8 +7,11 @@
   'use strict';
 
   // Only load in development
+  // Check environment via window.location or other client-side method
   const isProduction =
-    typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'production';
+    window.location.hostname !== 'localhost' &&
+    window.location.hostname !== '127.0.0.1' &&
+    !window.location.hostname.includes('localhost');
   if (isProduction) {
     return;
   }

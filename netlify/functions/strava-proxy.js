@@ -9,7 +9,7 @@ if (!STRAVA_TOKENS.clientId || !STRAVA_TOKENS.clientSecret) {
   );
 }
 
-const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { createLogger } = require('./utils/safe-logging');
 const RateLimiter = require('./utils/rate-limiter');
 
@@ -25,6 +25,34 @@ const rateLimiter = new RateLimiter({
   logger,
 });
 
+// Rate Limiting (In-Memory for MVP, Redis for production) - User-level rate limiting
+const userRateLimitStore = new Map();
+
+function checkUserRateLimit(userId) {
+  const now = Date.now();
+  const window = 60 * 1000; // 1 minute
+  const maxRequests = 10; // 10 requests per minute
+
+  const userKey = `${userId}_${Math.floor(now / window)}`;
+  const currentCount = userRateLimitStore.get(userKey) || 0;
+
+  if (currentCount >= maxRequests) {
+    return false;
+  }
+
+  userRateLimitStore.set(userKey, currentCount + 1);
+
+  // Cleanup old entries
+  for (const [key] of userRateLimitStore.entries()) {
+    const keyTime = parseInt(key.split('_')[1]);
+    if (now - keyTime * window > window * 2) {
+      userRateLimitStore.delete(key);
+    }
+  }
+
+  return true;
+}
+
 // Security headers for all responses
 const securityHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -36,64 +64,7 @@ const securityHeaders = {
   'X-XSS-Protection': '1; mode=block',
 };
 
-// JWT verification function
-function verifyJWT(headers) {
-  const authHeader = headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return { error: 'MISSING_TOKEN', statusCode: 401 };
-  }
-
-  const token = authHeader.substring(7);
-
-  try {
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      throw new Error('JWT secret not configured');
-    }
-    const decoded = jwt.verify(token, jwtSecret, {
-      algorithms: ['HS256'],
-      maxAge: '24h',
-      clockTolerance: 30,
-    });
-
-    if (!decoded.sub || typeof decoded.sub !== 'string') {
-      return { error: 'INVALID_SUBJECT', statusCode: 401 };
-    }
-
-    if (!decoded.exp || typeof decoded.exp !== 'number') {
-      return { error: 'INVALID_EXPIRATION', statusCode: 401 };
-    }
-
-    return {
-      success: true,
-      userId: decoded.sub,
-    };
-  } catch (error) {
-    if (error.name === 'TokenExpiredError') {
-      return { error: 'TOKEN_EXPIRED', statusCode: 401 };
-    } else if (error.name === 'JsonWebTokenError') {
-      return { error: 'INVALID_TOKEN', statusCode: 401 };
-    } else {
-      logger.error('JWT verification failed', {
-        error_type: error.name,
-        error_message: error.message,
-      });
-      return { error: 'TOKEN_VERIFICATION_FAILED', statusCode: 401 };
-    }
-  }
-}
-
 // Response helpers
-const unauthorized = (message = 'Unauthorized - Valid JWT token required') => ({
-  statusCode: 401,
-  headers: securityHeaders,
-  body: JSON.stringify({
-    error: 'UNAUTHORIZED',
-    message,
-    code: 'AUTH_REQUIRED',
-  }),
-});
-
 const methodNotAllowed = () => ({
   statusCode: 405,
   headers: securityHeaders,
@@ -125,13 +96,67 @@ exports.handler = async (event, _context) => {
     return methodNotAllowed();
   }
 
-  let authResult = null;
+  // User Authentication Check
+  const authHeader = event.headers.authorization || event.headers.Authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return {
+      statusCode: 401,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        error: 'Authentication required',
+        message: 'Strava integration requires user authentication',
+      }),
+    };
+  }
+
+  // Validate user token (same validation code as AI proxy)
+  let userId = null;
   try {
-    // Verify JWT authentication
-    authResult = verifyJWT(event.headers);
-    if (!authResult.success) {
-      return unauthorized(authResult.error);
+    const token = authHeader.substring(7);
+    const [header, payload, signature] = token.split('.');
+    const decodedPayload = JSON.parse(Buffer.from(payload, 'base64').toString());
+
+    if (decodedPayload.exp && decodedPayload.exp < Date.now() / 1000) {
+      throw new Error('Token expired');
     }
+
+    // Verify signature
+    const { JWT_SECRET } = process.env;
+    if (JWT_SECRET) {
+      const expectedSignature = crypto
+        .createHmac('sha256', JWT_SECRET)
+        .update(`${header}.${payload}`)
+        .digest('base64');
+      if (signature !== expectedSignature) {
+        throw new Error('Invalid token signature');
+      }
+    }
+
+    userId = decodedPayload.userId || decodedPayload.sub;
+    if (!userId) {
+      throw new Error('Invalid user token');
+    }
+  } catch (error) {
+    return {
+      statusCode: 403,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Invalid user token' }),
+    };
+  }
+
+  // Apply user-level rate limiting
+  if (!checkUserRateLimit(userId)) {
+    return {
+      statusCode: 429,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        error: 'Rate limit exceeded',
+        message: 'Maximum 10 requests per minute exceeded',
+      }),
+    };
+  }
+
+  try {
     const { action, accessToken, refreshToken, data } = JSON.parse(event.body || '{}');
 
     if (!action) {
@@ -296,7 +321,7 @@ exports.handler = async (event, _context) => {
     ) {
       logger.warn('Rate limit error', {
         error_message: error.message,
-        user_id: authResult?.userId || 'unknown',
+        user_id: userId || 'unknown',
       });
 
       return {
@@ -317,7 +342,7 @@ exports.handler = async (event, _context) => {
     logger.error('Strava proxy failed', {
       error_type: error.name,
       error_message: error.message,
-      user_id: authResult?.userId || 'unknown',
+      user_id: userId || 'unknown',
     });
 
     return {

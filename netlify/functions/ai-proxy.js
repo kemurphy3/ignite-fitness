@@ -9,7 +9,7 @@ const API_CONFIG = {
     apiKey: process.env.OPENAI_API_KEY,
   },
 };
-const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 // Security headers for all responses
 const securityHeaders = {
@@ -22,139 +22,35 @@ const securityHeaders = {
   'X-XSS-Protection': '1; mode=block',
 };
 
-// Rate limiting storage (in production, use Redis or database)
+// Rate Limiting (In-Memory for MVP, Redis for production)
 const rateLimitStore = new Map();
 
-// Rate limiting configuration
-const RATE_LIMIT = {
-  windowMs: 60 * 1000, // 1 minute
-  maxRequests: 10, // 10 requests per minute per user
-  cleanupInterval: 5 * 60 * 1000, // Clean up every 5 minutes
-};
-
-// Clean up old rate limit entries
-setInterval(() => {
+function checkRateLimit(userId) {
   const now = Date.now();
-  for (const [key, data] of rateLimitStore.entries()) {
-    if (now - data.firstRequest > RATE_LIMIT.windowMs) {
+  const window = 60 * 1000; // 1 minute
+  const maxRequests = 10; // 10 requests per minute
+
+  const userKey = `${userId}_${Math.floor(now / window)}`;
+  const currentCount = rateLimitStore.get(userKey) || 0;
+
+  if (currentCount >= maxRequests) {
+    return false;
+  }
+
+  rateLimitStore.set(userKey, currentCount + 1);
+
+  // Cleanup old entries
+  for (const [key] of rateLimitStore.entries()) {
+    const keyTime = parseInt(key.split('_')[1]);
+    if (now - keyTime * window > window * 2) {
       rateLimitStore.delete(key);
     }
   }
-}, RATE_LIMIT.cleanupInterval);
 
-// JWT verification function
-function verifyJWT(headers) {
-  const authHeader = headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return { error: 'MISSING_TOKEN', statusCode: 401 };
-  }
-
-  const token = authHeader.substring(7);
-
-  try {
-    const jwtSecret =
-      process.env.JWT_SECRET || 'your-super-secure-jwt-secret-at-least-32-characters';
-    const decoded = jwt.verify(token, jwtSecret, {
-      algorithms: ['HS256'],
-      maxAge: '24h',
-      clockTolerance: 30,
-    });
-
-    if (!decoded.sub || typeof decoded.sub !== 'string') {
-      return { error: 'INVALID_SUBJECT', statusCode: 401 };
-    }
-
-    if (!decoded.exp || typeof decoded.exp !== 'number') {
-      return { error: 'INVALID_EXPIRATION', statusCode: 401 };
-    }
-
-    return {
-      success: true,
-      userId: decoded.sub,
-    };
-  } catch (error) {
-    if (error.name === 'TokenExpiredError') {
-      return { error: 'TOKEN_EXPIRED', statusCode: 401 };
-    } else if (error.name === 'JsonWebTokenError') {
-      return { error: 'INVALID_TOKEN', statusCode: 401 };
-    } else {
-      console.error('JWT verification error:', {
-        type: error.name,
-        message: error.message,
-        timestamp: new Date().toISOString(),
-      });
-      return { error: 'TOKEN_VERIFICATION_FAILED', statusCode: 401 };
-    }
-  }
-}
-
-// Rate limiting function
-function checkRateLimit(userId) {
-  const now = Date.now();
-  const key = `ai-proxy:${userId}`;
-  const userData = rateLimitStore.get(key);
-
-  if (!userData) {
-    rateLimitStore.set(key, {
-      firstRequest: now,
-      requestCount: 1,
-    });
-    return { allowed: true, remaining: RATE_LIMIT.maxRequests - 1 };
-  }
-
-  // Reset window if expired
-  if (now - userData.firstRequest > RATE_LIMIT.windowMs) {
-    rateLimitStore.set(key, {
-      firstRequest: now,
-      requestCount: 1,
-    });
-    return { allowed: true, remaining: RATE_LIMIT.maxRequests - 1 };
-  }
-
-  // Check if limit exceeded
-  if (userData.requestCount >= RATE_LIMIT.maxRequests) {
-    return {
-      allowed: false,
-      remaining: 0,
-      resetTime: userData.firstRequest + RATE_LIMIT.windowMs,
-    };
-  }
-
-  // Increment counter
-  userData.requestCount++;
-  rateLimitStore.set(key, userData);
-
-  return {
-    allowed: true,
-    remaining: RATE_LIMIT.maxRequests - userData.requestCount,
-  };
+  return true;
 }
 
 // Response helpers
-const unauthorized = (message = 'Unauthorized - Valid JWT token required') => ({
-  statusCode: 401,
-  headers: securityHeaders,
-  body: JSON.stringify({
-    error: 'UNAUTHORIZED',
-    message,
-    code: 'AUTH_REQUIRED',
-  }),
-});
-
-const tooManyRequests = resetTime => ({
-  statusCode: 429,
-  headers: {
-    ...securityHeaders,
-    'Retry-After': Math.ceil((resetTime - Date.now()) / 1000),
-  },
-  body: JSON.stringify({
-    error: 'TOO_MANY_REQUESTS',
-    message: 'Rate limit exceeded. Please try again later.',
-    code: 'RATE_LIMIT_EXCEEDED',
-    retryAfter: Math.ceil((resetTime - Date.now()) / 1000),
-  }),
-});
-
 const methodNotAllowed = () => ({
   statusCode: 405,
   headers: securityHeaders,
@@ -186,32 +82,86 @@ exports.handler = async (event, _context) => {
     return methodNotAllowed();
   }
 
+  // User Authentication Check
+  const authHeader = event.headers.authorization || event.headers.Authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return {
+      statusCode: 401,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        error: 'Authentication required',
+        message: 'AI proxy requires user authentication',
+      }),
+    };
+  }
+
+  const token = authHeader.substring(7);
+  const { JWT_SECRET } = process.env;
+
+  // Simple user token validation
   try {
-    // Verify JWT authentication
-    const authResult = verifyJWT(event.headers);
-    if (!authResult.success) {
-      return unauthorized(authResult.error);
+    const [header, payload, signature] = token.split('.');
+    if (!header || !payload || !signature) {
+      throw new Error('Invalid token format');
     }
 
-    // Check rate limiting
-    const rateLimitResult = checkRateLimit(authResult.userId);
-    if (!rateLimitResult.allowed) {
-      return tooManyRequests(rateLimitResult.resetTime);
+    // Verify signature
+    if (JWT_SECRET) {
+      const expectedSignature = crypto
+        .createHmac('sha256', JWT_SECRET)
+        .update(`${header}.${payload}`)
+        .digest('base64');
+      if (signature !== expectedSignature) {
+        throw new Error('Invalid token signature');
+      }
     }
 
+    const decodedPayload = JSON.parse(Buffer.from(payload, 'base64').toString());
+
+    // Check expiration
+    if (decodedPayload.exp && decodedPayload.exp < Date.now() / 1000) {
+      throw new Error('Token expired');
+    }
+
+    // Extract user ID for rate limiting
+    const userId = decodedPayload.userId || decodedPayload.sub;
+    if (!userId) {
+      throw new Error('Invalid user token');
+    }
+
+    // Store userId for rate limiting
+    event.userId = userId;
+  } catch (error) {
+    return {
+      statusCode: 403,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        error: 'Access denied',
+        message: 'Invalid or expired user token',
+      }),
+    };
+  }
+
+  // Apply rate limiting
+  if (!checkRateLimit(event.userId)) {
+    return {
+      statusCode: 429,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        error: 'Rate limit exceeded',
+        message: 'Maximum 10 requests per minute exceeded',
+      }),
+    };
+  }
+
+  try {
     const { method, endpoint, data } = JSON.parse(event.body || '{}');
 
     // Validate request
     if (!method || !endpoint) {
       return {
         statusCode: 400,
-        headers: {
-          ...securityHeaders,
-          'X-RateLimit-Remaining': rateLimitResult.remaining,
-          'X-RateLimit-Reset': new Date(
-            rateLimitResult.resetTime || Date.now() + RATE_LIMIT.windowMs
-          ).toISOString(),
-        },
+        headers: securityHeaders,
         body: JSON.stringify({
           error: 'BAD_REQUEST',
           message: 'Method and endpoint are required',
@@ -230,13 +180,7 @@ exports.handler = async (event, _context) => {
       if (!apiKey) {
         return {
           statusCode: 500,
-          headers: {
-            ...securityHeaders,
-            'X-RateLimit-Remaining': rateLimitResult.remaining,
-            'X-RateLimit-Reset': new Date(
-              rateLimitResult.resetTime || Date.now() + RATE_LIMIT.windowMs
-            ).toISOString(),
-          },
+          headers: securityHeaders,
           body: JSON.stringify({
             error: 'INTERNAL_SERVER_ERROR',
             message: 'OpenAI API key not configured',
@@ -270,13 +214,7 @@ exports.handler = async (event, _context) => {
       if (!accessToken) {
         return {
           statusCode: 400,
-          headers: {
-            ...securityHeaders,
-            'X-RateLimit-Remaining': rateLimitResult.remaining,
-            'X-RateLimit-Reset': new Date(
-              rateLimitResult.resetTime || Date.now() + RATE_LIMIT.windowMs
-            ).toISOString(),
-          },
+          headers: securityHeaders,
           body: JSON.stringify({
             error: 'BAD_REQUEST',
             message: 'Strava access token required',
@@ -296,13 +234,7 @@ exports.handler = async (event, _context) => {
     } else {
       return {
         statusCode: 400,
-        headers: {
-          ...securityHeaders,
-          'X-RateLimit-Remaining': rateLimitResult.remaining,
-          'X-RateLimit-Reset': new Date(
-            rateLimitResult.resetTime || Date.now() + RATE_LIMIT.windowMs
-          ).toISOString(),
-        },
+        headers: securityHeaders,
         body: JSON.stringify({
           error: 'BAD_REQUEST',
           message: 'Unsupported API endpoint',
@@ -315,13 +247,7 @@ exports.handler = async (event, _context) => {
 
     return {
       statusCode: response.status,
-      headers: {
-        ...securityHeaders,
-        'X-RateLimit-Remaining': rateLimitResult.remaining,
-        'X-RateLimit-Reset': new Date(
-          rateLimitResult.resetTime || Date.now() + RATE_LIMIT.windowMs
-        ).toISOString(),
-      },
+      headers: securityHeaders,
       body: JSON.stringify(responseData),
     };
   } catch (error) {

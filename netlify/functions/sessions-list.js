@@ -1,5 +1,4 @@
 const {
-  getDB,
   authenticate,
   checkRateLimit,
   errorResponse,
@@ -7,30 +6,13 @@ const {
   preflightResponse,
   validateSessionType,
 } = require('./_base');
+const { getPool } = require('./utils/connection-pool');
 const {
-  validatePaginationParams,
-  createPaginatedResponse,
-  getCursorDataForItem,
-  buildCursorCondition,
-  buildTimestampCondition,
-  validatePaginationInput,
+  validatePagination,
+  buildPaginatedQuery,
+  buildCountQuery,
+  formatResponse,
 } = require('./utils/pagination');
-
-// Helper function to get total count
-async function getTotalCount(sql, whereClause, params) {
-  try {
-    const countQuery = `
-      SELECT COUNT(*) as total
-      FROM sessions 
-      WHERE ${whereClause}
-    `;
-    const countResult = await sql(countQuery, params);
-    return parseInt(countResult[0].total);
-  } catch (error) {
-    console.error('Error getting total count:', error);
-    return null;
-  }
-}
 
 exports.handler = async event => {
   // Handle preflight requests
@@ -55,20 +37,16 @@ exports.handler = async event => {
       return errorResponse(429, 'RATE_LIMIT', 'Too many requests', { retry_after: 60 });
     }
 
-    const sql = getDB();
+    const pool = getPool();
     const requestParams = event.queryStringParameters || {};
 
-    // Validate pagination parameters
-    const paginationErrors = validatePaginationInput(requestParams);
-    if (paginationErrors.length > 0) {
-      return errorResponse(400, 'VALIDATION_ERROR', paginationErrors.join(', '));
-    }
+    // Validate and normalize pagination parameters
+    const pagination = validatePagination(requestParams);
 
     // Parse and validate query parameters
     const { type } = requestParams;
     const startDate = requestParams.start_date;
     const endDate = requestParams.end_date;
-    const pagination = validatePaginationParams(requestParams);
 
     // Validate type if provided
     if (type) {
@@ -105,23 +83,27 @@ exports.handler = async event => {
       }
     }
 
-    // Build query conditions
-    const whereConditions = [`user_id = ${userId}`];
+    // Build WHERE conditions with parameterized queries
+    const whereConditions = ['user_id = $1'];
     const queryParams = [userId];
+    let paramIndex = 2;
 
     if (type) {
-      whereConditions.push(`type = $${queryParams.length + 1}`);
+      whereConditions.push(`type = $${paramIndex}`);
       queryParams.push(type);
+      paramIndex++;
     }
 
     if (startDateObj) {
-      whereConditions.push(`start_at >= $${queryParams.length + 1}`);
+      whereConditions.push(`start_at >= $${paramIndex}`);
       queryParams.push(startDateObj);
+      paramIndex++;
     }
 
     if (endDateObj) {
-      whereConditions.push(`start_at <= $${queryParams.length + 1}`);
+      whereConditions.push(`start_at <= $${paramIndex}`);
       queryParams.push(endDateObj);
+      paramIndex++;
     }
 
     // Add tag filtering
@@ -134,9 +116,9 @@ exports.handler = async event => {
         .map(t => t.trim())
         .filter(t => t);
       if (requiredTags.length > 0) {
-        // Check if payload contains tags array that includes all required tags
-        whereConditions.push(`payload->'tags' @> $${queryParams.length + 1}::jsonb`);
+        whereConditions.push(`payload->'tags' @> $${paramIndex}::jsonb`);
         queryParams.push(JSON.stringify(requiredTags));
+        paramIndex++;
       }
     }
 
@@ -146,59 +128,35 @@ exports.handler = async event => {
         .map(t => t.trim())
         .filter(t => t);
       if (excludedTags.length > 0) {
-        // Check if payload does NOT contain any excluded tags
-        whereConditions.push(`NOT (payload->'tags' ?| $${queryParams.length + 1})`);
+        whereConditions.push(`NOT (payload->'tags' ?| $${paramIndex})`);
         queryParams.push(excludedTags);
+        paramIndex++;
       }
-    }
-
-    // Add cursor-based pagination condition
-    const cursorCondition = buildCursorCondition(pagination.cursor, 'start_at DESC, id ASC');
-    if (cursorCondition.condition) {
-      whereConditions.push(cursorCondition.condition.replace('AND ', ''));
-      queryParams.push(...cursorCondition.values);
-    }
-
-    // Add timestamp-based pagination condition
-    const timestampCondition = buildTimestampCondition(
-      pagination.before,
-      pagination.after,
-      'start_at'
-    );
-    if (timestampCondition.condition) {
-      whereConditions.push(timestampCondition.condition.replace('AND ', ''));
-      queryParams.push(...timestampCondition.values);
     }
 
     const whereClause = whereConditions.join(' AND ');
 
-    // Get sessions with pagination
-    const sessionsQuery = `
+    // Base query without LIMIT/OFFSET
+    const baseQuery = `
       SELECT id, type, source, source_id, start_at, end_at, duration, 
              payload, session_hash, created_at, updated_at
       FROM sessions 
       WHERE ${whereClause}
-      ORDER BY start_at DESC, id ASC
-      LIMIT $${queryParams.length + 1}
     `;
 
-    queryParams.push(Math.min(pagination.limit + 1, 101)); // Get one extra to check if there are more, but cap at 101
+    // Get total count
+    const countQuery = buildCountQuery(baseQuery);
+    const countResult = await pool.query(countQuery, queryParams);
+    const totalCount = parseInt(countResult.rows[0].total);
 
-    const sessions = await sql(sessionsQuery, queryParams);
+    // Get paginated data
+    const dataQuery = buildPaginatedQuery(baseQuery, pagination, 'start_at DESC, id ASC');
+    const dataParams = [...queryParams, pagination.limit, pagination.offset];
+    const dataResult = await pool.query(dataQuery, dataParams);
+    const sessions = dataResult.rows;
 
-    // Create paginated response
-    const paginatedResponse = createPaginatedResponse(
-      sessions,
-      pagination.limit,
-      item => getCursorDataForItem(item, 'sessions'),
-      {
-        includeTotal: sessions.length < 1000,
-        total:
-          sessions.length < 1000
-            ? await getTotalCount(sql, whereClause, queryParams.slice(0, -1))
-            : undefined,
-      }
-    );
+    // Format response with pagination metadata
+    const paginatedResponse = formatResponse(sessions, pagination, totalCount);
 
     return successResponse({
       sessions: paginatedResponse.data.map(session => ({

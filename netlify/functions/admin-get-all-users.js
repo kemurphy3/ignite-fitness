@@ -1,33 +1,19 @@
 // const { neon } = require('@neondatabase/serverless'); // Unused - using getNeonClient instead
 const crypto = require('crypto');
 const {
-  verifyAdmin,
   auditLog,
   errorResponse,
   // withTimeout, // Unused
   successResponse,
 } = require('./utils/admin-auth');
 
-const { getNeonClient } = require('./utils/connection-pool');
+const { getPool } = require('./utils/connection-pool');
 const {
-  validatePaginationParams,
-  createPaginatedResponse,
-  getCursorDataForItem,
-  buildCursorCondition,
-  validatePaginationInput,
+  validatePagination,
+  buildPaginatedQuery,
+  buildCountQuery,
+  formatResponse,
 } = require('./utils/pagination');
-const sql = getNeonClient();
-
-// Helper function to get total users count
-async function getTotalUsersCount(sqlClient) {
-  try {
-    const countResult = await sqlClient`SELECT COUNT(*) as total FROM users`;
-    return parseInt(countResult[0].total);
-  } catch (error) {
-    console.error('Error getting total users count:', error);
-    return null;
-  }
-}
 
 // Security headers for all responses
 // Helper functions removed - now using centralized admin-auth utility
@@ -56,106 +42,153 @@ exports.handler = async event => {
       return errorResponse(405, 'METHOD_NOT_ALLOWED', 'Method not allowed', requestId);
     }
 
-    // Verify admin authentication
-    const token = event.headers.authorization?.split(' ')[1];
-    if (!token) {
-      return errorResponse(401, 'MISSING_TOKEN', 'Authorization header required', requestId);
+    // JWT Authentication Check - MUST BE FIRST
+    const authHeader = event.headers.authorization || event.headers.Authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return {
+        statusCode: 401,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: 'Authentication required',
+          message: 'Admin endpoints require Bearer token authentication',
+        }),
+      };
     }
 
-    const { adminId } = await verifyAdmin(token, requestId);
+    const token = authHeader.substring(7);
+    const { JWT_SECRET } = process.env;
+    if (!JWT_SECRET) {
+      return {
+        statusCode: 500,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Server configuration error' }),
+      };
+    }
 
-    // Validate pagination parameters
+    try {
+      // Simple JWT verification without external dependencies
+      const [header, payload, signature] = token.split('.');
+      if (!header || !payload || !signature) {
+        throw new Error('Invalid token format');
+      }
+
+      // Verify signature
+      const expectedSignature = crypto
+        .createHmac('sha256', JWT_SECRET)
+        .update(`${header}.${payload}`)
+        .digest('base64');
+      if (signature !== expectedSignature) {
+        throw new Error('Invalid token signature');
+      }
+
+      const decodedPayload = JSON.parse(Buffer.from(payload, 'base64').toString());
+
+      // Check expiration
+      if (decodedPayload.exp && decodedPayload.exp < Date.now() / 1000) {
+        throw new Error('Token expired');
+      }
+
+      // Check admin role
+      if (decodedPayload.role !== 'admin') {
+        throw new Error('Admin access required');
+      }
+    } catch (error) {
+      return {
+        statusCode: 403,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: 'Access denied',
+          message: 'Invalid or expired admin token',
+        }),
+      };
+    }
+
+    const adminId = 'admin'; // Simplified for inline auth
+
+    // Validate and normalize pagination parameters
     const queryParams = event.queryStringParameters || {};
-    const paginationErrors = validatePaginationInput(queryParams);
-    if (paginationErrors.length > 0) {
-      return errorResponse(400, 'VALIDATION_ERROR', paginationErrors.join(', '), requestId);
-    }
-
-    const pagination = validatePaginationParams(queryParams);
+    const pagination = validatePagination(queryParams);
 
     // Check if database is available
     let adminData;
     try {
-      // Build cursor condition for pagination
-      const cursorCondition = buildCursorCondition(
-        pagination.cursor,
-        'created_at DESC, id ASC',
-        'u'
+      const pool = getPool();
+
+      // Base query without LIMIT/OFFSET
+      const baseQuery = `
+        SELECT 
+          u.id,
+          u.external_id,
+          u.username,
+          u.created_at,
+          u.updated_at,
+          u.status,
+          up.age,
+          up.weight,
+          up.height,
+          up.sex,
+          up.goals,
+          up.baseline_lifts,
+          up.workout_schedule,
+          COUNT(DISTINCT s.id) as session_count,
+          COUNT(DISTINCT sl.id) as sleep_count,
+          COUNT(DISTINCT sa.id) as strava_count,
+          MAX(s.start_at) as last_workout,
+          MAX(sl.start_at) as last_sleep,
+          MAX(sa.start_date) as last_strava_activity
+        FROM users u
+        LEFT JOIN user_preferences up ON u.id = up.user_id
+        LEFT JOIN sessions s ON u.id = s.user_id
+        LEFT JOIN sleep_sessions sl ON u.id = sl.user_id
+        LEFT JOIN strava_activities sa ON u.id = sa.user_id
+        WHERE u.deleted_at IS NULL
+        GROUP BY u.id, up.id
+      `;
+
+      // Get total count
+      const countQuery = buildCountQuery(baseQuery);
+      const countResult = await pool.query(countQuery);
+      const totalCount = parseInt(countResult.rows[0].total);
+
+      // Get paginated data
+      const dataQuery = buildPaginatedQuery(baseQuery, pagination, 'u.created_at DESC, u.id ASC');
+      // Base query has no parameters, so LIMIT and OFFSET are $1 and $2
+      const dataResult = await pool.query(dataQuery, [pagination.limit, pagination.offset]);
+      const users = dataResult.rows;
+
+      // Get recent activity (limited to prevent large result sets)
+      const recentActivityResult = await pool.query(
+        `
+        SELECT 
+          u.external_id,
+          u.username,
+          s.type,
+          COUNT(*) as count,
+          MAX(s.start_at) as last_activity
+        FROM users u
+        JOIN sessions s ON u.id = s.user_id
+        WHERE s.start_at >= NOW() - INTERVAL '7 days'
+        GROUP BY u.external_id, u.username, s.type
+        ORDER BY last_activity DESC
+        LIMIT 50
+      `
       );
+      const recentActivity = recentActivityResult.rows;
 
-      // Try to get data from database with pagination
-      const usersQuery = `
-                SELECT 
-                    u.id,
-                    u.external_id,
-                    u.username,
-                    u.created_at,
-                    u.updated_at,
-                    u.status,
-                    up.age,
-                    up.weight,
-                    up.height,
-                    up.sex,
-                    up.goals,
-                    up.baseline_lifts,
-                    up.workout_schedule,
-                    COUNT(DISTINCT s.id) as session_count,
-                    COUNT(DISTINCT sl.id) as sleep_count,
-                    COUNT(DISTINCT sa.id) as strava_count,
-                    MAX(s.start_at) as last_workout,
-                    MAX(sl.start_at) as last_sleep,
-                    MAX(sa.start_date) as last_strava_activity
-                FROM users u
-                LEFT JOIN user_preferences up ON u.id = up.user_id
-                LEFT JOIN sessions s ON u.id = s.user_id
-                LEFT JOIN sleep_sessions sl ON u.id = sl.user_id
-                LEFT JOIN strava_activities sa ON u.id = sa.user_id
-                WHERE 1=1 ${cursorCondition.condition}
-                GROUP BY u.id, up.id
-                ORDER BY u.created_at DESC, u.id ASC
-                LIMIT $${cursorCondition.values.length + 1}
-            `;
-
-      const queryParams2 = [...cursorCondition.values, pagination.limit + 1];
-      const users = await sql(usersQuery, queryParams2);
-
-      const recentActivity = await sql`
-                SELECT 
-                    u.external_id,
-                    u.username,
-                    s.type,
-                    COUNT(*) as count,
-                    MAX(s.start_at) as last_activity
-                FROM users u
-                JOIN sessions s ON u.id = s.user_id
-                WHERE s.start_at >= NOW() - INTERVAL '7 days'
-                GROUP BY u.external_id, u.username, s.type
-                ORDER BY last_activity DESC
-            `;
-
-      const stats = await sql`
-                SELECT 
-                    (SELECT COUNT(*) FROM users) as total_users,
-                    (SELECT COUNT(*) FROM sessions) as total_sessions,
-                    (SELECT COUNT(*) FROM sleep_sessions) as total_sleep_sessions,
-                    (SELECT COUNT(*) FROM strava_activities) as total_strava_activities,
-                    (SELECT COUNT(*) FROM exercises) as total_exercises,
-                    (SELECT COUNT(*) FROM user_preferences) as users_with_preferences
-            `;
-
-      // Create paginated response for users
-      const paginatedUsers = createPaginatedResponse(
-        users,
-        pagination.limit,
-        item => getCursorDataForItem(item, 'users'),
-        {
-          includeTotal: users.length < 1000,
-          total: users.length < 1000 ? await getTotalUsersCount(sql) : undefined,
-        }
-      );
+      // Get statistics
+      const statsResult = await pool.query(`
+        SELECT 
+          (SELECT COUNT(*) FROM users WHERE deleted_at IS NULL) as total_users,
+          (SELECT COUNT(*) FROM sessions WHERE deleted_at IS NULL) as total_sessions,
+          (SELECT COUNT(*) FROM sleep_sessions WHERE deleted_at IS NULL) as total_sleep_sessions,
+          (SELECT COUNT(*) FROM strava_activities WHERE deleted_at IS NULL) as total_strava_activities,
+          (SELECT COUNT(*) FROM exercises WHERE deleted_at IS NULL) as total_exercises,
+          (SELECT COUNT(*) FROM user_preferences) as users_with_preferences
+      `);
+      const stats = statsResult.rows[0];
 
       // Sanitize user data to remove any potential PII
-      const sanitizedUsers = paginatedUsers.data.map(user => ({
+      const sanitizedUsers = users.map(user => ({
         id: user.id,
         external_id: user.external_id,
         username: user.username,
@@ -177,42 +210,45 @@ exports.handler = async event => {
         last_strava_activity: user.last_strava_activity,
       }));
 
+      // Format response with pagination metadata
+      const paginatedResponse = formatResponse(sanitizedUsers, pagination, totalCount);
+
       adminData = {
-        users: sanitizedUsers,
-        pagination: paginatedUsers.pagination,
+        ...paginatedResponse,
         recentActivity,
-        statistics: stats[0],
+        statistics: stats,
         generatedAt: new Date().toISOString(),
-        totalUsers: sanitizedUsers.length,
         requestedBy: adminId,
       };
     } catch (dbError) {
       // Database not available - return mock data for testing
       console.log('Database not available, returning mock data for testing');
+      const mockUsers = [
+        {
+          id: 1,
+          external_id: 'test-user',
+          username: 'testuser',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          status: 'active',
+          age: 25,
+          weight: 70,
+          height: 175,
+          sex: 'male',
+          goals: ['strength'],
+          baseline_lifts: { squat: 100 },
+          workout_schedule: { monday: 'upper' },
+          session_count: 0,
+          sleep_count: 0,
+          strava_count: 0,
+          last_workout: null,
+          last_sleep: null,
+          last_strava_activity: null,
+        },
+      ];
+      const mockPagination = formatResponse(mockUsers, pagination, 1);
       adminData = {
-        users: [
-          {
-            id: 1,
-            external_id: 'test-user',
-            username: 'testuser',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            status: 'active',
-            age: 25,
-            weight: 70,
-            height: 175,
-            sex: 'male',
-            goals: ['strength'],
-            baseline_lifts: { squat: 100 },
-            workout_schedule: { monday: 'upper' },
-            session_count: 0,
-            sleep_count: 0,
-            strava_count: 0,
-            last_workout: null,
-            last_sleep: null,
-            last_strava_activity: null,
-          },
-        ],
+        ...mockPagination,
         recentActivity: [],
         statistics: {
           total_users: 1,
@@ -223,7 +259,6 @@ exports.handler = async event => {
           users_with_preferences: 1,
         },
         generatedAt: new Date().toISOString(),
-        totalUsers: 1,
         requestedBy: adminId,
         testMode: true,
       };
@@ -243,8 +278,8 @@ exports.handler = async event => {
     return successResponse(
       adminData,
       {
-        totalUsers: adminData.totalUsers,
-        message: `Retrieved data for ${adminData.totalUsers} users`,
+        totalUsers: adminData.pagination.total,
+        message: `Retrieved data for ${adminData.data.length} users`,
       },
       requestId
     );

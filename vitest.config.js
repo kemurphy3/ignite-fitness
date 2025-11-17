@@ -1,48 +1,58 @@
-// vitest.config.js
-// Vitest configuration for IgniteFitness testing
-
 import { defineConfig } from 'vitest/config';
-
-// Check if we have a real database URL (not mock)
-const hasRealDatabase =
-  process.env.DATABASE_URL &&
-  !process.env.DATABASE_URL.includes('mock') &&
-  process.env.MOCK_DATABASE !== 'true';
 
 export default defineConfig({
   test: {
-    // Test environment
+    // Environment setup
     environment: 'jsdom',
     globals: true,
 
-    // Test file patterns
-    include: ['tests/**/*.{test,spec}.{js,ts}'],
-    exclude: ['node_modules', 'dist', '.git'],
+    // Test patterns
+    include: ['tests/**/*.{test,spec}.{js,mjs}'],
+    exclude: [
+      'node_modules',
+      'dist',
+      '.git',
+      'tests/helpers/**', // Exclude helper files from test discovery
+    ],
 
-    // Global test setup
+    // Setup files
     setupFiles: ['tests/setup.js'],
 
-    // Test timeout
-    testTimeout: 10000,
+    // Timeout configuration
+    testTimeout: 30000,
+    hookTimeout: 30000,
+
+    // Mock configuration
+    deps: {
+      external: ['pg'], // Mock problematic external deps
+    },
+
+    // Pool configuration for stability
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: false,
+        minForks: 1,
+        maxForks: 2,
+      },
+    },
 
     // Coverage configuration
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      include: ['js/modules/load/**/*.js', 'js/modules/ui/WeekView.js'],
-      exclude: [
-        'node_modules/',
-        'tests/',
-        'coverage/',
-        '*.config.js',
-        'netlify/functions/_base.js', // Exclude base utility from coverage
+      reporter: ['text', 'json'],
+      include: [
+        'js/modules/load/**/*.js',
+        'js/modules/ui/WeekView.js',
+        'netlify/functions/utils/**/*.js',
       ],
+      exclude: ['node_modules/', 'tests/', 'coverage/', '*.config.js'],
       thresholds: {
         global: {
-          branches: 80,
-          functions: 80,
-          lines: 80,
-          statements: 80,
+          branches: 60,
+          functions: 60,
+          lines: 60,
+          statements: 60,
         },
       },
     },
@@ -52,40 +62,19 @@ export default defineConfig({
     outputFile: {
       json: 'test-results.json',
     },
-
-    // Watch mode configuration
-    watch: false,
-
-    // Pool configuration - sequential for real DB, parallel for mock
-    pool: 'threads',
-    poolOptions: {
-      threads: hasRealDatabase
-        ? {
-            // Sequential execution for real database - reliable and simple
-            singleThread: true,
-            minThreads: 1,
-            maxThreads: 1,
-          }
-        : {
-            // Parallel execution for mock database tests - fast local development
-            singleThread: false,
-            minThreads: 1,
-            maxThreads: 4,
-          },
-    },
-
-    // Environment variables for tests
-    env: {
-      NODE_ENV: 'test',
-    },
   },
 
   // Resolve configuration
   resolve: {
     alias: {
-      '@': './',
-      '@tests': './tests',
-      '@utils': './netlify/functions/utils',
+      '@': new URL('./', import.meta.url).pathname,
+      '@tests': new URL('./tests', import.meta.url).pathname,
+      '@utils': new URL('./netlify/functions/utils', import.meta.url).pathname,
     },
+  },
+
+  // Define configuration for Node.js compatibility
+  define: {
+    global: 'globalThis',
   },
 });

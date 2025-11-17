@@ -31,6 +31,55 @@ exports.handler = async event => {
     };
   }
 
+  // User Authentication Check
+  const authHeader = event.headers.authorization || event.headers.Authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return {
+      statusCode: 401,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        error: 'Authentication required',
+        message: 'Strava integration requires user authentication',
+      }),
+    };
+  }
+
+  // Validate user token (same validation code as AI proxy)
+  let authenticatedUserId = null;
+  try {
+    const crypto = require('crypto');
+    const token = authHeader.substring(7);
+    const [header, payload, signature] = token.split('.');
+    const decodedPayload = JSON.parse(Buffer.from(payload, 'base64').toString());
+
+    if (decodedPayload.exp && decodedPayload.exp < Date.now() / 1000) {
+      throw new Error('Token expired');
+    }
+
+    // Verify signature
+    const { JWT_SECRET } = process.env;
+    if (JWT_SECRET) {
+      const expectedSignature = crypto
+        .createHmac('sha256', JWT_SECRET)
+        .update(`${header}.${payload}`)
+        .digest('base64');
+      if (signature !== expectedSignature) {
+        throw new Error('Invalid token signature');
+      }
+    }
+
+    authenticatedUserId = decodedPayload.userId || decodedPayload.sub;
+    if (!authenticatedUserId) {
+      throw new Error('Invalid user token');
+    }
+  } catch (error) {
+    return {
+      statusCode: 403,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Invalid user token' }),
+    };
+  }
+
   const sql = getDB();
   const encryption = new TokenEncryption();
 
@@ -45,6 +94,18 @@ exports.handler = async event => {
         body: JSON.stringify({
           error: 'Missing required parameters',
           details: { code: !!code, userId: !!userId },
+        }),
+      };
+    }
+
+    // Verify that the authenticated user matches the userId in the request
+    if (authenticatedUserId !== userId) {
+      return {
+        statusCode: 403,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: 'User ID mismatch',
+          message: 'Authenticated user does not match request user ID',
         }),
       };
     }

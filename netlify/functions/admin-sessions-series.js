@@ -2,7 +2,6 @@
 // const { neon } = require('@neondatabase/serverless'); // Unused - using getNeonClient instead
 const crypto = require('crypto');
 const {
-  verifyAdmin,
   auditLog,
   errorResponse,
   validateDateRange,
@@ -23,12 +22,68 @@ exports.handler = async event => {
   try {
     await sql`SET statement_timeout = '5s'`;
 
-    const token = event.headers.authorization?.split(' ')[1];
-    if (!token) {
-      return errorResponse(401, 'MISSING_TOKEN', 'Authorization header required', requestId);
+    // JWT Authentication Check - MUST BE FIRST
+    const authHeader = event.headers.authorization || event.headers.Authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return {
+        statusCode: 401,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: 'Authentication required',
+          message: 'Admin endpoints require Bearer token authentication',
+        }),
+      };
     }
 
-    const { adminId } = await verifyAdmin(token, requestId);
+    const token = authHeader.substring(7);
+    const { JWT_SECRET } = process.env;
+    if (!JWT_SECRET) {
+      return {
+        statusCode: 500,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Server configuration error' }),
+      };
+    }
+
+    try {
+      // Simple JWT verification without external dependencies
+      const [header, payload, signature] = token.split('.');
+      if (!header || !payload || !signature) {
+        throw new Error('Invalid token format');
+      }
+
+      // Verify signature
+      const expectedSignature = crypto
+        .createHmac('sha256', JWT_SECRET)
+        .update(`${header}.${payload}`)
+        .digest('base64');
+      if (signature !== expectedSignature) {
+        throw new Error('Invalid token signature');
+      }
+
+      const decodedPayload = JSON.parse(Buffer.from(payload, 'base64').toString());
+
+      // Check expiration
+      if (decodedPayload.exp && decodedPayload.exp < Date.now() / 1000) {
+        throw new Error('Token expired');
+      }
+
+      // Check admin role
+      if (decodedPayload.role !== 'admin') {
+        throw new Error('Admin access required');
+      }
+    } catch (error) {
+      return {
+        statusCode: 403,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: 'Access denied',
+          message: 'Invalid or expired admin token',
+        }),
+      };
+    }
+
+    const adminId = 'admin'; // Simplified for inline auth
 
     const { from, to, bucket = 'day', timezone = 'UTC' } = event.queryStringParameters || {};
 

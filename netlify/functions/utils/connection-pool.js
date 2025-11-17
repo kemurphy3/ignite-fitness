@@ -1,19 +1,15 @@
-// Connection Pool Management for IgniteFitness
-// Centralized database connection pooling to prevent connection exhaustion
-
-const { neon } = require('@neondatabase/serverless');
-
-// FIX: Conditional import with MockPool fallback for test environments
 let Pool;
+
 try {
   const { Pool: PgPool } = require('pg');
   Pool = PgPool;
 } catch (error) {
-  // Test environment fallback
+  // Mock Pool for test environments
   Pool = class MockPool {
     constructor(config) {
       this.config = config;
       this.connected = false;
+      this.activeConnections = 0;
     }
 
     async query(_sql, _params) {
@@ -21,327 +17,120 @@ try {
     }
 
     async connect() {
-      this.connected = true;
-      return { release: () => {} };
+      this.activeConnections++;
+      return {
+        query: (sql, params) => this.query(sql, params),
+        release: () => {
+          this.activeConnections--;
+        },
+      };
     }
 
     async end() {
       this.connected = false;
+      this.activeConnections = 0;
     }
   };
 }
 
 class ConnectionPoolManager {
   constructor() {
-    this.neonClient = null;
-    this.pgPool = null;
-    this.connectionStats = {
-      totalConnections: 0,
-      activeConnections: 0,
-      idleConnections: 0,
-      waitingClients: 0,
-      lastReset: new Date(),
+    this.pools = new Map();
+    this.maxPools = 3;
+    this.defaultConfig = {
+      max: 10, // Maximum connections in pool
+      idleTimeoutMillis: 30000, // 30 seconds
+      connectionTimeoutMillis: 5000, // 5 seconds
+      acquireTimeoutMillis: 10000, // 10 seconds
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
     };
-    this.isMock = !process.env.DATABASE_URL;
   }
 
-  // Get Neon serverless client (preferred for serverless functions)
-  getNeonClient() {
-    if (!process.env.DATABASE_URL) {
-      throw new Error('DATABASE_URL not configured');
+  getPool(databaseUrl = process.env.DATABASE_URL) {
+    if (!databaseUrl || databaseUrl.startsWith('mock://')) {
+      // Return mock pool for test environment
+      return new Pool({ connectionString: 'mock://test' });
     }
 
-    if (!this.neonClient) {
-      this.neonClient = neon(process.env.DATABASE_URL, {
-        poolQueryViaFetch: true,
-        fetchOptions: {
-          priority: 'high',
-          // Connection pooling settings
-          keepalive: true,
-          timeout: 30000,
-          // Retry configuration
-          retry: {
-            retries: 3,
-            retryDelay: 1000,
-            retryCondition: error => {
-              // Retry on network errors, timeouts, and temporary failures
-              return (
-                error.code === 'ECONNRESET' ||
-                error.code === 'ETIMEDOUT' ||
-                error.message.includes('timeout') ||
-                error.message.includes('connection')
-              );
-            },
-          },
-        },
-      });
-
-      console.log('✅ Neon client initialized with connection pooling');
-    }
-    return this.neonClient;
-  }
-
-  /**
-   * Validate connection string format
-   * @param {string} connStr - Connection string to validate
-   * @returns {boolean} Is valid connection string
-   */
-  isValidConnectionString(connStr) {
-    if (!connStr || typeof connStr !== 'string') {
-      return false;
-    }
-    try {
-      const url = new URL(connStr);
-      return ['postgresql:', 'postgres:'].includes(url.protocol);
-    } catch {
-      return false;
-    }
-  }
-
-  // Get PostgreSQL connection pool (for complex operations)
-  getPgPool() {
-    if (!this.pgPool) {
-      // Use mock pool in test environment when DATABASE_URL is not set
-      if (this.isMock || !process.env.DATABASE_URL) {
-        this.pgPool = new Pool({
-          connectionString: process.env.DATABASE_URL || 'mock://test',
-        });
-        console.log('✅ Mock PostgreSQL connection pool initialized for tests');
-        return this.pgPool;
-      }
-
-      // Validate connection string
-      if (!this.isValidConnectionString(process.env.DATABASE_URL)) {
-        throw new Error('Invalid database connection string');
-      }
-
-      this.pgPool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        // Pool configuration
-        max: 20, // Maximum connections in pool
-        min: 2, // Minimum connections in pool
-        idleTimeoutMillis: 30000, // Close idle connections after 30s
-        connectionTimeoutMillis: 5000, // Timeout for new connections
-        statement_timeout: 30000, // Query timeout
-        query_timeout: 30000, // Query timeout
-        // SSL configuration - enforce SSL in production
-        ssl:
-          process.env.NODE_ENV === 'production'
-            ? { rejectUnauthorized: true }
-            : { rejectUnauthorized: false },
-        // Connection lifecycle
-        allowExitOnIdle: true,
-      });
-
-      // Pool event handlers (only for real Pool, not MockPool)
-      if (this.pgPool.on && typeof this.pgPool.on === 'function') {
-        this.pgPool.on('connect', _client => {
-          this.connectionStats.totalConnections++;
-          this.connectionStats.activeConnections++;
-          console.log(
-            `📊 New connection established. Active: ${this.connectionStats.activeConnections}`
-          );
-        });
-
-        this.pgPool.on('acquire', _client => {
-          this.connectionStats.activeConnections++;
-          this.connectionStats.idleConnections = Math.max(
-            0,
-            this.connectionStats.idleConnections - 1
-          );
-        });
-
-        this.pgPool.on('release', _client => {
-          this.connectionStats.activeConnections = Math.max(
-            0,
-            this.connectionStats.activeConnections - 1
-          );
-          this.connectionStats.idleConnections++;
-        });
-
-        this.pgPool.on('remove', _client => {
-          this.connectionStats.totalConnections = Math.max(
-            0,
-            this.connectionStats.totalConnections - 1
-          );
-          this.connectionStats.activeConnections = Math.max(
-            0,
-            this.connectionStats.activeConnections - 1
-          );
-          console.log(`📊 Connection removed. Total: ${this.connectionStats.totalConnections}`);
-        });
-
-        this.pgPool.on('error', (err, _client) => {
-          console.error('❌ Unexpected pool error:', err);
-          this.connectionStats.activeConnections = Math.max(
-            0,
-            this.connectionStats.activeConnections - 1
-          );
-        });
-      }
-
-      console.log('✅ PostgreSQL connection pool initialized');
-    }
-    return this.pgPool;
-  }
-
-  // Get the appropriate client based on operation type
-  getClient(operationType = 'query') {
-    // Use Neon for simple queries (serverless optimized)
-    if (operationType === 'query' || operationType === 'simple') {
-      return this.getNeonClient();
+    if (this.pools.has(databaseUrl)) {
+      return this.pools.get(databaseUrl);
     }
 
-    // Use PG pool for complex operations, transactions, or when connection reuse is critical
-    if (
-      operationType === 'transaction' ||
-      operationType === 'complex' ||
-      operationType === 'pool'
-    ) {
-      return this.getPgPool();
+    if (this.pools.size >= this.maxPools) {
+      throw new Error('Maximum number of connection pools reached');
     }
 
-    // Default to Neon for serverless functions
-    return this.getNeonClient();
-  }
-
-  // Execute a query with automatic client selection
-  async executeQuery(query, params = [], operationType = 'query') {
-    const client = this.getClient(operationType);
-
-    try {
-      if (operationType === 'transaction' || operationType === 'complex') {
-        // Use PG pool for complex operations
-        const result = await client.query(query, params);
-        return result.rows;
-      } else {
-        // Use Neon for simple queries
-        if (params.length > 0) {
-          return await client(query, params);
-        } else {
-          return await client(query);
-        }
-      }
-    } catch (error) {
-      console.error('Query execution failed:', error);
-      throw error;
-    }
-  }
-
-  // Execute a transaction with proper connection management
-  async executeTransaction(callback) {
-    const pool = this.getPgPool();
-    const client = await pool.connect();
-
-    try {
-      await client.query('BEGIN');
-      const result = await callback(client);
-      await client.query('COMMIT');
-      return result;
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
-  }
-
-  // Health check for both connection types
-  async healthCheck() {
-    const results = {
-      neon: { healthy: false, error: null },
-      pgPool: { healthy: false, error: null },
-      stats: this.connectionStats,
+    const config = {
+      ...this.defaultConfig,
+      connectionString: databaseUrl,
     };
 
-    // Test Neon connection
-    try {
-      const neonClient = this.getNeonClient();
-      await neonClient`SELECT NOW() as current_time`;
-      results.neon.healthy = true;
-    } catch (error) {
-      results.neon.error = error.message;
-    }
+    const pool = new Pool(config);
 
-    // Test PG pool connection
-    try {
-      const pool = this.getPgPool();
-      const client = await pool.connect();
-      const _result = await client.query('SELECT NOW() as current_time');
-      client.release();
-      results.pgPool.healthy = true;
-    } catch (error) {
-      results.pgPool.error = error.message;
-    }
+    // Error handling
+    pool.on('error', (err, _client) => {
+      console.error('Pool error:', err);
+    });
 
-    return results;
+    pool.on('connect', client => {
+      // Set session timezone and other defaults
+      client.query('SET timezone = "UTC"');
+    });
+
+    this.pools.set(databaseUrl, pool);
+    return pool;
   }
 
-  // Get connection statistics
+  async healthCheck(pool = null) {
+    const testPool = pool || this.getPool();
+
+    try {
+      const result = await testPool.query('SELECT NOW() as current_time');
+      return {
+        healthy: true,
+        timestamp: result.rows[0].current_time,
+        poolSize: testPool.totalCount,
+        idle: testPool.idleCount,
+        waiting: testPool.waitingCount,
+      };
+    } catch (error) {
+      return {
+        healthy: false,
+        error: error.message,
+      };
+    }
+  }
+
+  async closeAll() {
+    const promises = Array.from(this.pools.values()).map(pool => pool.end());
+    await Promise.all(promises);
+    this.pools.clear();
+  }
+
   getStats() {
-    return {
-      ...this.connectionStats,
-      neonClient: this.neonClient ? 'initialized' : 'not_initialized',
-      pgPool: this.pgPool ? 'initialized' : 'not_initialized',
-      timestamp: new Date().toISOString(),
-    };
-  }
+    const stats = {};
 
-  // Graceful shutdown
-  async shutdown() {
-    console.log('🔄 Shutting down connection pools...');
+    for (const [url, pool] of this.pools.entries()) {
+      const urlKey = url.includes('@') ? url.split('@')[1] : 'default';
 
-    if (this.pgPool) {
-      await this.pgPool.end();
-      this.pgPool = null;
+      stats[urlKey] = {
+        total: pool.totalCount || 0,
+        idle: pool.idleCount || 0,
+        waiting: pool.waitingCount || 0,
+      };
     }
 
-    // Neon client doesn't need explicit shutdown
-    this.neonClient = null;
-
-    console.log('✅ Connection pools shut down successfully');
-  }
-
-  // Reset connection stats
-  resetStats() {
-    this.connectionStats = {
-      totalConnections: 0,
-      activeConnections: 0,
-      idleConnections: 0,
-      waitingClients: 0,
-      lastReset: new Date(),
-    };
+    return stats;
   }
 }
 
 // Singleton instance
-const connectionPoolManager = new ConnectionPoolManager();
-
-// Export convenience functions
-const getNeonClient = () => {
-  // Reset client if DATABASE_URL was removed (for testing)
-  if (!process.env.DATABASE_URL && connectionPoolManager.neonClient) {
-    connectionPoolManager.neonClient = null;
-  }
-  return connectionPoolManager.getNeonClient();
-};
-const getPgPool = () => connectionPoolManager.getPgPool();
-const getClient = operationType => connectionPoolManager.getClient(operationType);
-const executeQuery = (query, params, operationType) =>
-  connectionPoolManager.executeQuery(query, params, operationType);
-const executeTransaction = callback => connectionPoolManager.executeTransaction(callback);
-const healthCheck = () => connectionPoolManager.healthCheck();
-const getStats = () => connectionPoolManager.getStats();
-const shutdown = () => connectionPoolManager.shutdown();
+const connectionManager = new ConnectionPoolManager();
 
 module.exports = {
-  connectionPoolManager,
-  getNeonClient,
-  getPgPool,
-  getClient,
-  executeQuery,
-  executeTransaction,
-  healthCheck,
-  getStats,
-  shutdown,
+  ConnectionPoolManager,
+  getPool: url => connectionManager.getPool(url),
+  healthCheck: () => connectionManager.healthCheck(),
+  getStats: () => connectionManager.getStats(),
+  closeAll: () => connectionManager.closeAll(),
 };

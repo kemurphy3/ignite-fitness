@@ -1,85 +1,55 @@
-// Test setup file for Vitest
-// This file is run before all tests
-
 import { vi } from 'vitest';
 
-// Mock localStorage for Node.js environment
-if (typeof localStorage === 'undefined') {
-  const localStorageMock = {
-    _store: {},
-    getItem(key) {
-      return this._store[key] || null;
-    },
-    setItem(key, value) {
-      this._store[key] = value.toString();
-    },
-    removeItem(key) {
-      delete this._store[key];
-    },
-    clear() {
-      this._store = {};
-    },
-    key(index) {
-      return Object.keys(this._store)[index] || null;
-    },
-    get length() {
-      return Object.keys(this._store).length;
-    },
-  };
-  global.localStorage = localStorageMock;
-}
+// Mock DOM globals for Node.js environment
+Object.defineProperty(window, 'location', {
+  value: {
+    origin: 'http://localhost:3000',
+    href: 'http://localhost:3000',
+    pathname: '/',
+    search: '',
+    hash: '',
+  },
+  writable: true,
+});
 
-// Mock window object
-if (typeof window === 'undefined') {
-  global.window = {
-    location: { hash: '', href: 'http://localhost' },
-    addEventListener() {},
-    removeEventListener() {},
-    dispatchEvent() {
-      return true;
-    },
-  };
-}
-
-// Setup global mock functions for common patterns
-global.createMockFunction = () => vi.fn();
-global.createMockObject = (methods = []) => {
-  const mock = {};
-  methods.forEach(method => {
-    mock[method] = vi.fn();
-  });
-  return mock;
-};
-
-// Global mock managers that tests expect
-global.window = global.window || {};
-global.window.AuthManager = {
-  getCurrentUser: vi.fn(),
-  getCurrentUsername: vi.fn(),
-  isLoggedIn: vi.fn(),
-};
-
-global.window.LoadCalculator = {
-  calculateWeeklyLoad: vi.fn(),
-  computeLoad: vi.fn(),
-};
-
-global.window.StorageManager = {
-  getItem: vi.fn(),
+// Mock localStorage
+const localStorageMock = {
+  getItem: vi.fn(key => null),
   setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+};
+Object.defineProperty(window, 'localStorage', { value: localStorageMock });
+
+// Mock sessionStorage
+Object.defineProperty(window, 'sessionStorage', { value: localStorageMock });
+
+// Mock fetch for HTTP requests
+global.fetch = vi.fn(() =>
+  Promise.resolve({
+    ok: true,
+    json: () => Promise.resolve({}),
+    text: () => Promise.resolve(''),
+  })
+);
+
+// Mock console methods to reduce noise
+console.log = vi.fn();
+console.warn = vi.fn();
+console.error = vi.fn();
+
+// Mock process.env for client-side code
+process.env = {
+  NODE_ENV: 'test',
+  DATABASE_URL: 'mock://test',
+  JWT_SECRET: 'test-secret-key',
 };
 
-global.window.EventBus = {
-  on: vi.fn(),
-  emit: vi.fn(),
-};
-
-global.window.SafeLogger = {
-  info: vi.fn(),
-  warn: vi.fn(),
-  error: vi.fn(),
-  debug: vi.fn(),
-};
-
-// Keep console methods available for debugging
-// Tests can override if needed
+// Mock external modules that cause issues
+vi.mock('pg', () => ({
+  Pool: vi.fn().mockImplementation(() => ({
+    query: vi.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
+    connect: vi.fn().mockResolvedValue({ release: vi.fn() }),
+    end: vi.fn().mockResolvedValue(undefined),
+  })),
+}));
