@@ -229,7 +229,7 @@ function createMockDatabase() {
   const mockDb = (strings, ...values) => {
     // Build query string for pattern matching - each ${} becomes a ?
     let query = '';
-    let paramIndex = 0;
+    const paramIndex = 0;
     const paramPositions = []; // Track which value index corresponds to each ? position
 
     for (let i = 0; i < strings.length; i++) {
@@ -253,8 +253,8 @@ function createMockDatabase() {
           if (match) {
             // Find which parameter index this is
             const beforeMatch = query.substring(0, match.index);
-            const paramIndex = (beforeMatch.match(/\?/g) || []).length;
-            const userId = values[paramIndex];
+            const paramIndexLocal = (beforeMatch.match(/\?/g) || []).length;
+            const userId = values[paramIndexLocal];
             if (userId !== undefined) {
               filteredSessions = filteredSessions.filter(s => s.user_id === userId);
             }

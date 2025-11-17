@@ -1,1 +1,310 @@
-{"numTotalTestSuites":19,"numPassedTestSuites":19,"numFailedTestSuites":0,"numPendingTestSuites":0,"numTotalTests":28,"numPassedTests":28,"numFailedTests":0,"numPendingTests":0,"numTodoTests":0,"snapshot":{"added":0,"failure":false,"filesAdded":0,"filesRemoved":0,"filesRemovedList":[],"filesUnmatched":0,"filesUpdated":0,"matched":0,"total":0,"unchecked":0,"uncheckedKeysByFile":[],"unmatched":0,"updated":0,"didUpdate":false},"startTime":1763340498367,"success":true,"testResults":[{"assertionResults":[{"ancestorTitles":["LoadGuardrails Integration","Weekly Ramp Rate Monitoring"],"fullName":"LoadGuardrails Integration Weekly Ramp Rate Monitoring should prevent >10% weekly load increases for intermediate users","status":"passed","title":"should prevent >10% weekly load increases for intermediate users","duration":2.473500000000058,"failureMessages":[],"meta":{}},{"ancestorTitles":["LoadGuardrails Integration","Weekly Ramp Rate Monitoring"],"fullName":"LoadGuardrails Integration Weekly Ramp Rate Monitoring should allow 10% or less increase for intermediate users","status":"passed","title":"should allow 10% or less increase for intermediate users","duration":0.3771000000000413,"failureMessages":[],"meta":{}},{"ancestorTitles":["LoadGuardrails Integration","Weekly Ramp Rate Monitoring"],"fullName":"LoadGuardrails Integration Weekly Ramp Rate Monitoring should calculate ramp rate correctly","status":"passed","title":"should calculate ramp rate correctly","duration":0.28949999999997544,"failureMessages":[],"meta":{}},{"ancestorTitles":["LoadGuardrails Integration","Weekly Ramp Rate Monitoring"],"fullName":"LoadGuardrails Integration Weekly Ramp Rate Monitoring should handle zero previous load","status":"passed","title":"should handle zero previous load","duration":0.31380000000001473,"failureMessages":[],"meta":{}},{"ancestorTitles":["LoadGuardrails Integration","HIIT Reduction Application"],"fullName":"LoadGuardrails Integration HIIT Reduction Application should apply 20% reduction to next HIIT session when threshold exceeded","status":"passed","title":"should apply 20% reduction to next HIIT session when threshold exceeded","duration":1.5106999999999289,"failureMessages":[],"meta":{}},{"ancestorTitles":["LoadGuardrails Integration","HIIT Reduction Application"],"fullName":"LoadGuardrails Integration HIIT Reduction Application should modify next 2 HIIT sessions only","status":"passed","title":"should modify next 2 HIIT sessions only","duration":0.45230000000003656,"failureMessages":[],"meta":{}},{"ancestorTitles":["LoadGuardrails Integration","Missed Days Detection"],"fullName":"LoadGuardrails Integration Missed Days Detection should apply downshift after 3+ missed days","status":"passed","title":"should apply downshift after 3+ missed days","duration":0.7128999999999905,"failureMessages":[],"meta":{}},{"ancestorTitles":["LoadGuardrails Integration","Missed Days Detection"],"fullName":"LoadGuardrails Integration Missed Days Detection should not adjust for < 3 missed days","status":"passed","title":"should not adjust for < 3 missed days","duration":0.2154000000000451,"failureMessages":[],"meta":{}},{"ancestorTitles":["LoadGuardrails Integration","Pain Flag Response"],"fullName":"LoadGuardrails Integration Pain Flag Response should apply immediate 30% reduction for pain","status":"passed","title":"should apply immediate 30% reduction for pain","duration":0.613800000000083,"failureMessages":[],"meta":{}},{"ancestorTitles":["LoadGuardrails Integration","Pain Flag Response"],"fullName":"LoadGuardrails Integration Pain Flag Response should scale reduction based on pain level","status":"passed","title":"should scale reduction based on pain level","duration":0.46069999999997435,"failureMessages":[],"meta":{}},{"ancestorTitles":["LoadGuardrails Integration","Session Validation"],"fullName":"LoadGuardrails Integration Session Validation should reject session exceeding consecutive days limit","status":"passed","title":"should reject session exceeding consecutive days limit","duration":0.6142999999999574,"failureMessages":[],"meta":{}},{"ancestorTitles":["LoadGuardrails Integration","Session Validation"],"fullName":"LoadGuardrails Integration Session Validation should allow session within consecutive days limit","status":"passed","title":"should allow session within consecutive days limit","duration":0.2899999999999636,"failureMessages":[],"meta":{}},{"ancestorTitles":["LoadGuardrails Integration","Guardrail Status"],"fullName":"LoadGuardrails Integration Guardrail Status should return current guardrail status","status":"passed","title":"should return current guardrail status","duration":1.5906999999999698,"failureMessages":[],"meta":{}},{"ancestorTitles":["LoadGuardrails Integration","End-to-End Flow"],"fullName":"LoadGuardrails Integration End-to-End Flow should complete full guardrail flow: detect → analyze → apply → log","status":"passed","title":"should complete full guardrail flow: detect → analyze → apply → log","duration":3.288400000000024,"failureMessages":[],"meta":{}}],"startTime":1763340499262,"endTime":1763340499276.2883,"status":"passed","message":"","name":"C:/Users/kemur/Git/ignite-fitness/tests/integration/load-guardrails-integration.test.js"},{"assertionResults":[{"ancestorTitles":["Pagination Integration Tests","Cursor-Based Pagination Integration"],"fullName":"Pagination Integration Tests Cursor-Based Pagination Integration should implement full cursor pagination workflow","status":"passed","title":"should implement full cursor pagination workflow","duration":3.782100000000014,"failureMessages":[],"meta":{}},{"ancestorTitles":["Pagination Integration Tests","Cursor-Based Pagination Integration"],"fullName":"Pagination Integration Tests Cursor-Based Pagination Integration should handle pagination with createPaginatedResponse","status":"passed","title":"should handle pagination with createPaginatedResponse","duration":0.5697000000000116,"failureMessages":[],"meta":{}},{"ancestorTitles":["Pagination Integration Tests","Cursor-Based Pagination Integration"],"fullName":"Pagination Integration Tests Cursor-Based Pagination Integration should handle last page correctly","status":"passed","title":"should handle last page correctly","duration":0.3593999999999369,"failureMessages":[],"meta":{}},{"ancestorTitles":["Pagination Integration Tests","Pagination Edge Cases"],"fullName":"Pagination Integration Tests Pagination Edge Cases should handle empty result set","status":"passed","title":"should handle empty result set","duration":0.3088999999999942,"failureMessages":[],"meta":{}},{"ancestorTitles":["Pagination Integration Tests","Pagination Edge Cases"],"fullName":"Pagination Integration Tests Pagination Edge Cases should handle single item result","status":"passed","title":"should handle single item result","duration":0.32380000000000564,"failureMessages":[],"meta":{}},{"ancestorTitles":["Pagination Integration Tests","Pagination Performance"],"fullName":"Pagination Integration Tests Pagination Performance should perform well with large datasets","status":"passed","title":"should perform well with large datasets","duration":0.2986999999999398,"failureMessages":[],"meta":{}}],"startTime":1763340499327,"endTime":1763340499333.2986,"status":"passed","message":"","name":"C:/Users/kemur/Git/ignite-fitness/tests/integration/pagination-integration.test.js"},{"assertionResults":[{"ancestorTitles":["Sessions API Integration","Sessions List Query"],"fullName":"Sessions API Integration Sessions List Query should retrieve sessions for a user","status":"passed","title":"should retrieve sessions for a user","duration":1.5429000000000315,"failureMessages":[],"meta":{}},{"ancestorTitles":["Sessions API Integration","Sessions List Query"],"fullName":"Sessions API Integration Sessions List Query should filter sessions by type","status":"passed","title":"should filter sessions by type","duration":0.5706000000000131,"failureMessages":[],"meta":{}},{"ancestorTitles":["Sessions API Integration","Sessions List Query"],"fullName":"Sessions API Integration Sessions List Query should filter sessions by date range","status":"passed","title":"should filter sessions by date range","duration":0.3263000000000602,"failureMessages":[],"meta":{}},{"ancestorTitles":["Sessions API Integration","Sessions Pagination"],"fullName":"Sessions API Integration Sessions Pagination should implement limit-based pagination","status":"passed","title":"should implement limit-based pagination","duration":0.28710000000000946,"failureMessages":[],"meta":{}},{"ancestorTitles":["Sessions API Integration","Sessions Pagination"],"fullName":"Sessions API Integration Sessions Pagination should implement cursor-based pagination","status":"passed","title":"should implement cursor-based pagination","duration":0.7779000000000451,"failureMessages":[],"meta":{}},{"ancestorTitles":["Sessions API Integration","Sessions Statistics"],"fullName":"Sessions API Integration Sessions Statistics should calculate session count","status":"passed","title":"should calculate session count","duration":0.22109999999997854,"failureMessages":[],"meta":{}},{"ancestorTitles":["Sessions API Integration","Sessions Statistics"],"fullName":"Sessions API Integration Sessions Statistics should calculate total duration","status":"passed","title":"should calculate total duration","duration":0.23250000000007276,"failureMessages":[],"meta":{}},{"ancestorTitles":["Sessions API Integration","Sessions Statistics"],"fullName":"Sessions API Integration Sessions Statistics should find most recent session","status":"passed","title":"should find most recent session","duration":0.19410000000004857,"failureMessages":[],"meta":{}}],"startTime":1763340499320,"endTime":1763340499325.2324,"status":"passed","message":"","name":"C:/Users/kemur/Git/ignite-fitness/tests/integration/sessions-api.test.js"}]}
+{
+  "numTotalTestSuites": 19,
+  "numPassedTestSuites": 19,
+  "numFailedTestSuites": 0,
+  "numPendingTestSuites": 0,
+  "numTotalTests": 28,
+  "numPassedTests": 28,
+  "numFailedTests": 0,
+  "numPendingTests": 0,
+  "numTodoTests": 0,
+  "snapshot": {
+    "added": 0,
+    "failure": false,
+    "filesAdded": 0,
+    "filesRemoved": 0,
+    "filesRemovedList": [],
+    "filesUnmatched": 0,
+    "filesUpdated": 0,
+    "matched": 0,
+    "total": 0,
+    "unchecked": 0,
+    "uncheckedKeysByFile": [],
+    "unmatched": 0,
+    "updated": 0,
+    "didUpdate": false
+  },
+  "startTime": 1763340498367,
+  "success": true,
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": ["LoadGuardrails Integration", "Weekly Ramp Rate Monitoring"],
+          "fullName": "LoadGuardrails Integration Weekly Ramp Rate Monitoring should prevent >10% weekly load increases for intermediate users",
+          "status": "passed",
+          "title": "should prevent >10% weekly load increases for intermediate users",
+          "duration": 2.473500000000058,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": ["LoadGuardrails Integration", "Weekly Ramp Rate Monitoring"],
+          "fullName": "LoadGuardrails Integration Weekly Ramp Rate Monitoring should allow 10% or less increase for intermediate users",
+          "status": "passed",
+          "title": "should allow 10% or less increase for intermediate users",
+          "duration": 0.3771000000000413,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": ["LoadGuardrails Integration", "Weekly Ramp Rate Monitoring"],
+          "fullName": "LoadGuardrails Integration Weekly Ramp Rate Monitoring should calculate ramp rate correctly",
+          "status": "passed",
+          "title": "should calculate ramp rate correctly",
+          "duration": 0.28949999999997544,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": ["LoadGuardrails Integration", "Weekly Ramp Rate Monitoring"],
+          "fullName": "LoadGuardrails Integration Weekly Ramp Rate Monitoring should handle zero previous load",
+          "status": "passed",
+          "title": "should handle zero previous load",
+          "duration": 0.31380000000001473,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": ["LoadGuardrails Integration", "HIIT Reduction Application"],
+          "fullName": "LoadGuardrails Integration HIIT Reduction Application should apply 20% reduction to next HIIT session when threshold exceeded",
+          "status": "passed",
+          "title": "should apply 20% reduction to next HIIT session when threshold exceeded",
+          "duration": 1.5106999999999289,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": ["LoadGuardrails Integration", "HIIT Reduction Application"],
+          "fullName": "LoadGuardrails Integration HIIT Reduction Application should modify next 2 HIIT sessions only",
+          "status": "passed",
+          "title": "should modify next 2 HIIT sessions only",
+          "duration": 0.45230000000003656,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": ["LoadGuardrails Integration", "Missed Days Detection"],
+          "fullName": "LoadGuardrails Integration Missed Days Detection should apply downshift after 3+ missed days",
+          "status": "passed",
+          "title": "should apply downshift after 3+ missed days",
+          "duration": 0.7128999999999905,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": ["LoadGuardrails Integration", "Missed Days Detection"],
+          "fullName": "LoadGuardrails Integration Missed Days Detection should not adjust for < 3 missed days",
+          "status": "passed",
+          "title": "should not adjust for < 3 missed days",
+          "duration": 0.2154000000000451,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": ["LoadGuardrails Integration", "Pain Flag Response"],
+          "fullName": "LoadGuardrails Integration Pain Flag Response should apply immediate 30% reduction for pain",
+          "status": "passed",
+          "title": "should apply immediate 30% reduction for pain",
+          "duration": 0.613800000000083,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": ["LoadGuardrails Integration", "Pain Flag Response"],
+          "fullName": "LoadGuardrails Integration Pain Flag Response should scale reduction based on pain level",
+          "status": "passed",
+          "title": "should scale reduction based on pain level",
+          "duration": 0.46069999999997435,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": ["LoadGuardrails Integration", "Session Validation"],
+          "fullName": "LoadGuardrails Integration Session Validation should reject session exceeding consecutive days limit",
+          "status": "passed",
+          "title": "should reject session exceeding consecutive days limit",
+          "duration": 0.6142999999999574,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": ["LoadGuardrails Integration", "Session Validation"],
+          "fullName": "LoadGuardrails Integration Session Validation should allow session within consecutive days limit",
+          "status": "passed",
+          "title": "should allow session within consecutive days limit",
+          "duration": 0.2899999999999636,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": ["LoadGuardrails Integration", "Guardrail Status"],
+          "fullName": "LoadGuardrails Integration Guardrail Status should return current guardrail status",
+          "status": "passed",
+          "title": "should return current guardrail status",
+          "duration": 1.5906999999999698,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": ["LoadGuardrails Integration", "End-to-End Flow"],
+          "fullName": "LoadGuardrails Integration End-to-End Flow should complete full guardrail flow: detect → analyze → apply → log",
+          "status": "passed",
+          "title": "should complete full guardrail flow: detect → analyze → apply → log",
+          "duration": 3.288400000000024,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1763340499262,
+      "endTime": 1763340499276.2883,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/kemur/Git/ignite-fitness/tests/integration/load-guardrails-integration.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": ["Pagination Integration Tests", "Cursor-Based Pagination Integration"],
+          "fullName": "Pagination Integration Tests Cursor-Based Pagination Integration should implement full cursor pagination workflow",
+          "status": "passed",
+          "title": "should implement full cursor pagination workflow",
+          "duration": 3.782100000000014,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": ["Pagination Integration Tests", "Cursor-Based Pagination Integration"],
+          "fullName": "Pagination Integration Tests Cursor-Based Pagination Integration should handle pagination with createPaginatedResponse",
+          "status": "passed",
+          "title": "should handle pagination with createPaginatedResponse",
+          "duration": 0.5697000000000116,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": ["Pagination Integration Tests", "Cursor-Based Pagination Integration"],
+          "fullName": "Pagination Integration Tests Cursor-Based Pagination Integration should handle last page correctly",
+          "status": "passed",
+          "title": "should handle last page correctly",
+          "duration": 0.3593999999999369,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": ["Pagination Integration Tests", "Pagination Edge Cases"],
+          "fullName": "Pagination Integration Tests Pagination Edge Cases should handle empty result set",
+          "status": "passed",
+          "title": "should handle empty result set",
+          "duration": 0.3088999999999942,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": ["Pagination Integration Tests", "Pagination Edge Cases"],
+          "fullName": "Pagination Integration Tests Pagination Edge Cases should handle single item result",
+          "status": "passed",
+          "title": "should handle single item result",
+          "duration": 0.32380000000000564,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": ["Pagination Integration Tests", "Pagination Performance"],
+          "fullName": "Pagination Integration Tests Pagination Performance should perform well with large datasets",
+          "status": "passed",
+          "title": "should perform well with large datasets",
+          "duration": 0.2986999999999398,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1763340499327,
+      "endTime": 1763340499333.2986,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/kemur/Git/ignite-fitness/tests/integration/pagination-integration.test.js"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": ["Sessions API Integration", "Sessions List Query"],
+          "fullName": "Sessions API Integration Sessions List Query should retrieve sessions for a user",
+          "status": "passed",
+          "title": "should retrieve sessions for a user",
+          "duration": 1.5429000000000315,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": ["Sessions API Integration", "Sessions List Query"],
+          "fullName": "Sessions API Integration Sessions List Query should filter sessions by type",
+          "status": "passed",
+          "title": "should filter sessions by type",
+          "duration": 0.5706000000000131,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": ["Sessions API Integration", "Sessions List Query"],
+          "fullName": "Sessions API Integration Sessions List Query should filter sessions by date range",
+          "status": "passed",
+          "title": "should filter sessions by date range",
+          "duration": 0.3263000000000602,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": ["Sessions API Integration", "Sessions Pagination"],
+          "fullName": "Sessions API Integration Sessions Pagination should implement limit-based pagination",
+          "status": "passed",
+          "title": "should implement limit-based pagination",
+          "duration": 0.28710000000000946,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": ["Sessions API Integration", "Sessions Pagination"],
+          "fullName": "Sessions API Integration Sessions Pagination should implement cursor-based pagination",
+          "status": "passed",
+          "title": "should implement cursor-based pagination",
+          "duration": 0.7779000000000451,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": ["Sessions API Integration", "Sessions Statistics"],
+          "fullName": "Sessions API Integration Sessions Statistics should calculate session count",
+          "status": "passed",
+          "title": "should calculate session count",
+          "duration": 0.22109999999997854,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": ["Sessions API Integration", "Sessions Statistics"],
+          "fullName": "Sessions API Integration Sessions Statistics should calculate total duration",
+          "status": "passed",
+          "title": "should calculate total duration",
+          "duration": 0.23250000000007276,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": ["Sessions API Integration", "Sessions Statistics"],
+          "fullName": "Sessions API Integration Sessions Statistics should find most recent session",
+          "status": "passed",
+          "title": "should find most recent session",
+          "duration": 0.19410000000004857,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1763340499320,
+      "endTime": 1763340499325.2324,
+      "status": "passed",
+      "message": "",
+      "name": "C:/Users/kemur/Git/ignite-fitness/tests/integration/sessions-api.test.js"
+    }
+  ]
+}
