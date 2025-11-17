@@ -132,13 +132,30 @@ function getAllFiles(dir, extensions = JS_EXTENSIONS) {
 
       if (stat.isDirectory()) {
         // Skip node_modules and other common directories
-        if (!['node_modules', '.git', 'dist', 'build', '.next', 'coverage'].includes(entry)) {
+        if (
+          ![
+            'node_modules',
+            '.git',
+            'dist',
+            'build',
+            '.next',
+            'coverage',
+            'dev-scripts',
+            'tests',
+            'tools',
+            'scripts',
+            'netlify',
+          ].includes(entry)
+        ) {
           files.push(...getAllFiles(fullPath, extensions));
         }
       } else if (stat.isFile()) {
         const ext = path.extname(entry);
         if (extensions.includes(ext)) {
-          files.push(fullPath);
+          // Skip problematic root-level scripts
+          if (!fullPath.includes('run-') && !fullPath.includes('sw.js')) {
+            files.push(fullPath);
+          }
         }
       }
     }

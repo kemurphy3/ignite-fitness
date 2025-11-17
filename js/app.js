@@ -1284,6 +1284,8 @@ function _generateWorkoutPlan() {
 // Make function available globally
 if (typeof window !== 'undefined') {
   window._generateWorkoutPlan = _generateWorkoutPlan;
+  window.savePersonalInfo = _savePersonalInfo;
+  window.saveGoals = _saveGoals;
 }
 
 // Load recent workouts

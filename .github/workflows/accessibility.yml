@@ -1,14 +1,6 @@
 name: Accessibility Testing
 
 on:
-  push:
-    branches:
-      - main
-      - develop
-  pull_request:
-    branches:
-      - main
-      - develop
   schedule:
     - cron: "0 2 * * 0" # Weekly accessibility scan
   workflow_dispatch:

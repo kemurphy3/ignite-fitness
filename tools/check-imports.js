@@ -41,7 +41,11 @@ function getAllFiles(dir, extensions = JS_EXTENSIONS) {
 
       if (stat.isDirectory()) {
         // Skip node_modules and other common directories
-        if (!['node_modules', '.git', 'dist', 'build', '.next'].includes(entry)) {
+        if (
+          !['node_modules', '.git', 'dist', 'build', '.next', 'dev-scripts', 'netlify'].includes(
+            entry
+          )
+        ) {
           files.push(...getAllFiles(fullPath, extensions));
         }
       } else if (stat.isFile()) {

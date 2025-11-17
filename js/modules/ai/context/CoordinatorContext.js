@@ -20,9 +20,9 @@ class CoordinatorContext {
       // Try to load the database client
       if (typeof window !== 'undefined' && window.AIContextDatabase) {
         this.dbClient = new window.AIContextDatabase();
-      } else if (typeof require !== 'undefined') {
-        const AIContextDatabase = require('../../netlify/functions/utils/ai-context-database.js');
-        this.dbClient = new AIContextDatabase();
+      } else {
+        // Use local storage fallback for database operations
+        this.dbClient = window.StorageManager;
       }
 
       this.logger.info('Database client initialized for CoordinatorContext');

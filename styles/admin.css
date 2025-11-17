@@ -1,0 +1,140 @@
+/**
+ * Admin Panel Styles
+ * Styles for admin dashboard and administrative features
+ */
+
+.admin-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--color-surface, #ffffff);
+  z-index: 10000;
+  display: none;
+  overflow: auto;
+}
+
+.admin-toggle {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: var(--color-primary, #007bff);
+  color: white;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.admin-toggle:hover {
+  transform: scale(1.1);
+  background: var(--color-primary-dark, #0056b3);
+}
+
+.admin-header {
+  background: var(--color-primary, #007bff);
+  color: white;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-sidebar {
+  width: 250px;
+  background: var(--color-surface-2, #f8f9fa);
+  height: calc(100vh - 60px);
+  border-right: 1px solid var(--color-border, #dee2e6);
+  position: fixed;
+  left: 0;
+  top: 60px;
+}
+
+.admin-dashboard {
+  margin-left: 250px;
+  padding: 1rem;
+  height: calc(100vh - 60px);
+  overflow: auto;
+}
+
+.admin-nav {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.admin-nav li {
+  border-bottom: 1px solid var(--color-border, #dee2e6);
+}
+
+.admin-nav a {
+  display: block;
+  padding: 1rem;
+  color: var(--color-text, #333);
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.admin-nav a:hover {
+  background: var(--color-primary-light, #e3f2fd);
+}
+
+.admin-card {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.admin-card h3 {
+  margin-top: 0;
+  color: var(--color-primary, #007bff);
+}
+
+.admin-metric {
+  display: inline-block;
+  margin-right: 2rem;
+  margin-bottom: 1rem;
+}
+
+.admin-metric-value {
+  display: block;
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--color-primary, #007bff);
+}
+
+.admin-metric-label {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--color-text-muted, #6c757d);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .admin-sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .admin-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .admin-dashboard {
+    margin-left: 0;
+  }
+
+  .admin-toggle {
+    bottom: 80px; /* Account for mobile navigation */
+  }
+}
