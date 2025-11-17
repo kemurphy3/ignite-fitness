@@ -469,6 +469,11 @@ function _register() {
   loadUserData();
 }
 
+// Make register function globally available
+if (typeof window !== 'undefined') {
+  window._register = _register;
+}
+
 function _resetPassword() {
   const username = document.getElementById('resetUsername').value;
   const athleteName = document.getElementById('resetAthleteName').value;

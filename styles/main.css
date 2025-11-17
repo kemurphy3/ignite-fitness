@@ -1166,6 +1166,27 @@ body {
 @media (max-width: 768px) {
   .status-indicators {
     flex-direction: column;
+    gap: 10px;
+  }
+
+  .seasonal-phase-indicator,
+  .sync-status-indicator {
+    min-width: 100%;
+    flex-direction: column;
+    text-align: center;
+    padding: 12px 15px;
+  }
+
+  .phase-info,
+  .sync-info {
+    margin-bottom: 10px;
+  }
+
+  .phase-details-btn,
+  .sync-btn {
+    font-size: 14px;
+    padding: 8px 16px;
+    width: 100%;
   }
 
   .workout-controls {
