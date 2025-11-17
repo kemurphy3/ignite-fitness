@@ -411,62 +411,108 @@ function _login() {
 }
 
 function _register() {
-  const username = document.getElementById('regUsername').value;
-  const password = document.getElementById('regPassword').value;
-  const confirmPassword = document.getElementById('regConfirmPassword').value;
-  const athleteName = document.getElementById('regAthleteName').value;
+  const usernameEl = document.getElementById('regUsername');
+  const passwordEl = document.getElementById('regPassword');
+  const confirmPasswordEl = document.getElementById('regConfirmPassword');
+  const athleteNameEl = document.getElementById('regAthleteName');
   const errorDiv = document.getElementById('registerError');
 
-  if (!username || !password || !athleteName) {
+  // Check if form elements exist
+  if (!usernameEl || !passwordEl || !confirmPasswordEl || !athleteNameEl) {
+    console.error('Registration form elements not found');
+    if (errorDiv) {
+      showError(errorDiv, 'Registration form not available. Please refresh the page.');
+    }
+    return;
+  }
+
+  const username = usernameEl.value.trim();
+  const password = passwordEl.value;
+  const confirmPassword = confirmPasswordEl.value;
+  const athleteName = athleteNameEl.value.trim();
+
+  // Validate all fields are filled
+  if (!username || !password || !confirmPassword || !athleteName) {
     showError(errorDiv, 'Please fill in all fields');
     return;
   }
 
+  // Validate passwords match
   if (password !== confirmPassword) {
-    showError(errorDiv, 'Passwords do not match');
+    showError(errorDiv, 'Passwords do not match. Please check and try again.');
     return;
   }
 
+  // Check if username already exists
   if (users[username]) {
-    showError(errorDiv, 'Username already exists');
+    showError(errorDiv, 'Username already exists. Please choose a different username.');
     return;
   }
 
+  // Validate password length
   if (password.length < 6) {
     showError(errorDiv, 'Password must be at least 6 characters long');
     return;
   }
 
-  // Create new user with hashed password
-  users[username] = {
-    passwordHash: simpleHash(password),
-    athleteName,
-    personalData: {},
-    goals: {},
-    wearableSettings: {},
-    workoutPlan: null,
-    data: {
-      workouts: [],
-      soccerSessions: [],
-      recoveryData: [],
-      stravaData: [],
-      sleepData: [],
-    },
-    createdAt: Date.now(),
-    lastLogin: null,
-  };
+  try {
+    // Create new user with hashed password
+    users[username] = {
+      passwordHash: simpleHash(password),
+      athleteName,
+      personalData: {},
+      goals: {},
+      wearableSettings: {},
+      workoutPlan: null,
+      data: {
+        workouts: [],
+        soccerSessions: [],
+        recoveryData: [],
+        stravaData: [],
+        sleepData: [],
+      },
+      createdAt: Date.now(),
+      lastLogin: null,
+    };
 
-  // Save users
-  localStorage.setItem('ignitefitness_users', JSON.stringify(users));
+    // Save users
+    localStorage.setItem('ignitefitness_users', JSON.stringify(users));
 
-  // Auto-login after registration
-  currentUser = username;
-  isLoggedIn = true;
-  localStorage.setItem('ignitefitness_current_user', username);
-  showSuccess('Registration successful! Welcome to Ignite Fitness!');
-  showUserDashboard();
-  hideRegisterForm();
-  loadUserData();
+    // Auto-login after registration
+    currentUser = username;
+    isLoggedIn = true;
+    localStorage.setItem('ignitefitness_current_user', username);
+    localStorage.setItem('ignitefitness_login_time', Date.now().toString());
+
+    // Clear error and show success
+    if (errorDiv) {
+      errorDiv.style.display = 'none';
+    }
+    showSuccess('Registration successful! Welcome to Ignite Fitness!');
+
+    // Navigate using Router if available, otherwise use legacy method
+    if (window.Router) {
+      // Use Router to navigate to dashboard
+      window.Router.navigate('#/');
+      // Update auth state
+      if (window.AuthManager) {
+        window.AuthManager.setAuthState({
+          isAuthenticated: true,
+          user: { username, athleteName },
+        });
+      }
+      // Hide register form
+      hideRegisterForm();
+    } else {
+      // Legacy method
+      showUserDashboard();
+      hideRegisterForm();
+      loadUserData();
+    }
+  } catch (error) {
+    console.error('Registration error:', error);
+    showError(errorDiv, 'Registration failed. Please try again.');
+  }
 }
 
 // Make register function globally available
@@ -540,12 +586,44 @@ function hidePasswordReset() {
 }
 
 function _showRegisterForm() {
-  document.getElementById('loginForm').classList.add('hidden');
-  document.getElementById('registerForm').classList.remove('hidden');
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+
+  if (loginForm) {
+    loginForm.classList.add('hidden');
+  }
+  if (registerForm) {
+    registerForm.classList.remove('hidden');
+    // Clear any previous errors
+    const errorDiv = document.getElementById('registerError');
+    if (errorDiv) {
+      errorDiv.style.display = 'none';
+      errorDiv.textContent = '';
+    }
+  }
+}
+
+function showRegisterForm() {
+  _showRegisterForm();
 }
 
 function hideRegisterForm() {
-  document.getElementById('registerForm').classList.add('hidden');
+  const registerForm = document.getElementById('registerForm');
+  const loginForm = document.getElementById('loginForm');
+
+  if (registerForm) {
+    registerForm.classList.add('hidden');
+  }
+  if (loginForm) {
+    loginForm.classList.remove('hidden');
+  }
+}
+
+// Make functions globally available
+if (typeof window !== 'undefined') {
+  window._showRegisterForm = _showRegisterForm;
+  window.showRegisterForm = showRegisterForm;
+  window.hideRegisterForm = hideRegisterForm;
 }
 
 function _hideLoginForm() {

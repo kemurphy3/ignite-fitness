@@ -163,12 +163,31 @@
 /* Mobile Optimizations */
 @media (max-width: 400px) {
   .persistent-header {
-    padding: var(--space-2, 8px) var(--space-3, 12px);
+    padding: var(--space-2, 8px) var(--space-2, 8px);
     min-height: 56px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .header-content {
+    min-width: max-content;
+    gap: var(--space-2, 8px);
+  }
+
+  .header-left {
+    flex-shrink: 0;
+    gap: var(--space-2, 8px);
   }
 
   .app-title {
-    font-size: var(--text-lg, 1.125rem);
+    font-size: var(--text-base, 1rem);
+    white-space: nowrap;
+  }
+
+  .header-right {
+    flex-shrink: 0;
+    gap: var(--space-1, 4px);
+    flex-wrap: nowrap;
   }
 
   .season-phase-pill {
@@ -182,10 +201,47 @@
 
   .connection-indicator {
     padding: var(--space-1, 4px) var(--space-2, 8px);
+    flex-shrink: 0;
   }
 
   .status-text {
     display: none; /* Show only dot on very small screens */
+  }
+
+  .header-sign-in-btn {
+    font-size: var(--text-xs, 0.75rem) !important;
+    padding: 0.375rem 0.75rem !important;
+    white-space: nowrap;
+  }
+
+  .mode-toggle {
+    font-size: var(--text-xs, 0.75rem) !important;
+    padding: 0.375rem 0.5rem !important;
+    white-space: nowrap;
+  }
+}
+
+/* Extra small screens - stack or further compress */
+@media (max-width: 320px) {
+  .header-content {
+    flex-wrap: wrap;
+    min-height: auto;
+  }
+
+  .header-left {
+    width: 100%;
+    justify-content: space-between;
+    margin-bottom: var(--space-1, 4px);
+  }
+
+  .header-right {
+    width: 100%;
+    justify-content: flex-end;
+    gap: var(--space-1, 4px);
+  }
+
+  .app-title {
+    font-size: var(--text-sm, 0.875rem);
   }
 }
 
