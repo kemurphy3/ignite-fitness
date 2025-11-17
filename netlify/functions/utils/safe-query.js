@@ -50,6 +50,48 @@ function sanitizeInput(input) {
 }
 
 /**
+ * Validate query for SQL injection patterns
+ * @param {string} query - Query to validate
+ * @param {Array} params - Query parameters
+ * @returns {void}
+ * @throws {Error} If query is potentially unsafe
+ */
+function validateQuery(query, params = []) {
+  // Detect potential SQL injection patterns
+  const dangerousPatterns = [
+    /;\s*(DROP|DELETE|UPDATE|INSERT|CREATE|ALTER)/i,
+    /UNION\s+SELECT/i,
+    /'.*OR.*'.*=.*'/i,
+    /--/,
+    /\/\*.*\*\//,
+  ];
+
+  for (const pattern of dangerousPatterns) {
+    if (pattern.test(query)) {
+      throw new Error('Potentially unsafe query detected');
+    }
+  }
+
+  // Ensure all dynamic values use parameters
+  const dynamicValuePattern = /\$\d+/g;
+  const expectedParams = (query.match(dynamicValuePattern) || []).length;
+
+  if (params.length !== expectedParams && expectedParams > 0) {
+    throw new Error(`Parameter count mismatch: expected ${expectedParams}, got ${params.length}`);
+  }
+}
+
+/**
+ * Hash query for logging
+ * @param {string} query - Query to hash
+ * @returns {string} Query hash
+ */
+function hashQuery(query) {
+  const crypto = require('crypto');
+  return crypto.createHash('sha256').update(query).digest('hex').slice(0, 8);
+}
+
+/**
  * Execute a safe parameterized query using Neon template literals
  * @param {Function} queryFn - Function that returns a Neon template literal
  * @param {Object} options - Query options
@@ -77,11 +119,13 @@ async function safeQuery(queryFn, options = {}) {
 
     return result;
   } catch (error) {
-    console.error('Safe query error:', {
+    // Log error without exposing sensitive details
+    console.error('Database query failed:', {
       error: error.message,
+      queryHash: hashQuery(queryFn.toString()),
       timestamp: new Date().toISOString(),
     });
-    throw error;
+    throw new Error('Database operation failed');
   }
 }
 
@@ -314,4 +358,6 @@ module.exports = {
   validateBucket,
   validateSessionType,
   validateOwnership,
+  validateQuery,
+  hashQuery,
 };

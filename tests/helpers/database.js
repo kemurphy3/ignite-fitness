@@ -227,31 +227,238 @@ export function getTestDatabase() {
  */
 function createMockDatabase() {
   const mockDb = (strings, ...values) => {
-    // Mock database query function
-    const query = strings.join('?');
-    console.log('Mock DB Query:', query, values);
+    // Build query string for pattern matching - each ${} becomes a ?
+    let query = '';
+    let paramIndex = 0;
+    const paramPositions = []; // Track which value index corresponds to each ? position
+
+    for (let i = 0; i < strings.length; i++) {
+      query += strings[i];
+      if (i < values.length) {
+        query += '?';
+        paramPositions.push(i); // Map ? position to values array index
+      }
+    }
 
     // Return mock results based on query type
     if (query.includes('SELECT')) {
       if (query.includes('test_sessions')) {
         let filteredSessions = [...mockDataStore.sessions];
 
-        // Apply user_id filter if present
-        if (values.length > 0 && query.includes('user_id')) {
-          const userId = values[0];
-          filteredSessions = filteredSessions.filter(s => s.user_id === userId);
-        }
-
-        // Apply LIMIT if present
-        if (query.includes('LIMIT') && values.length > 0) {
-          const limitValue = values[values.length - 1];
-          if (typeof limitValue === 'number') {
-            filteredSessions = filteredSessions.slice(0, limitValue);
+        // Apply user_id filter
+        if (query.includes('user_id')) {
+          // Find user_id parameter position in the query
+          const user_id_pattern = /user_id\s*=\s*\?/;
+          const match = query.match(user_id_pattern);
+          if (match) {
+            // Find which parameter index this is
+            const beforeMatch = query.substring(0, match.index);
+            const paramIndex = (beforeMatch.match(/\?/g) || []).length;
+            const userId = values[paramIndex];
+            if (userId !== undefined) {
+              filteredSessions = filteredSessions.filter(s => s.user_id === userId);
+            }
           }
         }
 
-        // Special case for non-existent user (returns empty)
-        if (query.includes('999999')) {
+        // Apply type filter - handle both literal and parameterized
+        if (query.includes("type = 'workout'")) {
+          filteredSessions = filteredSessions.filter(s => s.type === 'workout');
+        } else if (query.includes("type = 'cardio'")) {
+          filteredSessions = filteredSessions.filter(s => s.type === 'cardio');
+        } else if (query.includes("type = 'recovery'")) {
+          filteredSessions = filteredSessions.filter(s => s.type === 'recovery');
+        } else if (query.includes('type = $')) {
+          // Parameterized type filter
+          const typeIndex = strings.findIndex(s => s.includes('type ='));
+          if (typeIndex >= 0 && typeIndex < values.length) {
+            const typeValue = values[typeIndex];
+            filteredSessions = filteredSessions.filter(s => s.type === typeValue);
+          }
+        }
+
+        // Apply AND type filter
+        if (query.includes("AND type = 'workout'")) {
+          filteredSessions = filteredSessions.filter(s => s.type === 'workout');
+        }
+
+        // Apply date range filter if present
+        if (
+          query.includes('start_at >=') ||
+          query.includes('start_at <=') ||
+          query.includes('start_at <')
+        ) {
+          // Handle date range queries (both >= and <= together)
+          if (
+            query.includes('start_at >=') &&
+            query.includes('start_at <=') &&
+            !query.includes('(start_at <')
+          ) {
+            const gteIndex = query.indexOf('start_at >=');
+            const beforeGte = query.substring(0, gteIndex);
+            const gteParamIndex = (beforeGte.match(/\?/g) || []).length;
+
+            const lteIndex = query.indexOf('start_at <=');
+            const beforeLte = query.substring(0, lteIndex);
+            const lteParamIndex = (beforeLte.match(/\?/g) || []).length;
+
+            if (gteParamIndex < values.length && lteParamIndex < values.length) {
+              const minDate = values[gteParamIndex] instanceof Date ? values[gteParamIndex] : null;
+              const maxDate = values[lteParamIndex] instanceof Date ? values[lteParamIndex] : null;
+
+              if (minDate && maxDate) {
+                filteredSessions = filteredSessions.filter(s => {
+                  const sessionDate = new Date(s.start_at);
+                  return sessionDate >= minDate && sessionDate <= maxDate;
+                });
+              }
+            }
+          } else if (
+            query.includes('start_at >=') &&
+            !query.includes('start_at <') &&
+            !query.includes('(start_at <')
+          ) {
+            // Apply >= filter only
+            const gteIndex = query.indexOf('start_at >=');
+            const beforeGte = query.substring(0, gteIndex);
+            const gteParamIndex = (beforeGte.match(/\?/g) || []).length;
+            if (gteParamIndex < values.length && values[gteParamIndex] instanceof Date) {
+              const minDate = values[gteParamIndex];
+              filteredSessions = filteredSessions.filter(s => {
+                const sessionDate = new Date(s.start_at);
+                return sessionDate >= minDate;
+              });
+            }
+          } else if (query.includes('start_at <=') && !query.includes('(start_at <')) {
+            // Apply <= filter only
+            const lteIndex = query.indexOf('start_at <=');
+            const beforeLte = query.substring(0, lteIndex);
+            const lteParamIndex = (beforeLte.match(/\?/g) || []).length;
+            if (lteParamIndex < values.length && values[lteParamIndex] instanceof Date) {
+              const maxDate = values[lteParamIndex];
+              filteredSessions = filteredSessions.filter(s => {
+                const sessionDate = new Date(s.start_at);
+                return sessionDate <= maxDate;
+              });
+            }
+          }
+
+          // Handle complex cursor conditions: (start_at < ${timestamp} OR (start_at = ${timestamp} AND id > ${id}))
+          if (query.includes('(start_at <') && query.includes('OR')) {
+            // Find the first timestamp parameter (for start_at <)
+            const ltIndex = query.indexOf('start_at <');
+            const beforeLt = query.substring(0, ltIndex);
+            const ltParamPos = (beforeLt.match(/\?/g) || []).length;
+            const ltValueIndex = paramPositions[ltParamPos];
+
+            // Find the id parameter (for id >) - it's the last parameter in the cursor condition
+            let cursorId = null;
+            if (query.includes('id >')) {
+              const idGtIndex = query.indexOf('id >');
+              const beforeIdGt = query.substring(0, idGtIndex);
+              const idParamPos = (beforeIdGt.match(/\?/g) || []).length;
+              const idValueIndex = paramPositions[idParamPos];
+              if (idValueIndex !== undefined && idValueIndex < values.length) {
+                cursorId = values[idValueIndex];
+              }
+            }
+
+            // Get timestamp value (appears twice but same value)
+            if (ltValueIndex !== undefined && ltValueIndex < values.length) {
+              const cursorTimestamp = values[ltValueIndex];
+              // Handle both Date objects and timestamps/strings
+              let cursorTime;
+              if (cursorTimestamp instanceof Date) {
+                cursorTime = cursorTimestamp.getTime();
+              } else if (
+                typeof cursorTimestamp === 'string' ||
+                typeof cursorTimestamp === 'number'
+              ) {
+                cursorTime = new Date(cursorTimestamp).getTime();
+              } else {
+                cursorTime = null;
+              }
+
+              if (cursorTime !== null) {
+                filteredSessions = filteredSessions.filter(s => {
+                  const sessionDate = new Date(s.start_at);
+                  const sessionTime = sessionDate.getTime();
+
+                  // Apply: start_at < timestamp OR (start_at = timestamp AND id > cursorId)
+                  if (sessionTime < cursorTime) {
+                    return true;
+                  }
+                  // For exact match, also check id
+                  if (Math.abs(sessionTime - cursorTime) < 1000) {
+                    if (cursorId !== null && s.id > cursorId) {
+                      return true;
+                    }
+                  }
+                  return false;
+                });
+              }
+            }
+          }
+        }
+
+        // Handle COUNT queries
+        if (query.includes('COUNT(*)') || query.includes('count(*)')) {
+          return Promise.resolve([{ count: filteredSessions.length.toString() }]);
+        }
+
+        // Handle SUM queries
+        if (query.includes('SUM(duration)') || query.includes('sum(duration)')) {
+          const total = filteredSessions.reduce((sum, s) => sum + (s.duration || 0), 0);
+          return Promise.resolve([{ total_duration: total }]);
+        }
+
+        // Handle MAX queries
+        if (query.includes('MAX(start_at)') || query.includes('max(start_at)')) {
+          if (filteredSessions.length > 0) {
+            const mostRecent = filteredSessions.reduce((max, s) => {
+              return new Date(s.start_at) > new Date(max.start_at) ? s : max;
+            });
+            return Promise.resolve([{ most_recent: mostRecent.start_at }]);
+          }
+          return Promise.resolve([{ most_recent: null }]);
+        }
+
+        // Apply ORDER BY if present
+        if (query.includes('ORDER BY')) {
+          if (query.includes('start_at DESC')) {
+            filteredSessions.sort((a, b) => new Date(b.start_at) - new Date(a.start_at));
+            // Secondary sort by id if specified
+            if (query.includes('id ASC')) {
+              filteredSessions.sort((a, b) => {
+                const dateDiff = new Date(b.start_at) - new Date(a.start_at);
+                if (dateDiff === 0) {
+                  return (a.id || 0) - (b.id || 0);
+                }
+                return dateDiff;
+              });
+            }
+          } else if (query.includes('start_at ASC')) {
+            filteredSessions.sort((a, b) => new Date(a.start_at) - new Date(b.start_at));
+          }
+        }
+
+        // Apply LIMIT if present
+        if (query.includes('LIMIT')) {
+          const limitMatch = query.match(/LIMIT\s+(\d+)/i);
+          if (limitMatch) {
+            const limitValue = parseInt(limitMatch[1], 10);
+            filteredSessions = filteredSessions.slice(0, limitValue);
+          } else {
+            // Try to get limit from values array (last value is often LIMIT)
+            const limitValue = values[values.length - 1];
+            if (typeof limitValue === 'number') {
+              filteredSessions = filteredSessions.slice(0, limitValue);
+            }
+          }
+        }
+
+        // Special case for non-existent user or type (returns empty)
+        if (query.includes('999999') || query.includes("type = 'nonexistent'")) {
           return Promise.resolve([]);
         }
 

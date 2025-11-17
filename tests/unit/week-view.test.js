@@ -85,7 +85,7 @@ describe('WeekView', () => {
     vi.clearAllMocks();
 
     // Load WeekView class
-    class WeekView {
+    class WeekViewClass {
       constructor() {
         this.logger = window.SafeLogger || console;
         this.eventBus = window.EventBus;
@@ -469,6 +469,7 @@ describe('WeekView', () => {
       }
     }
 
+    WeekView = WeekViewClass;
     weekView = new WeekView();
   });
 

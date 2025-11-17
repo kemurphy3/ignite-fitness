@@ -6,8 +6,8 @@ const { neon } = require('@neondatabase/serverless');
 // FIX: Conditional import with MockPool fallback for test environments
 let Pool;
 try {
-  const pg = require('pg');
-  Pool = pg.Pool;
+  const { Pool: PgPool } = require('pg');
+  Pool = PgPool;
 } catch (error) {
   // Test environment fallback
   Pool = class MockPool {
@@ -16,7 +16,7 @@ try {
       this.connected = false;
     }
 
-    async query(sql, params) {
+    async query(_sql, _params) {
       return { rows: [], rowCount: 0 };
     }
 
@@ -47,11 +47,11 @@ class ConnectionPoolManager {
 
   // Get Neon serverless client (preferred for serverless functions)
   getNeonClient() {
-    if (!this.neonClient) {
-      if (!process.env.DATABASE_URL) {
-        throw new Error('DATABASE_URL not configured');
-      }
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL not configured');
+    }
 
+    if (!this.neonClient) {
       this.neonClient = neon(process.env.DATABASE_URL, {
         poolQueryViaFetch: true,
         fetchOptions: {
@@ -81,6 +81,23 @@ class ConnectionPoolManager {
     return this.neonClient;
   }
 
+  /**
+   * Validate connection string format
+   * @param {string} connStr - Connection string to validate
+   * @returns {boolean} Is valid connection string
+   */
+  isValidConnectionString(connStr) {
+    if (!connStr || typeof connStr !== 'string') {
+      return false;
+    }
+    try {
+      const url = new URL(connStr);
+      return ['postgresql:', 'postgres:'].includes(url.protocol);
+    } catch {
+      return false;
+    }
+  }
+
   // Get PostgreSQL connection pool (for complex operations)
   getPgPool() {
     if (!this.pgPool) {
@@ -93,6 +110,11 @@ class ConnectionPoolManager {
         return this.pgPool;
       }
 
+      // Validate connection string
+      if (!this.isValidConnectionString(process.env.DATABASE_URL)) {
+        throw new Error('Invalid database connection string');
+      }
+
       this.pgPool = new Pool({
         connectionString: process.env.DATABASE_URL,
         // Pool configuration
@@ -102,10 +124,11 @@ class ConnectionPoolManager {
         connectionTimeoutMillis: 5000, // Timeout for new connections
         statement_timeout: 30000, // Query timeout
         query_timeout: 30000, // Query timeout
-        // SSL configuration
-        ssl: {
-          rejectUnauthorized: false,
-        },
+        // SSL configuration - enforce SSL in production
+        ssl:
+          process.env.NODE_ENV === 'production'
+            ? { rejectUnauthorized: true }
+            : { rejectUnauthorized: false },
         // Connection lifecycle
         allowExitOnIdle: true,
       });
@@ -295,7 +318,13 @@ class ConnectionPoolManager {
 const connectionPoolManager = new ConnectionPoolManager();
 
 // Export convenience functions
-const getNeonClient = () => connectionPoolManager.getNeonClient();
+const getNeonClient = () => {
+  // Reset client if DATABASE_URL was removed (for testing)
+  if (!process.env.DATABASE_URL && connectionPoolManager.neonClient) {
+    connectionPoolManager.neonClient = null;
+  }
+  return connectionPoolManager.getNeonClient();
+};
 const getPgPool = () => connectionPoolManager.getPgPool();
 const getClient = operationType => connectionPoolManager.getClient(operationType);
 const executeQuery = (query, params, operationType) =>

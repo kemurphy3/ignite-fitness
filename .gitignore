@@ -75,3 +75,6 @@ node_modules
 
 # Archive directory (completed evaluation scripts)
 archive/
+
+# Build output
+dist/

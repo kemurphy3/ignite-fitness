@@ -142,6 +142,7 @@ class SafeLogger {
       return;
     }
     const formatted = this.formatLog('debug', message, ...args);
+    // eslint-disable-next-line no-console
     console.debug(...formatted);
   }
 
@@ -155,6 +156,7 @@ class SafeLogger {
       return;
     }
     const formatted = this.formatLog('info', message, ...args);
+    // eslint-disable-next-line no-console
     console.info(...formatted);
   }
 
@@ -168,6 +170,7 @@ class SafeLogger {
       return;
     }
     const formatted = this.formatLog('warn', message, ...args);
+    // eslint-disable-next-line no-console
     console.warn(...formatted);
   }
 
@@ -181,6 +184,7 @@ class SafeLogger {
       return;
     }
     const formatted = this.formatLog('error', message, ...args);
+    // eslint-disable-next-line no-console
     console.error(...formatted);
     this.sendRemote('error', message, args);
   }

@@ -36,6 +36,7 @@ const mockAuthManager = {
     username: 'testuser',
     personalData: { experience: 'intermediate' },
   })),
+  getCurrentUsername: vi.fn(() => 'testuser'),
 };
 
 const mockStorageManager = {
@@ -97,6 +98,10 @@ class LoadGuardrails {
   }
 
   initializeEventListeners() {
+    if (!this.eventBus) {
+      this.logger.warn('EventBus not available, guardrails will not auto-monitor');
+      return;
+    }
     if (this.eventBus) {
       this.eventBus.on(this.eventBus.TOPICS?.SESSION_COMPLETED, () => {});
       this.eventBus.on('PAIN_REPORTED', () => {});
@@ -106,6 +111,11 @@ class LoadGuardrails {
 
   async checkWeeklyRampRate(userId) {
     try {
+      const user = this.authManager?.getCurrentUser?.();
+      const experienceLevel = user?.personalData?.experience || user?.experience || 'intermediate';
+      const thresholds =
+        this.rampRateThresholds[experienceLevel] || this.rampRateThresholds.intermediate;
+
       const loadHistory = await this.getWeeklyLoadHistory(userId, 2);
 
       if (!loadHistory || loadHistory.length < 2) {
@@ -119,7 +129,6 @@ class LoadGuardrails {
         return { status: 'insufficient_data' };
       }
 
-      const thresholds = this.rampRateThresholds.intermediate;
       const rampRate = (currentWeek.totalLoad - previousWeek.totalLoad) / previousWeek.totalLoad;
       const rampAnalysis = this.analyzeRampRate(rampRate, thresholds, loadHistory);
 
@@ -195,7 +204,46 @@ class LoadGuardrails {
   }
 
   async validatePlannedSession(userId, session) {
-    return { valid: true };
+    try {
+      // This will be mocked in tests, but provide a default implementation
+      const recentSessions = await this.getRecentSessions(userId, 7);
+      const sessionsWithPlanned = [...recentSessions];
+      if (session && session.date) {
+        sessionsWithPlanned.push(session);
+      }
+      const consecutiveDays = this.countConsecutiveTrainingDays(sessionsWithPlanned);
+      const experienceLevel = (await this.getUserExperienceLevel?.(userId)) || 'intermediate';
+      const thresholds =
+        this.rampRateThresholds[experienceLevel] || this.rampRateThresholds.intermediate;
+
+      if (consecutiveDays >= thresholds.consecutiveDaysLimit) {
+        return {
+          valid: false,
+          reason: 'consecutive_days_exceeded',
+          message: 'Too many consecutive training days',
+        };
+      }
+
+      const activeAdjustments = await this.getActiveAdjustments(userId);
+      for (const adjustment of activeAdjustments) {
+        if (this.sessionViolatesAdjustment(session, adjustment)) {
+          return {
+            valid: false,
+            reason: 'violates_adjustment',
+            adjustment,
+            message: `Session conflicts with active ${adjustment.type} adjustment`,
+          };
+        }
+      }
+
+      return { valid: true };
+    } catch (error) {
+      return {
+        valid: true,
+        message: 'Validation error - session allowed with caution',
+        caution: true,
+      };
+    }
   }
 
   checkConsecutiveIncreases(loadHistory, threshold) {
@@ -216,7 +264,41 @@ class LoadGuardrails {
   }
 
   async getWeeklyLoadHistory(userId, weeks) {
-    return [];
+    const sessions = await this.getUserSessions(userId);
+    const weeklyData = [];
+
+    for (let i = 0; i < weeks; i++) {
+      const weekStart = new Date();
+      weekStart.setDate(weekStart.getDate() - i * 7 - weekStart.getDay());
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+
+      const weekSessions = sessions.filter(s => {
+        const sessionDate = new Date(s.date || s.start_at || s.created_at);
+        return sessionDate >= weekStart && sessionDate <= weekEnd;
+      });
+
+      let weekLoad;
+      if (this.loadCalculator && this.loadCalculator.calculateWeeklyLoad) {
+        weekLoad = this.loadCalculator.calculateWeeklyLoad(weekSessions);
+      } else {
+        weekLoad = {
+          total: 0,
+          volumeLoad: 0,
+          intensityLoad: 0,
+        };
+      }
+
+      weeklyData.push({
+        week: i,
+        startDate: weekStart.toISOString(),
+        endDate: weekEnd.toISOString(),
+        totalLoad: weekLoad.total || 0,
+        sessions: weekSessions.length,
+      });
+    }
+
+    return weeklyData.reverse();
   }
   async getRecentSessions(userId, days) {
     return [];
@@ -224,7 +306,39 @@ class LoadGuardrails {
   async getUpcomingSessions(userId, days) {
     return [];
   }
-  async modifyUpcomingHIIT(userId, reduction) {}
+  async modifyUpcomingHIIT(userId, reduction) {
+    const upcomingSessions = await this.getUpcomingSessions(userId, 7);
+    const hiitSessions = upcomingSessions.filter(s => this.isHighIntensitySession(s));
+    if (hiitSessions.length === 0) {
+      return;
+    }
+    for (const session of hiitSessions.slice(0, 2)) {
+      const originalIntensity = session.intensity?.primary_zone || session.intensity;
+      session.modifications = session.modifications || [];
+      session.modifications.push({
+        type: 'intensity_reduction',
+        amount: reduction,
+        reason: 'guardrail_ramp_rate',
+        appliedAt: new Date().toISOString(),
+      });
+      const newIntensity =
+        session.intensity?.primary_zone || session.intensity || originalIntensity;
+      await this.saveSessionModification(
+        {
+          sessionId: session.id,
+          userId,
+          originalIntensity,
+          newIntensity,
+          reason: 'HIIT_REDUCTION',
+          reductionFactor: reduction,
+        },
+        session
+      );
+    }
+    if (this.eventBus) {
+      this.eventBus.emit('GUARDRAIL_APPLIED', { userId, type: 'hiit_reduction' });
+    }
+  }
   async saveSessionModification(userId, session) {}
   async applySessionModifications(userId, actions) {}
   async getActiveAdjustments(userId) {
@@ -263,10 +377,46 @@ class LoadGuardrails {
     return 'Test message';
   }
   countConsecutiveTrainingDays(sessions) {
-    return 0;
+    if (sessions.length === 0) {
+      return 0;
+    }
+    const sessionDates = sessions
+      .map(s => {
+        const date = new Date(s.date || s.start_at || s.created_at);
+        date.setHours(0, 0, 0, 0);
+        return date.getTime();
+      })
+      .filter((date, index, arr) => arr.indexOf(date) === index);
+    if (sessionDates.length === 0) {
+      return 0;
+    }
+    sessionDates.sort((a, b) => b - a);
+    let consecutive = 1;
+    const oneDay = 24 * 60 * 60 * 1000;
+    let checkTime = sessionDates[0];
+    for (let i = 1; i < sessionDates.length; i++) {
+      const daysDiff = (checkTime - sessionDates[i]) / oneDay;
+      if (daysDiff === 1) {
+        consecutive++;
+        checkTime = sessionDates[i];
+      } else if (daysDiff > 1) {
+        break;
+      }
+    }
+    return consecutive;
   }
   sessionViolatesAdjustment(session, adjustment) {
+    if (adjustment.type === 'reduce_hiit' && this.isHighIntensitySession(session)) {
+      const hasModification = session.modifications?.some(
+        mod => mod.reason === 'guardrail_ramp_rate'
+      );
+      return !hasModification;
+    }
     return false;
+  }
+  async getUserExperienceLevel(userId) {
+    const user = this.authManager?.getCurrentUser?.();
+    return user?.personalData?.experience || user?.experience || 'intermediate';
   }
   getSessionIntensity(session) {
     return 0.6;

@@ -1,6 +1,60 @@
 const { getNeonClient } = require('./utils/connection-pool');
 const crypto = require('crypto');
 
+/**
+ * Validate environment variables on function startup
+ */
+function validateEnvironment() {
+  const required = ['DATABASE_URL'];
+  // Optional env vars are validated if present but not required
+  const _optional = [
+    'JWT_SECRET',
+    'ENCRYPTION_KEY',
+    'STRAVA_CLIENT_ID',
+    'STRAVA_CLIENT_SECRET',
+    'OPENAI_API_KEY',
+  ];
+
+  const missing = required.filter(key => !process.env[key]);
+
+  if (missing.length > 0) {
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
+
+  // Validate JWT_SECRET strength if present
+  if (process.env.JWT_SECRET) {
+    if (process.env.JWT_SECRET.length < 32) {
+      throw new Error('JWT_SECRET must be at least 32 characters');
+    }
+  }
+
+  // Validate DATABASE_URL format
+  if (process.env.DATABASE_URL) {
+    try {
+      const url = new URL(process.env.DATABASE_URL);
+      if (!['postgresql:', 'postgres:'].includes(url.protocol)) {
+        throw new Error('DATABASE_URL must use postgresql:// or postgres:// protocol');
+      }
+    } catch (error) {
+      if (error.message.includes('DATABASE_URL')) {
+        throw error;
+      }
+      throw new Error('Invalid DATABASE_URL format');
+    }
+  }
+}
+
+// Validate environment on module load (only in production)
+if (process.env.NODE_ENV === 'production') {
+  try {
+    validateEnvironment();
+  } catch (error) {
+    console.error('Environment validation failed:', error.message);
+    // In production, fail hard
+    throw error;
+  }
+}
+
 // Use centralized connection pooling
 const getDB = () => {
   return getNeonClient();

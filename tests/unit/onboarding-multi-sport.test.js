@@ -26,6 +26,16 @@ global.window = {
   },
 };
 
+// Mock document for DOM operations
+global.document = {
+  getElementById: vi.fn(() => ({
+    value: '',
+    textContent: '',
+  })),
+  querySelector: vi.fn(() => null),
+  querySelectorAll: vi.fn(() => []),
+};
+
 describe('Enhanced Multi-Sport Onboarding', () => {
   describe('SportSelection', () => {
     it('should render sport selection step', async () => {
@@ -40,12 +50,33 @@ describe('Enhanced Multi-Sport Onboarding', () => {
       expect(html).toContain('Cycling');
     });
 
-    it('should handle sport selection', () => {
-      const component = window.SportSelection;
-      if (component) {
-        component.selectPrimarySport('running');
-        expect(component.selectedPrimary).toBe('running');
-      }
+    it('should handle sport selection', async () => {
+      // Mock DOM for this test
+      const mockCard = {
+        classList: {
+          remove: vi.fn(),
+          add: vi.fn(),
+        },
+      };
+      const mockContainer = {
+        querySelector: vi.fn(() => null),
+        querySelectorAll: vi.fn(() => []),
+      };
+      global.document = {
+        querySelectorAll: vi.fn(() => [mockCard]),
+        querySelector: vi.fn(selector => {
+          if (selector === '.sport-selection-step') {
+            return mockContainer;
+          }
+          return mockCard;
+        }),
+      };
+
+      const module = await import('../../js/modules/onboarding/steps/SportSelection.js');
+      const SportSelection = module.default || module.SportSelection || window.SportSelection;
+      const component = new SportSelection();
+      component.selectPrimarySport('running');
+      expect(component.selectedPrimary).toBe('running');
     });
   });
 
@@ -62,6 +93,29 @@ describe('Enhanced Multi-Sport Onboarding', () => {
     });
 
     it('should update volume calculations', () => {
+      // Mock DOM elements for this test
+      const mockSlider = { value: '' };
+      const mockInput = { value: '' };
+      global.document.getElementById = vi.fn(id => {
+        if (id === 'running_slider') {
+          return mockSlider;
+        }
+        if (id === 'running_minutes') {
+          return mockInput;
+        }
+        if (id === 'total-minutes') {
+          return { textContent: '' };
+        }
+        if (id === 'total-hours') {
+          return { textContent: '' };
+        }
+        if (id === 'training-level') {
+          return { textContent: '' };
+        }
+        return null;
+      });
+      global.document.querySelectorAll = vi.fn(() => []);
+
       const component = window.CurrentVolume;
       if (component) {
         component.updateVolume('running', 180);

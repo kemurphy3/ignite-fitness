@@ -3,23 +3,31 @@
  * Provides speech recognition, voice commands, and speech feedback
  */
 
-// Get EventBus instance - ensure it's available globally
-const getEventBus = () => {
-  if (typeof window !== 'undefined' && window.EventBus) {
-    return window.EventBus;
+// Import EventBus - ensure it's available globally
+let EventBus;
+if (typeof window !== 'undefined' && window.EventBus) {
+  // eslint-disable-next-line prefer-destructuring
+  EventBus = window.EventBus;
+} else if (typeof globalThis !== 'undefined' && globalThis.EventBus) {
+  // eslint-disable-next-line prefer-destructuring
+  EventBus = globalThis.EventBus;
+} else if (typeof module !== 'undefined' && module.exports) {
+  try {
+    EventBus = require('../core/EventBus.js');
+  } catch (e) {
+    // Fallback no-op EventBus if require fails
+    EventBus = {
+      subscribe: () => () => {},
+      unsubscribe: () => {},
+      on: () => () => {},
+      off: () => {},
+      emit: () => {},
+      publish: () => {},
+    };
   }
-  if (typeof globalThis !== 'undefined' && globalThis.EventBus) {
-    return globalThis.EventBus;
-  }
-  if (typeof module !== 'undefined' && module.exports) {
-    try {
-      return require('../core/EventBus.js');
-    } catch (e) {
-      // Fallback if require fails
-    }
-  }
+} else {
   // Fallback no-op EventBus
-  return {
+  EventBus = {
     subscribe: () => () => {},
     unsubscribe: () => {},
     on: () => () => {},
@@ -27,9 +35,7 @@ const getEventBus = () => {
     emit: () => {},
     publish: () => {},
   };
-};
-
-const EventBus = getEventBus();
+}
 class VoiceControlManager {
   constructor() {
     this.logger = window.SafeLogger || console;

@@ -225,7 +225,8 @@ exports.handler = async (event, _context) => {
 
     // Route to appropriate API based on endpoint
     if (endpoint.includes('openai') || endpoint.includes('gpt')) {
-      apiKey = API_CONFIG.openai.apiKey;
+      const { apiKey: openaiApiKey } = API_CONFIG.openai;
+      apiKey = openaiApiKey;
       if (!apiKey) {
         return {
           statusCode: 500,

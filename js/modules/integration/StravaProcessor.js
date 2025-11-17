@@ -657,10 +657,13 @@ class StravaDataProcessor {
       let activities = [];
       if (Array.isArray(data)) {
         activities = data;
-      } else if (data.activities && Array.isArray(data.activities)) {
-        activities = data.activities;
       } else {
-        throw new Error('Invalid Strava export format');
+        const { activities: dataActivities } = data;
+        if (dataActivities && Array.isArray(dataActivities)) {
+          activities = dataActivities;
+        } else {
+          throw new Error('Invalid Strava export format');
+        }
       }
 
       return await this.processActivitiesFromFile(activities);

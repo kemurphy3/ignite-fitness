@@ -238,6 +238,10 @@ class SubstitutionEngine {
     const scaledStructure = this.scaleStructure(candidate.structure, timeFactor);
     let metrics = this.calculateStructureMetrics(scaledStructure, primaryZone);
 
+    // Use time_required as baseline if available, otherwise use calculated metrics
+    const baseDuration = candidate.time_required || metrics.totalMinutes;
+    const initialScaledDuration = baseDuration * timeFactor;
+
     // Calculate load for scaled workout
     let scaledSession = {
       modality: targetModality,
@@ -251,15 +255,22 @@ class SubstitutionEngine {
     let loadVariance = Math.abs(scaledLoad.total_load - targetLoad) / Math.max(targetLoad, 1);
 
     // If outside acceptable variance, apply corrective scaling once
+    // But preserve minimum duration based on time_required scaling
     if (scaledLoad.total_load > 0) {
       const correctionFactor = targetLoad / scaledLoad.total_load;
       if (Math.abs(1 - correctionFactor) > 0.05) {
+        // Calculate minimum allowed duration (preserve at least 90% of time-scaled duration)
+        const minDuration = initialScaledDuration * 0.9;
         const boundedCorrection = Math.max(0.8, Math.min(1.2, correctionFactor));
         const correctedStructure = this.scaleStructure(scaledStructure, boundedCorrection);
         const correctedMetrics = this.calculateStructureMetrics(correctedStructure, primaryZone);
+
+        // Ensure corrected duration doesn't go below minimum
+        const finalDuration = Math.max(correctedMetrics.totalMinutes, minDuration);
+
         const correctedSession = {
           modality: targetModality,
-          duration_minutes: correctedMetrics.totalMinutes,
+          duration_minutes: finalDuration,
           structure: correctedStructure,
           adaptation: candidate.adaptation,
           zone_distribution: correctedMetrics.zoneDistribution,
@@ -270,7 +281,7 @@ class SubstitutionEngine {
         if (correctedVariance < loadVariance) {
           scaledLoad = correctedLoad;
           loadVariance = correctedVariance;
-          metrics = correctedMetrics;
+          metrics = { ...correctedMetrics, totalMinutes: finalDuration };
           scaledSession = correctedSession;
         }
       }

@@ -181,8 +181,8 @@ class FeatureExtractor {
       const h = (b - a) / n;
       let sum = density(a) + density(b);
       for (let i = 1; i < n; i++) {
-        const x = a + i * h;
-        sum += density(x) * (i % 2 === 0 ? 2 : 4);
+        const tValue = a + i * h;
+        sum += density(tValue) * (i % 2 === 0 ? 2 : 4);
       }
       return (h / 3) * sum;
     };

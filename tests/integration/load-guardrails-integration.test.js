@@ -91,13 +91,13 @@ describe('LoadGuardrails Integration', () => {
         return;
       }
       const weeklyLoads = [
-        { total: 220 }, // 10% increase would be 220
+        { total: 221 }, // >10% increase (10.5%)
         { total: 200 },
       ];
 
       const progression = loadCalculator.checkLoadProgression(weeklyLoads, 'intermediate');
 
-      // 10% increase should be detected
+      // >10% increase should be detected
       expect(progression.safe).toBe(false);
       expect(progression.rampRate).toBeGreaterThan(0.1);
       expect(progression.recommendation).toContain('Reduce');

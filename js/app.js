@@ -44,9 +44,28 @@ async function loadModule(modulePath, className, options = {}) {
   }
 
   try {
+    // Static import map for webpack (eliminates dynamic expression warning)
+    const moduleMap = {
+      './ai/context-aware-ai.js': () => import('./ai/context-aware-ai.js'),
+      './training/seasonal-training.js': () => import('./training/seasonal-training.js'),
+      './core/data-store.js': () => import('./core/data-store.js'),
+      './training/workout-generator.js': () => import('./training/workout-generator.js'),
+      './ai/pattern-detector.js': () => import('./ai/pattern-detector.js'),
+    };
+
+    // Use static map if available, otherwise fall back to dynamic import
+    const loadModuleFn = moduleMap[modulePath];
+    let moduleLoader;
+    if (loadModuleFn) {
+      moduleLoader = loadModuleFn;
+    } else {
+      // Fallback for paths not in static map (webpack will still warn but code works)
+      moduleLoader = () => import(/* webpackMode: "lazy" */ modulePath);
+    }
+
     // Create loading promise
     const loadingPromise = (async () => {
-      const module = await import(modulePath);
+      const module = await moduleLoader();
       const instance = new module[className]();
 
       // Cache the instance

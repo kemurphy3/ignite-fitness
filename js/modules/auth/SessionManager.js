@@ -607,11 +607,75 @@ class SessionManager extends BaseComponentResolved {
   }
 
   /**
-   * Get auth token
+   * Validate session token
+   * @param {string} token - Token to validate
+   * @returns {Object} Validation result
+   */
+  validateSessionToken(token) {
+    if (!token || typeof token !== 'string') {
+      throw new Error('Invalid token format');
+    }
+
+    if (token.length < 32) {
+      throw new Error('Token too short');
+    }
+
+    // Check token expiration if it contains timestamp
+    try {
+      const parts = token.split('_');
+      if (parts.length >= 2 && parts[1]) {
+        const timestamp = parseInt(parts[1], 10);
+        if (!isNaN(timestamp)) {
+          const tokenAge = Date.now() - timestamp;
+          const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+          if (tokenAge > maxAge) {
+            throw new Error('Token expired');
+          }
+        }
+      }
+    } catch (error) {
+      if (error.message === 'Token expired') {
+        throw error;
+      }
+      // Continue validation if timestamp parsing fails
+    }
+
+    return { valid: true, token };
+  }
+
+  /**
+   * Generate secure token
+   * @returns {string} Secure token
+   */
+  generateSecureToken() {
+    const crypto = window.crypto || window.msCrypto;
+    if (crypto && crypto.getRandomValues) {
+      const array = new Uint8Array(32);
+      crypto.getRandomValues(array);
+      const hex = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+      return `${Date.now()}_${hex}`;
+    }
+    // Fallback for older browsers
+    return `${Date.now()}_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
+  }
+
+  /**
+   * Get auth token with validation
    * @returns {string} Auth token
    */
   getAuthToken() {
-    return localStorage.getItem('auth_token') || '';
+    const token = localStorage.getItem('auth_token') || '';
+    if (token) {
+      try {
+        this.validateSessionToken(token);
+        return token;
+      } catch (error) {
+        this.logger.warn('Invalid token detected, clearing', { error: error.message });
+        this.clearSessionData();
+        return '';
+      }
+    }
+    return '';
   }
 
   /**

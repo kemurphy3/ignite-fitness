@@ -62,16 +62,16 @@ class PersistentHeader {
       window.EventBus.on(
         window.EventBus.TOPICS?.SYNC_QUEUE_UPDATED || 'sync:queue',
         ({ queueLength }) => {
-          const header = document.getElementById('persistent-header');
-          if (!header) {
+          const headerElement = document.getElementById('persistent-header');
+          if (!headerElement) {
             return;
           }
-          const right = header.querySelector('.header-right');
+          const right = headerElement.querySelector('.header-right');
           if (!right) {
             return;
           }
 
-          const existing = right.querySelector('.sync-indicator');
+          const existingIndicator = right.querySelector('.sync-indicator');
           const show = queueLength > 0;
 
           if (show) {
@@ -96,8 +96,8 @@ class PersistentHeader {
             if (syncTimer) {
               clearTimeout(syncTimer);
             }
-            if (existing) {
-              existing.remove();
+            if (existingIndicator) {
+              existingIndicator.remove();
             }
             window.LiveRegionManager?.announce('Sync complete', 'polite');
           }

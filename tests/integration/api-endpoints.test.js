@@ -123,10 +123,10 @@ describe('API Endpoints Integration', () => {
     it('should handle empty result set', async () => {
       // Create a handler that returns no sessions
       const emptyHandler = async event => {
-        const testDb = getTestDatabase();
+        const dbInstance = getTestDatabase();
         const limit = Math.min(parseInt(event.queryStringParameters?.limit) || 20, 100);
 
-        const sessions = await testDb`
+        const sessions = await dbInstance`
           SELECT id, type, source, source_id, start_at, end_at, duration, 
                  payload, session_hash, created_at, updated_at
           FROM test_sessions

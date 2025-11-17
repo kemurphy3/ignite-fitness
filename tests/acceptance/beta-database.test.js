@@ -13,7 +13,8 @@ describe('Beta Database Acceptance Tests', () => {
   beforeAll(async () => {
     seeder = new DatabaseSeeder();
     await seeder.initialize();
-    sql = seeder.sql;
+    const { sql: seederSql } = seeder;
+    sql = seederSql;
 
     // Run migrations and seeding
     console.log('🔧 Running database setup for acceptance tests...');

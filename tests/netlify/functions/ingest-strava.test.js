@@ -15,9 +15,9 @@ const mockSupabaseClient = (mockData = {}) => {
         select: vi.fn(() => ({
           eq: vi.fn((column, value) => ({
             single: vi.fn(() => {
-              const item = tableData.find(item => item[column] === value);
-              if (item) {
-                return { data: item, error: null };
+              const foundItem = tableData.find(row => row[column] === value);
+              if (foundItem) {
+                return { data: foundItem, error: null };
               }
               return { data: null, error: { code: 'PGRST116' } };
             }),
@@ -42,10 +42,10 @@ const mockSupabaseClient = (mockData = {}) => {
           })),
         })),
         gte: vi.fn((column, value) => ({
-          lte: vi.fn((column, value) => ({
+          lte: vi.fn((col, val) => ({
             // This would be used for findLikelyDuplicates
             filter: vi.fn(() => ({
-              data: tableData.filter(item => item.start_ts >= value && item.start_ts <= value),
+              data: tableData.filter(item => item.start_ts >= val && item.start_ts <= val),
               error: null,
             })),
           })),

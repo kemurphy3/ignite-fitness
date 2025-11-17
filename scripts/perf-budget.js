@@ -375,9 +375,9 @@ function reportResults() {
   }, {});
 
   // Report each type
-  Object.entries(groupedViolations).forEach(([type, violations]) => {
+  Object.entries(groupedViolations).forEach(([type, typeViolations]) => {
     console.log(`${type.toUpperCase()} VIOLATIONS:`);
-    violations.forEach(violation => {
+    typeViolations.forEach(violation => {
       console.log(
         `  ❌ ${violation.metric}: ${violation.current} (budget: ${violation.budget}, excess: ${violation.excess})`
       );

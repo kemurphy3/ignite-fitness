@@ -21,6 +21,15 @@
     <meta name="color-scheme" content="dark light" />
     <meta name="prefers-color-scheme" content="dark" />
 
+    <!-- Security Meta Tags -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' fonts.googleapis.com;"
+    />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
 
