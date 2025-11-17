@@ -817,8 +817,8 @@ class Router {
                     <section class="form-section" aria-labelledby="login-heading">
                         <h2 id="login-heading" style="text-align: center; margin-bottom: 1.5rem; color: #2d3748;">Welcome Back</h2>
                         <form role="form" aria-label="User login form" onsubmit="window.handleLoginSubmit(event); return false;">
-                            <div class="form-group">
-                                <label for="loginUsername">Username</label>
+                            <div class="form-group" style="display: block; margin-bottom: 1.5rem;">
+                                <label for="loginUsername" style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #2d3748;">Username</label>
                                 <input type="text" 
                                        id="loginUsername" 
                                        name="username"
@@ -826,10 +826,12 @@ class Router {
                                        placeholder="Enter username"
                                        aria-required="true"
                                        autocomplete="username"
+                                       inputmode="text"
+                                       style="font-size: 16px; min-height: 44px;"
                                        required>
                             </div>
-                            <div class="form-group">
-                                <label for="loginPassword">Password</label>
+                            <div class="form-group" style="display: block; margin-bottom: 1.5rem;">
+                                <label for="loginPassword" style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #2d3748;">Password</label>
                                 <input type="password" 
                                        id="loginPassword" 
                                        name="password"
@@ -837,6 +839,8 @@ class Router {
                                        placeholder="Enter password"
                                        aria-required="true"
                                        autocomplete="current-password"
+                                       inputmode="text"
+                                       style="font-size: 16px; min-height: 44px;"
                                        required>
                             </div>
                             <div id="loginError" style="display: none; color: #ef4444; margin-top: 1rem; text-align: center;"></div>
@@ -904,64 +908,72 @@ class Router {
                         <p style="color: #718096;">Get your personalized workout plan in 60 seconds</p>
                     </div>
                     
-                    <form id="quick-signup-form" class="quick-form" onsubmit="window.handleQuickSignup(event); return false;">
-                        <div class="form-group">
-                            <label for="signup-username">Username</label>
+                    <form id="quick-signup-form" class="quick-form" onsubmit="window.handleQuickSignup(event); return false;" style="display: block;">
+                        <div class="form-group" style="display: block; margin-bottom: 1.5rem;">
+                            <label for="signup-username" style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #2d3748;">Username</label>
                             <input type="text" 
                                    id="signup-username" 
                                    name="username"
                                    placeholder="Choose a username"
                                    autocomplete="username"
+                                   inputmode="text"
                                    aria-required="true"
                                    required
-                                   class="form-input">
+                                   class="form-input"
+                                   style="font-size: 16px; min-height: 44px; width: 100%;">
                             <div class="field-hint" style="font-size: 0.875rem; color: #718096; margin-top: 0.25rem;">
                                 This is how you'll log in
                             </div>
                         </div>
                         
-                        <div class="form-group">
-                            <label for="signup-password">Password</label>
+                        <div class="form-group" style="display: block; margin-bottom: 1.5rem;">
+                            <label for="signup-password" style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #2d3748;">Password</label>
                             <input type="password" 
                                    id="signup-password" 
                                    name="password"
                                    placeholder="Create a password"
                                    autocomplete="new-password"
+                                   inputmode="text"
                                    aria-required="true"
                                    required
                                    minlength="6"
-                                   class="form-input">
+                                   class="form-input"
+                                   style="font-size: 16px; min-height: 44px; width: 100%;">
                             <div class="field-hint" style="font-size: 0.875rem; color: #718096; margin-top: 0.25rem;">
                                 At least 6 characters
                             </div>
                         </div>
                         
-                        <div class="form-group">
-                            <label for="signup-confirm-password">Confirm Password</label>
+                        <div class="form-group" style="display: block; margin-bottom: 1.5rem;">
+                            <label for="signup-confirm-password" style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #2d3748;">Confirm Password</label>
                             <input type="password" 
                                    id="signup-confirm-password" 
                                    name="confirmPassword"
                                    placeholder="Re-enter your password"
                                    autocomplete="new-password"
+                                   inputmode="text"
                                    aria-required="true"
                                    required
                                    minlength="6"
-                                   class="form-input">
+                                   class="form-input"
+                                   style="font-size: 16px; min-height: 44px; width: 100%;">
                             <div class="field-hint" style="font-size: 0.875rem; color: #718096; margin-top: 0.25rem;">
                                 Re-enter your password to confirm
                             </div>
                         </div>
                         
-                        <div class="form-group">
-                            <label for="signup-athlete-name">Your Name</label>
+                        <div class="form-group" style="display: block; margin-bottom: 1.5rem;">
+                            <label for="signup-athlete-name" style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #2d3748;">Your Name</label>
                             <input type="text" 
                                    id="signup-athlete-name" 
                                    name="athleteName"
                                    placeholder="Enter your name"
                                    autocomplete="name"
+                                   inputmode="text"
                                    aria-required="true"
                                    required
-                                   class="form-input">
+                                   class="form-input"
+                                   style="font-size: 16px; min-height: 44px; width: 100%;">
                         </div>
                         
                         <div id="signupError" style="display: none; color: #ef4444; margin-top: 1rem; text-align: center; font-size: 0.875rem;"></div>
